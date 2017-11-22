@@ -3,3 +3,14 @@
 16/11 :
   Point sur le codage de l'algo EM (gaussien multivarié) : code corrigé par Christophe
   Objectif mélange d'arbres
+
+17/11
+  Début mélanges d'arbres, point sur l'heuristique de l'EM avec Stéphane. Rédaction de l'EM.
+ 
+20/11
+  Fin rédaction EM
+  Réflexion avec Christophe : calcul vraisemblance Chow gaussien, suite EM mélange d'arbres (résolution proba qu'une arête
+  appartienne à un arbre cf argmax sum (q_i log(p_i) )
+  
+22/11
+  Correction vraisemblance Chow gaussien, mise à jour du doc
