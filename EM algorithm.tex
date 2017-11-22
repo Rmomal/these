@@ -6,10 +6,12 @@
 %opening
 \title{EM algorithm}
 \author{}
+\DeclareMathOperator*{\argmax}{arg\,max}
 
 \begin{document}
 
 \maketitle
+
 
 
 \section{Context}
@@ -55,4 +57,56 @@ Maximising the last expression, we get after some algebraic manipulations :
 \item \large{$\hat{\Sigma}_k = \frac{\sum_i \tau_{ik} (y_i-\mu_k)^T(y_i-\mu_k)}{\sum_i \tau_{ik}}$}\normalsize
 \item \large{$\hat{\pi}_k = \frac{1}{n} \sum_i \tau_{ik}$}
 \end{itemize}
+
+\section{Example for mixtures of Gaussian Dependence Trees}
+Let $T$ be a gaussian dependence tree. We are considering a mixture of hidden trees, $k$ an $l$  are nodes of the trees (
+i.e. variables or species).\\
+
+\[ \mathds{P}(T) = \frac{1}{B}\prod_{k,l\in T} \beta_{kl} \text{ , with } B = \sum_T \prod_{k,l\in T} \beta_{kl} \]
+\subsection{E step :}
+\[ \mathds{P}(Y,T) = \mathds{P}(T)\times\mathds{P}(Y|T)\]
+\begin{align*}
+ \log(\mathds{P}(Y,T)) &= \sum_{(k,l)\in T} \log(\beta_{kl})  + \sum_{(k,l)\in T} \psi_{kl}(Y)- \log (B)\\
+ &=\sum_{k,l} \mathds{1}_{\{(k,l) \in T\}} \left(\log(\beta_{kl})  +  \psi_{kl}(Y)\right)- \log (B)
+\end{align*}
+ 
+\[ \mathcal{Q} = \mathds{E}_\theta[\log(\mathds{P}(Y,T))] = \sum_{k,l}  \mathds{P}((k,l)\in T | Y) \times \left( \log(\beta_{kl}) + \psi_{kl}(Y) \right)
+ -\log(B)\]
+ 
+Keeping in mind that only the hidden part varies for now, we want to maximise $\mathcal{Q}$. We use the following result :
+
+\begin{equation}
+ \label{res}
+q^ * =  \argmax_{q_1,...q_n}  \sum_i q_i \log(p_i) \Rightarrow q^ * = (p_1,...p_n) \\
+\end{equation}
+
+We define $\tau_{kl} = \beta_{kl}\exp(\psi_{kl}(Y))$, such as :
+
+\[\mathds{P}((k,l)\in T | Y) \times( \log(\beta_{kl}) + \psi_{kl}(Y)) = 
+\mathds{P}((k,l)\in T | Y) \times \log(\tau_{kl}) \]
+
+Following \ref{res}, we have :
+\[\argmax_{\mathds{P}((k,l)\in T | Y)}  \sum_{k,l}  \mathds{P}((k,l)\in T | Y)\times \log(\tau_{kl}) =  \tau_{kl}.\]
+\subsection{M step :\\}
+
+
+\subsubsection{B}
+Defining $\Delta$ as the Laplacian of the matrix of the weights $\beta_{kl}$, in can be shown that :
+
+\begin{align*}
+B &= \sum_{T \in \mathcal{T}} \prod_{k,l\in T} \beta_{kl}\\
+ &=\beta_{kl}|\Delta^{\{k,l\}}|
+\end{align*}
+Where $|\Delta^{\{k,l\}}|$ is the determinant of the Laplacien where we have removed the columns and rows corresponding to
+the edges $k$ an $l$.
+
+\[\mathcal{Q} = \sum_{k,l} \beta_{kl} \exp(\psi_{kl}(Y))\left[\log(\beta_{kl}) + \psi_{kl}(Y)\right] - \log(B) \]
+
+
+\[ \frac{\partial \mathcal{Q}}{\partial \beta_{kl}} = \beta_{kl}\left[\log(\beta_{kl}) + \psi_{kl}(Y)\right] + \exp(\psi_{kl}) -\frac{1}{\beta_{kl}}\]\\
+
+Therefore, we get :
+\[ \frac{\partial \mathcal{Q}}{\partial \beta_{kl}}  = 0 \Leftrightarrow \beta_{kl}^2\left[\log(\beta_{kl}) + \psi_{kl}(Y)\right] + \beta_{kl} \exp(\psi_{kl}(Y)) -1 =0\]
+
+
 \end{document}
