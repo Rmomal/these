@@ -42,9 +42,9 @@ With $d$ being the size of both $Y_i$ and $\mu_k$. The covariance matrix $\Sigma
 
 
 \begin{align*}
-\mathds{E}_\theta (\log(p_\theta(Y,Z)|Y) &= \sum_{i,k} \mathds{1}_{\{Z_i = k\}} \times \log(\pi_k f_k(Y_i)|Y)\\
-&= \sum_{i,k} \mathds{E}_\theta \left( \mathds{1}_{\{Z_i = k\}} |Y_i\right)[\log(\pi_k) + \log(f_k(Y_i)) ]\\
-\intertext{With $\tau_{ik} = \frac{\pi_k f_k(Y_i)}{\sum_{l} \pi_l f_l(Y_i)}$ :}
+\log(p_\theta(Y,Z)) &= \sum_{i,k} \mathds{1}_{\{Z_i = k\}} \times \log(\pi_k f_k(Y_i)|Y)\\
+\mathds{E}_\theta (\log(p_\theta(Y,Z))|Y)&= \sum_{i,k} \mathds{E}_\theta \left( \mathds{1}_{\{Z_i = k\}} |Y_i\right)[\log(\pi_k) + \log(f_k(Y_i)) ]\\
+\intertext{We can estimate the expectation with $\tau_{ik} = \frac{\pi_k f_k(Y_i)}{\sum_{l} \pi_l f_l(Y_i)}$ :}
 &= \sum_{i,k}\tau_{ik}[\log(\pi_k) + \log(f_k(Y_i)) ] \\
 &= \sum_{i,k}\tau_{ik}\left[\log(\pi_k)-\frac{1}{2}\log\left((2\pi)^d\det(\Sigma_k)\right) - \frac{1}{2}(Y_i - \mu_k)^T\Sigma_k^{-1}(Y_i - \mu_k)\right] \\
 \end{align*}
@@ -63,20 +63,31 @@ Let $T$ be a gaussian dependence tree. We are considering a mixture of hidden tr
 i.e. variables or species).\\
 
 \[ \mathds{P}(T) = \frac{1}{B}\prod_{k,l\in T} \beta_{kl} \text{ , with } B = \sum_T \prod_{k,l\in T} \beta_{kl} \]
+\begin{align*}
+\mathds{P}(Y|T) &=\mathds{P}(y_1|T)\prod_{i=2}^n \frac{\mathds{P}(y_i,y_{a_i}|T)}{\mathds{P}(y_{a_i}|T)}\\
+&=\prod_{i=2}^n \mathds{P}(y_i|T)\prod_{i=2}^n \frac{\mathds{P}(y_i,y_{a_i}|T)}{\mathds{P}(y_i|T)\times \mathds{P}(y_{a_i}|T)}\\
+&=\underbrace{\prod_{i=2}^n \mathds{P}(y_i|T)}_{\text{A}}\prod_{k,l \in T}\psi_{kl}(Y)
+\end{align*}
+
+We know (cf. Chow gaussian document) that \[\log(A) = \sum_{i=1}^n-\frac{1}{2}\left(\log(2\pi\sigma_i^2)-\frac{x_i^2}{\sigma_i^2}\right),\]
+and this quantity is independant from the tree structure.
 \subsection{E step :}
 \[ \mathds{P}(Y,T) = \mathds{P}(T)\times\mathds{P}(Y|T)\]
 \begin{align*}
- \log(\mathds{P}(Y,T)) &= \sum_{(k,l)\in T} \log(\beta_{kl})  + \sum_{(k,l)\in T} \psi_{kl}(Y)- \log (B)\\
- &=\sum_{k,l} \mathds{1}_{\{(k,l) \in T\}} \left(\log(\beta_{kl})  +  \psi_{kl}(Y)\right)- \log (B)
+ \log(\mathds{P}(Y,T)) &= \sum_{(k,l)\in T} \log(\beta_{kl})  + \sum_{(k,l)\in T} \log(\psi_{kl}(Y))- \log (B)+\log(A)\\
+ &=\sum_{k,l} \mathds{1}_{\{(k,l) \in T\}} \left(\log(\beta_{kl})  +  \log(\psi_{kl}(Y))\right)- \log (B)+\log(A)
 \end{align*}
- 
-\[ \mathcal{Q} = \mathds{E}_\theta[\log(\mathds{P}(Y,T))] = \sum_{k,l}  \mathds{P}((k,l)\in T | Y) \times \left( \log(\beta_{kl}) + \psi_{kl}(Y) \right)
- -\log(B)\]
+ Conditional expectation :
+\begin{align*} \mathcal{Q} &= \mathds{E}_\theta[\log(\mathds{P}(Y,T))|Y] \\
+&= \sum_{k,l}  \mathds{P}((k,l)\in T | Y) \times \left( \log(\beta_{kl}) + \log(\psi_{kl}(Y)) \right)
+ -\log(B)+\log(A)
+ \end{align*}
+ Computation of conditional probability :
  \begin{align*}
  \mathds{P}((k,l)\in T | Y)  &= \frac{\sum_{(k,l)\in T} \mathds{P}(T)\mathds{P}(Y|T)}{\sum_{T} \mathds{P}(T)\mathds{P}(Y|T)}\\
  &=1-\frac{\sum_{(k,l)\notin T} \prod \beta_{uv} \prod \psi_{uv}}{\sum_{T} \prod \beta_{uv} \prod \psi_{uv}}
  \end{align*}
- Defining $\Delta$ as the Laplacian of the matrix $W_{\beta}$ of the weights $\beta_{kl}$, in can be shown that :
+ Defining $\Delta$ as the Laplacian $W_{\beta}$, the matrix  of weights $\beta_{kl}$, in can be shown that :
 
 \begin{align*}
 B &= \sum_{T \in \mathcal{T}} \prod_{k,l\in T} \beta_{kl}\\
@@ -86,6 +97,10 @@ where $\Delta^{\{u,v\}}$ is any minor of the Laplacien. We then get :
 
 \[ \mathds{P}((k,l)\in T | Y) =1-\frac{|\Delta^{\{u,v\}}(W_{\beta}^{-kl}\bigodot\psi)|}{|\Delta^{\{u,v\}}(W_{\beta}\bigodot\psi)|}\]
 
+The last quantity will be computed using the Krishner theorem, allowing for a great gain in computation time
+
+
+\subsection{M step :\\}
 
 We use the following result :
 
@@ -93,9 +108,6 @@ We use the following result :
  \label{res}
 q^ * =  \argmax_{q_1,...q_n}  \sum_i q_i \log(p_i) \Rightarrow q^ * = (p_1,...p_n) \\
 \end{equation}
-
-\subsection{M step :\\}
-
 
 
 
