@@ -55,11 +55,15 @@ We want to maximise the likelihood function, which writes \\
 &=\frac{1}{|\mathcal{S}|}\sum_{\bm{x} \in \mathcal{S}} \left[ \sum\limits_{i=1}^n\log(f(x_i|\mu_i,\sigma_i)) + \sum\limits_{i=2}^n \log\left( 
 \frac{f(x_i,x_{a_i}|\mu_i, \mu_{a_i},\Sigma_{ia_i})}{f(x_{a_i}|\mu_{a_i},\sigma_{a_i})\times f(x_i|\mu_i,\sigma_i)} \right) \right]
 \end{align*}
-\begin{multline}
+\begin{multline*}
 \mathcal{L}(\bm{\alpha},\bm{\mu},\bm{\Sigma}) =\frac{1}{|\mathcal{S}|}\sum_{\bm{x} \in \mathcal{S}} \left[ \sum\limits_{i=1}^n \left( -\frac{1}{2}\log(2\pi\sigma_i^ 2)-\frac{x_i^ 2}{2\sigma_i^ 2}\right)
 +\sum\limits_{i=2}^n\left[\left( -\frac{1}{2}\log((2\pi)^ 2\det(\Sigma_{ia_i})) - \frac{1}{2}(x_i,x_{a_i})^{T}\Sigma_{ia_i}^{-1}(x_i,x_{a_i})\right)\right.\right.\\
-\left.\left.-\left(-\frac{1}{2}\log(2\pi\sigma_i^ 2)-\frac{1}{2}\log(2\pi\sigma_{a_i}^ 2) -\frac{x_i^ 2}{2\sigma_i^ 2}-\frac{x_{a_i}^ 2}{2\sigma_{a_i}^ 2}\right)\right]\right]
-\end{multline}
+\left.\left.-\left(-\frac{1}{2}\log(2\pi\sigma_i^ 2)-\frac{1}{2}\log(2\pi\sigma_{a_i}^ 2) -\frac{x_i^ 2}{2\sigma_i^ 2}-\frac{x_{a_i}^ 2}{2\sigma_{a_i}^ 2}\right)\right]\right]\\
+&=\frac{1}{|\mathcal{S}|}\sum_{\bm{x} \in \mathcal{S}} \left[ \sum\limits_{i=1}^n -\frac{1}{2}\left( \log(2\pi\sigma_i^ 2)+\frac{x_i^ 2}{\sigma_i^ 2}\right)
++\sum\limits_{i=2}^n-\frac{1}{2}\left(\log\left(1-\frac{\sigma_{ia_i}^2}{\sigma_i^2 \sigma_{a_i}^2}\right)+\frac{(x_i^2\sigma_{a_i}^2+x_{a_i}^2\sigma_i^2-2\sigma_{ia_i}x_ix_{a_i})}
+{\det(\Sigma_{ia_i})}\right.\right.\\
+\left.\left.-\left(\frac{x_i^2}{\sigma_i^2}+\frac{x_{a_i}^2}{\sigma_{a_i}^2}\right)\right)\right]
+\end{multline*}
 
 
 \subsection{Estimation}
@@ -77,7 +81,7 @@ $\mu_i$, $\sigma_i$ and $\sigma_{ia_i}$ for Gaussian distributions are known :
 Replacing these estimators, we finally get
 
 \[ \mathcal{L}(\bm{\alpha},\bm{\hat{\mu}},\bm{\hat{\Sigma}}) = \sum\limits_{i=1}^n -\frac{1}{2} \left(1+\log(2\pi\hat{\sigma}_i^2)\right) + 
-\sum\limits_{i=2}^n \underbrace{- \frac{1}{2} \log \left( 1- \frac{\hat{\sigma}_{ia_i}}{\hat{\sigma}_i^2 \hat{\sigma}_{ia_i}^2}\right)}_{\text{\normalsize{$\mathcal{I}\left(f
+\sum\limits_{i=2}^n \underbrace{- \frac{1}{2} \log \left( 1- \frac{\hat{\sigma}_{ia_i}^2}{\hat{\sigma}_i^2 \hat{\sigma}_{ia_i}^2}\right)}_{\text{\normalsize{$\mathcal{I}\left(f
 (\cdot|\hat{\mu}_i,\hat{\sigma}_i),f(\cdot|\hat{\mu}_{a_i},\hat{\sigma}_{a_i})\right)$}}}\]\\
 
 The first term of this quantity is independant of $\alpha$, meaning it is independant of the structure of the dependance-tree. We then only need to maximise
