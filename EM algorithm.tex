@@ -70,7 +70,9 @@ i.e. variables or species).\\
 \end{align*}
 
 We know (cf. Chow gaussian document) that \[\log(A) = \sum_{i=1}^n-\frac{1}{2}\left(\log(2\pi\sigma_i^2)-\frac{x_i^2}{\sigma_i^2}\right),\]
-and this quantity is independant from the tree structure.
+and this quantity is independant from the tree structure. We also know the explicit form of $\log(\psi_{kl})$ :
+\[\log(\psi_{kl}(Y))=\frac{-1}{2}\left(\log\left(1-\frac{\sigma_{kl}^2}{\sigma_k^2 \sigma_{l}^2}\right)+\frac{(y_k^2\sigma_{l}^2+y_{l}^2\sigma_k^2-2\sigma_{kl}y_ky_{l})}
+{\det(\Sigma_{kl})}-\left(\frac{y_k^2}{\sigma_k^2}+\frac{y_{l}^2}{\sigma_{l}^2}\right)\right)\]
 \subsection{E step :}
 \[ \mathds{P}(Y,T) = \mathds{P}(T)\times\mathds{P}(Y|T)\]
 \begin{align*}
@@ -78,11 +80,10 @@ and this quantity is independant from the tree structure.
  &=\sum_{k,l} \mathds{1}_{\{(k,l) \in T\}} \left(\log(\beta_{kl})  +  \log(\psi_{kl}(Y))\right)- \log (B)+\log(A)
 \end{align*}
  Conditional expectation :
-\begin{align*} \mathcal{Q} &= \mathds{E}_\theta[\log(\mathds{P}(Y,T))|Y] \\
-&= \sum_{k,l}  \mathds{P}((k,l)\in T | Y) \times \left( \log(\beta_{kl}) + \log(\psi_{kl}(Y)) \right)
- -\log(B)+\log(A)
- \end{align*}
- Computation of conditional probability :
+\[ \mathds{E}_\theta[\log(\mathds{P}(Y,T))|Y] \\
+= \sum_{k,l}  \mathds{P}((k,l)\in T | Y) \times \left[ \log(\beta_{kl}) + \log(\psi_{kl}(Y)) \right]
+ -\log(B)+\log(A)\]
+ Computation of conditional probability : using Bayes, we specially consider the proportion of trees which contain an edge between the nodes $k$ and $l$.
  \begin{align*}
  \mathds{P}((k,l)\in T | Y)  &= \frac{\sum_{(k,l)\in T} \mathds{P}(T)\mathds{P}(Y|T)}{\sum_{T} \mathds{P}(T)\mathds{P}(Y|T)}\\
  &=1-\frac{\sum_{(k,l)\notin T} \prod \beta_{uv} \prod \psi_{uv}}{\sum_{T} \prod \beta_{uv} \prod \psi_{uv}}
@@ -101,7 +102,11 @@ The last quantity will be computed using the Krishner theorem, allowing for a gr
 
 
 \subsection{M step :\\}
+Moving to the M step, the quantity $\tau_{kl} = \mathds{P}((k,l)\in T | Y)$ has been computed and is now considered as fixed.
+We maximise the conditional expectation with respect to parameters $\beta_{kl}$.
 
+\[\argmax_{\beta_{kl}} \left\{\sum_{k,l} \tau_{kl}\times \left[ \log(\beta_{kl}) + \log(\psi_{kl}(Y)) \right]
+ -\log(B)+\log(A)\right\}\]
 We use the following result :
 
 \begin{equation}
