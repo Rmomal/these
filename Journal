@@ -15,3 +15,8 @@
 22/11
   Correction vraisemblance Chow gaussien, mise à jour du doc
   Réflexion ensemble sur l'étape E de l'EM avec mélange d'arbres : conclusion beta/B proportionnel à tau
+  
+29/11
+  Lecture article S.Krishner : généralisation de ce qu'on fait, mais copules pas possibles en discret par la suite.
+  Idée d'incorporer rapidement des covariables au programmes, car jouent sur la moyenne de régression multivariée,
+  pas la variance qui est elle l'objet de l'EM
