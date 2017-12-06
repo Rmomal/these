@@ -20,3 +20,11 @@
   Lecture article S.Krishner : généralisation de ce qu'on fait, mais copules pas possibles en discret par la suite.
   Idée d'incorporer rapidement des covariables au programmes, car jouent sur la moyenne de régression multivariée,
   pas la variance qui est elle l'objet de l'EM
+  
+04/12
+  Essai calcul EMV de la corrélation pour simplification de l'expression des psi_kl (pour factorisation sous la forme qu'on croit)
+
+05/12
+  Réflexion sur les calculs : trop compliqués pour un but simple, prise de recul
+  Reprise de l'écriture de la vraisemblance avec le déterminant de la matrice de précision de l'arbre, et la trace
+  Livres de Lauritzen et Andersen
