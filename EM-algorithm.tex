@@ -79,8 +79,8 @@ Remembering that we work with standard normal distributions, the last two expres
 between $y_k$ and $y_l$ is now their covariance too :
 
 \[\log(A) = \sum_{i=1}^n-\frac{1}{2}\left(\log(2\pi)-y_i^2\right)\]
-\[\log(\psi_{kl}(Y))=\frac{-1}{2}\left(\log\left(1-\rho_{kl}\right)+\frac{\rho_{kl}}
-{1-\rho_{kl}}(y_k-y_l)^2\right)\]
+\[\log(\psi_{kl}(Y))=\log\left(\frac{1}{\sqrt{1-\hat{\rho_{kl}}^2}}\right)+\frac{\hat{\rho_{kl}}}{1-\hat{\rho_{kl}}^2}\cdot y_{ik}y_{il} - 
+\frac{\hat{\rho_{kl}}^2}{1-\hat{\rho_{kl}}^2}\cdot \frac{y_{ik}^2 + y_{il}^2}{2}\]
 
 \subsection{E step :}
 \[ \mathds{P}(Y,T) = \mathds{P}(T)\times\mathds{P}(Y|T)\]
