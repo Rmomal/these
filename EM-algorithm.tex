@@ -66,21 +66,21 @@ i.e. variables or species).\\
 \begin{align*}
 \mathds{P}(Y|T) &=\mathds{P}(y_1|T)\prod_{i=2}^n \frac{\mathds{P}(y_i,y_{a_i}|T)}{\mathds{P}(y_{a_i}|T)}\\
 &=\prod_{i=2}^n \mathds{P}(y_i|T)\prod_{i=1}^n \frac{\mathds{P}(y_i,y_{a_i}|T)}{\mathds{P}(y_i|T)\times \mathds{P}(y_{a_i}|T)}\\
-&=\underbrace{\prod_{i=1}^n \mathds{P}(y_i|T)}_{\text{A}}\prod_{k,l \in T}\psi_{kl}(Y)
+&=\underbrace{\prod_{i=1}^n \mathds{P}(y_i|T)}_{\text{A}}\prod_{i=1}^n\prod_{k,l \in T}\psi_{kl}(Y_i)
 \end{align*}
 
 We know (cf. Chow gaussian document) that 
 \[\log(A) = \sum_{i=1}^n-\frac{1}{2}\left(\log(2\pi\sigma_i^2)-\frac{y_i^2}{\sigma_i^2}\right),\]
 and this quantity is independant from the tree structure. We also know the explicit form of $\log(\psi_{kl})$ :
-\[\log(\psi_{kl}(Y))=\frac{-1}{2}\left(\log\left(1-\frac{\sigma_{kl}^2}{\sigma_k^2 \sigma_{l}^2}\right)+\frac{(y_k^2\sigma_{l}^2+y_{l}^2\sigma_k^2-2\sigma_{kl}y_ky_{l})}
+\[\log(\psi_{kl}(Y_i))=\frac{-1}{2}\left(\log\left(1-\frac{\sigma_{kl}^2}{\sigma_k^2 \sigma_{l}^2}\right)+\frac{(y_k^2\sigma_{l}^2+y_{l}^2\sigma_k^2-2\sigma_{kl}y_ky_{l})}
 {\det(\Sigma_{kl})}-\left(\frac{y_k^2}{\sigma_k^2}+\frac{y_{l}^2}{\sigma_{l}^2}\right)\right)\]
 
 Remembering that we work with standard normal distributions, the last two expressions are greatly simplified. The correlation $\rho_{kl}$ 
 between $y_k$ and $y_l$ is now their covariance too :
 
 \[\log(A) = \sum_{i=1}^n-\frac{1}{2}\left(\log(2\pi)-y_i^2\right)\]
-\[\log(\psi_{kl}(Y))=\log\left(\frac{1}{\sqrt{1-\hat{\rho_{kl}}^2}}\right)+\frac{\hat{\rho_{kl}}}{1-\hat{\rho_{kl}}^2}\cdot y_{ik}y_{il} - 
-\frac{\hat{\rho_{kl}}^2}{1-\hat{\rho_{kl}}^2}\cdot \frac{y_{ik}^2 + y_{il}^2}{2}\]
+\[\log(\psi_{kl}(Y_i))=\log\left(\frac{1}{\sqrt{1-\rho_{kl}^2}}\right)+\frac{\rho_{kl}}{1-\rho_{kl}^2}\cdot y_{ik}y_{il} - 
+\frac{\rho_{kl}^2}{1-\rho_{kl}^2}\cdot \frac{y_{ik}^2 + y_{il}^2}{2}\]
 
 \subsection{E step :}
 \[ \mathds{P}(Y,T) = \mathds{P}(T)\times\mathds{P}(Y|T)\]
