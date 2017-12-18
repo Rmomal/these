@@ -160,17 +160,27 @@ to compute it in a reasonable amout of time, after using the Matrix tree theorem
 \begin{align*}
   \begin{array}{r@{}l}
     B & =|\Delta^{\{u,v\}}(W_{\beta})| \\
-    S_{\backslash kl}^{h}& =|\Delta^{\{u,v\}}(W_{\beta_{\backslash kl}})|
+    S_{\backslash kl}^{h}& =|\Delta^{\{u,v\}}(W_{\beta}^{- kl})|
   \end{array}
  \end{align*}
  
  \subsubsection{Direct formula}
  We are also able to give a direct formula for $\beta_{kl}$, by noticing the following relation between a matrix minors :
- \[|\Delta^{\{a,b\}}(A)|=|\Delta^{\{a,b\}}(A^{- ab})| + [\Delta^{\{a,b\}}(A)]_{ab}\times |\Delta^{\{ab,ab\}}(A)|\]\\
+ \[|\Delta^{\{a,b\}}(A)|=|\Delta^{\{a,b\}}(A^{- ab})| + [\Delta^{\{a,b\}}(A)]_{ab}\times |\Delta^{\{ab,ab\}}(A)|.\]\\
 In the last expression, we used the notation $M^{\{R,C\}}$ to refer to matrix $M$ where the set $R$ of rows and the set $C$ of columns
 have been removed. In our case with the matrix of weights $W_\beta$, we obtain this expression :
-\[|\Delta^{\{a,b\}}(W_\beta)|=|\Delta^{\{a,b\}}(W_\beta^{- kl})| + \beta_{kl}\times |\Delta^{\{kl,kl\}}(W_\beta)|\]\\
+\[|\Delta^{\{k,l\}}(W_\beta)|=|\Delta^{\{k,l\}}(W_\beta^{- kl})| + \beta_{kl}\times |\Delta^{\{kl,kl\}}(W_\beta)|.\]\\
 
+By definition we have :
+\[\mathds{P}((k,l)\in T ) = \frac{|\Delta^{\{k,l\}}(W_\beta)|-|\Delta^{\{k,l\}}(W_\beta^{- kl})|}{|\Delta^{\{k,l\}}(W_\beta)|}\]
+\[\Leftrightarrow  \text{\hspace{0.5cm}}\mathds{P}((k,l)\in T ) =\frac{\beta_{kl}\times |\Delta^{\{kl,kl\}}(W_\beta)|}{|\Delta^{\{k,l\}}(W_\beta)|}\]
+Replacing this expression in \ref{1}, we get:
 
+\begin{align*}
+ &\frac{ \mathds{P}((k,l)\in T | Y)}{\beta_{kl}} -\frac{\mathds{P}((k,l)\in T)}{\beta_{kl}} =0 \\
+ \Leftrightarrow \text{\hspace{0.5cm}}& \frac{ \mathds{P}((k,l)\in T | Y)}{\beta_{kl}} -\frac{|\Delta^{\{kl,kl\}}(W_\beta)|}{|\Delta^{\{k,l\}}(W_\beta)|}=0\\
+ \Leftrightarrow \text{\hspace{0.5cm}}& \hat{\beta}_{kl} = \mathds{P}((k,l)\in T | Y) \frac{|\Delta^{\{k,l\}}(W_\beta)|}{|\Delta^{\{kl,kl\}}(W_\beta)|}
+\end{align*}
 
+The drawback of this formula is its high computational complexity. However we can use it for ponctual checks.
 \end{document}
