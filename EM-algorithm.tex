@@ -107,7 +107,8 @@ where $\Delta^{\{u,v\}}$ is any minor of the Laplacien. We then get :
 
 \[ \mathds{P}((k,l)\in T | Y) =1-\frac{|\Delta^{\{u,v\}}(W_{\beta}^{-kl}\bigodot\psi)|}{|\Delta^{\{u,v\}}(W_{\beta}\bigodot\psi)|}\]
 
-The last quantity will be computed using the Krishner theorem, allowing for a great gain in computation time.
+Where the notation $W_{\beta}^{-kl}$ means that the entry at the $k^{\text{th}}$ line and $l^{\text{th}}$ has been set to zero
+(concreatly, we erased the edge between nodes $k$ and $l$). This last quantity will be computed using the Krishner theorem, allowing for a great gain in computation time.
 
 
 \subsection{M step :\\}
@@ -121,12 +122,15 @@ We maximise the conditional expectation with respect to parameters $\beta_{kl}$.
  \[\frac{\partial\mathds{E}_\theta[\log(\mathds{P}(Y,T))|Y]}{\partial\beta_{kl}} =\frac{ \mathds{P}((k,l)\in T | Y)}{\beta_{kl}} - \frac{1}{B}
  \sum_{\substack{T\in \mathcal{T}:\\T \ni \{k,l\}}} \prod_{\substack{\{u,v\} :\\ u \ne k,\\v\ne l}} \beta_{uv}\]
 
- We notice that if we multiply the last part of the right term, we obtain the probability for the edge $\{k,l\}$ to be in the tree $T$.
- We then have :
+ We notice that if we multiply the last part of the right term by $\beta_{kl}$, we obtain the probability for the edge $\{k,l\}$ to be in the tree $T$.
+Thus we can write :
 
- \[\frac{\partial\mathds{E}_\theta[\log(\mathds{P}(Y,T))|Y]}{\partial\beta_{kl}} =\frac{ \mathds{P}((k,l)\in T | Y)}{\beta_{kl}} 
- -\frac{\mathds{P}((k,l)\in T)}{\beta_{kl}}\]
- 
+ \begin{equation}
+ \label{1}
+ \frac{\partial\mathds{E}_\theta[\log(\mathds{P}(Y,T))|Y]}{\partial\beta_{kl}} =\frac{ \mathds{P}((k,l)\in T | Y)}{\beta_{kl}} 
+ -\frac{\mathds{P}((k,l)\in T)}{\beta_{kl}}  
+ \end{equation}
+\subsubsection{Update formula}
  We now stand in this awkward situation where the $\beta_{kl}$ will disappear if we want to optimise the quantity according to it. But let's 
  remember that we are in an EM algorithm here. Going from iteration $h$ to iteration $h+1$, we model the update on $\beta_{kl}$ as:
  \[\beta_{kl}^{h+1} = \lambda^h \beta_{kl}^h\]
@@ -136,23 +140,37 @@ Therefore, we want to determine $\lambda^h$. We adopt the following notations:
 
 We now use a decomposition of the constant of normalisation $B$ :
 \begin{align*}
-B^{h+1} &= \sum_{T \in \mathcal{T}} \prod_{k,l\in T} \beta_{kl}^{h+1}\\
- &=\sum_{\{k,l\} \in T } \prod_{u,v\in T} \beta_{uv}^{h+1}+\sum_{\{k,l\} \notin T } \prod_{u,v\in T} \beta_{uv}^{h+1}\\
- &=\lambda^h S_{kl}^h + S_{\backslash kl}^{h+1}
+B^{h+1}  &=\sum_{\{k,l\} \in T } \left(\prod_{\substack{u,v\in T\\ (u,v) \neq (k,l)}} \beta_{uv}^{h}\right) \times\beta_{kl}^{h+1} +\sum_{\{k,l\} \notin T }
+ \prod_{u,v\in T} \beta_{uv}^{h}\\
+ &=\lambda^h S_{kl}^h + S_{\backslash kl}^{h}
 \end{align*}
 
-Then:
+Then, remembering \ref{1}, the optimal update of $\beta_{kl}$ would be such that :
 
+\begin{align*}
+ \mathds{P}((k,l)\in T | Y)&=\mathds{P}((k,l)\in T)\\
+ &=\frac{\lambda^h S_{kl}^h}{\lambda^h S_{kl}^h+S_{\backslash kl}^{h}}
+\end{align*}
+\[\Leftrightarrow \lambda^h = \frac{S_{\backslash kl}^{h}}{S_{kl}^h}\times\frac{\mathds{P}((k,l)\in T | Y) }{1-\mathds{P}((k,l)\in T | Y)}\]
 
+The conditional probability has just been computed at this point in the algorithm. As for the ratio of sums, Krishner's theorem allows us
+to compute it in a reasonable amout of time, after using the Matrix tree theorem which says :
 
 
 \begin{align*}
-  \left.
   \begin{array}{r@{}l}
-    B^{h+1} & =|\Delta^{\{u,v\}}(W_{\beta})| \\
-    S_{\backslash kl}^{h+1}& =|\Delta^{\{u,v\}}(W_{\beta_{\backslash kl}})|
+    B & =|\Delta^{\{u,v\}}(W_{\beta})| \\
+    S_{\backslash kl}^{h}& =|\Delta^{\{u,v\}}(W_{\beta_{\backslash kl}})|
   \end{array}
-  \right\rbrace 
-  \lambda^h =\frac{|\Delta^{\{u,v\}}(W_{\beta})| -|\Delta^{\{u,v\}}(W_{\beta_{\backslash kl}})|}{S_{kl}^h}
-\end{align*}
+ \end{align*}
+ 
+ \subsubsection{Direct formula}
+ We are also able to give a direct formula for $\beta_{kl}$, by noticing the following relation between a matrix minors :
+ \[|\Delta^{\{a,b\}}(A)|=|\Delta^{\{a,b\}}(A^{- ab})| + [\Delta^{\{a,b\}}(A)]_{ab}\times |\Delta^{\{ab,ab\}}(A)|\]\\
+In the last expression, we used the notation $M^{\{R,C\}}$ to refer to matrix $M$ where the set $R$ of rows and the set $C$ of columns
+have been removed. In our case with the matrix of weights $W_\beta$, we obtain this expression :
+\[|\Delta^{\{a,b\}}(W_\beta)|=|\Delta^{\{a,b\}}(W_\beta^{- kl})| + \beta_{kl}\times |\Delta^{\{kl,kl\}}(W_\beta)|\]\\
+
+
+
 \end{document}
