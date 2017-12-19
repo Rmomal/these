@@ -41,7 +41,9 @@ The gaussian dependence-tree is parametrised by $\bm{\alpha}$ :
 
 \begin{align*} 
 f(\bm{x}|\bm{\alpha},\bm{\mu},\bm{\Sigma}) &= f(x_1|\mu_1, \sigma_1) \prod_{i=2}^{n} f(x_i|x_{a_i},\mu_i, \mu_{a_i},\Sigma_{ia_i})\\
- &= f(x_1|\mu_1, \sigma_1) \prod_{i=2}^{n} \frac{f(x_i,x_{a_i}|\mu_i, \mu_{a_i},\Sigma_{ia_i})}{f(x_{a_i}|\mu_{a_i},\sigma_{a_i})}
+ &= f(x_1|\mu_1, \sigma_1) \prod_{i=2}^{n} \frac{f(x_i,x_{a_i}|\mu_i, \mu_{a_i},\Sigma_{ia_i})}{f(x_{a_i}|\mu_{a_i},\sigma_{a_i})}\\
+  &= \prod_{i=1}^{n}f(x_i|\mu_i, \sigma_i) \prod_{i=2}^{n} \frac{f(x_i,x_{a_i}|\mu_i, \mu_{a_i},\Sigma_{ia_i})}
+  {f(x_{a_i}|\mu_{a_i},\sigma_{a_i})\times f(x_i|\mu_i,\sigma_i)}
 \end{align*}
 
 \section{Likelihood maximisation}
@@ -50,8 +52,6 @@ f(\bm{x}|\bm{\alpha},\bm{\mu},\bm{\Sigma}) &= f(x_1|\mu_1, \sigma_1) \prod_{i=2}
 We want to maximise the likelihood function, which writes \\
 \begin{align*} 
 \mathcal{L}(\bm{\alpha},\bm{\mu},\bm{\Sigma}) &= \frac{1}{|\mathcal{S}|}\sum_{\bm{x} \in \mathcal{S}} \log (f(\bm{x}|\bm{\alpha},\bm{\mu},\bm{\Sigma})) \\
-&=\frac{1}{|\mathcal{S}|}\sum_{\bm{x} \in \mathcal{S}} \left[ \log(f(x_1|\mu_1,\sigma_1)) + \sum\limits_{i=2}^n \log\left( 
-\frac{f(x_i,x_{a_i}|\mu_i, \mu_{a_i},\Sigma_{ia_i})}{f(x_{a_i}|\mu_{a_i},\sigma_{a_i})} \right) \right]\\
 &=\frac{1}{|\mathcal{S}|}\sum_{\bm{x} \in \mathcal{S}} \left[ \sum\limits_{i=1}^n\log(f(x_i|\mu_i,\sigma_i)) + \sum\limits_{i=2}^n \log\left( 
 \frac{f(x_i,x_{a_i}|\mu_i, \mu_{a_i},\Sigma_{ia_i})}{f(x_{a_i}|\mu_{a_i},\sigma_{a_i})\times f(x_i|\mu_i,\sigma_i)} \right) \right]
 \end{align*}
@@ -59,12 +59,11 @@ We want to maximise the likelihood function, which writes \\
 \mathcal{L}(\bm{\alpha},\bm{\mu},\bm{\Sigma}) =\frac{1}{|\mathcal{S}|}\sum_{\bm{x} \in \mathcal{S}} \left[ \sum\limits_{i=1}^n \left( -\frac{1}{2}\log(2\pi\sigma_i^ 2)-\frac{x_i^ 2}{2\sigma_i^ 2}\right)
 +\sum\limits_{i=2}^n\left[\left( -\frac{1}{2}\log((2\pi)^ 2\det(\Sigma_{ia_i})) - \frac{1}{2}(x_i,x_{a_i})^{T}\Sigma_{ia_i}^{-1}(x_i,x_{a_i})\right)\right.\right.\\
 \left.\left.-\left(-\frac{1}{2}\log(2\pi\sigma_i^ 2)-\frac{1}{2}\log(2\pi\sigma_{a_i}^ 2) -\frac{x_i^ 2}{2\sigma_i^ 2}-\frac{x_{a_i}^ 2}{2\sigma_{a_i}^ 2}\right)\right]\right]\\
-&=\frac{1}{|\mathcal{S}|}\sum_{\bm{x} \in \mathcal{S}} \left[ \sum\limits_{i=1}^n -\frac{1}{2}\left( \log(2\pi\sigma_i^ 2)+\frac{x_i^ 2}{\sigma_i^ 2}\right)
+\text{\hspace{2cm}}=\frac{1}{|\mathcal{S}|}\sum_{\bm{x} \in \mathcal{S}} \left[ \sum\limits_{i=1}^n -\frac{1}{2}\left( \log(2\pi\sigma_i^ 2)+\frac{x_i^ 2}{\sigma_i^ 2}\right)
 +\sum\limits_{i=2}^n-\frac{1}{2}\left(\log\left(1-\frac{\sigma_{ia_i}^2}{\sigma_i^2 \sigma_{a_i}^2}\right)+\frac{(x_i^2\sigma_{a_i}^2+x_{a_i}^2\sigma_i^2-2\sigma_{ia_i}x_ix_{a_i})}
 {\det(\Sigma_{ia_i})}\right.\right.\\
 \left.\left.-\left(\frac{x_i^2}{\sigma_i^2}+\frac{x_{a_i}^2}{\sigma_{a_i}^2}\right)\right)\right]
 \end{multline*}
-
 
 \subsection{Estimation}
 
