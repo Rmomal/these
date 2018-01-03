@@ -97,91 +97,50 @@ between $y_k$ and $y_l$ is now their covariance too, and after some manipulation
  \mathds{P}((k,l)\in T | Y)  &= \frac{\sum_{(k,l)\in T} \mathds{P}(T)\mathds{P}(Y|T)}{\sum_{T} \mathds{P}(T)\mathds{P}(Y|T)}\\
  &=1-\frac{\sum_{(k,l)\notin T} \prod \beta_{uv} \prod \psi_{uv}}{\sum_{T} \prod \beta_{uv} \prod \psi_{uv}}
  \end{align*}
- Defining $\Delta$ as the Laplacian $W_{\beta}$, the matrix  of weights $\beta_{kl}$, in can be shown that :
+ We define the Laplacian matrix as the following symmetric matrix :
+ \[\mathcal{Q}_{uv}(W_\beta)=\begin{cases}
+               -\beta_{uv} & 1\leq u<v \leq n\\
+               \sum_{w=1}^n \beta_{wv} & 1\leq u=v \leq n.
+            \end{cases}\]
+ Lets $\mathcal{Q}^*$ be the first $(n-1)$ rows and columns of $\mathcal{Q}$. The  Matrix Tree Theorem (MTT) of West \cite{west} says that
+ for any adjacence matrix $A$ of a multigraph G, $|\mathcal{Q}^*(A)|$ is the number of spanning trees of G, where $|\cdot|$ is the determinant.
+ Meila \textit{et al.} \cite{meila} demonstrate the generalization of the MTT (GMTT)for a real-valued matrix, so that we now  get :
 
-\begin{align*}
-B &= \sum_{T \in \mathcal{T}} \prod_{k,l\in T} \beta_{kl}\\
- &=|\Delta^{\{u,v\}}(W_{\beta})|,
-\end{align*}
-where $\Delta^{\{u,v\}}$ is any minor of the Laplacien. We then get :
+\[ \mathds{P}((k,l)\in T | Y) =1-\frac{|\mathcal{Q}^*(W_{\beta}^{-kl}\bigodot\psi)|}{|\mathcal{Q}^*(W_{\beta}\bigodot\psi)|}\]
 
-\[ \mathds{P}((k,l)\in T | Y) =1-\frac{|\Delta^{\{u,v\}}(W_{\beta}^{-kl}\bigodot\psi)|}{|\Delta^{\{u,v\}}(W_{\beta}\bigodot\psi)|}\]
-
-Where the notation $W_{\beta}^{-kl}$ means that the entry at the $k^{\text{th}}$ line and $l^{\text{th}}$ has been set to zero
-(concreatly, we erased the edge between nodes $k$ and $l$). This last quantity will be computed using the Krishner theorem, allowing for a great gain in computation time.
+Where the notation $W_{\beta}^{-kl}$ means that the entry at the $k^{\text{th}}$ line and $l^{\text{th}}$ column has been set to zero
+(concretely, we erased the edge between nodes $k$ and $l$). This last quantity will be computed using the Kirshner theorem, allowing for a great gain in computation time.
 
 
 \subsection{M step :\\}
 Moving to the M step, the quantity $\tau_{kl} = \mathds{P}((k,l)\in T | Y)$ has been computed and is now considered as fixed.
 We maximise the conditional expectation with respect to parameters $\beta_{kl}$.
 
-\[\argmax_{\beta_{kl}} \left\{\sum_{k,l} \tau_{kl}\times \left[ \log(\beta_{kl}) + \log(\psi_{kl}(Y)) \right]
+
+ \[\argmax_{\beta_{kl}} \left\{\sum_{k,l} \tau_{kl}\times \left[ \log(\beta_{kl}) + \log(\psi_{kl}(Y)) \right]
  -\log(B)+\log(A)\right\}\]
 
+
+
  We derive with respect to $\beta_{kl}$:
- \[\frac{\partial\mathds{E}_\theta[\log(\mathds{P}(Y,T))|Y]}{\partial\beta_{kl}} =\frac{ \mathds{P}((k,l)\in T | Y)}{\beta_{kl}} - \frac{1}{B}
- \sum_{\substack{T\in \mathcal{T}:\\T \ni \{k,l\}}} \prod_{\substack{\{u,v\} :\\ u \ne k,\\v\ne l}} \beta_{uv}\]
-
- We notice that if we multiply the last part of the right term by $\beta_{kl}$, we obtain the probability for the edge $\{k,l\}$ to be in the tree $T$.
-Thus we can write :
-
- \begin{equation}
- \label{1}
- \frac{\partial\mathds{E}_\theta[\log(\mathds{P}(Y,T))|Y]}{\partial\beta_{kl}} =\frac{ \mathds{P}((k,l)\in T | Y)}{\beta_{kl}} 
- -\frac{\mathds{P}((k,l)\in T)}{\beta_{kl}}  
- \end{equation}
-\subsubsection{Update formula}
- We now stand in this awkward situation where the $\beta_{kl}$ will disappear if we want to optimise the quantity according to it. But let's 
- remember that we are in an EM algorithm here. Going from iteration $h$ to iteration $h+1$, we model the update on $\beta_{kl}$ as:
- \[\beta_{kl}^{h+1} = \lambda^h \beta_{kl}^h\]
-Therefore, we want to determine $\lambda^h$. We adopt the following notations:
-\[ \sum_{\substack{T\in \mathcal{T}:\\T \ni \{k,l\}}} \prod_{\{u,v\}} \beta_{uv}^h= S_{kl}^h\]
-\[ \sum_{\substack{T\in \mathcal{T}:\\\{k,l\} \notin T }} \prod_{\{u,v\}} \beta_{uv}^h= S_{\backslash kl}^h\]
-
-We now use a decomposition of the constant of normalisation $B$ :
+\begin{equation}
+ \label{1} \frac{\partial\mathds{E}_\theta[\log(\mathds{P}(Y,T))|Y]}{\partial\beta_{kl}} =\frac{  \tau_{kl}}{\beta_{kl}} - \frac{1}{B}
+\frac{\partial B}{\partial\beta_{kl}}
+\end{equation}
+ Meila \textit{et al.} give a formula for the derivative of $B$, using the GMTT. Lets define the $M(W_\beta)$ symmetric matrix with 0 diagonal such that :
+ \[\begin{cases}
+    M_{uv} = [\mathcal{Q}^{*-1}]_{uu} + [\mathcal{Q}^{*-1}]_{vv} -2[\mathcal{Q}^{*-1}]_{uv} & u,v < n\\
+    M_{nv} =M_{vn} =[\mathcal{Q}^{*-1}]_{vv} & v<n\\
+     M_{vv} =0.
+   \end{cases}\]
+Meila \textit{et al.} then demonstrate that 
 \begin{align*}
-B^{h+1}  &=\sum_{\{k,l\} \in T } \left(\prod_{\substack{u,v\in T\\ (u,v) \neq (k,l)}} \beta_{uv}^{h}\right) \times\beta_{kl}^{h+1} +\sum_{\{k,l\} \notin T }
- \prod_{u,v\in T} \beta_{uv}^{h}\\
- &=\lambda^h S_{kl}^h + S_{\backslash kl}^{h}
+ \frac{\partial B}{\partial\beta_{kl}} &= M_{kl} |\mathcal{Q}^*(W_\beta)|\\
+ &=M_{kl} \times B
 \end{align*}
+The last equality comes from the GMTT : $B = |\mathcal{Q}^*(W_\beta)|$. Replacing in equation \ref{1} and setting the expression to 0 we get :
+\[\boxed{\hat{\beta}_{kl} = \frac{ \tau_{kl}}{M_{kl}}}\]
 
-Then, remembering \ref{1}, the optimal update of $\beta_{kl}$ would be such that :
-
-\begin{align*}
- \mathds{P}((k,l)\in T | Y)&=\mathds{P}((k,l)\in T)\\
- &=\frac{\lambda^h S_{kl}^h}{\lambda^h S_{kl}^h+S_{\backslash kl}^{h}}
-\end{align*}
-\[\Leftrightarrow \lambda^h = \frac{S_{\backslash kl}^{h}}{S_{kl}^h}\times\frac{\mathds{P}((k,l)\in T | Y) }{1-\mathds{P}((k,l)\in T | Y)}\]
-
-The conditional probability has just been computed at this point in the algorithm. As for the ratio of sums, Krishner's theorem allows us
-to compute it in a reasonable amout of time, after using the Matrix tree theorem which says :
-
-
-\begin{align*}
-  \begin{array}{r@{}l}
-    B & =|\Delta^{\{u,v\}}(W_{\beta})| \\
-    S_{\backslash kl}^{h}& =|\Delta^{\{u,v\}}(W_{\beta}^{- kl})|
-  \end{array}
- \end{align*}
- 
- \subsubsection{Direct formula}
- We are also able to give a direct formula for $\beta_{kl}$, by noticing the following relation between a matrix minors :
- \[|\Delta^{\{a,b\}}(A)|=|\Delta^{\{a,b\}}(A^{- ab})| - [\Delta^{\{a,b\}}(A)]_{ab}\times Cof_{ab}(\Delta^{\{ab\}}(A)).\]\\
- In the last expression we used $Cof_{ab}(A)$ to refer to the $(a,b)$ term of the matrix of the cofactor matrix of the $A$ matrix. The minus in 
- the second term comes from the signs of minors in the development of the determinent. As a row and a column of the Laplacian matrix have
- already been removed, the signing in the formula is shifted and a minus appears. In our case with the matrix of weights $W_\beta$, we obtain this expression :
-\[|\Delta^{\{k,l\}}(W_\beta)|=|\Delta^{\{k,l\}}(W_\beta^{- kl})| + \beta_{kl}\times Cof_{kl}(\Delta^{\{kl\}}(W_\beta)).\]\\
-
-By definition we have :
-\[\mathds{P}((k,l)\in T ) = \frac{|\Delta^{\{k,l\}}(W_\beta)|-|\Delta^{\{k,l\}}(W_\beta^{- kl})|}{|\Delta^{\{k,l\}}(W_\beta)|}\]
-\[\Leftrightarrow  \text{\hspace{0.5cm}}\mathds{P}((k,l)\in T ) =\frac{\beta_{kl}\times Cof_{kl}(\Delta^{\{kl\}}(W_\beta))}{|\Delta^{\{k,l\}}(W_\beta)|}\]
-Replacing this expression in \ref{1}, we get:
-
-\begin{align*}
- &\frac{ \mathds{P}((k,l)\in T | Y)}{\beta_{kl}} -\frac{\mathds{P}((k,l)\in T)}{\beta_{kl}} =0 \\
- \Leftrightarrow \text{\hspace{0.5cm}}& \frac{ \mathds{P}((k,l)\in T | Y)}{\beta_{kl}} -\frac{Cof_{kl}(\Delta^{\{kl\}}(W_\beta))}{|\Delta^{\{k,l\}}(W_\beta)|}=0\\
- \Leftrightarrow \text{\hspace{0.5cm}}& \hat{\beta}_{kl} = \mathds{P}((k,l)\in T | Y) \times \frac{|\Delta^{\{k,l\}}(W_\beta)|}{Cof_{kl}(\Delta^{\{kl\}}(W_\beta))}
-\end{align*}
-
-The drawback of this formula is its high computational complexity. However we can use it for ponctual checks.
+\bibliographystyle{apalike}
+\bibliography{bibi.bib}
 \end{document}
