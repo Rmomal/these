@@ -1,0 +1,247 @@
+#  DICTIONNAIRE
+
+
+####################################################
+#génération de graph
+# @graphER donne une matrice symétrique aléatoire de taille n*n obtenue par 
+#          bernoulli de param p
+####################################################
+makeSymm <- function(m) {
+  m[lower.tri(m)] <- t(m)[lower.tri(m)]
+  return(m)
+}
+
+graphER<-function(n,p){
+  matAdj<-matrix(rbinom(n*n, 1, p), ncol = n, nrow = n)
+  matAdj<-makeSymm(matAdj)
+  diag(matAdj)<-c(rep(0,n))
+  return(matAdj)
+}
+####################################################
+# construction de matrice de précision
+# @curseur utilise le résultat de génération de matrice aléatoire symmétrique par
+#         une fonction donnée et permet de faire varier la diagonale par g
+# @findG permet d'obtenir la plus petite valeure de g possible pour avoir une 
+#         matrice définie positive
+# @Omega utilise le g optimal pour générer la matrice de précision voulue
+####################################################
+# librairies :library(matrixcalc)
+
+
+precision<-function(g,n,fonction,argms){
+  Omega<-fonction(argms[1], argms[2])+ g * diag(1,n)
+  return(Omega)
+}
+
+findG2<-function(seq,fonction,argms){
+  liste_min_vp<-unlist(lapply(seq,function(x) min(eigen(precision(x,n,fonction,argms))$values)))
+  res<-seq[which(liste_min_vp>0)[1]]
+  if (is.na(res)){
+    stop("Inappropriate sequence")
+  }else{
+    return(res)
+  }
+}
+
+Omega<-function(fonction,argms,seq,n){
+  g<-findG2(seq,fonction,argms)
+  Omega<-precision(g,n,fonction,argms)
+  return(Omega)
+}
+
+simMatrix<-function(n){
+  #abs(rnorm(n*n))
+  Sigma<-matrix(runif(n*n), ncol = n, nrow = n)
+  Sigma<-makeSymm(Sigma)
+  return(Sigma)
+}
+
+# exemple : Omega(graphER,c(20,0.3),seq(2,5,by=0.2),20)
+
+####################################################
+# Simulation et comparaison du graph avec l'originel
+# @simu permet de simuler des variables indépendantes selon une loi normale
+#       multi-variée de mat de précision omega
+# @roc utilise le package ROCR et permet de comparer les matrices omega et omega_hat. Cette
+#       fonction est utile pour un plot direct ou superposition de plot faciles.
+# @fun.auc.ggplot calcule UNE courbe ROC à partir de deux matrices. Donne les statistiques
+#       de sens, spec et auc. Joli ggplot.
+####################################################
+
+# library(ROCR)
+# library(mixtools)
+# library(glasso)
+# library(RColorBrewer)
+
+
+
+simu<-function(omega,n.vectors){
+  sigma<-makeSymm(solve(omega))
+  mu<-c(rep(0,ncol(sigma)))
+  sim<-rmvnorm(n.vectors,mu,sigma)
+  return(sim)
+}
+
+roc<-function(mat_rho,omega){
+  indices_nuls<-which(omega==0)
+  labels<-matrix(1,nrow=nrow(omega),ncol=ncol(omega))
+  labels[indices_nuls]<-0
+  pred<-prediction(as.vector(mat_rho),as.vector(labels))
+  perf <- performance(pred,"tpr","fpr")
+  invisible(perf)
+}
+fun.auc.ggplot <- function(pred, obs, title){
+  nvar<-ncol(obs)
+  indices_nuls<-which(obs==0)
+  label<-matrix(1,nrow=nrow(obs),ncol=ncol(obs))
+  label[indices_nuls]<-0
+  prediction<-prediction(as.vector(pred[upper.tri(pred)]),as.vector(label[upper.tri(label)]))
+  obs<-as.vector(label[upper.tri(label)])
+  # Run the AUC calculations
+  ROC_perf <- performance(prediction,"tpr","fpr")
+  ROC_sens <- performance(prediction,"sens","spec")
+  ROC_auc <- performance(prediction,"auc")
+  
+  # Make plot data
+  plotdat <- data.frame(FP=ROC_perf@x.values[[1]],TP=ROC_perf@y.values[[1]],CUT=ROC_perf@alpha.values[[1]],POINT=NA)
+  plotdat[unlist(lapply(seq(0.1,1,0.2),function(x){which.min(abs(plotdat$CUT-x))})),"POINT"]<- seq(0.1,1,0.2)
+  
+  # Plot the curve
+  ggplot(plotdat, aes(x=FP,y=TP)) + 
+    geom_abline(intercept=0,slope=1,linetype="dashed",color="grey") +
+    geom_line() + 
+    geom_point(data=plotdat[!is.na(plotdat$POINT),], aes(x=FP,y=TP,fill=POINT), pch=23, size=3) +
+    geom_text(data=plotdat[!is.na(plotdat$POINT),], aes(x=FP,y=TP,fill=POINT), label=seq(1,0.2,-0.2), hjust=1.5, vjust=-0.2) +
+    scale_fill_gradientn("Threhsold Cutoff",colours=brewer.pal(5,"RdPu"),guide=FALSE) +
+    scale_x_continuous("False Positive Rate", limits=c(0,1)) +
+    scale_y_continuous("True Positive Rate", limits=c(0,1)) +
+    geom_polygon(aes(x=X,y=Y), data=data.frame(X=c(0.77,1,1,0.77),Y=c(0,0,0.33,0.33)), fill="white") +
+    annotate("text",x=0.97,y=0.30,label=paste0("Nnods = ",nvar),hjust=1) +
+    annotate("text",x=0.97,y=0.25,label=paste0("Nedges = ",sum(obs==1)),hjust=1) +
+    annotate("text",x=0.97,y=0.20,label=paste0("Nvoids = ",sum(obs==0)),hjust=1) +
+    annotate("text",x=0.97,y=0.15,label=paste0("AUC = ",round(ROC_auc@y.values[[1]],digits=2)),hjust=1) +
+    annotate("text",x=0.97,y=0.10,label=paste0("Sens = ",round(mean(as.data.frame(ROC_sens@y.values)[,1]),digits=2)),hjust=1) +
+    annotate("text",x=0.97,y=0.05,label=paste0("Spec = ",round(mean(as.data.frame(ROC_sens@x.values)[,1]),digits=2)),hjust=1) +
+    theme(legend.position="none", plot.title=element_text(vjust=2)) +
+    theme_linedraw()+
+    ggtitle(title)
+}
+
+####################################################
+# Exploration des valeurs critiques de rho
+# @tableau3D créer le tableau à trois dimension composé des matrices omega_hat pour
+#           des rho différents
+# @monotonie permet l'étude de la monotonie du phénomène d'extinction d'une arête (case
+#           de la matrice omega_hat). Renvoie les indices en trois dimensions des incohérences.
+# @mat_rho donne, selon la valeur du paramètre minmax, la valeur min ou la valeur max
+#         de rho qui annule une case de omega_hat. Retourne la heatmap non réordonnée
+#         des valeurs critiques, ainsi que leur densité, en échelle log.
+####################################################
+
+library(grid)
+library(gridGraphics)
+library(gridExtra)
+
+tableau3D<-function(samples,seq_rho){
+  n<-dim(var(samples))[1]
+  tab <- array( dim=c(n,n,length(seq_rho)))
+  nb_nuls<-data.frame(matrix(ncol=2,nrow=length(seq_rho)))
+  for(rho in seq_rho){
+    
+    omega_hat<-glasso(var(samples),rho=rho,penalize.diagonal = FALSE)$wi
+    tab[,,which(seq_rho==rho)]<-omega_hat
+    nb_nuls[which(seq_rho==rho),"nuls"]<-length(which(omega_hat==0))*100/length(omega_hat)
+    nb_nuls[which(seq_rho==rho),"rho"]<-rho
+  }
+  g<-ggplot(nb_nuls,aes(log10(rho),nuls))+
+    geom_line()+
+    labs(y="% of nul elements")
+  print(g)
+  return(tab)
+}
+
+defaut_monotonie<-function(tab,seq_rho){
+  non_monotone<-0
+  L<-length(seq_rho)-1
+  infos_non_mono<-data.frame(matrix(ncol=3))
+  colnames(infos_non_mono)<-c("ligne","colonne","rho")
+  for(ligne in 1:n){
+    for(colonne in ligne:n){
+      for(rho in 1:L){
+        if(tab[ligne,colonne,rho]==0 & tab[ligne,colonne,rho+1]!=0){
+          non_monotone<-non_monotone+1
+          infos_non_mono[non_monotone,1]<-ligne
+          infos_non_mono[non_monotone,2]<-colonne
+          infos_non_mono[non_monotone,3]<-seq_rho[rho]
+        }
+      }
+    }
+  }
+  return(infos_non_mono)
+}
+
+mat_rho<-function(tab,seq_rho,minmax){
+  results<-NA*tab[,,1]
+  sequence<-switch(minmax,"min"=1:length(seq_rho),"max"=length(seq_rho):1)
+  for(index.rho in sequence){
+    #browser()
+    indices_nuls<-switch(minmax,"min"=which(tab[,,index.rho]==0),
+                         "max"=which(tab[,,index.rho]!=0))
+    if(length(indices_nuls)!=0){
+      indices_remplis<-which(!is.na(results))
+      if(length(indices_remplis)!=0){
+        indices_a_remplir<-setdiff(indices_nuls,indices_remplis)
+        
+      }else{
+        indices_a_remplir<-indices_nuls
+      }
+      results[indices_a_remplir]<-switch(minmax,"min"=seq_rho[index.rho],"max"=seq_rho[index.rho+1])
+    }
+  }
+  diag(results)<-NA
+  par(mfrow=c(1,2))
+  heatmap.2(results,symm=TRUE,dendrogram="none",main=minmax,
+            Colv=FALSE,Rowv=FALSE,density.info="none",keysize=1.5,trace="none",col=brewer.pal(9,"Blues")[3:9])
+  q<-grab_grob()
+  g<-ggplot(data.frame(Penalty=as.vector(results[upper.tri(results)])),aes(log10(Penalty)))+
+    geom_density()+
+    labs(title=minmax)
+  grid.arrange(q,g, ncol=2, clip=TRUE)
+  return(results)
+}
+
+grab_grob <- function(){
+  grid.echo()
+  grid.grab()
+}
+
+
+
+####################################################
+# Considérantions gaphiques
+# @paramNet créer des paramètres graphiques par défaut pour les graphs
+####################################################
+#librairaies :library(igraph, RColorBrewer)
+
+paramNet<-function(net,pal,label){
+  deg <- degree(net, mode="out")
+  V(net)$size <- deg*2+5
+  V(net)$color=pal[3]
+  E(net)$color=pal[8]
+   V(net)$name <-label
+  E(net)$curved=.1
+  E(net)$width<-rep(2, ecount(net))
+  V(net)$frame.color=pal[3]
+  return(net)
+}
+matrice_adj<-function(precision,seuil){
+  adj<-unlist(apply(precision,1, function(x) ifelse(abs(x)<seuil,0,1)))
+  return(adj)
+}
+
+net_from_matrix<-function(precision,seuil, boucles){
+  matrice<-matrice_adj(precision,seuil)
+  net <- graph_from_adjacency_matrix(matrice, mode="upper", diag = boucles) 
+  return(net)
+}
+
