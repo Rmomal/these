@@ -64,8 +64,8 @@ i.e. variables or species).\\
 
 \[ \mathds{P}(T) = \frac{1}{B}\prod_{k,l\in T} \beta_{kl} \text{ , with } B = \sum_T \prod_{k,l\in T} \beta_{kl} \]
 \begin{align*}
-\mathds{P}(Y|T) &=\mathds{P}(y_1|T)\prod_{i=2}^n \frac{\mathds{P}(y_i,y_{a_i}|T)}{\mathds{P}(y_{a_i}|T)}\\
-&=\prod_{i=2}^n \mathds{P}(y_i|T)\prod_{i=1}^n \frac{\mathds{P}(y_i,y_{a_i}|T)}{\mathds{P}(y_i|T)\times \mathds{P}(y_{a_i}|T)}\\
+\mathds{P}(Y=y_i|T) &=\mathds{P}(y_i^1|T)\prod_{j=2}^d \frac{\mathds{P}(y_i^j,y_i^{a_j}|T)}{\mathds{P}(y_i^{a_j}|T)}\\
+&=\prod_{j=1}^d \mathds{P}(y_i^j|T)\prod_{(k,l)\in T} \frac{\mathds{P}(y_i^k,y_i^l|T)}{\mathds{P}(y_i^k|T)\times \mathds{P}(y_i^l|T)}\\
 &=\underbrace{\prod_{i=1}^n \mathds{P}(y_i|T)}_{\text{A}}\prod_{i=1}^n\prod_{k,l \in T}\psi_{kl}(Y_i)
 \end{align*}
 
@@ -94,8 +94,8 @@ between $y_k$ and $y_l$ is now their covariance too, and after some manipulation
  -\log(B)+\log(A)\]
  Computation of conditional probability : using Bayes, we specially consider the proportion of trees which contain an edge between the nodes $k$ and $l$.
  \begin{align*}
- \mathds{P}((k,l)\in T | Y)  &= \frac{\sum_{(k,l)\in T} \mathds{P}(T)\mathds{P}(Y|T)}{\sum_{T} \mathds{P}(T)\mathds{P}(Y|T)}\\
- &=1-\frac{\sum_{(k,l)\notin T} \prod \beta_{uv} \prod \psi_{uv}}{\sum_{T} \prod \beta_{uv} \prod \psi_{uv}}
+ \sum_{T\in \mathcal{T} : (k,l)\in T}\mathds{P}( T | Y)  &= \frac{\sum_{(k,l)\in T} \mathds{P}(T)\mathds{P}(Y|T)}{\sum_{T} \mathds{P}(T)\mathds{P}(Y|T)}\\
+ &=\frac{\sum_{(k,l)\in T} \prod_{uv} \beta_{uv} \prod_{i} \psi_{uv}(Y_i)}{\sum_{T} \prod_{uv} \beta_{uv} \prod_{i} \psi_{uv}(Y_i)}
  \end{align*}
  We define the Laplacian matrix as the following symmetric matrix :
  \[\mathcal{Q}_{uv}(W_\beta)=\begin{cases}
