@@ -28,3 +28,10 @@
   Réflexion sur les calculs : trop compliqués pour un but simple, prise de recul
   Reprise de l'écriture de la vraisemblance avec le déterminant de la matrice de précision de l'arbre, et la trace
   Livres de Lauritzen et Andersen
+
+[...]
+15/01/18
+  Modèle posé : un arbre commun à tous les échantillons
+  Discussion sur les astuces numériques, pour le moment se restreindre à des petits échantillons
+  Correction de la formule de psi (malentendu depuis 1 mois) et de la mise à jour des betas
+  Refonte des notes
