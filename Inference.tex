@@ -28,14 +28,11 @@
 
 \section{Thechnical results}
   \subsection{Formulas related to probabilities}
-%   \begin{equation}
-%
    \begin{align}
      \label{gauss}
      \log(\hat{p}_\theta(Y)) &= -\frac{n}{2}\log(|\hat{\Sigma}|) - \frac{1}{2}tr(\underbrace{\hat{\Sigma}^{-1}Y^{\text{T}}Y}_{nI_d})\\
     &=-\frac{n}{2}\log(|\hat{\Sigma}|)-\frac{nd}{2}
   \end{align}
-% \end{equation}
  
  \begin{equation}
    \label{sigma}
@@ -140,10 +137,17 @@ We are also able to compute the likelihood of the model, but it is generally not
   Following the result \ref{gauss} we have:
   \begin{align*}
    \log(\mathds{P}(Y|T)) &= \sum_{k,l\in T} \log(\mathds{P}(Y_k,Y_l))\\
+<<<<<<< HEAD
    &= \sum_{k,l\in T} -\frac{n}{2} \log (|\Sigma_{kl}|) - \frac{1}{2}tr(\hat{\Sigma}_{kl}^{-1} Y_{kl}^{\text{T}}Y_{kl})
   \end{align*}
 
 We call $\psi_{kl}$ the quantity $(1-\hat{\rho}_{kl}^2)^{-\frac{n}{2}}$, we now get:
+=======
+   &= \sum_{k,l\in T} -\frac{n}{2} \log (|\Sigma_{kl}|) - \frac{1}{2}tr(\hat{\Sigma}_{kl}^{-1} Y_{kl}^{\text{T}}Y_{kl})\\
+  \end{align*}
+
+We call $\psi_{kl}$ tha quantity $(1-\hat{\rho}_{kl}^2)^{-\frac{n}{2}}$, we now get:
+>>>>>>> 0e2f4f15440625d5f89347e213adfd23db1873a7
 \[ \log(\mathds{P}(Y|T))=\sum_{k,l\in T} \log(\psi_{kl}) -n\]
   \subsection{EM algorithm}
   \subsubsection{E step}
