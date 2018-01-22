@@ -26,9 +26,17 @@ trtmt2<-function(matrix, tronc){
   return(matrix)
 }
 
+trtmt3<-function(matrix, tronc){
+ max<-max(log(matrix))-100/ncol(matrix)
+ matrix<-log(matrix)-max
+  return(list(matrix,-max))
+}
+trtmt3(beta_psi)
 #####
 ## initialisation
 Y<-as.matrix(read_excel("~/Documents/codes/Data/Data Files/1. cd3cd28.xls"))[1:50,]
+
+#Y<-X
 n<-ncol(Y)
 #Beta<-matrix(1,nrow=n,ncol=n)
 rho<-matrix(nrow=n,ncol=n)
@@ -39,7 +47,8 @@ Beta<-rho-min(rho)
 
 logpsi<-calcul_psi(Y)
 #logpsi<-logpsi-max(logpsi)
-beta_psi<-(exp(logpsi)^(1/100))*Beta
+alpha<-1/100
+beta_psi<-(exp(logpsi)^(alpha))*Beta
 #beta_psi[ which(beta_psi>(1e+15),arr.ind=TRUE)]<-(1e+15)
 heatmap(Kirshner(beta_psi)[[1]])
 criterion<-c()
@@ -49,13 +58,13 @@ crit<-FALSE
 
 tr<-trtmt2 #choix du traitement
 
-#Beta<-tr(Beta,tronc)
+Beta<-tr(Beta,tronc)
 
 #####
 # Algorithme EM
 while(!crit){
   beta_psi<-exp(logpsi)*Beta
-  
+
   likelihood<-c(likelihood,MTT(beta_psi)/MTT(Beta))
   #E
   proba_cond<-Kirshner(beta_psi)[[1]]
@@ -63,11 +72,11 @@ while(!crit){
   #M
   Beta_it<-proba_cond/Kirshner(Beta)[[2]]
   diag(Beta_it)<-0
-  
+
   #Beta_it<-tr(Beta_it,tronc)
   criterion<-c(criterion,mean((Beta-Beta_it)^2))
-  crit<-mean((Beta-Beta_it)^2)<1e-3|length(criterion)>600
-  
+  crit<-mean((Beta-Beta_it)^2)<1e-5|length(criterion)>600
+
   Beta<-Beta_it
 }
 
@@ -80,3 +89,23 @@ while(!crit){
 
 
 
+
+
+# Simu erdos
+library(LITree)
+
+erdos.graph <- graphModel$new(type = "erdos",size=5, p.or.m = 0.5)
+plot(erdos.graph,edge.arrow.size=0, vertex.color="gold",
+     vertex.size=15, vertex.frame.color="gray",
+     vertex.label.color="black",
+     vertex.label.cex=0.8,
+     vertex.label.dist=0)
+model <- GGMmodel$new(graph=erdos.graph)
+model$randomSample(n=20)
+X=model$getX()
+K=model$K
+Sigma=model$Sigma
+
+save(X,K,Sigma,file="Erdos20ind5var.Rdata")
+
+load("Erdos20ind5var.Rdata")
