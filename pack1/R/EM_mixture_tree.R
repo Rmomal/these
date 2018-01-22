@@ -19,9 +19,9 @@ psi<-calcul_psi(as.matrix(data))
 Beta<-simMatrix(d)#beta de taille d*d
 Beta_psi<-Beta*exp(psi)
 
-prob_cond<-Kirshner(Beta_psi)
+prob_cond<-Kirshner(Beta_psi)/constante
 # problème dans les résultats, hyp : mauvais calcul du psi
-constante<-determinant.matrix(laplacien(Beta),logarithm = FALSE)$modulus
+constante<-determinant.matrix(laplacien(Beta_psi),logarithm = FALSE)$modulus
 
 # while(convergence = FALSE){
 #  Beta<-prob_cond/Meila(Beta)

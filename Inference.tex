@@ -1,0 +1,183 @@
+\documentclass[a4paper,11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb,amsthm,mathrsfs,amsfonts,dsfont,bm} 
+\usepackage[margin=2.5cm]{geometry}
+
+%opening
+\title{Inference}
+\author{Raphaelle Momal}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\newcommand\independent{\protect\mathpalette{\protect\independenT}{\perp}}
+\def\independenT#1#2{\mathrel{\rlap{$#1#2$}\mkern2mu{#1#2}}}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+\section{Notations}
+\begin{itemize}
+ \item Y is the data table, $Y$ has $n$ rows and $d$ columns
+ \item i indexes the rows of $Y$. Example : $Y_i$ is an observed sample
+ \item j indexes the columns of $Y$. Example : $Y^j$ is the $j^\text{th}$ species which has been observed
+ \item $T$ is a gaussian decision tree, composed of a set of edges $E_T\subset E$, and a set of vertices $V_T \subset V$
+ \item $\mathcal{T}$ is the set of all trees possibly defined on $E$ and $V$
+ \item $k$ and $l$ are two nodes of $V$. Example : $k$ and $l$ are two studied species
+ \item $|\cdot|$ is the determinant
+\end{itemize}
+
+\section{Thechnical results}
+  \subsection{Formulas related to probabilities}
+%   \begin{equation}
+%
+   \begin{align}
+     \label{gauss}
+     \log(\hat{p}_\theta(Y)) &= -\frac{n}{2}\log(|\hat{\Sigma}|) - \frac{1}{2}tr(\underbrace{\hat{\Sigma}^{-1}Y^{\text{T}}Y}_{nI_d})\\
+    &=-\frac{n}{2}\log(|\hat{\Sigma}|)-\frac{nd}{2}
+  \end{align}
+% \end{equation}
+ 
+ \begin{equation}
+   \label{sigma}
+   \hat{\Sigma} =Y^{\text{T}}Y
+  \end{equation}
+  \subsection{Graphical Models}
+  In the following we consider undirected graphical Models, or Markov random fields, which represent the conditional dependance structure
+  between random variables.
+  \subsubsection{Definitions}
+  \begin{itemize}
+  \item The cliques of a graph $\mathcal{G}=(V,E)$ are all subsets of $V$ such that all vertices are linked by an edge. A maximal clique of $\mathcal{G}$,
+  $C_\mathcal{G}$, is a clique that cannot be strictly contained by any other clique of $\mathcal{G}$.\\
+  \item A density $f$ on random variable $Y=(Y_1,...,Y_p)$ is said to factorizes according to $\mathcal{G}$ if :
+  \[f(y)= \prod_{c\in C_\mathcal{G}} f_c(y_c),\]
+  where $f_c$ are positive functions which depends on $Y$ through $Y_c$ only.
+  \end{itemize}
+  \subsubsection{Results}
+  A probability measure $P$ satisfies the \textit{pairwise Markov property} relative to a graph $\mathcal{G}$ with vertex set $V$,
+  if for any pair of non adjacent vertices $(k,l)$,
+  \[k \independent l|V\setminus\{k,l\}.\]
+  
+  \paragraph{Theorem  \cite{ham}:} A probability distribution $P$ with positive and continuous density $f$ satisfies
+  the pairwise Markov property with respect to an undirected graph $\mathcal{G}$ if and only if it factorizes according to $\mathcal{G}$.
+  
+  
+  \subsection{Trees}
+  Trees can be define as specific graphical models, where each child node has only one parent. This means that loops are forbidden in trees.
+  Spanning trees are trees where every vertex is linked to at least one other vertex. This yields an interesting property of spanning trees, which 
+  is that the cliques of a spanning tree all contain exactly two nodes of he graph. Then, a density which factorizes according to a spanning
+  tree $T$ will be of the following form :
+  \[f(y)= \prod_{k,l\in V_T} f^*(y_k,y_l),\]
+  where $f^*$ are positive functions.
+  
+  \subsection{Algebra}
+    \subsubsection{Matrix Tree Theorem}
+    We define the Laplacian matrix of a symmetric matrix $W=[\beta_{ij}]_{1\leq i,j\leq n}$ as the following :
+ \[\mathcal{Q}_{uv}(W)=\begin{cases}
+               -\beta_{uv} & 1\leq u<v \leq n\\
+               \sum_{w=1}^n \beta_{wv} & 1\leq u=v \leq n.
+            \end{cases}\]
+    
+    Matrix Tree Theorem (MTT) \cite{kirch}: for any adjacency matrix $W$ of a graph G, any minor of the Laplacien of W is the number 
+    of spanning trees of G. Writing $Q^*_{uv}(W)$ the $(u,v)^e$ minor of $Q(W)$, this theorem means that :
+    \[ |Q^*_{uv}(W)|=\sum_{T\in\mathcal{T}} \prod_{\{k,l\}\in E_T} a_{kl} := Z(W).\]
+   The extension of this theorem to a real-valued matrix of weights was given by Meila \textit{et al} \cite{meila}.
+ We call this extension the GMTT.
+    \subsubsection{Meila and Kirshner's theorems}
+    
+     Meila \textit{et al.} give a formula for the derivative of $Z(W)$, using the GMTT. Let's define the symmetric matrix  $M(W)$ 
+     with 0 diagonal such that :
+ \[\begin{cases}
+    M_{uv} = [\mathcal{Q}^{*-1}]_{uu} + [\mathcal{Q}^{*-1}]_{vv} -2[\mathcal{Q}^{*-1}]_{uv} & u,v < n\\
+    M_{nv} =M_{vn} =[\mathcal{Q}^{*-1}]_{vv} & v<n\\
+     M_{vv} =0.
+   \end{cases}\]
+Meila \textit{et al.} then demonstrate that 
+\begin{equation}
+\label{meila}
+ \frac{\partial Z(W)}{\partial \beta_{kl}} = M_{kl} \times Z(W)
+\end{equation}
+
+
+  \subsection{EM algorithm}
+
+We have observed data $Y$ and unobserved data $Z$. The goal is to compute the likelihood of the data, $p_\theta (Y)$.
+\[ \log(p_\theta (Y)) = \log (p_\theta (Y,Z)) - \log(p_\theta (Z|Y)).\]
+
+The advantage of this is to link $p_\theta(Y)$ with $p_\theta (Y,Z)$ which is easier to compute in general. We now take the expectation,
+conditioned on the data $Y$ :
+\[ \log(p_\theta (Y) )= \mathds{E}_\theta \left(\log(p_\theta (Y,Z))|Y \right) \underbrace{- \mathds{E}_\theta \left(\log(p_\theta (Y|Z))|Y \right)}_{\text{\normalsize{$\mathcal{H}(p_\theta (Y|Z))$}}} \]
+
+\paragraph{E step :}
+Data $Y$ is considered fixed, leading the entropy term to be fixed as well. This step is dedicated to the computation of 
+$\mathds{E}_\theta \left(\log(p_\theta (Y,Z))|Y \right)$, which is the conditional expectation of the complete log-likelihood and 
+where only the hidden part $Z$ is varying. \\
+
+\paragraph{M step :}
+We consider that  $\theta$ is varying and we want to maximise the expectation with respect to these parameters. This step generally uses 
+the value computed in the previous E step.\\
+
+Repeating these steps, we get in then end optimised values of the parameters, which can give us some information about the hidden variable $Z$. 
+We are also able to compute the likelihood of the model, but it is generally not the first interest and use of the EM algorithm.
+
+\section{Network inference}
+  \subsection{The model}
+  We consider our data $Y$ to be standardised. We suppose gaussian densities for $Y$ :
+  \[Y \sim \mathcal{MVN}(\mathbf{0},\Sigma),\]
+  where the diagonal of the $\Sigma$ matrix is composed of ones. We will also use the model for a couple $(k,l)$ of columns only, which is:
+  \[Y_{kl}\sim\mathcal{N}(0,\Sigma_{kl}),\]
+  where $ \Sigma_{kl}$ is a $2\times 2$ square matrix with ones on its diagonal and $[\Sigma_{kl}]_{1,2} = \rho_{kl}$.\\
+  
+  We then assume that the species under study, which make the columns of $Y$, are dependent on one another and that the dependance structure
+  is shaped as a tree $T\in\mathcal{T}$.\\
+  \[\forall i\in\{1,...,n\},\text{  }Y_i|T \text{ iid. } \sim \mathcal{N}(\mathbf{0},\Sigma_i)\]
+  The dependance tree is build as a mixture of hidden trees. In practice, each edge of $E$ has a given weight, and the probability of the final
+  tree is the normalised product of all these weights. In our modelisation, we consider the weights as random.
+  \[ \mathds{P}(T) = \frac{1}{B}\prod_{k,l\in T} \beta_{kl} \text{ , with } B = \sum_{T\in\mathcal{T}} \prod_{k,l\in T} \beta_{kl} \]
+  
+  \subsection{Likelihood}
+  Recalling the property of density factorisation in a tree, we have:
+  \[\mathds{P}(Y|T) = \prod_{k,l\in T}\mathds{P}(Y_k,Y_l)\]
+  Following the result \ref{gauss} we have:
+  \begin{align*}
+   \log(\mathds{P}(Y|T)) &= \sum_{k,l\in T} \log(\mathds{P}(Y_k,Y_l))\\
+   &= \sum_{k,l\in T} -\frac{n}{2} \log (|\Sigma_{kl}|) - \frac{1}{2}tr(\hat{\Sigma}_{kl}^{-1} Y_{kl}^{\text{T}}Y_{kl})
+  \end{align*}
+
+We call $\psi_{kl}$ the quantity $(1-\hat{\rho}_{kl}^2)^{-\frac{n}{2}}$, we now get:
+\[ \log(\mathds{P}(Y|T))=\sum_{k,l\in T} \log(\psi_{kl}) -n\]
+  \subsection{EM algorithm}
+  \subsubsection{E step}
+  \[ \mathds{P}(Y,T) = \mathds{P}(T)\times\mathds{P}(Y|T)\]
+\begin{align*}
+ \log(\mathds{P}(Y,T)) &= \sum_{(k,l)\in E_T} \left[ \log(\beta_{kl}) + \log(\psi_{kl}) -n \right] -\log(B) \\
+ &= \sum_{k,l\in V} \mathds{1}_{\{(k,l) \in E_T\}} (\log(\beta_{kl}) + \log(\psi_{kl}) ) -\log(B) - n\times cst
+ \end{align*}
+  Conditional expectation :
+\[ \mathds{E}_\theta[\log(\mathds{P}(Y,T))|Y] =\sum_{k,l\in V} \mathds{P}((k,l) \in E_T|Y) (\log(\beta_{kl}) + \log(\psi_{kl}) ) -\log(B) - n\times cst\]
+  Computation of conditional probability : using Bayes, we specially consider the proportion of trees which contain an edge between the nodes $k$ and $l$.
+ \begin{align*}
+  \mathds{P}((k,l)\in T | Y)&=\sum_{T\in \mathcal{T} : (k,l)\in T}\mathds{P}( T | Y) \\
+  &= \frac{\sum_{(k,l)\in T} \mathds{P}(T)\mathds{P}(Y|T)}{\sum_{T} \mathds{P}(T)\mathds{P}(Y|T)}\\
+ &=\frac{\sum_{(k,l)\in T} \prod_{uv} \beta_{uv}  \psi_{uv}(Y)}{\sum_{T} \prod_{uv} \beta_{uv} \psi_{uv}(Y)}
+ \end{align*}
+ This conditional probability is computed using the Kirshner's theorem on the matrix $K = [\beta_{ij}\psi_{ij}]_{1\leq i, j\leq d}$.
+  \subsubsection{M step}
+   Moving to the M step, the quantity $\tau_{kl} =  \mathds{P}((k,l) \in E_T|Y)$ has been computed and is now considered as fixed.
+We maximise the conditional expectation with respect to parameters $\beta_{kl}$.
+
+
+ \[\argmax_{\beta_{kl}} \left\{\sum_{k,l\in V} \tau_{kl}(\log(\beta_{kl}) + \log(\psi_{kl}) ) -\log(B) - n\times cst\right\}\]
+
+ We derive with respect to $\beta_{kl}$:
+\begin{equation}
+ \label{deriv}
+ \frac{\partial\mathds{E}_\theta[\log(\mathds{P}(Y,T))|Y]}{\partial\beta_{kl}} =\frac{1 }{\beta_{kl}} \tau_{kl} - \frac{1}{B}
+\frac{\partial B}{\partial\beta_{kl}}
+\end{equation}
+Using the result \ref{meila} from Meila et al and setting equation \ref{deriv} to 0 we get :
+\[\boxed{\hat{\beta}_{kl} = \frac{\tau_{kl}}{M_{kl}}}\]
+ 
+\bibliographystyle{apalike}
+\bibliography{bibi.bib}
+
+\end{document}

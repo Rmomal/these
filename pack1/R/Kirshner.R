@@ -1,48 +1,41 @@
 ### fonction krishner
-source("/home/momal/Documents/codes/fonctions.R")
-source("/home/momal/Documents/codes/psi.R")
-
-# simu beta
-n<-ncol(data)
-Beta<-simMatrix(n)#beta de taille n*n
+source("/home/momal/Git/these/pack1/R/fonctions.R")
+source("/home/momal/Git/these/pack1/R/psi.R")
 
 
+############
+#FONCTIONS
 laplacien<-function(matrix){
   lapla<--(matrix)
   diag(lapla)<-rowSums(matrix)
-return(lapla)
+  return(lapla)
 }
 
+#laplacien(matrix(1,nrow=5,ncol=5))
 
 # /!\ se rappeler qu'on enleve le coin haut gauche
 inv_lap<-function(matrix){
-  inv<-(laplacien(matrix)[-1,-1])^(-1)
+  inv<-solve(laplacien(matrix)[-1,-1])
   return(inv)
 }
-
+# beta<-Beta
 #Kirshner retourne la matrice des probas
 Kirshner<-function(beta){
   #browser()
   Q<-inv_lap(beta)
   colQ<-matrix(diag(Q),nrow=length(diag(Q)),ncol=length(diag(Q)),byrow=TRUE)
   rowQ<-matrix(diag(Q),nrow=length(diag(Q)),ncol=length(diag(Q)),byrow=FALSE)
-  matrix<-beta[-1,-1]*(colQ+rowQ-2*Q)
-  matrix<-rbind(beta[-1,1]*rowQ[,1],matrix)
-  matrix<-cbind(c(0,beta[1,-1]*colQ[1,]),matrix)
+  matrixM<-(colQ+rowQ-2*Q)
+  matrixM<-rbind(diag(Q),matrixM)
+  matrixM<-cbind(c(0,diag(Q)),matrixM)
+  matrixK<-beta*matrixM
   # matrix<-beta*Meila(beta)
-return(matrix)
+  return(list(matrixK,matrixM))
 }
-#retourne la matrice M
-Meila<-function(beta){
-  #browser
-  Q<-inv_lap(beta)
-  colQ<-matrix(diag(Q),nrow=length(diag(Q)),ncol=length(diag(Q)),byrow=TRUE)
-  rowQ<-matrix(diag(Q),nrow=length(diag(Q)),ncol=length(diag(Q)),byrow=FALSE)
-  matrix<-(colQ+rowQ-2*Q)
-  matrix<-rbind(rowQ[,1],matrix)
-  matrix<-cbind(c(0,colQ[1,]),matrix)
-  return(matrix)
+
+Kirshner(matrix(-1,nrow=10,ncol=10))
+
+MTT<-function(matrix){
+  res<-determinant( laplacien(matrix)[-1,-1],logarithm=FALSE)$modulus
+  return(res)
 }
-psi<-calcul_psi(as.matrix(data))
-Beta<-simMatrix(11)*exp(psi)
-prob_cond<-Kirshner(Beta)
