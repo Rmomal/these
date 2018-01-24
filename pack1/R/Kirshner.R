@@ -15,14 +15,21 @@ laplacien<-function(matrix){
 
 # /!\ se rappeler qu'on enleve le coin haut gauche
 inv_lap<-function(matrix){
-  inv<-solve(laplacien(matrix)[-1,-1])
-  return(inv)
+  L<-laplacien(matrix)[-1,-1]
+  if (determinant(L,logarithm=FALSE )$modulus[1]>2e-16){
+    inv<-solve(L,tol = 1e-17)
+    return(inv)
+  }else{
+      message("not inversible")
+    }
+
 }
 # beta<-Beta
 #Kirshner retourne la matrice des probas
 Kirshner<-function(beta){
   #browser()
-  Q<-inv_lap(beta)
+  if(length(inv_lap(beta))==(ncol(beta)-1)^2){
+      Q<-inv_lap(beta)
   colQ<-matrix(diag(Q),nrow=length(diag(Q)),ncol=length(diag(Q)),byrow=TRUE)
   rowQ<-matrix(diag(Q),nrow=length(diag(Q)),ncol=length(diag(Q)),byrow=FALSE)
   matrixM<-(colQ+rowQ-2*Q)
@@ -31,11 +38,15 @@ Kirshner<-function(beta){
   matrixK<-beta*matrixM
   # matrix<-beta*Meila(beta)
   return(list(matrixK,matrixM))
+  }else{
+    message("Kirshner not run")
+}
+
 }
 
 Kirshner(matrix(-1,nrow=10,ncol=10))
 
 MTT<-function(matrix){
-  res<-determinant( laplacien(matrix)[-1,-1],logarithm=FALSE)$modulus
-  return(res)
+  logdet<-determinant( laplacien(matrix)[-1,-1],logarithm=TRUE)$modulus
+  return(logdet)
 }

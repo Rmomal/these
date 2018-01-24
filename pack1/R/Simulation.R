@@ -1,9 +1,13 @@
 source("/home/momal/Git/these/pack1/R/fonctions.R")
 source("/home/momal/Git/these/pack1/R/psi.R")
 source("/home/momal/Git/these/pack1/R/Kirshner.R")
-#Beta<-simMatrix(n)#beta matrice n*n symétrique de probas
-library(readxl)
 
+library(readxl)
+library(gridExtra,grid,ggplot2)
+library(gplots)
+library(lattice)
+library(LITree)
+library(tidyr,dplyr)
 ##
 #fonctions de traitement
 trtmt1<-function(matrix, tronc){
@@ -26,72 +30,155 @@ trtmt2<-function(matrix, tronc){
   return(matrix)
 }
 
-trtmt3<-function(matrix, tronc){
- max<-max(log(matrix))-100/ncol(matrix)
- matrix<-log(matrix)-max
-  return(list(matrix,-max))
+trtmt3<-function(matrix, seuil){
+ max<-max(matrix)-seuil/ncol(matrix)
+ matrix<-matrix-max
+ index<-which(matrix<=0,arr.ind=TRUE)
+  return(list(index,-max))
 }
-trtmt3(beta_psi)
-#####
-## initialisation
-Y<-as.matrix(read_excel("~/Documents/codes/Data/Data Files/1. cd3cd28.xls"))[1:50,]
 
-#Y<-X
-n<-ncol(Y)
-#Beta<-matrix(1,nrow=n,ncol=n)
-rho<-matrix(nrow=n,ncol=n)
-for(i in 1:n){
-  rho[i,]<-unlist(apply(Y,2,function(x) cor(x,Y[,i])))
-}
-Beta<-rho-min(rho)
-
-logpsi<-calcul_psi(Y)
-#logpsi<-logpsi-max(logpsi)
-alpha<-1/100
-beta_psi<-(exp(logpsi)^(alpha))*Beta
-#beta_psi[ which(beta_psi>(1e+15),arr.ind=TRUE)]<-(1e+15)
-heatmap(Kirshner(beta_psi)[[1]])
-criterion<-c()
-likelihood<-c()
-tronc<-1e10/10^(ceiling(log10(max(exp(logpsi)))))
-crit<-FALSE
-
-tr<-trtmt2 #choix du traitement
-
-Beta<-tr(Beta,tronc)
 
 #####
-# Algorithme EM
+## Divers
+
+initi_beta<-function(data){
+  n<-ncol(data)
+  rho<-matrix(nrow=n,ncol=n)
+  for(i in 1:n){
+    rho[i,]<-unlist(apply(data,2,function(x) cor(x,data[,i])))
+  }
+  beta<-rho-min(rho)
+  return(beta)
+}
+
+pal <- colorRampPalette(c("linen", "violetred1", "red"))(n = 49)
+
+draw<-function(frame,Beta,alpha,seuil,tronc,init,msg){
+  var1<-frame[,2]
+  var2<-frame[,3]
+  p <- ggplot(frame,aes(iterations,log(var1)))+
+    geom_point()+
+    labs(xlab="log(criterion)",title="Convergence criterion")+
+    theme_bw()+
+    theme(plot.title = element_text(hjust = 0.5))
+  p2 <-  ggplot(frame,aes(iterations,var2))+
+    geom_point()+
+    labs(xlab="log(likelihood)",title="Likelihood")+
+    theme_bw()+
+    theme(plot.title = element_text(hjust = 0.5))
+  r <-ggplot(gather(data.frame(Beta)), aes(value)) +
+    geom_histogram(fill="lightseagreen",bins=length(gather(data.frame(Beta))$value)%/%5)+
+    labs(title="Edges weights")+
+    theme_bw()+
+    theme(plot.title = element_text(hjust = 0.5))
+
+
+  t <- textGrob(paste0(" alpha = ",alpha,",\n threshold = ",seuil,",\n troncature = ",tronc,", \n iterations = ",
+                       length(var1),",\n min criterion = ",round(min(var1),digits=6),
+                       ",\n Beta initialised : ",init,
+                       ",\n message : ",msg),just="center")
+  return(grid.arrange(t, p, p2, r, ncol=2))
+}
+
+######################
+
+EM_mixTree<-function(Y,alpha,seuil,tronc,init){
+
+## INIT
+  if (init){
+     Beta<-initi_beta(Y)
+  }else{
+    n<-ncol(Y)
+    Beta<-matrix(1,nrow=n,ncol=n)
+  }
+  logpsi<-calcul_psi(Y)
+  beta_psi<-(exp(logpsi)^(alpha))*Beta
+  criterion<-c()
+  loglikelihood<-c()
+  msg<-"no problem"
+  crit<-FALSE
+  crit2<-FALSE
+  crit3<-FALSE
+  crit4<-FALSE
+  tr<-trtmt3 #choix du traitement
+  logbeta_psi<-logpsi+log(Beta)
+
+## Algorithme EM
 while(!crit){
-  beta_psi<-exp(logpsi)*Beta
+      #-- ajustement donnees beta_psi
+  index<-tr(logbeta_psi,seuil)[[1]]
+  beta_psi<-(exp(logpsi)^(alpha))*Beta
+  beta_psi[index]<-tronc
 
-  likelihood<-c(likelihood,MTT(beta_psi)/MTT(Beta))
-  #E
-  proba_cond<-Kirshner(beta_psi)[[1]]
-  length(proba_cond[proba_cond<0])==0
-  #M
-  Beta_it<-proba_cond/Kirshner(Beta)[[2]]
-  diag(Beta_it)<-0
+      #-- contrôle du déterminant (limite fixée à précision machine)
+  if(determinant(laplacien(beta_psi/max(beta_psi))[-1,-1],logarithm=FALSE)$modulus[1]>1e-16){
+     proba_cond<-Kirshner(beta_psi/max(beta_psi))[[1]]
 
-  #Beta_it<-tr(Beta_it,tronc)
-  criterion<-c(criterion,mean((Beta-Beta_it)^2))
-  crit<-mean((Beta-Beta_it)^2)<1e-5|length(criterion)>600
+  ## E step
+     #-- contrôle de la positivité des probas (plus stringent, possible avec un det à 1e-6)
+    if(length(which(proba_cond<0))!=0){
+      crit2<-TRUE
+      message("negative probability")
+      msg<-"hard inversion"
+    }else{
 
-  Beta<-Beta_it
+    ## M step
+      Beta_it<-proba_cond/Kirshner(Beta)[[2]]
+      diag(Beta_it)<-0
+        #-- critere de convergence = MSE
+      loglikelihood<-c(loglikelihood,MTT(beta_psi)-MTT(Beta)) #log=TRUE dans det de MTT
+      print(loglikelihood[length(loglikelihood)])
+      criterion<-c(criterion,mean((Beta-Beta_it)^2))
+      crit3<-mean((Beta-Beta_it)^2)<1e-5
+      Beta<-Beta_it
+    }
+  }else{
+       message("beta_psi not invertible")
+       msg<-"not invertible"
+    crit4<-TRUE
+  }
+  crit<- crit3|crit4|length(criterion)>500|crit2
 }
+  if(length(criterion)>0){
+      res<-data.frame(iterations=seq(1:length(criterion)),criterion=criterion,
+                  loglik=loglikelihood)
+      draw(res,Beta,alpha,seuil,tronc,init,msg)
+  }
+return(Beta)
+}
+
 
 #####
 ## Diagnostique
-  hist(Beta)
-  hist((beta_psi))
-  plot(log(criterion))
-  plot(likelihood)
+
+# deux jeux de donnees : réel et simulé de LITree::erdos
+Y<-as.matrix(read_excel("~/Documents/codes/Data/Data Files/1. cd3cd28.xls"))[1:50,]
+load("Erdos20ind5var.Rdata")
+
+A<-EM_mixTree(Y,1/100,300,1e-1,TRUE)
+heatmap.2(A, Rowv=NA,Colv=NA, density.info="none", trace="none", dendrogram="none",
+          symbreaks=F, scale="none",breaks=50,col=pal)
+
+for(i in seq(1,100,10)/100){
+  S<-EM_mixTree(Y,0.01,300,1e-1,TRUE)
+}
+B<-EM_mixTree(X,1,300,1e-1,TRUE)
+heatmap.2(S, Rowv=NA,Colv=NA, density.info="none", trace="none", dendrogram="none",
+          symbreaks=F, scale="none",breaks=50,col=pal)
+
+heatmap(K, Rowv=NA,Colv=NA)
+# il ajoute une arête
+
+#####
+# faire varier alpha
+# faire varier seuil
+# faire le graph de beta
 
 
 
 
-
-# Simu erdos
+######################
+  # Simu erdos
 library(LITree)
 
 erdos.graph <- graphModel$new(type = "erdos",size=5, p.or.m = 0.5)
@@ -108,4 +195,10 @@ Sigma=model$Sigma
 
 save(X,K,Sigma,file="Erdos20ind5var.Rdata")
 
-load("Erdos20ind5var.Rdata")
+
+
+removeDiag<-function(M){
+  diag(M)<-NA
+  return(matrix(M[!is.na(M)],nrow(M),ncol(M)-1))
+}
+
