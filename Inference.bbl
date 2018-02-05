@@ -1,0 +1,19 @@
+\begin{thebibliography}{}
+
+\bibitem[Hammersley and Clifford, 1971]{ham}
+Hammersley, J.~M. and Clifford, P. (1971).
+\newblock Markov fields on finite graphs and lattices.
+
+\bibitem[Kirchhoff, 1847]{kirch}
+Kirchhoff, G. (1847).
+\newblock Ueber die aufl{\"o}sung der gleichungen, auf welche man bei der
+  untersuchung der linearen vertheilung galvanischer str{\"o}me gef{\"u}hrt
+  wird.
+\newblock {\em Annalen der Physik}, 148(12):497--508.
+
+\bibitem[Meil{\u{a}} and Jaakkola, 2006]{meila}
+Meil{\u{a}}, M. and Jaakkola, T. (2006).
+\newblock Tractable {Bayesian} learning of tree belief networks.
+\newblock {\em Statistics and Computing}, 16(1):77--92.
+
+\end{thebibliography}

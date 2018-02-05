@@ -1,0 +1,20 @@
+\contentsline {section}{\numberline {1}Notations}{1}
+\contentsline {section}{\numberline {2}Thechnical results}{2}
+\contentsline {subsection}{\numberline {2.1}Formulas related to probabilities}{2}
+\contentsline {subsection}{\numberline {2.2}Graphical Models}{2}
+\contentsline {subsubsection}{\numberline {2.2.1}Definitions}{2}
+\contentsline {subsubsection}{\numberline {2.2.2}Results}{2}
+\contentsline {paragraph}{Theorem \cite {ham}:}{2}
+\contentsline {subsection}{\numberline {2.3}Trees}{2}
+\contentsline {subsection}{\numberline {2.4}Algebra}{3}
+\contentsline {subsubsection}{\numberline {2.4.1}Matrix Tree Theorem}{3}
+\contentsline {subsubsection}{\numberline {2.4.2}Meila and Kirshner's theorems}{3}
+\contentsline {subsection}{\numberline {2.5}EM algorithm}{3}
+\contentsline {paragraph}{E step :}{3}
+\contentsline {paragraph}{M step :}{3}
+\contentsline {section}{\numberline {3}Network inference}{4}
+\contentsline {subsection}{\numberline {3.1}The model}{4}
+\contentsline {subsection}{\numberline {3.2}Likelihood}{4}
+\contentsline {subsection}{\numberline {3.3}EM algorithm}{4}
+\contentsline {subsubsection}{\numberline {3.3.1}E step}{4}
+\contentsline {subsubsection}{\numberline {3.3.2}M step}{5}
