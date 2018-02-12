@@ -21,6 +21,7 @@ inv_lap<-function(matrix){
     return(inv)
   }else{
       message("not inversible")
+    print(matrix)
     }
 
 }

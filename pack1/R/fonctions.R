@@ -3,7 +3,7 @@
 
 ####################################################
 #génération de graph
-# @graphER donne une matrice symétrique aléatoire de taille n*n obtenue par 
+# @graphER donne une matrice symétrique aléatoire de taille n*n obtenue par
 #          bernoulli de param p
 ####################################################
 makeSymm <- function(m) {
@@ -17,24 +17,32 @@ graphER<-function(n,p){
   diag(matAdj)<-c(rep(0,n))
   return(matAdj)
 }
+#require(igraph)
+SpannTree<-function(n,p){
+  g <- sample_gnp(n, p)
+  g_mst <- mst(g)
+  adj<-as.matrix(as_adj(g_mst))
+  return(adj)
+}
 ####################################################
 # construction de matrice de précision
 # @curseur utilise le résultat de génération de matrice aléatoire symmétrique par
 #         une fonction donnée et permet de faire varier la diagonale par g
-# @findG permet d'obtenir la plus petite valeure de g possible pour avoir une 
+# @findG permet d'obtenir la plus petite valeure de g possible pour avoir une
 #         matrice définie positive
 # @Omega utilise le g optimal pour générer la matrice de précision voulue
 ####################################################
 # librairies :library(matrixcalc)
 
 
-precision<-function(g,n,fonction,argms){
-  Omega<-fonction(argms[1], argms[2])+ g * diag(1,n)
+precision<-function(g,fonction,argms){
+  G<-fonction(argms[1], argms[2])
+  Omega<-G+ g * diag(rowSums(G))
   return(Omega)
 }
 
 findG2<-function(seq,fonction,argms){
-  liste_min_vp<-unlist(lapply(seq,function(x) min(eigen(precision(x,n,fonction,argms))$values)))
+  liste_min_vp<-unlist(lapply(seq,function(x) min(eigen(precision(x,fonction,argms))$values)))
   res<-seq[which(liste_min_vp>0)[1]]
   if (is.na(res)){
     stop("Inappropriate sequence")
@@ -43,9 +51,9 @@ findG2<-function(seq,fonction,argms){
   }
 }
 
-Omega<-function(fonction,argms,seq,n){
+Omega<-function(fonction,argms,seq){
   g<-findG2(seq,fonction,argms)
-  Omega<-precision(g,n,fonction,argms)
+  Omega<-precision(g,fonction,argms)
   return(Omega)
 }
 
@@ -90,8 +98,9 @@ roc<-function(mat_rho,omega){
   perf <- performance(pred,"tpr","fpr")
   invisible(perf)
 }
-fun.auc.ggplot <- function(pred, obs, title){
+fun.auc.ggplot <- function(pred, obs, title,points){
   nvar<-ncol(obs)
+  obs[which(abs(obs)<1e-16)]<-0
   indices_nuls<-which(obs==0)
   label<-matrix(1,nrow=nrow(obs),ncol=ncol(obs))
   label[indices_nuls]<-0
@@ -101,19 +110,29 @@ fun.auc.ggplot <- function(pred, obs, title){
   ROC_perf <- performance(prediction,"tpr","fpr")
   ROC_sens <- performance(prediction,"sens","spec")
   ROC_auc <- performance(prediction,"auc")
-  
+
   # Make plot data
   plotdat <- data.frame(FP=ROC_perf@x.values[[1]],TP=ROC_perf@y.values[[1]],CUT=ROC_perf@alpha.values[[1]],POINT=NA)
-  plotdat[unlist(lapply(seq(0.1,1,0.2),function(x){which.min(abs(plotdat$CUT-x))})),"POINT"]<- seq(0.1,1,0.2)
-  
+
+  if(max(points)<max(plotdat$CUT[is.finite(plotdat$CUT)])){
+     points<-points[-which(points>max(plotdat$CUT[is.finite(plotdat$CUT)]))]
+  }
+
+  plotdat[unlist(lapply(points,function(x){which.min(abs(plotdat$CUT-x))})),"POINT"]<- points
+
   # Plot the curve
-  ggplot(plotdat, aes(x=FP,y=TP)) + 
+  rows<-which(!is.na(plotdat$POINT))
+  while(length(rows)>20){
+    rows<-rows[seq(1,length(rows),2)]
+  }
+
+  ggplot(plotdat, aes(x=FP,y=TP)) +
     geom_abline(intercept=0,slope=1,linetype="dashed",color="grey") +
-    geom_line() + 
-    geom_point(data=plotdat[!is.na(plotdat$POINT),], aes(x=FP,y=TP,fill=POINT), pch=23, size=3) +
-    geom_text(data=plotdat[!is.na(plotdat$POINT),], aes(x=FP,y=TP,fill=POINT), label=seq(1,0.2,-0.2), hjust=1.5, vjust=-0.2) +
+    geom_line() +
+    geom_point(data=plotdat[rows,], aes(x=FP,y=TP,fill=POINT), pch=23, size=3) +
+    geom_text(data=plotdat[rows,], aes(x=FP,y=TP,fill=POINT), label=round(plotdat$POINT[rows],5), hjust=1.5, vjust=-0.2) +
     scale_fill_gradientn("Threhsold Cutoff",colours=brewer.pal(5,"RdPu"),guide=FALSE) +
-    scale_x_continuous("False Positive Rate", limits=c(0,1)) +
+    scale_x_continuous("False Positive Rate", limits=c(-0.25,1)) +
     scale_y_continuous("True Positive Rate", limits=c(0,1)) +
     geom_polygon(aes(x=X,y=Y), data=data.frame(X=c(0.77,1,1,0.77),Y=c(0,0,0.33,0.33)), fill="white") +
     annotate("text",x=0.97,y=0.30,label=paste0("Nnods = ",nvar),hjust=1) +
@@ -123,10 +142,28 @@ fun.auc.ggplot <- function(pred, obs, title){
     annotate("text",x=0.97,y=0.10,label=paste0("Sens = ",round(mean(as.data.frame(ROC_sens@y.values)[,1]),digits=2)),hjust=1) +
     annotate("text",x=0.97,y=0.05,label=paste0("Spec = ",round(mean(as.data.frame(ROC_sens@x.values)[,1]),digits=2)),hjust=1) +
     theme(legend.position="none", plot.title=element_text(vjust=2)) +
-    theme_linedraw()+
-    ggtitle(title)
+    labs(title=title)+
+    theme_bw()+
+    theme(plot.title = element_text(hjust = 0.5))
 }
 
+diagnostic.auc.sens.spe <- function(pred, obs,stat){
+  nvar<-ncol(obs)
+  obs[which(abs(obs)<1e-16)]<-0
+  indices_nuls<-which(obs==0)
+  label<-matrix(1,nrow=nrow(obs),ncol=ncol(obs))
+  label[indices_nuls]<-0
+  prediction<-prediction(as.vector(pred[upper.tri(pred)]),
+                         as.vector(label[upper.tri(label)]))
+  obs<-as.vector(label[upper.tri(label)])
+  # Run the AUC calculations
+  ROC_sens <- performance(prediction,"sens","spec")
+  ROC_auc <- performance(prediction,"auc")
+  res<-switch(stat,"auc"=round(ROC_auc@y.values[[1]],digits=3),
+              "sens"=round(mean(as.data.frame(ROC_sens@y.values)[,1]),digits=3),
+              "spec"=round(mean(as.data.frame(ROC_sens@x.values)[,1]),digits=3))
+  return(res)
+}
 ####################################################
 # Exploration des valeurs critiques de rho
 # @tableau3D créer le tableau à trois dimension composé des matrices omega_hat pour
@@ -145,18 +182,18 @@ library(gridExtra)
 tableau3D<-function(samples,seq_rho){
   n<-dim(var(samples))[1]
   tab <- array( dim=c(n,n,length(seq_rho)))
-  nb_nuls<-data.frame(matrix(ncol=2,nrow=length(seq_rho)))
+  #nb_nuls<-data.frame(matrix(ncol=2,nrow=length(seq_rho)))
   for(rho in seq_rho){
-    
+
     omega_hat<-glasso(var(samples),rho=rho,penalize.diagonal = FALSE)$wi
     tab[,,which(seq_rho==rho)]<-omega_hat
-    nb_nuls[which(seq_rho==rho),"nuls"]<-length(which(omega_hat==0))*100/length(omega_hat)
-    nb_nuls[which(seq_rho==rho),"rho"]<-rho
+    #nb_nuls[which(seq_rho==rho),"nuls"]<-length(which(omega_hat==0))*100/length(omega_hat)
+    #nb_nuls[which(seq_rho==rho),"rho"]<-rho
   }
-  g<-ggplot(nb_nuls,aes(log10(rho),nuls))+
-    geom_line()+
-    labs(y="% of nul elements")
-  print(g)
+  # g<-ggplot(nb_nuls,aes(log10(rho),nuls))+
+  #   geom_line()+
+  #   labs(y="% of nul elements")
+  # print(g)
   return(tab)
 }
 
@@ -182,7 +219,9 @@ defaut_monotonie<-function(tab,seq_rho){
 
 mat_rho<-function(tab,seq_rho,minmax){
   results<-NA*tab[,,1]
-  sequence<-switch(minmax,"min"=1:length(seq_rho),"max"=length(seq_rho):1)
+  results[which(tab[,,1]==0)]<-0
+  sequence<-switch(minmax,"min"=1:length(seq_rho),"max"=(length(seq_rho)-1):1)
+  #NB : dans l'autre sens on cherche le dernier nul
   for(index.rho in sequence){
     #browser()
     indices_nuls<-switch(minmax,"min"=which(tab[,,index.rho]==0),
@@ -190,8 +229,8 @@ mat_rho<-function(tab,seq_rho,minmax){
     if(length(indices_nuls)!=0){
       indices_remplis<-which(!is.na(results))
       if(length(indices_remplis)!=0){
-        indices_a_remplir<-setdiff(indices_nuls,indices_remplis)
-        
+        indices_a_remplir<-setdiff(indices_nuls,indices_remplis) #indices nuls - les indices remplis
+
       }else{
         indices_a_remplir<-indices_nuls
       }
@@ -199,14 +238,14 @@ mat_rho<-function(tab,seq_rho,minmax){
     }
   }
   diag(results)<-NA
-  par(mfrow=c(1,2))
-  heatmap.2(results,symm=TRUE,dendrogram="none",main=minmax,
-            Colv=FALSE,Rowv=FALSE,density.info="none",keysize=1.5,trace="none",col=brewer.pal(9,"Blues")[3:9])
-  q<-grab_grob()
-  g<-ggplot(data.frame(Penalty=as.vector(results[upper.tri(results)])),aes(log10(Penalty)))+
-    geom_density()+
-    labs(title=minmax)
-  grid.arrange(q,g, ncol=2, clip=TRUE)
+  # par(mfrow=c(1,2))
+  # heatmap.2(results,symm=TRUE,dendrogram="none",main=minmax,
+  #           Colv=FALSE,Rowv=FALSE,density.info="none",keysize=1.5,trace="none",col=brewer.pal(9,"Blues")[3:9])
+  # # q<-grab_grob()
+  # g<-ggplot(data.frame(Penalty=as.vector(results[upper.tri(results)])),aes(log10(Penalty)))+
+  #   geom_density()+
+  #   labs(title=minmax,hjust=0.5)
+  # grid.arrange(q,g, ncol=2, clip=TRUE)
   return(results)
 }
 
@@ -241,7 +280,7 @@ matrice_adj<-function(precision,seuil){
 
 net_from_matrix<-function(precision,seuil, boucles){
   matrice<-matrice_adj(precision,seuil)
-  net <- graph_from_adjacency_matrix(matrice, mode="upper", diag = boucles) 
+  net <- graph_from_adjacency_matrix(matrice, mode="upper", diag = boucles)
   return(net)
 }
 

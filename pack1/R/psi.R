@@ -50,12 +50,9 @@ calcul_psi<-function(Y){
   n<-nrow(Y)
   d<-ncol(Y)
   #calcul de la matrice des rho
-  rho<-matrix(nrow=d,ncol=d)
-  for(i in 1:d){
-    rho[i,]<-unlist(apply(Y,2,function(x) cor(x,Y[,i])))
-  }
+  rho<-cor(Y)
   #matrice 3D application formule log(psi_kl)
-  psi<-(-n/2)*log(matrix(1,nrow=d,ncol=d)-rho^2)
+  psi<-(-n/2)*log(1-rho^2)
   diag(psi)<-0
   #psi<-psi-max(psi) #astuce numérique
   return(psi)

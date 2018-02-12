@@ -42,9 +42,9 @@ trtmt3<-function(matrix, seuil){
 ## Divers
 
 initi_beta<-function(data){
-  n<-ncol(data)
-  rho<-matrix(nrow=n,ncol=n)
-  for(i in 1:n){
+  d<-ncol(data)
+  rho<-matrix(nrow=d,ncol=d)
+  for(i in 1:d){
     rho[i,]<-unlist(apply(data,2,function(x) cor(x,data[,i])))
   }
   beta<-rho-min(rho)
@@ -80,6 +80,15 @@ draw<-function(frame,Beta,alpha,seuil,tronc,init,msg){
   return(grid.arrange(t, p, p2, r, ncol=2))
 }
 
+decalage<-function(data){
+  data2<-data[is.finite(data)]
+  if((max(data2)-7*sd(data2))>min(data2)){
+   data[which(data2>(max(data2)-7*sd(data2)))]<-max(data2[which(data2<(max(data2)-7*sd(data2)))])
+  }
+  return(data)
+}
+
+decalage(logbeta_psi)
 ######################
 
 EM_mixTree<-function(Y,alpha,seuil,tronc,init){
@@ -92,7 +101,10 @@ EM_mixTree<-function(Y,alpha,seuil,tronc,init){
     Beta<-matrix(1,nrow=n,ncol=n)
   }
   logpsi<-calcul_psi(Y)
+  cst<-max(logpsi)
+  logpsi<-logpsi-cst
   beta_psi<-(exp(logpsi)^(alpha))*Beta
+
   criterion<-c()
   loglikelihood<-c()
   msg<-"no problem"
@@ -101,44 +113,60 @@ EM_mixTree<-function(Y,alpha,seuil,tronc,init){
   crit3<-FALSE
   crit4<-FALSE
   tr<-trtmt3 #choix du traitement
-  logbeta_psi<-logpsi+log(Beta)
 
 ## Algorithme EM
-while(!crit){
-      #-- ajustement donnees beta_psi
-  index<-tr(logbeta_psi,seuil)[[1]]
-  beta_psi<-(exp(logpsi)^(alpha))*Beta
-  beta_psi[index]<-tronc
+  while(!crit){
+        #-- ajustement donnees beta_psi
+    #browser()
+    beta_psi<-(exp(logpsi))*Beta
+    beta_psi<-decalage(beta_psi)
 
-      #-- contrôle du déterminant (limite fixée à précision machine)
-  if(determinant(laplacien(beta_psi/max(beta_psi))[-1,-1],logarithm=FALSE)$modulus[1]>1e-16){
-     proba_cond<-Kirshner(beta_psi/max(beta_psi))[[1]]
+    logbeta_psi<-log(Beta)+logpsi
+    max<-max(logbeta_psi)
+    logbeta_psi<-logbeta_psi-max
+    beta_psi<-exp(logbeta_psi)
 
-  ## E step
-     #-- contrôle de la positivité des probas (plus stringent, possible avec un det à 1e-6)
-    if(length(which(proba_cond<0))!=0){
-      crit2<-TRUE
-      message("negative probability")
-      msg<-"hard inversion"
+    logbeta_psi<-log(beta_psi)
+    index<-tr(logbeta_psi,300)[[1]]
+
+
+
+    beta_psi[index]<-1e-5
+    beta_psi2<-beta_psi*exp(cst)# recorrection pour la vraisemblance
+    beta_psi2[index]<-tronc
+        #-- contrôle du déterminant (limite fixée à précision machine)
+   #browser()
+    if(determinant(laplacien(beta_psi)[-1,-1],logarithm=FALSE)$modulus[1]>1e-16){
+       proba_cond<-Kirshner(beta_psi/max(beta_psi))[[1]]
+
+    ## E step
+       #-- contrôle de la positivité des probas (plus stringent, possible avec un det à 1e-6)
+      if(length(which(proba_cond<0))!=0){
+        crit2<-TRUE
+        message("negative probability")
+        msg<-"hard inversion"
+      }else{
+
+      ## M step
+        #browser()
+        Beta_it<-proba_cond/Kirshner(Beta)[[2]]
+        diag(Beta_it)<-0
+          #-- critere de convergence = MSE
+        loglikelihood<-c(loglikelihood,MTT(beta_psi2)-MTT(Beta)) #log=TRUE dans det de MTT
+        print(loglikelihood[length(loglikelihood)])
+        criterion<-c(criterion,mean((Beta-Beta_it)^2))
+        crit3<-mean((Beta-Beta_it)^2)<1e-5
+        Beta<-Beta_it*10^(ceiling(log10(min(Beta_it)+10)))
+
+      }
     }else{
-
-    ## M step
-      Beta_it<-proba_cond/Kirshner(Beta)[[2]]
-      diag(Beta_it)<-0
-        #-- critere de convergence = MSE
-      loglikelihood<-c(loglikelihood,MTT(beta_psi)-MTT(Beta)) #log=TRUE dans det de MTT
-      print(loglikelihood[length(loglikelihood)])
-      criterion<-c(criterion,mean((Beta-Beta_it)^2))
-      crit3<-mean((Beta-Beta_it)^2)<1e-5
-      Beta<-Beta_it
+         message("beta_psi/max not invertible")
+         msg<-"not invertible"
+      crit4<-TRUE
     }
-  }else{
-       message("beta_psi not invertible")
-       msg<-"not invertible"
-    crit4<-TRUE
+    crit<- crit3|crit4|length(criterion)>500|crit2
   }
-  crit<- crit3|crit4|length(criterion)>500|crit2
-}
+
   if(length(criterion)>0){
       res<-data.frame(iterations=seq(1:length(criterion)),criterion=criterion,
                   loglik=loglikelihood)
@@ -152,16 +180,17 @@ return(Beta)
 ## Diagnostique
 
 # deux jeux de donnees : réel et simulé de LITree::erdos
-Y<-as.matrix(read_excel("~/Documents/codes/Data/Data Files/1. cd3cd28.xls"))[1:50,]
+Y<-as.matrix(read_excel("~/Documents/codes/Data/Data Files/1. cd3cd28.xls"))[1:100,]
 load("Erdos20ind5var.Rdata")
 
 A<-EM_mixTree(Y,1/100,300,1e-1,TRUE)
 heatmap.2(A, Rowv=NA,Colv=NA, density.info="none", trace="none", dendrogram="none",
           symbreaks=F, scale="none",breaks=50,col=pal)
 
-for(i in seq(1,100,10)/100){
-  S<-EM_mixTree(Y,0.01,300,1e-1,TRUE)
-}
+
+S<-EM_mixTree(Y,1,100,0.001,TRUE)
+
+
 B<-EM_mixTree(X,1,300,1e-1,TRUE)
 heatmap.2(S, Rowv=NA,Colv=NA, density.info="none", trace="none", dendrogram="none",
           symbreaks=F, scale="none",breaks=50,col=pal)
