@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2017.7.17)  24 JAN 2018 11:19
+This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2017.7.17)  27 FEB 2018 15:03
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -440,61 +440,54 @@ File: omscmr.fd 2014/09/29 v2.5h Standard LaTeX font definitions
 )
 LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <10.95> not available
 (Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 20.
-
-
-! Package amsmath Error: Erroneous nesting of equation structures;
-(amsmath)                trying to recover with `aligned'.
-
-See the amsmath package documentation for explanation.
-Type  H <return>  for immediate help.
- ...                                              
-                                                  
-l.36   \end{align*}
-                   
-Try typing  <return>  to proceed.
-If that doesn't work, type  X <return>  to quit.
-
-[1
+ [1
 
 {/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}]
-Underfull \hbox (badness 10000) in paragraph at lines 48--50
+Underfull \hbox (badness 10000) in paragraph at lines 54--56
 
  []
 
 [2]
-LaTeX Font Info:    Try loading font information for U+dsrom on input line 107.
+LaTeX Font Info:    Try loading font information for U+dsrom on input line 113.
 
  (/usr/share/texlive/texmf-dist/tex/latex/doublestroke/Udsrom.fd
 File: Udsrom.fd 1995/08/01 v0.1 Double stroke roman font definitions
 )
-Underfull \hbox (badness 10000) in paragraph at lines 110--113
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 115--117
+Underfull \hbox (badness 10000) in paragraph at lines 116--119
 
  []
 
 [3]
-Underfull \hbox (badness 10000) in paragraph at lines 126--128
+Underfull \hbox (badness 10000) in paragraph at lines 121--123
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 129--131
+Underfull \hbox (badness 10000) in paragraph at lines 132--134
 
  []
 
-[4] (./Inference.bbl) [5] (./Inference.aux) ) 
+
+Underfull \hbox (badness 10000) in paragraph at lines 135--137
+
+ []
+
+[4]
+Overfull \hbox (17.11948pt too wide) in paragraph at lines 169--171
+\OT1/cmr/m/n/10.95 This con-di-tional prob-a-bil-ity is com-puted us-ing Kir-sh
+-ner's the-o-rem on the ma-trix $\OML/cmm/m/it/10.95 K \OT1/cmr/m/n/10.95 = [\O
+ML/cmm/m/it/10.95 ^^L[] []\OT1/cmr/m/n/10.95 ][]$. 
+ []
+
+(./Inference.bbl [5]) [6] (./Inference.aux) ) 
 Here is how much of TeX's memory you used:
- 2089 strings out of 494971
- 25458 string characters out of 6179900
- 85923 words of memory out of 5000000
- 5293 multiletter control sequences out of 15000+600000
+ 2088 strings out of 494971
+ 25451 string characters out of 6179900
+ 85915 words of memory out of 5000000
+ 5292 multiletter control sequences out of 15000+600000
  15720 words of font info for 61 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 27i,17n,32p,290b,199s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 27i,18n,32p,290b,199s stack positions out of 5000i,500n,10000p,200000b,80000s
 </usr/share/texlive/texmf-dist/fon
 ts/type1/public/amsfonts/cm/cmbx10.pfb></usr/share/texlive/texmf-dist/fonts/typ
 e1/public/amsfonts/cm/cmbx12.pfb></usr/share/texlive/texmf-dist/fonts/type1/pub
@@ -511,10 +504,10 @@ xmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/share/texlive/texmf-dist
 public/amsfonts/cm/cmsy8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/
 amsfonts/cm/cmti10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/double
 stroke/dsrom10.pfb>
-Output written on Inference.pdf (5 pages, 190380 bytes).
+Output written on Inference.pdf (6 pages, 191575 bytes).
 PDF statistics:
- 84 PDF objects out of 1000 (max. 8388607)
- 60 compressed objects within 1 object stream
+ 87 PDF objects out of 1000 (max. 8388607)
+ 62 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
  1 words of extra memory for PDF output out of 10000 (max. 10000000)
 
