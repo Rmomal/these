@@ -190,8 +190,8 @@ diagnostics<-function(file){
 
 save_params<-function(x,variable,type,path,graph,prob,u){ 
   if(variable!="u"){
-    graph<-switch(variable, "n"=generator_graph(graph=type,prob=prob),
-            "d"=generator_graph(graph=type,d=x,prob=prob),"prob"=generator_graph(graph=type,prob=x))
+    graph<-switch(variable, "d"=generator_graph(graph=type,d=x,prob=prob),
+                  "prob"=generator_graph(graph=type,prob=x))
     param<-generator_param(as.matrix(graph),u=u)
   }else{
     param<-generator_param(as.matrix(graph),u=x)
@@ -247,7 +247,14 @@ bootstrap_summary<-function(x,type,variable,B,path,n,criterion){
 
 simu<-function(type,variable,seq,n,u,prob,B,path){
   if( variable=="u") graph<-generator_graph(graph=type,prob=prob)
-  lapply(seq,function(x) save_params(x,type=type,variable=variable,path=path,graph=graph,prob=prob,u=u))
+  if( variable=="n"){
+    graph<-generator_graph(graph=type,prob=prob)
+    param<-generator_param(as.matrix(graph),u=u)
+    file<-paste0(path,"/R/Simu/",type,"/",variable,"/param_n.rds")
+    saveRDS(param,file)
+  }else{
+    lapply(seq,function(x) save_params(x,type=type,variable=variable,path=path,graph=graph,prob=prob,u=u))
+  }
   reussite<-data.frame(matrix(0,ncol=3,nrow=length(seq)))
   colnames(reussite)<-c("auc","sens","spec")
   for(criterion in c("auc","sens","spec")){
@@ -270,7 +277,7 @@ path<-getwd()#path =getwd() || "/home/momal/Git/these/pack1/"
 parameters<-list(c(seq(7,30,2)),c(seq(20,100,10)),c(seq(0,1.5,0.2)),c(seq(0.1,0.9,0.1)))
 names(parameters)<-c("d","n","u","prob")
 
-for(type in c("cluster","scale-free","tree","erdos")){
+for(type in c("scale-free","tree","erdos","cluster")){
   for(param in names(parameters)){
     simu(type,variable=param,seq=parameters[[param]],n=100,u=0.2,prob=0.4,B=B,path=path)  
     graph(type,param,path=path)
