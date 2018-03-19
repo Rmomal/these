@@ -18,17 +18,62 @@ graphER<-function(n,p){
   return(matAdj)
 }
 #require(igraph)
-SpannTree<-function(n,p){
-  g <- sample_gnp(n, p)
-  g_mst <- mst(g)
-  adj<-as.matrix(as_adj(g_mst))
-  return(adj)
+# library(igraph)
+# igraph_opt<-function(x, default = NULL){
+#   if (missing(default)) {
+#     get_config(paste0("igraph::", x), .igraph.pars[[x]])
+#   }
+#   else {
+#     get_config(paste0("igraph::", x), default)
+#   }
+# }
+# sample_gnp<-function(n, p, directed = FALSE, loops = FALSE){
+#   type <- "gnp"
+#   type1 <- switch(type, gnp = 0, gnm = 1)
+#   on.exit(.Call("R_igraph_finalizer", PACKAGE = "igraph"))
+#   res <- .Call("R_igraph_erdos_renyi_game", as.numeric(n),
+#                as.numeric(type1), as.numeric(p), as.logical(directed),
+#                as.logical(loops), PACKAGE = "igraph")
+#   if (igraph_opt("add.params")) {
+#     res$name <- sprintf("Erdos renyi (%s) graph", type)
+#     res$type <- type
+#     res$loops <- loops
+#     res$p <- p
+#   }
+#   res
+# }
+# SpannTree<-function(d){
+#   g <- sample_gnp(d, 1)
+#   g_mst <- mst(g)
+#   adj<-as.matrix(as_adj(g_mst))
+#   return(adj)
+# }
+library(vegan)
+SpannTree <- function(p){
+  W = matrix(runif(p^2), p, p); W = W + t(W)
+  Tree = spantree(W)
+  G = matrix(0, p, p)
+  invisible(sapply(1:length(Tree$kid), function(i){G[i+1, Tree$kid[i]] <<- 1}))
+  G = G + t(G)
+  return(G)
 }
-erdos<-function(d,p){
-  g <- sample_gnp(d, p)
-  adj<-as.matrix(as_adj(g))
-  return(adj)
+erdos<-function(d,prob){
+  G = matrix(rbinom(d^2, 1, prob), d, d)
+  G[lower.tri(G, diag=T)] = 0; G = G+t(G)
 }
+SimCluster <- function(p, k, d, r){
+  # k = nb clusters, d = graph density, r = within/between connection probability
+  beta = d/(r/k + (k-1)/k); alpha = r*beta
+  while(alpha > 1){r = .9*r; beta = d/(r/k + (k-1)/k); alpha = r*beta}
+  Z = t(rmultinom(p, 1, rep(1/k, k)))
+  ZZ = Z %*% t(Z); diag(ZZ) = 0; ZZ = F_Sym2Vec(ZZ)
+  G = F_Vec2Sym(rbinom(p*(p-1)/2, 1, alpha*ZZ + beta*(1-ZZ)))
+  # gplot(G, gmode='graph', label=1:p, vertex.col=Z%*%(1:k))
+
+  return(G)
+}
+
+
 ####################################################
 # construction de matrice de précision
 # @curseur utilise le résultat de génération de matrice aléatoire symmétrique par
@@ -87,13 +132,27 @@ simMatrix<-function(n){
 # library(RColorBrewer)
 
 
-
-simu<-function(omega,n.vectors){
-  sigma<-makeSymm(solve(omega))
-  mu<-c(rep(0,ncol(sigma)))
-  sim<-rmvnorm(n.vectors,mu,sigma)
-  return(sim)
+estim_reg<-function(Y,G){
+  d<-ncol(Y)
+  S = P  = matrix(0, d,d)
+  for (j in 1:d){
+    LM = lm(Y[, j] ~ -1 + Y[, -j])
+    P[j, -j] = summary(LM)$coef[, 4]
+    S[j, -j] = summary(LM)$coef[, 3]
+  }
+  # hist(as.vector(P), breaks=p)
+  # boxplot(as.vector(S) ~ as.vector(Gdiag))
+  # qqnorm(as.vector(S[which(Gdiag==0)]))
+  return(c(2*sum(P>.5), sum(G==0)))
 }
+
+
+# simu<-function(omega,n.vectors){
+#   sigma<-makeSymm(solve(omega))
+#   mu<-c(rep(0,ncol(sigma)))
+#   sim<-rmvnorm(n.vectors,mu,sigma)
+#   return(sim)
+# }
 
 roc<-function(mat_rho,omega){
   indices_nuls<-which(omega==0)
@@ -120,7 +179,7 @@ fun.auc.ggplot <- function(pred, obs, title,points){
   plotdat <- data.frame(FP=ROC_perf@x.values[[1]],TP=ROC_perf@y.values[[1]],CUT=ROC_perf@alpha.values[[1]],POINT=NA)
 
   if(max(points)<max(plotdat$CUT[is.finite(plotdat$CUT)])){
-     points<-points[-which(points>max(plotdat$CUT[is.finite(plotdat$CUT)]))]
+    points<-points[-which(points>max(plotdat$CUT[is.finite(plotdat$CUT)]))]
   }
 
   plotdat[unlist(lapply(points,function(x){which.min(abs(plotdat$CUT-x))})),"POINT"]<- points
@@ -155,9 +214,11 @@ fun.auc.ggplot <- function(pred, obs, title,points){
 diagnostic.auc.sens.spe <- function(pred, obs,stat){
   nvar<-ncol(obs)
   obs[which(abs(obs)<1e-16)]<-0
+
   indices_nuls<-which(obs==0)
   label<-matrix(1,nrow=nrow(obs),ncol=ncol(obs))
   label[indices_nuls]<-0
+
   prediction<-prediction(as.vector(pred[upper.tri(pred)]),
                          as.vector(label[upper.tri(label)]))
   obs<-as.vector(label[upper.tri(label)])
@@ -179,10 +240,10 @@ diagnostic.auc.sens.spe <- function(pred, obs,stat){
 #         de rho qui annule une case de omega_hat. Retourne la heatmap non réordonnée
 #         des valeurs critiques, ainsi que leur densité, en échelle log.
 ####################################################
-
-library(grid)
-library(gridGraphics)
-library(gridExtra)
+# install.packages(c("grid","gridGraphics","gridExtra"))
+# library(grid)
+# library(gridGraphics)
+# library(gridExtra)
 
 tableau3D<-function(samples,seq_rho){
   n<-dim(var(samples))[1]
@@ -271,7 +332,7 @@ inf_glasso_MB<-function(X){
   d<-ncol(X)
   log.lambda.min <- -5
   log.lambda.max <- log(get.lambda.l1(S))
-  log.lambda <- seq(log.lambda.min, log.lambda.max, length.out = d*2 )
+  log.lambda <- seq(log.lambda.min, log.lambda.max, length.out = d*2)
   MB.res <- lapply(exp(log.lambda), function(lambda) glasso(S, lambda, trace = FALSE, approx = FALSE, penalize.diagonal = FALSE))
   adjmat.array <- simplify2array(Map("*",exp(log.lambda),lapply(MB.res, function(x){ (abs(x$wi)>0)*1})))
   # Let us replace each edge by the  largest Glasso lambda where it disappears (or a sum related to this)
@@ -279,7 +340,6 @@ inf_glasso_MB<-function(X){
   K.score <- K.score / max(K.score)
   return(K.score)
 }
-
 
 ####################################################
 # Considérantions gaphiques
@@ -292,7 +352,7 @@ paramNet<-function(net,pal,label){
   V(net)$size <- deg*2+5
   V(net)$color=pal[3]
   E(net)$color=pal[8]
-   V(net)$name <-label
+  V(net)$name <-label
   E(net)$curved=.1
   E(net)$width<-rep(2, ecount(net))
   V(net)$frame.color=pal[3]
