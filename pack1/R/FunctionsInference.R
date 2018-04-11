@@ -13,19 +13,32 @@ F_NegGradient <- function(beta.vec, log.phi, P){
 SetLambda <- function(P, M, eps = 1e-6){
    # F.x has to be increasing. The target value is 0
    F.x <- function(x){1 - sum(P / (x+M))}
-   x.min = 1e-4; while(F.x(x.min)>0){x.min = x.min / 2}
-   x.max = 10; while(F.x(x.max)<0){x.max = x.max * 2}
-   x = (x.max+x.min)/2;
-   f.min = F.x(x.min); f.max = F.x(x.max); f = F.x(x)
-   # x.list = exp(seq(log(x.min), log(x.max), length.out=50))
-   # plot(x.list, sapply(x.list, function(l){F.x(l)}), type='l', log='xy'); abline(h=0)
-   # points(c(x.min, x, x.max), c(f.min, f, f.max), col=c(1, 2, 1))
-   while(abs(x.max-x.min) > eps){
-      if(f > 0){x.max = x; f.max = f}else{x.min = x; f.min = f}
-      x = (x.max+x.min)/2;
-      f = F.x(x)
-      # points(c(x.min, x, x.max), c(f.min, f, f.max), col=c(1, 2, 1))
-      # cat(x.min, x, x.max, '/', f.min, f, f.max, '\n')
+   suite=TRUE
+   if(F.x(1e-16) >0){
+     F.x <- function(x){0.99 - sum(P / (x+M))}
+     if(F.x(1e-16) >0){
+       suite=FALSE
+       x=NA
+     }
+   }
+   if(suite){
+       x.min = 1e-4;
+    # print( F.x(x.min))
+    # if (F.x(x.min)>0) browser()
+     while(F.x(x.min)>0){x.min = x.min / 2}
+     x.max = 10; while(F.x(x.max)<0){x.max = x.max * 2}
+     x = (x.max+x.min)/2;
+     f.min = F.x(x.min); f.max = F.x(x.max); f = F.x(x)
+     # x.list = exp(seq(log(x.min), log(x.max), length.out=50))
+     # plot(x.list, sapply(x.list, function(l){F.x(l)}), type='l', log='xy'); abline(h=0)
+     # points(c(x.min, x, x.max), c(f.min, f, f.max), col=c(1, 2, 1))
+     while(abs(x.max-x.min) > eps){
+        if(f > 0){x.max = x; f.max = f}else{x.min = x; f.min = f}
+        x = (x.max+x.min)/2;
+        f = F.x(x)
+        # points(c(x.min, x, x.max), c(f.min, f, f.max), col=c(1, 2, 1))
+        # cat(x.min, x, x.max, '/', f.min, f, f.max, '\n')
+     }
    }
    return(x)
 }
