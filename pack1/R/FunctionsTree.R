@@ -62,6 +62,13 @@ EdgeProba <- function(W){
    # Direct calculation
    if(!isSymmetric(W)){cat('Pb: W non symmpetric!')}
    p = nrow(W); P = matrix(0, p, p); Wcum = SumTree(W)
+
+   # cst=1 ;
+   # while(min(eigen(W)$values)<0){
+   #   W=W+diag(rep(cst,ncol(W)));
+   #   cst=1.1*cst
+   #  }
+  #  browser()
    sapply(1:(p-1),
           function(j){
             sapply((j+1):p,

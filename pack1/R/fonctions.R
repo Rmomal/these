@@ -218,8 +218,7 @@ diagnostic.auc.sens.spe <- function(pred, obs,stat){
   indices_nuls<-which(obs==0)
   label<-matrix(1,nrow=nrow(obs),ncol=ncol(obs))
   label[indices_nuls]<-0
-
-  prediction<-prediction(as.vector(pred[upper.tri(pred)]),
+    prediction<-prediction(as.vector(pred[upper.tri(pred)]),
                          as.vector(label[upper.tri(label)]))
   obs<-as.vector(label[upper.tri(label)])
   # Run the AUC calculations
