@@ -23,7 +23,7 @@ TreeGGM<-function(Y,step){
   # phi = exp(log.phi); diag(phi) = 0
   Cor = cor(Y)
   phi = 1/sqrt(1 - Cor^2); diag(phi) = 0
-print(phi)
+#print(phi)
  beta.unif = matrix(1, p, p); diag(beta.unif) = 0; beta.unif = beta.unif / sum(beta.unif)
   FitEM = switch(step,"FALSE"=FitBetaStatic(beta.init=beta.unif, phi=phi),
                  "TRUE"=FitBeta1step(beta.init=beta.unif, phi=phi))
@@ -31,20 +31,20 @@ print(phi)
   return(list(P=Kirshner(FitEM$beta)$P,L=FitEM$logpY))
 }
 
-
-P<-TreeGGM(Y)$P
-L<-TreeGGM(Y)$L
-
-## Plots
-sum(P)
-par(mfrow=c(2,2))
-hist(P)
-image(P)
-plot(L, type='b')
-G = matrix(1, p, p); diag(G) = 0;
-gplot(G, gmode='graph', edge.lwd=10*P, edge.col="chartreuse4")
-
-
+#
+# P<-TreeGGM(Y)$P
+# L<-TreeGGM(Y)$L
+#
+# ## Plots
+# sum(P)
+# par(mfrow=c(2,2))
+# hist(P)
+# image(P)
+# plot(L, type='b')
+# G = matrix(1, p, p); diag(G) = 0;
+# gplot(G, gmode='graph', edge.lwd=10*P, edge.col="chartreuse4")
+#
+#
 
 
 

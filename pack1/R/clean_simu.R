@@ -27,7 +27,7 @@
 # packages #
 ############
 
-set.seed(2)
+set.seed(3)
 # install.packages('/home/momal/lib/igraph_1.1.2.tar.gz',repos=NULL,lib="/home/momal/R/lib/")
 # install.packages('/home/momal/lib/igraph_1.0.1.tar.gz',lib='/home/momal/R/lib/',
 #                  repos = c(CRAN = "https://cran.rstudio.com"))
@@ -35,8 +35,10 @@ library(igraph, lib.loc="~/R/x86_64-pc-linux-gnu-library/3.4")
 library(huge, lib.loc="~/R/x86_64-pc-linux-gnu-library/3.4")
 library(glasso)
 library(ROCR)
+library(Matrix)
 library(dplyr)
 library(tidyr)
+library(PLNmodels)
 library(ggplot2, lib.loc="/usr/local/lib/R/site-library")
 library("reshape2", lib.loc="/usr/local/lib/R/site-library")
 source('/home/momal/R/TreeMixture-RML.R')
@@ -105,6 +107,11 @@ generator_graph<-function(d = 20, graph = "tree", g = NULL, prob = NULL, vis = F
   }
   if(graph=="erdos"){
     theta<- erdos(d=d,p=prob)
+    if(sum(theta)<4){
+      while(sum(theta)<4){
+        theta<- erdos(d=d,p=prob)
+      }
+    }
   }
 
   #browser()
@@ -124,16 +131,16 @@ generator_graph<-function(d = 20, graph = "tree", g = NULL, prob = NULL, vis = F
 #   return(sim)
 # }
 generator_param<-function(G,v=1){
-  lambda = 1
-  omega = diag(rep(lambda, ncol(G))) + G*v
-  while (min(eigen(omega)$values) < 0){
-    lambda = 1.1*lambda
-    omega = diag(rep(lambda, ncol(G))) + G*v
+  cste = 1
+  omega = diag(rep(cste, ncol(G))) + G*v
+  while (min(eigen(omega)$values) < 1e-6){
+    cste = 1.1*cste
+    omega = diag(rep(cste, ncol(G))) + G*v
   }
-
+#browser()
   sigma = cov2cor(solve(omega))
   #omega = solve(sigma)
-  sim=list(sigma=sigma,omega=omega)
+  sim=list(sigma=sigma,omega=omega,cste=cste)
   return(sim)
 }
 
@@ -144,17 +151,25 @@ generator_data<-function(n,sigma){
   return(x)
 }
 
+generator_ZpZhat<-function(Sigma,O=NULL,covariables=NULL,n){
+  Z = rmvnorm(n, sigma=Sigma);
+  p<-ncol(Sigma)
+  Y = matrix(rpois(n*p, exp(O+Z)), n, p)
+  PLN = PLN(Y ~ -1 + offset(O)+covariables)
+  ZpZ.hat = PLN$model_par$Sigma
+  return(ZpZ.hat)
+}
 ############################
 # functions of diagnostics #
 ############################
 
 graph<-function(type,param,path){
-  pdf(paste0(path,"/R/Simu/images/",type,"_",param,".pdf"),
+  pdf(paste0(path,"images/",type,"_",param,".pdf"),
       width=6,
       height=4,onefile=TRUE)
   # print(diagnostics(paste0(path,"/R/Simu/",type,"/",param,"/spec.rds")))
   # print(diagnostics(paste0(path,"/R/Simu/",type,"/",param,"/sens.rds")))
-  print(diagnostics(paste0(path,"/R/Simu/",type,"/",param,"/auc.rds")))
+  print(diagnostics(paste0(path,type,"/",param,"/auc.rds")))
   dev.off()
 }
 
@@ -163,7 +178,7 @@ diagnostics<-function(file){
   lignes<-which(is.na(tab[,1]))
   if (length(lignes)!=0) tab<-tab[-lignes,]
   tab<- gather(tab,key=method,value=value,treeggm,ggm1step,glasso)
-  tab<-summarise(group_by(tab,var,method),mns=mean(value),inf=quantile(value,0.25),sup=quantile(value,0.75))
+  tab<-summarise(group_by(tab,var,method),mns=median(value),inf=quantile(value,0.25),sup=quantile(value,0.75))
   elmts<-unlist(strsplit(file,"/"))
   variable<-elmts[length(elmts)]
   param<-elmts[length(elmts)-1]
@@ -172,15 +187,21 @@ diagnostics<-function(file){
   variable<-switch(variable,"auc"="AUC","sens"="Sensitivity","spec"="Specificity")
    # geom_line(aes(y=mns,color=method),size=1)+
     # geom_ribbon(aes(ymin=inf, ymax=sup,fill=method), alpha=0.2)+
-  
-  ggplot(tab, aes(y=mns,x=as.numeric(as.character(var)),group=method,color=method))+
-    geom_errorbar(aes(ymin=inf, ymax=sup), width=.3,position=position_dodge(0.05))+
-    geom_smooth(se=FALSE,size=1)+
-    # geom_linerange(aes(ymin = quantile(value,0.25), ymax = quantile(value,0.75)),group=tab$method)+
-    labs(title = paste0("Graph of type ",type,": effect of ",param," on ",variable,".\n Cruves of means, and 1rst and 3rd quartiles."),y=variable,x=param)+
-    theme_bw()+
-    theme(plot.title = element_text(hjust = 0.5))
 
+  ggplot(tab, aes(y=mns,x=as.numeric(as.character(var)),group=method,color=method))+
+    geom_errorbar(aes(ymin=inf, ymax=sup), width=0,position=position_dodge((max(tab$var)-min(tab$var))/100))+
+   #geom_smooth(se=FALSE,size=0.3)+
+    geom_point()+
+    geom_line(size=0.2)+
+    # geom_linerange(aes(ymin = quantile(value,0.25), ymax = quantile(value,0.75)),group=tab$method)+
+    labs(title = paste0("Graph of type ",type,": effect of ",param," on ",variable,".\n Cruves of medians, and 1rst and 3rd quartiles."),y=variable,x=param)+
+    scale_color_manual(values=c("#076443", "#56B4E9","#E69F00" ),name="Method:", breaks=c("treeggm","ggm1step", "glasso" ),
+                        labels=c("EM ","1 step", "glasso" ))+
+    theme_bw()+ 
+    theme(plot.title = element_text(hjust = 0.5),legend.title=element_blank())
+  
+
+     
 }
 
 ####################
@@ -189,39 +210,40 @@ diagnostics<-function(file){
 
 save_params<-function(x,variable,type,path,graph,prob,u,nbgraph=nbgraph){ 
   if(variable!="u"){
-    graph<-switch(variable, "d"=generator_graph(graph=type,d=x,prob=prob),
+    graph<-switch(variable, "d"=generator_graph(graph=type,d=x,prob=2/x),
                   "prob"=generator_graph(graph=type,prob=x))
     
     param<-generator_param(as.matrix(graph))
   }else{
-    param<-generator_param(as.matrix(graph),prob=0.1)
+    param<-generator_param(as.matrix(graph),prob=prob)
   }
- 
-  file<-paste0(path,"/R/Simu/",type,"/",variable,"/",nbgraph,"/param_",x,".rds")
+  file<-paste0(path,type,"/",variable,"/Sets_param/Graph",nbgraph,"_",x,".rds")
   saveRDS(param,file)
-  
   nb_triangles = sum(adjacent.triangles(graph_from_adjacency_matrix(as.matrix(graph),mode="max")))/3
-  record(nb_triangles,x,c("nb_triangles"),paste0(path,"/R/Simu/",type,"/",variable,"/",nbgraph,"/"),rep=FALSE)
+  record(nb_triangles,x,c("nb_triangles"),paste0(path,type,"/",variable,"/Graphs_characteristics/Graph",nbgraph),rep=FALSE)
 }
-save_scores<-function(list_scores,save_file,param){
-  names<-c("scores_treeggm_","scores_one_step_","scores_glasso_")
+save_scores<-function(list_scores,save_file,val,nbgraph){
+  names<-c("treeggm_","one_step_","glasso_")
   for(i in 1:3){
    inf<-lapply(list_scores,function(x){x[[i]] } )
    L<-length(na.omit.list(inf))
    inf<-lapply(inf,function(x) { replace(x, is.na(x), 0)})
-  saveRDS(Reduce("+", inf) / L,paste0(save_file,names[i],param,".rds"))
+  saveRDS(Reduce("+", inf) / L,paste0(save_file,"Graph",nbgraph,"_",names[i],val,".rds"))
   }
 }
 na.omit.list <- function(y) { return(y[!sapply(y, function(x) all(is.na(x)))]) }
+
 compare_methods<-function(x,n,sigma,K,criterion){
   X<-generator_data(n,sigma)
   
   print(paste0("in sapply B = ",x))
   temps<-rep(NA,3)
-  try({T1<-Sys.time()
+ try({
+    T1<-Sys.time()
   inf_treeggm<-TreeGGM(X,"FALSE")$P
   T2<-Sys.time()
-  temps[1]<- difftime(T2, T1) },silent=TRUE)
+  temps[1]<- difftime(T2, T1) 
+  },silent=TRUE)
   try({T1<-Sys.time()
   inf_treeggm1step<-TreeGGM(X,"TRUE")$P
   T2<-Sys.time()
@@ -234,6 +256,8 @@ compare_methods<-function(x,n,sigma,K,criterion){
   diag(inf_glasso)<-0
   T2<-Sys.time()
   temps[3]<- difftime(T2, T1)
+  
+  
   #if(!exists("inf_treeggm1step") || !exists("inf_treeggm"))  browser()
   if(exists("inf_treeggm1step") && exists("inf_treeggm")){
     diagnost<-c(diagnostic.auc.sens.spe(pred=inf_treeggm,obs=K,criterion),
@@ -252,137 +276,144 @@ compare_methods<-function(x,n,sigma,K,criterion){
 record <- function(var, x, col_names, path2,rep=TRUE) {
   
   if (rep){
-    temps <- data.frame(var, "B" = rep(1:B,nrow(var)/B), "param" = rep(x, nrow(var)))
+    frame <- data.frame(var, "B" = rep(1:B,nrow(var)/B), "param" = rep(x, nrow(var)))
   }else{
-    temps <- data.frame(var,  "param" = x)
+    frame <- data.frame(var,  "param" = x)
   } 
-  colnames(temps)[1:length(col_names)] <- col_names
+  colnames(frame)[1:length(col_names)] <- col_names
  
   save_path <- paste0(path2, deparse(substitute(var)), ".rds")
   if (file.exists(save_path)) {
-    tmp <- rbind(readRDS(save_path), temps)
+    tmp <- rbind(readRDS(save_path), frame)
     saveRDS(tmp, save_path)
   } else{
-    saveRDS(temps, save_path)
+    saveRDS(frame, save_path)
   }
 }
 
-bootstrap_summary<-function(x,type,variable,B,path,n,criterion,nbgraph=nbgraph){
+bootstrap_summary<-function(x,type,variable,B,path,n,criterion,nbgraph=nbgraph,PLN){
   print(paste0("seq = ",x))
   if(variable!="n"){
-    param<-readRDS(paste0(path,"/R/Simu/",type,"/",variable,"/",nbgraph,"/param_",x,".rds"))
+    param<-readRDS(paste0(path,type,"/",variable,"/Sets_param/Graph",nbgraph,"_",x,".rds"))
     sigma<-param$sigma
     K<-param$omega
   # on génère les données B fois pour B inférences, à partir des param sauvés
     obj<-lapply(1:B,function(x) compare_methods(x,n=n,sigma=sigma,K=K,criterion=criterion))
   }else{
-    param<-readRDS(paste0(path,"/R/Simu/",type,"/n/param_n.rds"))
-    sigma<-param$sigma
+    param<-readRDS(paste0(path,type,"/n/Sets_param/Graph",nbgraph,".rds"))
+    if( PLN){
+      sigma<-generator_ZpZhat(param$sigma)
+    }else{
+      sigma<-param$sigma
+    }
     K<-param$omega
-    obj<-sapply(1:B,function(y) compare_methods(y,n=x,sigma=sigma,K=K,criterion=criterion))
+    obj<-lapply(1:B,function(y) compare_methods(y,n=x,sigma=sigma,K=K,criterion=criterion))
     
   }
   res2<-do.call(rbind,lapply(obj, function(x){x[[1]]}))
   res2<-cbind(res2,rep(x,nrow(res2)))
   temps<-do.call(rbind,lapply(obj, function(x){x[[2]]}))
+ 
   scores<-do.call(list,lapply(obj, function(x){x[[3]]}))
   estim_nb_edges<-do.call(rbind,lapply(obj, function(x){x[[4]]}))
   
   
   method<-c("treeggm","ggm1step","glasso")
-  path2<-paste0(path,"/R/Simu/",type,"/",variable,"/",nbgraph,"/")
-  record(temps,x,method,path2)
-  record(estim_nb_edges,x,c("nb_pred","nb_obs"),path2)
-  save_scores(scores,path2,x)
+  path2<-paste0(path,type,"/",variable,"/")
+  record(temps,x,method,paste0(path2,"temps/Graph",nbgraph))
+  record(estim_nb_edges,x,c("nb_pred","nb_obs"),paste0(path2,"Graphs_characteristics/Graph",nbgraph))
+  save_scores(scores,paste0(path2,"Scores/"),val=x,nbgraph=nbgraph)
   # mns<-colMeans(res2,na.rm = TRUE)
   # sds <- apply(res2,2,function(x)sd(x,na.rm = TRUE))
   # inf <- mns-qt(0.975,nrow(res2)-1)*sds/sqrt(nrow(res2))#IC95 autour de la moyenne
   # sup <- mns+qt(0.975,nrow(res2)-1)*sds/sqrt(nrow(res2))
   #cbind(mns,inf,sup,method,var)
   # var<-rep(x,length(mns))
-  print(res2)
+  
   #colnames(res2)<-method
   #res2$param<-rep(x,nrow(res2))
   return(res2)
 }
 
-simu<-function(type,variable,seq,n,B,prob=0.4,path,Bgraph){
+simu<-function(type,variable,seq,n,B,prob=0.1,path,Bgraph,PLN=FALSE,cores){
+  T1<-Sys.time()
   for(nbgraph in 1:Bgraph){
   print(paste0("graph number ",nbgraph))    
     if( variable=="u") graph<-generator_graph(graph=type,prob=prob)
     if( variable=="n"){
-      graph<-generator_graph(graph=type,prob=0.1)
+      graph<-generator_graph(graph=type,prob=prob)
       param<-generator_param(as.matrix(graph))
-      file<-paste0(path,"/R/Simu/",type,"/",variable,"/",nbgraph,"/param_n.rds")
+      
+      file<-paste0(paste0(path,type,"/n/Sets_param/Graph",nbgraph,".rds"))
       saveRDS(param,file)
     }else{
       lapply(seq,function(x) save_params(x,type=type,variable=variable,path=path,graph=graph,
-                                         prob=(log(x)/2)/x,nbgraph=nbgraph))
+                                         prob=prob,nbgraph=nbgraph))
     }
     for(criterion in c("auc")){
-      res<-lapply(seq,function(x) bootstrap_summary(x,type=type,variable=variable,
+      res<-mclapply(seq,function(x) bootstrap_summary(x,type=type,variable=variable,
                                                     B=B,path=path,n=n,
-                                                    criterion=criterion,nbgraph=nbgraph))
-      print(res)
+                                                    criterion=criterion,nbgraph=nbgraph,PLN),mc.cores=cores)
+      #print(res)
       #auc<-data.frame(do.call("rbind",lapply(res,function(x) x[[1]])))
       auc<-data.frame(do.call("rbind",res))
-      print(auc)
+      #print(auc)
   
       auc[,1:3]<-apply(auc[,1:3],2,function(x) as.numeric(x))
-      record(auc,nbgraph,c("treeggm","ggm1step","glasso","var"),paste0(path,"/R/Simu/",type,"/",variable,"/"))
-      #reussite[,which(colnames(reussite)==criterion)]<-unlist(lapply(res,function(x) x[[2]]))
+      record(auc,nbgraph,c("treeggm","ggm1step","glasso","var"),paste0(path,type,"/",variable,"/"))
+      
     }#sortie for
   }  
-  auc<-readRDS(paste0(path,"/R/Simu/",type,"/",variable,"/auc.rds"))
+  auc<-readRDS(paste0(path,type,"/",variable,"/auc.rds"))
     fail_rate<-auc %>%
       group_by(var) %>%
       summarise (fail=mean(is.na(treeggm)))
-  saveRDS(fail_rate,paste0(path,"/R/Simu/",type,"/",variable,"/fail_rate.rds"))
-
+  saveRDS(fail_rate,paste0(path,type,"/",variable,"/fail_rate.rds"))
+  T2<-Sys.time()
+  difftime(T2, T1)
 }
 
 #############
 #**  RUN  **#
 #############
-B<-6
-path<-getwd()#path =getwd() || "/home/momal/Git/these/pack1/"
-parameters<-list(c(seq(7,30,2)),c(seq(20,100,10)),c(seq(0,1.5,0.2)),c(seq(0.5,5,0.5)/20))
+
+path<-"/home/momal/Git/these/pack1/R/Simu/PLN/"#path =paste0(getwd(),"/R/Simu/") || "/home/momal/Git/these/pack1/R/Simu/"
+parameters<-list(c(seq(10,30,2)),c(seq(20,100,10)),c(seq(0,1.5,0.2)),c(seq(0.5,5,0.5)/20))
 names(parameters)<-c("d","n","u","prob")
 
-for(type in c("tree","erdos","cluster","scale-free")){
-  for(param in c("d","prob","n")){
-    simu(type,variable=param,seq=parameters[[param]],n=100,B=B,path=path,Bgraph=6)  
+for(type in c("tree","cluster","scale-free","erdos")){
+  cparam<-ifelse(type=="tree","d",c("d","prob"))
+  for(param in cparam ){
+    simu(type,variable=param,seq=parameters[[param]],n=100,B=2,path=path,Bgraph=40,PLN=TRUE,cores=12)  
     graph(type,param,path=path)
   }
 }
-# type<-"tree"
-# path<-"/home/momal/Git/these/pack1/"
+
+#  type<-"erdos"
+# path<-"/home/momal/Git/these/pack1"
 
 
 
 # # SMALL RUN for local tests :
 # type<-"tree"
-# B<-5
-# simu(type,variable="d",c(seq(8,12,2)),n=100,B=B,path=path,Bgraph=2)
+#  B<-2
+# # simu(type,variable="n",c(seq(20,30,5)),n=100,B=B,path=path,Bgraph=2)
+#  simu(type,variable="d",c(seq(10,14,2)),n=100,B=2,path=path,Bgraph=3,PLN=TRUE,cores=12)
+# #
+# # # param<-"d"
+#  graph(type,param="d",path="/home/momal/Git/these/pack1")
+
+######################
+##### PLN MODEL ######
+######################
+# # Model parms
+# lambda = 1; Omega = diag(rep(lambda, p)) + G; 
+# while (min(eigen(Omega)$values) < 0){lambda = 1.1*lambda; Omega = diag(rep(lambda, p)) + G}
+# Sigma = solve(Omega)
+# O = matrix(rnorm(n*p), n, p)
 # 
-# # # param<-"n"
-#  graph(type,param="d",path="/home/momal/Git/these/pack1/")
-#
-# list_scores<-readRDS("/home/momal/Git/these/pack1/R/Simu/erdos/d/scores.rds")
-
-
-# #### essai rbind auc
-# tab %>%
-#   group_by(u,method) %>%
-#   summarise(avg = mean(mns),inf=means(mns)-)
-# mns-qt(0.975,nrow(res2)-1)*sds/sqrt(nrow(res2))
-# tab<-rbind(auc1,auc2)
-# ggplot(tab, aes(y=mns,x=as.numeric(as.character(tab[,5])),variable = method,group=method))+
-#   #geom_line(aes(y=mns,color=method),size=1)+
-#   geom_smooth(aes(y=mns,color=method),size=1)+
-# #  geom_ribbon(aes(ymin=inf, ymax=sup,fill=method), alpha=0.2)+
-#   labs(title = paste0(type,": effect of ",param," on ",variable),y=variable,x=param)+
-#   theme_bw()+
-#   theme(plot.title = element_text(hjust = 0.5))
-# tab<-rbind(auc1,auc1)
-
+# # Data
+# Z = rmvnorm(n, sigma=Sigma);
+# Y = matrix(rpois(n*p, exp(O+Z)), n, p)
+# PLN = PLN(Y ~ -1 + offset(O))
+# ZpZ.hat = PLN$model_par$Sigma

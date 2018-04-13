@@ -44,7 +44,7 @@ SetLambda <- function(P, M, eps = 1e-6){
 }
 
 #########################################################################
-FitBetaStatic <- function(beta.init, phi, iterMax = 10, eps = 1e-6){
+FitBetaStatic <- function(beta.init, phi, iterMax = 20, eps = 1e-6){
    # beta.init = beta.unif; iterMax = 1e3; eps = 1e-6; log.phi = log(phi)
    beta.tol = 1e-4
    beta.min = 1e-30
@@ -64,9 +64,10 @@ FitBetaStatic <- function(beta.init, phi, iterMax = 10, eps = 1e-6){
       logpY[iter] = - F_NegLikelihood(F_Sym2Vec(beta), log.phi, P)
       # Test
       diff = max(abs(beta.old-beta))
-      cat(iter, ':', min(P), max(P), sum(P),'/', sum(beta)/2, '/', logpY[iter], diff, '\n')
+      d<-ncol(P)
       beta.old = beta
    }
+   cat(" max(P) =",max(P)," sum(P)/2 =", sum(P)/2,'\n','sum(beta)= ', sum(beta),"\n")
    logpY = logpY[1:iter]
    # plot(logpY)
    return(list(beta=beta, logpY=logpY))
@@ -90,7 +91,7 @@ FitBeta1step <- function(beta.init, phi, iterMax = 1e3, eps = 1e-6){
     logpY= - F_NegLikelihood(F_Sym2Vec(beta), log.phi, P)
     # Test
     diff = max(abs(beta.old-beta))
-    cat( ':', min(P), max(P), sum(P),'/', sum(beta)/2, '/', logpY, diff, '\n')
+    #cat( ':', min(P), max(P), sum(P),'/', sum(beta)/2, '/', logpY, diff, '\n')
     beta.old = beta
 
 
