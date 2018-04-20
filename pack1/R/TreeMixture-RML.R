@@ -13,19 +13,20 @@ library(readxl)
 # Data
 Y<-as.matrix(read_excel("~/Documents/codes/Data/Data Files/1. cd3cd28.xls"))[1:200,]
 
-TreeGGM<-function(Y,step){
-  p = ncol(Y); n = nrow(Y)
+TreeGGM<-function(CorY,step,print){
+  p = ncol(CorY);
 
 #beta.corr=cor(Y)
   # Cor = cor(Y); alpha = 1; if(n > 50){alpha = 100/n}
   # log.phi = -.5*log(1-Cor^2);
   # log.phi = log.phi - mean(log.phi[upper.tri(log.phi)])
   # phi = exp(log.phi); diag(phi) = 0
-  Cor = cor(Y)
-  phi = 1/sqrt(1 - Cor^2); diag(phi) = 0
+
+  phi = 1/sqrt(1 - CorY^2); diag(phi) = 0
 #print(phi)
  beta.unif = matrix(1, p, p); diag(beta.unif) = 0; beta.unif = beta.unif / sum(beta.unif)
-  FitEM = switch(step,"FALSE"=FitBetaStatic(beta.init=beta.unif, phi=phi),
+
+  FitEM = switch(step,"FALSE"=FitBetaStatic(beta.init=beta.unif, phi=phi,print=print),
                  "TRUE"=FitBeta1step(beta.init=beta.unif, phi=phi))
 
   return(list(P=Kirshner(FitEM$beta)$P,L=FitEM$logpY))

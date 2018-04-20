@@ -25,6 +25,7 @@ Kirshner <- function(W){
    # W = squared weight matrix
    # Kirshner (07) formulas
    # W = beta.unif*phi
+
    if(!isSymmetric(W)){cat('Pb: W non symmpetric!')}
    p = nrow(W)
    L = Laplacian(W)[-1, -1]
