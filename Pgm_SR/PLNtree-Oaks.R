@@ -4,10 +4,9 @@ library(PLNmodels); library(sna);
 source('/home/robin/PgmR/General/FunctionsMatVec.R')
 source('/home/robin/PgmR/Network/FunctionsTree.R')
 source('Functions/FunctionsInference.R')
-library(sna)
 
 # Data
-data.dir = '../Data/Oaks-CVacher/'
+data.dir = '/home/momal/Git/these/Data/Oaks-CVacher/'
 data.name = 'oaks'
 load(paste0(data.dir, data.name, '.RData'))
 
@@ -15,14 +14,18 @@ load(paste0(data.dir, data.name, '.RData'))
 Y = as.matrix(Data$count); n = nrow(Y); p = ncol(Y)
 O = Data$offset; X = Data$covariates
 
+plot(X$distTObase^2,X$distTOground^2+X$distTOtrunk^2)
+abline(0,1,col="red")
+summary(lm(X$distTObase^2 ~ X$distTOground^2+X$distTOtrunk^2))
+
 # PLN models
 PLN.offset = PLN(Y ~ 1 + offset(log(O)))
 PLN.tree = PLN(Y ~ 1 + X$tree + offset(log(O)))
-PLN.tree.distTObase = PLN(Y ~ 1 + X$tree + X$distTObase + offset(log(O)))
-PLN.tree.distTObase.distTOtrunk = PLN(Y ~ 1 + X$tree + X$distTObase + X$distTOtrunk + offset(log(O)))
+PLN.tree.base = PLN(Y ~ 1 + X$tree + X$distTObase + offset(log(O)))
+PLN.tree.base.infect = PLN(Y ~ 1 + X$tree + X$distTObase + X$pmInfection + offset(log(O)))
 
 # BIC
-Crit = rbind(PLN.offset$criteria, PLN.tree$criteria, PLN.tree.distTObase$criteria, PLN.tree.distTObase.distTOtrunk$criteria)
+Crit = rbind(PLN.offset$criteria, PLN.tree$criteria, PLN.tree.base$criteria, PLN.tree.base.infect$criteria)
 Crit
 apply(Crit, 2, which.max)
 

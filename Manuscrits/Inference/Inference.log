@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2017.7.17)  27 FEB 2018 15:03
+This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2017.7.17)  5 APR 2018 15:36
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -473,19 +473,19 @@ Underfull \hbox (badness 10000) in paragraph at lines 135--137
  []
 
 [4]
-Overfull \hbox (17.11948pt too wide) in paragraph at lines 169--171
+Overfull \hbox (17.11948pt too wide) in paragraph at lines 184--186
 \OT1/cmr/m/n/10.95 This con-di-tional prob-a-bil-ity is com-puted us-ing Kir-sh
 -ner's the-o-rem on the ma-trix $\OML/cmm/m/it/10.95 K \OT1/cmr/m/n/10.95 = [\O
 ML/cmm/m/it/10.95 ^^L[] []\OT1/cmr/m/n/10.95 ][]$. 
  []
 
-(./Inference.bbl [5]) [6] (./Inference.aux) ) 
+[5] (./Inference.bbl) [6] (./Inference.aux) ) 
 Here is how much of TeX's memory you used:
- 2088 strings out of 494971
- 25451 string characters out of 6179900
- 85915 words of memory out of 5000000
- 5292 multiletter control sequences out of 15000+600000
- 15720 words of font info for 61 fonts, out of 8000000 for 9000
+ 2101 strings out of 494971
+ 25581 string characters out of 6179900
+ 88915 words of memory out of 5000000
+ 5300 multiletter control sequences out of 15000+600000
+ 17541 words of font info for 69 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
  27i,18n,32p,290b,199s stack positions out of 5000i,500n,10000p,200000b,80000s
 </usr/share/texlive/texmf-dist/fon
@@ -497,17 +497,16 @@ sfonts/cm/cmmi10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts
 i8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb>
 </usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/s
 hare/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/share/te
-xlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb></usr/share/texlive/te
-xmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/share/texlive/texmf-dist
-/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/share/texlive/texmf-dist/fonts
-/type1/public/amsfonts/cm/cmsy6.pfb></usr/share/texlive/texmf-dist/fonts/type1/
-public/amsfonts/cm/cmsy8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/
-amsfonts/cm/cmti10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/double
-stroke/dsrom10.pfb>
-Output written on Inference.pdf (6 pages, 191575 bytes).
+xlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/share/texlive/te
+xmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/share/texlive/texmf-di
+st/fonts/type1/public/amsfonts/cm/cmsy6.pfb></usr/share/texlive/texmf-dist/font
+s/type1/public/amsfonts/cm/cmsy8.pfb></usr/share/texlive/texmf-dist/fonts/type1
+/public/amsfonts/cm/cmti10.pfb></usr/share/texlive/texmf-dist/fonts/type1/publi
+c/doublestroke/dsrom10.pfb>
+Output written on Inference.pdf (6 pages, 188526 bytes).
 PDF statistics:
- 87 PDF objects out of 1000 (max. 8388607)
- 62 compressed objects within 1 object stream
+ 83 PDF objects out of 1000 (max. 8388607)
+ 59 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
  1 words of extra memory for PDF output out of 10000 (max. 10000000)
 

@@ -55,6 +55,24 @@ invisible(sapply(1:beta.nb, function(b){
 beta.opt = beta.grid[which.max(logpY.grid), ]
 
 FitEM = FitBetaStatic(beta.init=beta.unif, phi=phi)
+
+
+TreeSteph<-function(Y){
+  Cor = cor(Y); Cov = cov(Y)
+  phi = 1/sqrt(1 - Cor^2); diag(phi) = 0
+  print(phi)
+p<-ncol(Y)
+  # p = ncol(Y); n = nrow(Y)
+  beta.unif = matrix(1, p, p); diag(beta.unif) = 0; beta.unif = beta.unif / sum(beta.unif)
+  # #beta.corr=cor(Y)
+  # Cor = cor(Y); alpha = 1; if(n > 50){alpha = 100/n}
+  # log.phi = -.5*log(1-Cor^2);
+  # log.phi = log.phi - mean(log.phi[upper.tri(log.phi)]); diag(log.phi) = 0
+  # phi = exp(log.phi); diag(phi) = 0
+  # 
+  FitEM = FitBetaStatic(beta.init=beta.unif, phi=phi)
+  return(list(P=Kirshner(FitEM$beta)$P,L=FitEM$logpY))
+}
 plot(FitEM$logpY); abline(h = max(FitEM$logpY)); log(SumTree(FitEM$beta*phi)) - log(SumTree(FitEM$beta))
 # beta.tmp = matrix(0, p, p); beta.tmp[upper.tri(beta.tmp)] = beta.opt; beta.tmp = beta.tmp + t(beta.tmp)
 # FitEM = FitBetaStatic(beta.init=beta.tmp, phi=phi)

@@ -28,21 +28,24 @@
 
 \section{Technical results}
   \subsection{Formulas related to probabilities}
-  We define a the gaussian random variable $Y$ such that:
+  We define a $d$-dimensional gaussian random variable $Y$ such that:
   \[ Y \sim \mathcal{N}(0,\Sigma).\]
- The density of $Y$ can be written as follows:
-   \begin{equation}
-   \label{gauss}
+ The log of the density of $Y$ can be written as follows:
+ \[ \log(p_\theta(Y))\propto  -\frac{n}{2}\log(|\Sigma|) - \frac{1}{2}tr(\underbrace{\Sigma^{-1}Y^{\text{T}}Y}_{nI_d}),\]
+ and can thus be estimated using an estimate for  $\Sigma$. Classically, $ \hat{\Sigma} =Y^{\text{T}}Y$ is used, and we get:
+  
    \begin{align*}
-   \log(\hat{p}_\theta(Y)) &= -\frac{n}{2}\log(|\hat{\Sigma}|) - \frac{1}{2}tr(\underbrace{\hat{\Sigma}^{-1}Y^{\text{T}}Y}_{nI_d})\\
+   \log(\hat{p}_\theta(Y)) &\propto -\frac{n}{2}\log(|\hat{\Sigma}|) - \frac{1}{2}tr(\underbrace{\hat{\Sigma}^{-1}Y^{\text{T}}Y}_{nI_d})\\
     &=-\frac{n}{2}\log(|\hat{\Sigma}|)-\frac{nd}{2}
   \end{align*}
- \end{equation}
  
- \begin{equation}
-   \label{sigma}
-   \hat{\Sigma} =Y^{\text{T}}Y
-  \end{equation}
+In the special case where Y is standardised (the diagonal of $\Sigma$ only contains ones) and $d=2$, we obtain a compact expression for the
+estimation of the density of $Y$:
+  \begin{equation}
+   \label{gauss}
+   \log(\hat{p}_\theta(Y))\propto-\frac{n}{2}\log(1-\hat{\rho}^2)-n,
+   \end{equation}
+where $\rho = Cor(Y_1,Y_2)$.
   \subsection{Graphical Models}
   In the following we consider undirected graphical models, or Markov random fields, which represent the conditional dependance structure
   between random variables.
@@ -137,27 +140,43 @@ We are also able to compute the likelihood of the model, but it is generally not
   \[ \mathds{P}(T) = \frac{1}{B}\prod_{k,l\in T} \beta_{kl} \text{ , with } B = \sum_{T\in\mathcal{T}} \prod_{k,l\in T} \beta_{kl} \]
   
   \subsection{Likelihood}
-  Recalling the property of density factorization in a tree, we have:
-  \[\mathds{P}(Y|T) = \prod_{k,l\in T}\mathds{P}(Y_k,Y_l)\]
+  
+ 
+\begin{align*}
+\mathds{P}(Y|T) &=\mathds{P}(Y_1|T)\prod_{j=2}^d \frac{\mathds{P}(Y_j,Y_{a_j}|T)}{\mathds{P}(Y_{a_j}|T)}\\
+&=\underbrace{\prod_{j=1}^d \mathds{P}(Y_j|T)}_{\text{$A$}}\prod_{(k,l)\in T} \underbrace{\frac{\mathds{P}(Y_k,Y_l|T)}{\mathds{P}(Y_k|T)\times \mathds{P}(Y_l|T)}}_{\psi_{kl}(Y)}\\
+&=A\prod_{k,l \in T}\psi_{kl}(Y)
+\end{align*}
+
   Following result (\ref{gauss}) we have:
-  \begin{align*}
-   \log(\mathds{P}(Y|T)) &= \sum_{k,l\in T} \log(\mathds{P}(Y_k,Y_l))\\
-   &= \sum_{k,l\in T} -\frac{n}{2} \log (|\Sigma_{kl}|) - \frac{1}{2}tr(\hat{\Sigma}_{kl}^{-1} Y_{kl}^{\text{T}}Y_{kl})\\
-    &= \sum_{k,l\in T} -\frac{n}{2} \log (1-\hat{\rho}_{kl}^2) - \frac{2n}{2}
+  \[
+   \log(\mathds{P}(Y|T)) = \log(A)+\sum_{k,l\in T} \log(\mathds{P}(Y_k,Y_l|T))-\log(\mathds{P}(Y_k|T))-\log(\mathds{P}(Y_l|T))
+\]
+   Taking maximum likelihood estimates for parameters in the following expression, we obtain:
+   
+    \begin{align*}
+    -\log(\mathds{P}(Y_k))-\log(\mathds{P}(Y_l)) &=\frac{n}{2} (\log(\hat{\sigma}_k^2)+\log(\hat{\sigma}_l^2))+\frac{1}{2}\left( \frac{1}{\hat{\sigma}_l^2} Y_k^TY_k + \frac{1}{\hat{\sigma}_k^2} Y_l^TY_l \right)\\
+    &=\frac{n}{2}\times 0 +n
+    \end{align*}
+    Then:
+     \begin{align*}
+    \log(\mathds{P}(Y|T))&= \log(A)+\sum_{k,l\in T} -\frac{n}{2} \log (|\Sigma_{kl}|) - \frac{1}{2}tr(\hat{\Sigma}_{kl}^{-1} Y_{kl}^{\text{T}}Y_{kl})+n\\
+    &= -\frac{n}{2}\sum_k (\log(\hat{\sigma}_k^2)+1)  +\sum_{k,l\in T}( -\frac{n}{2} \log (1-\hat{\rho}_{kl}^2) - \frac{2n}{2}+n)\\
+   & \propto \sum_k-\frac{n}{2} \log(\hat{\sigma}_k^2)+\sum_{k,l\in T}-\frac{n}{2}\log (1-\hat{\rho}_{kl}^2)
   \end{align*}
 
 Definig $\psi_{kl}$ as the quantity $(1-\hat{\rho}_{kl}^2)^{-\frac{n}{2}}$, we obtain:
-\[ \log(\mathds{P}(Y|T))=\sum_{k,l\in T} \log(\psi_{kl}) -n.\]
+\[ \log(\mathds{P}(Y|T))=\sum_{k,l\in T} \log(\psi_{kl})+\underbrace{\sum_k -\frac{n}{2}\log(\hat{\sigma}_k^2)}_{\text{$\log(A)$}} .\]
 
   \subsection{EM algorithm}
   \subsubsection{E step}
   \[ \mathds{P}(Y,T) = \mathds{P}(T)\times\mathds{P}(Y|T)\]
 \begin{align*}
- \log(\mathds{P}(Y,T)) &= \sum_{(k,l)\in E_T} \left[ \log(\beta_{kl}) + \log(\psi_{kl}) -n \right] -\log(B) \\
- &= \sum_{k,l\in V} \mathds{1}_{\{(k,l) \in E_T\}} (\log(\beta_{kl}) + \log(\psi_{kl}) ) -\log(B) - n\times cst
+ \log(\mathds{P}(Y,T)) &= \sum_{(k,l)\in E_T} \left[ \log(\beta_{kl}) + \log(\psi_{kl})  \right] -\log(B)+\log(A) \\
+ &= \sum_{k,l\in V} \mathds{1}_{\{(k,l) \in E_T\}} (\log(\beta_{kl}) + \log(\psi_{kl}) ) -\log(B) +\log(A)
  \end{align*}
   Conditional expectation :
-\[ \mathds{E}_\theta[\log(\mathds{P}(Y,T))|Y] =\sum_{k,l\in V} \mathds{P}((k,l) \in E_T|Y) (\log(\beta_{kl}) + \log(\psi_{kl}) ) -\log(B) - n\times cst\]
+\[ \mathds{E}_\theta[\log(\mathds{P}(Y,T))|Y] =\sum_{k,l\in V} \mathds{P}((k,l) \in E_T|Y) (\log(\beta_{kl}) + \log(\psi_{kl}) ) -\log(B) +\log(A)\]
   Computation of conditional probability : using Bayes theorem, we consider the proportion of trees which contain an edge between the nodes $k$ and $l$.
  \begin{align*}
   \mathds{P}((k,l)\in T | Y)&=\sum_{T\in \mathcal{T} : (k,l)\in T}\mathds{P}( T | Y) \\
