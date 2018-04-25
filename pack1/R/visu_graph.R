@@ -3,16 +3,18 @@ library(RColorBrewer)
 library(igraph)
 graphics.off()
 pal<-brewer.pal(8, "Spectral")
-omega<-param_18$omega
-net<-net_from_matrix(omega,1e-16,FALSE)
-net<-net_from_matrix(G,1e-16,FALSE)
-clp <- cluster_optimal(net)
-V(net)$community <- clp$membership
+omega<-offset
+net<-net_from_matrix(omega,0.05,FALSE)
+#net<-net_from_matrix(G,1e-16,FALSE)
+# clp <- cluster_optimal(net)
+# V(net)$community <- clp$membership
 E(net)$color=pal[7]
-V(net)$label = NA
+#V(net)$label = colnames(offset)
 E(net)$curved=.1
 V(net)$color="black"
-plot(net)
+V(net)$size=3
+pl<-plot(net)
+plot(net,coord=pl)
 
 clust<-function(methode){
   if(methode=="cluster_spinglass"){
