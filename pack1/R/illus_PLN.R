@@ -10,6 +10,7 @@ source('/home/momal/Git/these/pack1/R/TreeMixture-RML.R')
 source('/home/momal/Git/these/pack1/R/fonctions.R')
 # Data
 data.dir = '/home/momal/Git/these/Data/Oaks-CVacher/'
+data.dir = '../../Data/Oaks-CVacher/'
 data.name = 'oaks'
 load(paste0(data.dir, data.name, '.RData'))
 
@@ -32,11 +33,23 @@ O = Data$offset; X = Data$covariates
 # abline(0,0)
 # summary(model_lin)
 # summary(model_quadra)
+
+# Selection des especes
+YO = Y/O
+Rank = rank(colSums(YO))
+plot(cumsum(sort(colSums(YO))))
+Seuil = 20
+Ycum = colSums(Y); Order = order(Ycum)
+plot(cumsum(Ycum[Order]), col = 1+(Rank[Order]<Seuil))
+Y = Y[, Rank < Seuil]; O = O[, Rank < Seuil]; 
+
 # PLN models
 PLN.offset = PLN(Y ~ 1 + offset(log(O)))
 PLN.tree = PLN(Y ~ 1 + X$tree + offset(log(O)))
 PLN.tree.base = PLN(Y ~ 1 + X$tree + X$distTObase + offset(log(O)))
 PLN.tree.base.infect = PLN(Y ~ 1 + X$tree + X$distTObase + X$pmInfection + offset(log(O)))
+
+save(PLN.offset, PLN.tree, PLN.tree.base, PLN.tree.base.infect, file='resPLN.rdata')
 
 # BIC
 Crit = rbind(PLN.offset$criteria, PLN.tree$criteria, PLN.tree.base$criteria, PLN.tree.base.infect$criteria)
