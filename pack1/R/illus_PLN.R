@@ -24,7 +24,7 @@ plot(cumsum(sort(colSums(YO))))
 Seuil = 20
 Ycum = colSums(Y); Order = order(Ycum)
 plot(cumsum(Ycum[Order]), col = 1+(Rank[Order]<Seuil))
-Y = Y[, Rank < Seuil]; O = O[, Rank < Seuil];  n = nrow(Y); p = ncol(Y)
+Y = Y[, Rank > Seuil]; O = O[, Rank >Seuil];  n = nrow(Y); p = ncol(Y)
 
 # dev.off()
 # plot(X$distTObase^2,X$distTOground^2+X$distTOtrunk^2)
@@ -70,6 +70,10 @@ saveRDS(inf.offset,"inf_offset.rds")
 saveRDS(inf.tree,"inf_tree.rds")
 saveRDS(inf.tree.base,"inf_treebase.rds")
 saveRDS(inf.tree.base.infect,"inf_treebaseinfect.rds")
+offset<-readRDS("/home/momal/Git/these/pack1/R/inf_offset.rds")[[1]]
+tree<-readRDS("/home/momal/Git/these/pack1/R/inf_tree.rds")[[1]]
+tree.base<-readRDS("/home/momal/Git/these/pack1/R/inf_treebase.rds")[[1]]
+tree.base.infect<-readRDS("/home/momal/Git/these/pack1/R/inf_treebaseinfect.rds")[[1]]
 
 par(mfrow=c(2,2))
 hist(offset,breaks=100)
@@ -77,12 +81,8 @@ hist(tree,breaks=100)
 hist(tree.base,breaks=100)
 hist(tree.base.infect,breaks=100)
 
-offset<-readRDS("/home/momal/Git/these/pack1/R/inf_offset.rds")[[1]]
-tree<-readRDS("/home/momal/Git/these/pack1/R/inf_tree.rds")[[1]]
-tree.base<-readRDS("/home/momal/Git/these/pack1/R/inf_treebase.rds")[[1]]
-tree.base.infect<-readRDS("/home/momal/Git/these/pack1/R/inf_treebaseinfect.rds")[[1]]
 dev.off()
-plot(density(tree.base.infect), main="offset vs tree densities",col="blue")
+plot(density(tree.base.infect), main="offset vs tree densities",col="blue",xlim=c(0,0.1))
 lines(density(offset),col="red")
 lines(density(tree),col="darkgreen")
 lines(density(tree.base),col="purple")
@@ -105,21 +105,11 @@ ntree<-nbNonEdge(Z.tree,n,p)
 ntreebase<-nbNonEdge(Z.tree.base,n,p)
 ntreebaseinfect<-nbNonEdge(Z.tree.base.infect,n,p)
 
-min(tree.base.infect[which(tree.base.infect!=0)])
-tree<-tree- 0.01685373
-tree.base<-tree.base- 0.01685373
-tree.base.infect<-tree.base.infect- 0.01685373
-
-dev.off()
-hist(tree.base[which(tree.base>0.015)],breaks=100)
-hist(tree.base)
-net<-net_from_matrix(tree.base,0.05,FALSE)
-degree(net)[48]
 
 pal<-brewer.pal(8, "Spectral")
 plotnet<-function(omega,nbedges){
   p<-ncol(omega)
-  seuil<-sort(omega[upper.tri(omega)])[p*(p-1)/2-nbedges]
+  seuil<-sort(omega[upper.tri(omega)])[p*(p-1)/2-nbedges/2]
   net<-net_from_matrix(omega,seuil,FALSE)
   V(net)$label=NA
   E(net)$color=pal[7]
@@ -129,30 +119,40 @@ plotnet<-function(omega,nbedges){
   return(net)
 }
 par(mfrow=c(2,2))
-nbedges<-200
-coords <- layout_(plotnet(tree.base.infect,nbedges), nicely())
-plot(plotnet(tree.base.infect,nbedges), layout = coords,main="tree.base.infect")
-plot(plotnet(tree.base,nbedges),layout=coords,main="tree.base")
-plot(plotnet(tree,nbedges),layout=coords,main="tree")
-plot(plotnet(offset,nbedges),layout=coords,main="offset")
 
-calcdeg<-function(matrix){
-  deg<-c()
-  for(nbedges in seq(6000,100,-50)){
-  net<-plotnet(matrix,nbedges)
-  deg<-c(deg,degree(net)[48] )
-  }
-  return(deg)
-}
+coords <- layout_(plotnet(tree.base.infect,ntreebaseinfect), nicely())
+plot(plotnet(tree.base.infect,ntreebaseinfect), layout = coords,main="tree.base.infect")
+plot(plotnet(tree.base,ntreebase),layout=coords,main="tree.base")
+plot(plotnet(tree,ntree),layout=coords,main="tree")
+plot(plotnet(offset,noffset),layout=coords,main="offset")
 
-L<-list(offset,tree,tree.base,tree.base.infect)
-listdeg<-lapply(L,function(x) calcdeg(x))
-dev.off()
-plot(listdeg[[1]],x=seq,main="degree of pathogen",ylab="",xlab="number of edges",pch=20)
-points(listdeg[[2]],x=seq,col="red",pch=20)
-points(listdeg[[3]],x=seq,col="blue",pch=20)
-points(listdeg[[4]],x=seq,col="goldenrod",pch=20)
-legend("bottomright",c("offset","tree","tree.base","tree.base.infect"),col=c("black","red","blue","goldenrod"),pch=20)
+net<-plotnet(offset,noffset)
+degree(net)[48]
+gsize(net)
+net<-plotnet(tree,ntree)
+degree(net)[48]
+gsize(net)
+net<-plotnet(tree.base,ntreebase)
+degree(net)[48]
+gsize(net)
+net<-plotnet(tree.base.infect,ntreebaseinfect)
+degree(net)[48]
+gsize(net)
 
-seq<-seq(6000,100,-50)
-axis(1, at=seq(1,120,30),labels=seq, col.axis="black", las=2)
+# calcdeg<-function(matrix){
+#   deg<-c()
+#   for(nbedges in seq(6000,100,-50)){
+#   net<-plotnet(matrix,nbedges)
+#   deg<-c(deg,degree(net)[48] )
+#   }
+#   return(deg)
+# }
+#
+# L<-list(offset,tree,tree.base,tree.base.infect)
+# listdeg<-lapply(L,function(x) calcdeg(x))
+# dev.off()
+# plot(listdeg[[1]],x=seq,main="degree of pathogen",ylab="",xlab="number of edges",pch=20)
+# points(listdeg[[2]],x=seq,col="red",pch=20)
+# points(listdeg[[3]],x=seq,col="blue",pch=20)
+# points(listdeg[[4]],x=seq,col="goldenrod",pch=20)
+# legend("bottomright",c("offset","tree","tree.base","tree.base.infect"),col=c("black","red","blue","goldenrod"),pch=20)
