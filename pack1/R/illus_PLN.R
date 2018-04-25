@@ -14,8 +14,18 @@ data.name = 'oaks'
 load(paste0(data.dir, data.name, '.RData'))
 
 # Parms
-Y = as.matrix(Data$count); n = nrow(Y); p = ncol(Y)
+Y = as.matrix(Data$count);
 O = Data$offset; X = Data$covariates
+
+# Selection des especes
+YO = Y/O
+Rank = rank(colSums(YO))
+plot(cumsum(sort(colSums(YO))))
+Seuil = 20
+Ycum = colSums(Y); Order = order(Ycum)
+plot(cumsum(Ycum[Order]), col = 1+(Rank[Order]<Seuil))
+Y = Y[, Rank < Seuil]; O = O[, Rank < Seuil];  n = nrow(Y); p = ncol(Y)
+
 # dev.off()
 # plot(X$distTObase^2,X$distTOground^2+X$distTOtrunk^2)
 # abline(0,1,col="red")
@@ -71,25 +81,30 @@ offset<-readRDS("/home/momal/Git/these/pack1/R/inf_offset.rds")[[1]]
 tree<-readRDS("/home/momal/Git/these/pack1/R/inf_tree.rds")[[1]]
 tree.base<-readRDS("/home/momal/Git/these/pack1/R/inf_treebase.rds")[[1]]
 tree.base.infect<-readRDS("/home/momal/Git/these/pack1/R/inf_treebaseinfect.rds")[[1]]
+dev.off()
+plot(density(tree.base.infect), main="offset vs tree densities",col="blue")
+lines(density(offset),col="red")
+lines(density(tree),col="darkgreen")
+lines(density(tree.base),col="purple")
 
-plot(density(Z.tree.base.infect), main="offset vs tree densities",col="blue")
-lines(density(Z.offset),col="red")
-lines(density(Z.tree.base),col="darkgreen")
-lines(density(Z.tree),col="purple")
+EstimM <- function(Prob){
+  p = ncol(Prob);
+  M = 2*sum(Prob[upper.tri(Prob)]>.5);
+  # hist(as.vector(Prob), breaks=p, main=paste(M, '/', sum(G[upper.tri(G)]==0)))
+  return(M)
+}
+nbNonEdge<-function(OmegaY,n,p){
+  Rpart= -diag(1/sqrt(diag(OmegaY)))%*%OmegaY%*%diag(1/sqrt(diag(OmegaY)))
+Stat = Rpart * sqrt((n-2)/(1-Rpart^2))
+Pval =  matrix(2*pt(abs(Stat), lower.tail=F, df=n-p-2), p, p)
+hist(Pval)
+return(EstimM(Pval))
+}
+noffset<-nbNonEdge(Z.offset,n,p)
+ntree<-nbNonEdge(Z.tree,n,p)
+ntreebase<-nbNonEdge(Z.tree.base,n,p)
+ntreebaseinfect<-nbNonEdge(Z.tree.base.infect,n,p)
 
-# EstimM <- function(Prob){
-#   p = ncol(Prob);
-#   M = 2*sum(Prob[upper.tri(Prob)]>.5);
-#   # hist(as.vector(Prob), breaks=p, main=paste(M, '/', sum(G[upper.tri(G)]==0)))
-#   return(M)
-# }
-# nbNonEdge<-function(OmegaY,n,p){
-#   Rpart= -diag(1/sqrt(diag(OmegaY)))%*%OmegaY%*%diag(1/sqrt(diag(OmegaY)))
-# Stat = Rpart * sqrt((n-2)/(1-Rpart^2))
-# Pval =  matrix(2*pt(abs(Stat), lower.tail=F, df=n-p-2), p, p)
-# return(EstimM(Pval))
-# }
-# nbNonEdge(offset,n,p)
 min(tree.base.infect[which(tree.base.infect!=0)])
 tree<-tree- 0.01685373
 tree.base<-tree.base- 0.01685373
