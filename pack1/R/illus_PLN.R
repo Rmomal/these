@@ -13,10 +13,20 @@ data.dir = '/home/momal/Git/these/Data/Oaks-CVacher/'
 data.dir = '../../Data/Oaks-CVacher/'
 data.name = 'oaks'
 load(paste0(data.dir, data.name, '.RData'))
-
+theme_set(theme_bw())
 # Parms
-Y = as.matrix(Data$count); n = nrow(Y); p = ncol(Y)
+Y = as.matrix(Data$count);
 O = Data$offset; X = Data$covariates
+
+# Selection des especes
+YO = Y/O
+Rank = rank(colSums(YO))
+plot(cumsum(sort(colSums(YO))))
+Seuil = 20
+Ycum = colSums(Y); Order = order(Ycum)
+plot(cumsum(Ycum[Order]), col = 1+(Rank[Order]<Seuil))
+Y = Y[, Rank > Seuil]; O = O[, Rank >Seuil];  n = nrow(Y); p = ncol(Y)
+
 # dev.off()
 # plot(X$distTObase^2,X$distTOground^2+X$distTOtrunk^2)
 # abline(0,1,col="red")
@@ -58,90 +68,116 @@ apply(Crit, 2, which.max)
 
 # inférences
 Z.offset = PLN.offset$model_par$Sigma
-inf.offset<-TreeGGM(cov2cor(Z.offset),print=TRUE,step="FALSE")
+#inf.offset<-TreeGGM(cov2cor(Z.offset),print=TRUE,step="FALSE")
 
 Z.tree = PLN.tree$model_par$Sigma
-inf.tree<-TreeGGM(cov2cor(Z.tree),print=TRUE,step="FALSE")
+#inf.tree<-TreeGGM(cov2cor(Z.tree),print=TRUE,step="FALSE")
 
 Z.tree.base = PLN.tree.base$model_par$Sigma
-inf.tree.base<-TreeGGM(cov2cor(Z.tree.base),print=TRUE,step="FALSE")
+#inf.tree.base<-TreeGGM(cov2cor(Z.tree.base),print=TRUE,step="FALSE")
 
 Z.tree.base.infect = PLN.tree.base.infect$model_par$Sigma
-inf.tree.base.infect<-TreeGGM(cov2cor(Z.tree.base.infect),print=TRUE,step="FALSE")
+#inf.tree.base.infect<-TreeGGM(cov2cor(Z.tree.base.infect),print=TRUE,step="FALSE")
 
 saveRDS(inf.offset,"inf_offset.rds")
 saveRDS(inf.tree,"inf_tree.rds")
 saveRDS(inf.tree.base,"inf_treebase.rds")
 saveRDS(inf.tree.base.infect,"inf_treebaseinfect.rds")
-
-par(mfrow=c(2,2))
-hist(offset,breaks=100)
-hist(tree,breaks=100)
-hist(tree.base,breaks=100)
-hist(tree.base.infect,breaks=100)
+saveRDS(Z.offset,"Z.offset.rds")
+saveRDS(Z.tree,"Z.tree.rds")
+saveRDS(Z.tree.base,"Z.tree.base.rds")
+saveRDS(Z.tree.base.infect,"Z.tree.base.infect.rds")
 
 offset<-readRDS("/home/momal/Git/these/pack1/R/inf_offset.rds")[[1]]
 tree<-readRDS("/home/momal/Git/these/pack1/R/inf_tree.rds")[[1]]
 tree.base<-readRDS("/home/momal/Git/these/pack1/R/inf_treebase.rds")[[1]]
 tree.base.infect<-readRDS("/home/momal/Git/these/pack1/R/inf_treebaseinfect.rds")[[1]]
+Z.offset<-readRDS("/home/momal/Git/these/pack1/R/Z.offset.rds")
+Z.tree<-readRDS("/home/momal/Git/these/pack1/R/Z.tree.rds")
+Z.tree.base<-readRDS("/home/momal/Git/these/pack1/R/Z.tree.base.rds")
+Z.tree.base.infect<-readRDS("/home/momal/Git/these/pack1/R/Z.tree.base.infect.rds")
 
-plot(density(Z.tree.base.infect), main="offset vs tree densities",col="blue")
-lines(density(Z.offset),col="red")
-lines(density(Z.tree.base),col="darkgreen")
-lines(density(Z.tree),col="purple")
 
-# EstimM <- function(Prob){
-#   p = ncol(Prob);
-#   M = 2*sum(Prob[upper.tri(Prob)]>.5);
-#   # hist(as.vector(Prob), breaks=p, main=paste(M, '/', sum(G[upper.tri(G)]==0)))
-#   return(M)
-# }
-# nbNonEdge<-function(OmegaY,n,p){
-#   Rpart= -diag(1/sqrt(diag(OmegaY)))%*%OmegaY%*%diag(1/sqrt(diag(OmegaY)))
-# Stat = Rpart * sqrt((n-2)/(1-Rpart^2))
-# Pval =  matrix(2*pt(abs(Stat), lower.tail=F, df=n-p-2), p, p)
-# return(EstimM(Pval))
-# }
-# nbNonEdge(offset,n,p)
-min(tree.base.infect[which(tree.base.infect!=0)])
-tree<-tree- 0.01685373
-tree.base<-tree.base- 0.01685373
-tree.base.infect<-tree.base.infect- 0.01685373
+# par(mfrow=c(2,2))
+# hist(offset,breaks=100)
+# hist(tree,breaks=100)
+# hist(tree.base,breaks=100)
+# hist(tree.base.infect,breaks=100)
+#
+# dev.off()
+# plot(density(tree.base.infect), main="offset vs tree densities",col="blue",xlim=c(0,0.1))
+# lines(density(offset),col="red")
+# lines(density(tree),col="darkgreen")
+# lines(density(tree.base),col="purple")
 
-dev.off()
-hist(tree.base[which(tree.base>0.015)],breaks=100)
-hist(tree.base)
-net<-net_from_matrix(tree.base,0.05,FALSE)
-degree(net)[48]
-
-pal<-brewer.pal(8, "Spectral")
-plotnet<-function(omega,nbedges){
-  p<-ncol(omega)
-  seuil<-sort(omega[upper.tri(omega)])[p*(p-1)/2-nbedges]
-  net<-net_from_matrix(omega,seuil,FALSE)
-  V(net)$label=NA
-  E(net)$color=pal[7]
-  E(net)$curved=.1
-  V(net)$color="black"
-  V(net)$size=3
-  return(net)
+#@ nb non edges from pvalue matrix
+EstimM <- function(Prob){
+  p = ncol(Prob);
+  M = 2*sum(Prob[upper.tri(Prob)]>.5);
+  return(M)
+}
+#@ build pvalue matrix and return nb non edges using estimM
+nbNonEdge<-function(OmegaY,n,p){
+  Rpart= -diag(1/sqrt(diag(OmegaY)))%*%OmegaY%*%diag(1/sqrt(diag(OmegaY)))
+  Stat = Rpart * sqrt((n-2)/(1-Rpart^2))
+  Pval =  matrix(2*pt(abs(Stat), lower.tail=F, df=n-p-2), p, p)
+  hist(Pval)
+  return(EstimM(Pval))
 }
 par(mfrow=c(2,2))
-nbedges<-200
-coords <- layout_(plotnet(tree.base.infect,nbedges), nicely())
-plot(plotnet(tree.base.infect,nbedges), layout = coords,main="tree.base.infect")
-plot(plotnet(tree.base,nbedges),layout=coords,main="tree.base")
-plot(plotnet(tree,nbedges),layout=coords,main="tree")
-plot(plotnet(offset,nbedges),layout=coords,main="offset")
+noffset<-nbNonEdge(Z.offset,n,p)
+ntree<-nbNonEdge(Z.tree,n,p)
+ntreebase<-nbNonEdge(Z.tree.base,n,p)
+ntreebaseinfect<-nbNonEdge(Z.tree.base.infect,n,p)
 
+#@ build net from precision matrix with specified number of non edges by default,
+#@ edges if boolean FALSE
+net_precision_density<-function(omega,nbnonedges, absence=TRUE){
+  p<-ncol(omega)
+  nb<-ifelse(absence,nbnonedges, p*(p-1)/2)
+  seuil<-sort(omega[upper.tri(omega)])[nb]
+  net<-net_from_matrix(omega,seuil,FALSE)
+  V(net)$label=NA;  E(net)$color="darkolivegreen3";  E(net)$curved=.1;  V(net)$color="black";  V(net)$size=3
+  return(net)
+}
+
+net1<-net_precision_density(offset,noffset)
+net2<-net_precision_density(tree,ntree)
+net3<-net_precision_density(tree.base,ntreebase)
+net4<-net_precision_density(tree.base.infect,ntreebaseinfect)
+c(degree(net1)[48],degree(net2)[48],degree(net3)[48],degree(net4)[48])
+c(gsize(net1),gsize(net2),gsize(net3),gsize(net4))
+
+coords <- layout_(net4, nicely())
+plot(net4, layout = coords,main="tree.base.infect")
+plot(net3,layout=coords,main="tree.base")
+plot(net2,layout=coords,main="tree")
+plot(net1,layout=coords,main="offset")
+
+# M1<-degree(net1)
+# M4<-degree(net4)
+# degree_table<-data.frame(nods=1:ncol(Y),M1=M1,M4=M4)
+# attach(degree_table)
+# dev.off()
+# plot(nods,M1-M4)
+# abline(v=48,h=c(-20,0,20))
+# plot(density(M1-M4))
+# hist(M1-M4,breaks=50)
+# summary(M1-M4)
+# degree_table2<-degree_table[order(M1),]
+# attach(degree_table2)
+# plot(M1,M1-M4)
+
+###################
 calcdeg<-function(matrix){
   deg<-c()
-  for(nbedges in seq(6000,100,-50)){
-  net<-plotnet(matrix,nbedges)
+  for(nbedges in seq(4000,100,-50)){
+  net<-net_precision_density(matrix,nbedges,FALSE)
   deg<-c(deg,degree(net)[48] )
   }
   return(deg)
 }
+seq<-seq(4000,100,-50)
 
 L<-list(offset,tree,tree.base,tree.base.infect)
 listdeg<-lapply(L,function(x) calcdeg(x))
@@ -152,5 +188,84 @@ points(listdeg[[3]],x=seq,col="blue",pch=20)
 points(listdeg[[4]],x=seq,col="goldenrod",pch=20)
 legend("bottomright",c("offset","tree","tree.base","tree.base.infect"),col=c("black","red","blue","goldenrod"),pch=20)
 
-seq<-seq(6000,100,-50)
-axis(1, at=seq(1,120,30),labels=seq, col.axis="black", las=2)
+####################
+# comparaison des graphs à densité égale
+# inf_glasso_MBbis<-function(X){
+#   S<-X
+#   d<-ncol(X)
+#   log.lambda.min <- -5
+#   log.lambda.max <- log(get.lambda.l1(S))
+#   log.lambda <- seq(log.lambda.min, log.lambda.max, length.out = d*2)
+#   MB.res <- lapply(exp(log.lambda), function(lambda) glasso(S, lambda, trace = FALSE, approx = FALSE, penalize.diagonal = FALSE))
+#   adjmat.array <- simplify2array(Map("*",exp(log.lambda),lapply(MB.res, function(x){ (abs(x$wi)>0)*1})))
+#   # Let us replace each edge by the  largest Glasso lambda where it disappears (or a sum related to this)
+#   K.score <- apply(adjmat.array,c(1,2),sum)
+#   K.score <- K.score / max(K.score)
+#   return(K.score)
+# }
+
+
+in_offset_glass<-inf_glasso_MBbis(Z.offset)
+in_treebaseinfect_glass<-inf_glasso_MBbis(Z.tree.base.infect)
+saveRDS(in_offset_glass,"inf_glass_offset.rds")
+saveRDS(in_treebaseinfect_glass,"inf_glass_treebaseinfect.rds")
+
+omega<-offset
+matrice_adj_from_density<-function(omega,nbedges){
+  p<-ncol(omega)
+  seuil<-sort(omega[upper.tri(omega)])[p*(p-1)/2-nbedges]
+  M<-matrice_adj(omega,seuil)
+  return(M)
+}
+correspondances<-tibble(nbedges=seq(50,4350,50),gl00mt=NA,gl10mt=NA,gl01mt=NA,gl11mt=NA)
+for(i in 1:nrow(correspondances)){
+  nbedges<-correspondances$nbedges[i]
+  offset_glasso<-matrice_adj_from_density(in_offset_glass,nbedges)
+  offset_MixTreeGGM<-matrice_adj_from_density(offset,nbedges)
+  if(nbedges<3750){
+     correspondances[i,2:5]<-c(table(offset_glasso[upper.tri(offset_glasso)],
+                                  offset_MixTreeGGM[upper.tri(offset_MixTreeGGM)]))
+  }else{
+    tab<-table(offset_glasso[upper.tri(offset_glasso)],
+               offset_MixTreeGGM[upper.tri(offset_MixTreeGGM)])
+    correspondances[i,2:5]<-c(NA,tab[1],NA,tab[2])
+  }
+
+}
+
+long<-correspondances %>%
+  gather(decision,count,-nbedges)
+
+p1<-ggplot(long,aes(nbedges,count,colour=factor(decision)))+
+  geom_point()+
+  labs(title="modele offset")
+############################
+############################
+
+correspondances2<-tibble(nbedges=seq(50,4350,50),gl00mt=NA,gl10mt=NA,gl01mt=NA,gl11mt=NA)
+for(i in 1:nrow(correspondances2)){
+  nbedges<-correspondances2$nbedges[i]
+  complet_glasso<-matrice_adj_from_density(in_treebaseinfect_glass,nbedges)
+  complet_MixTreeGGM<-matrice_adj_from_density(tree.base.infect,nbedges)
+  if(nbedges<3650){
+    correspondances2[i,2:5]<-c(table(complet_glasso[upper.tri(complet_MixTreeGGM)],
+                                     complet_MixTreeGGM[upper.tri(complet_MixTreeGGM)]))
+  }else{
+    tab<-table(complet_glasso[upper.tri(complet_glasso)],
+               complet_MixTreeGGM[upper.tri(complet_MixTreeGGM)])
+    correspondances2[i,2:5]<-c(NA,tab[1],NA,tab[2])
+  }
+
+}
+
+long2<-correspondances2 %>%
+  gather(decision,count,-nbedges)
+
+p2<-ggplot(long2,aes(nbedges,count,colour=factor(decision)))+
+  geom_point()+
+  labs(title="modele complet")
+
+
+devtools::install_github("thomasp85/patchwork")
+library(patchwork)
+

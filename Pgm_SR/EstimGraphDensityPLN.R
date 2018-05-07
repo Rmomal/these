@@ -25,8 +25,8 @@ for (b in 1:B){
    if (b %% round(sqrt(B))==0){cat(b, '')}
    # Graph
    #G = erdos(p, d)  
-  G = SimCluster(p, 3, d, 10)
-   
+  #G = SimCluster(p, 3, d, 10)
+   G=SpannTree(p)
    # Model parms
    lambda = 1; Omega = diag(rep(lambda, p)) + G; 
    while (min(eigen(Omega)$values) < 0){lambda = 1.1*lambda; Omega = diag(rep(lambda, p)) + G}
