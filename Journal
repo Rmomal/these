@@ -40,4 +40,55 @@
 	Code TreeGGM adapté de Stephane (diagramme des fonctions fait)
 	Calculs sur serveur pour comparaison avec glasso et variation paramètres d prob u et n
 	Gestion des erreurs avec try, début test post-mortem
-	PLN : écriture au proopre des formules, étude faisabilité VEM
+	PLN : écriture au propre des formules, étude faisabilité VEM
+
+[...]
+05/04/18
+	Code treeGGM fonctionne (comparaison avec le code de Stéphane ok)
+	Mise à jour de R
+	Exploration package GGMSelect
+	Enregistrement des constantes de diagonal (omega pour inversion)
+
+11/04/18
+	Les probas beta de sortie de MixTreeGGM sont calibrées pour une structure d'arbre, elles ne sont pas agnostiques de l'hypothèse. Sur papier : formule d'ajustement (redresseent) des probas pour seuillage ?
+	Couche PLN mise en place
+
+12/04/18
+	Refonte de la structure de sauvegadre + augmentation du nombre de graphs testés sur chaque point( vs nombre de données générées à partir dechaque graph)
+
+12/04/18
+	Données Oak : construction des modèles emboîtés
+
+18/04/18
+	Simulations terminées GAUssien serveur ET PLN local
+
+24/04/18
+	Réunion Avec Mathieu et Sophie de la Rochelle
+
+25/04/18
+	Etude degré des noeuds oak en fonction du nombre de covariables
+
+28/04/18
+	Soumission abstract JOBIM
+
+02/05/18
+	Début réflexion sur le VEM de PLN et inclusion treeGGM dedans
+	Exposé sur le tidyverse
+
+03/05/18
+	Comparaison des arêtes communes entre notre EM et le glasso sur les données oak avec le modèle complet (4 covariables)
+
+07/05/18
+	Réécriture du VEM de PLN, étude du calcul de la lower bound.
+	/!\ nouvelle idée : inférer dans la couche des Y directement, ave le package poilog
+
+09/05/18
+	Exploration package poilog
+
+12/05/18 au 16/05/18
+	Ecole d'Aussois :
+		Réflexion sur l'inférence du réseau dans la couche Y : revient au même modèle que précédemment ? Ne devrait pas car P(Y) ne se factorise pas en arbre pour l'inférence dans la couche Z (du moins on ne le voit pas). Il faudrait s'assurer que ces modèles sont bien différents (densités joints P1(Y) et P2(Y) différentes), sinon pb existentiel.
+		Présentation ok le 15/05 au soir, nouvelles slides.
+		Super cours de J. Josse.
+		
+
