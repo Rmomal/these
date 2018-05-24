@@ -35,3 +35,9 @@
   Discussion sur les astuces numériques, pour le moment se restreindre à des petits échantillons
   Correction de la formule de psi (malentendu depuis 1 mois) et de la mise à jour des betas
   Refonte des notes
+
+27/02/18
+	Code TreeGGM adapté de Stephane (diagramme des fonctions fait)
+	Calculs sur serveur pour comparaison avec glasso et variation paramètres d prob u et n
+	Gestion des erreurs avec try, début test post-mortem
+	PLN : écriture au proopre des formules, étude faisabilité VEM
