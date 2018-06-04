@@ -2,7 +2,8 @@
 # F.logsum0 <- function(x){-sum(log(-x+P)-log(M))}
 #########################################################################
 F_NegLikelihood <- function(beta.vec, log.phi, P){
-   return(- sum(F_Sym2Vec(P)*(log(beta.vec)+F_Sym2Vec(log.phi))) + log(SumTree(F_Vec2Sym(beta.vec))))
+   return(- sum(F_Sym2Vec(P)*(log(beta.vec)+F_Sym2Vec(log.phi))) +
+            log(SumTree(F_Vec2Sym(beta.vec))))
 }
 F_NegGradient <- function(beta.vec, log.phi, P){
    M = Kirshner(F_Vec2Sym(beta.vec)*exp(log.phi))$Q
