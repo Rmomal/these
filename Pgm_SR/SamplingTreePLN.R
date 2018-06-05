@@ -4,7 +4,9 @@ rm(list=ls()); par(mfrow=c(1, 1))
 library(ape); library(sna); library(poilog)
 
 # Parms
-p = 10; B.path = 1e5; R.subsample = 5e2
+p = 10; 
+B.path = 1e6; R.subsample = 1e3
+B.path = 1e5; R.subsample = 5e2
 
 # Function
 F_PLN <- function(Y, Tree, mu, sigma, Rho){
