@@ -4,7 +4,7 @@ rm(list=ls()); par(mfrow=c(1, 1))
 library(ape); library(sna); library(poilog)
 
 # Parms
-p = 10; B.path = 1e5; R.subsample = 1e3
+p = 10; B.path = 1e5; R.subsample = 5e2
 
 # Function
 F_PLN <- function(Y, Tree, mu, sigma, Rho){
@@ -42,7 +42,7 @@ while(min(eigen(Omega)$values)<0){coef = 1.1*coef; Omega = Tree + coef*diag(p)}
 Sigma = solve(Omega); Rho = cov2cor(Sigma); sigma = sqrt(diag(Sigma))
 Esp.Y = exp(mu + sigma^2/2)
 Var.Y = Esp.Y + Esp.Y^2*(exp(sigma^2)-1)
-Cov.Y = Esp.Y %*% (exp(Sigma)-1) %*% Esp.Y
+Cov.Y = (Esp.Y %o% Esp.Y) * (exp(Sigma)-1)
 size.Y = Esp.Y^2 / (Var.Y - Esp.Y)
 
 # # Proposal check
@@ -74,22 +74,21 @@ for (b in 2:B){
       logRatio.cur = logRatio.prop
       }else{Y.path[b, ] = Y.cur}
 }
-accept/B
-max(diff(which(Y.path[2:B, 1]!=Y.path[1:(B-1), 1])))
-summary(log(alpha))
-hist(log(alpha))
-par(mfrow=c(5, 2), mex=.3); sapply(1:p, function(j){plot(log(1+Y.path[, j]), type='l', main='', xlab='', ylab='')})
 Y.sample = Y.path[-(1:B.burn), ] # remove burn-in (needed ?)
 Y.sample = Y.sample[R.subsample*(1:floor(B.path/R.subsample)), ] # sample 1 out of 100
 B.sample = nrow(Y.sample)
 
 # Check
+par(mfrow=c(5, 2), mex=.3); 
+sapply(1:p, function(j){plot(log(1+Y.path[, j]), type='l', main='', xlab='', ylab='')})
 par(mfrow=c(4, 3), mex=.5)
 for(j in 1:p){plot(log(1+Y.sample[1:(B.sample-1), j]), log(1+Y.sample[2:B.sample, j]), pch=20)}
 print(rbind(Esp.Y, colMeans(Y.sample)))
 print(rbind(Var.Y, apply(Y.sample, 2, var)))
 par(mfrow=c(2, 2))
-plot(Esp.Y, colMeans(Y.sample), pch=20); abline(0, 1)
-plot(Var.Y, apply(Y.sample, 2, var), pch=20); abline(0, 1)
-plot(Cov.Y, cov(Y), pch=20); abline(0, 1)
-plot(cov2cor(Cov.Y), cor(Y), pch=20); abline(0, 1)
+plot(Esp.Y, colMeans(Y.sample), pch=20, log='xy'); abline(0, 1)
+plot(Var.Y, apply(Y.sample, 2, var), pch=20, log='xy'); abline(0, 1)
+plot(Cov.Y, cov(Y.sample), pch=20); abline(0, 1)
+plot(cov2cor(Cov.Y), cor(Y.sample), pch=20); abline(0, 1)
+accept/B
+max(diff(which(Y.path[2:B, 1]!=Y.path[1:(B-1), 1])))
