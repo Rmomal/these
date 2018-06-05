@@ -59,8 +59,8 @@ logRatio.cur = F_LogRatioNegBin(Y.cur, Tree, mu, sigma, Rho, size.Y, Esp.Y)
 alpha =  rep(0, B); Y.path = matrix(0, B, p); 
 Y.path[1, ] = Y.cur; accept = 1
 for (b in 2:B){
-   if (b %% round(sqrt(B))==0){
-      cat(b, '')
+   if (b %% round(sqrt(B))==0){cat(b, '')}
+   if (b %% round(B^(.67))==0){
       par(mfrow=c(5, 2), mex=.3); sapply(1:p, function(j){plot(log(1+Y.path[1:b, j]), type='l', main='', xlab='', ylab='')})
       }
    # Y.prop = rpois(p, Esp.Y)
