@@ -43,8 +43,8 @@ Lambda = exp(mu + diag(Sigma)/2)
 # Simul
 B = 1.2e4; 
 Y.cur = rpois(p, Lambda); logRatio.cur = F_LogRatio(Y.cur, Tree, mu, sigma, Rho, Lambda)
-alpha =  rep(0, B); Y = matrix(0, B, p); 
-Y[1, ] = Y.cur; accept = 1
+alpha =  rep(0, B); Y.path = matrix(0, B, p); 
+Y.path[1, ] = Y.cur; accept = 1
 for (b in 2:B){
    if (b %% round(sqrt(B))==0){cat(b, '')}
    Y.prop = rpois(p, Lambda)
@@ -52,12 +52,20 @@ for (b in 2:B){
    alpha[b] = exp(logRatio.prop - logRatio.cur)
    if (runif(1) < alpha[b]){
       accept = accept+1; 
-      Y[b, ] = Y.cur = Y.prop
+      Y.path[b, ] = Y.cur = Y.prop
       logRatio.cur = logRatio.prop
-      }else{Y[b, ] = Y.cur}
+      }else{Y.path[b, ] = Y.cur}
 }
 accept/B
 summary(log(alpha))
 hist(log(alpha))
-Y = Y[, -(1:round(.2*B))] # remove burn-in (needed ?)
-Y = Y[100*(1:round(B/100)), ]
+Y.sample = Y.path[-(1:floor(.2/1.2*B)), ] # remove burn-in (needed ?)
+Y.sample = Y.sample[100*(1:floor(1/1.2*B/100)), ] # sample 1 out of 100
+B = nrow(Y.sample)
+
+# Check
+par(mfrow=c(4, 3), mex=.5)
+for(j in 1:p){plot(Y.sample[1:(B-1), j], Y.sample[2:B, j], pch=20)}
+Esp.Y = Lambda; Var.Y = Esp.Y + Esp.Y^2*(exp(sigma^2)-1)
+print(rbind(Esp.Y, colMeans(Y.sample)))
+print(rbind(Var.Y, apply(Y.sample, 2, var))
