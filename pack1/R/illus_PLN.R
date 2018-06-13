@@ -51,7 +51,7 @@ plot(cumsum(sort(colSums(YO))))
 Seuil = 20
 Ycum = colSums(Y); Order = order(Ycum)
 plot(cumsum(Ycum[Order]), col = 1+(Rank[Order]<Seuil))
-Y = Y[, Rank < Seuil]; O = O[, Rank < Seuil]; 
+Y = Y[, Rank < Seuil]; O = O[, Rank < Seuil];
 
 # PLN models
 PLN.offset = PLN(Y ~ 1 + offset(log(O)))
@@ -68,7 +68,11 @@ apply(Crit, 2, which.max)
 
 # inférences
 Z.offset = PLN.offset$model_par$Sigma
-#inf.offset<-TreeGGM(cov2cor(Z.offset),print=TRUE,step="FALSE")
+inf.offset<-TreeGGM(cov2cor(Z.offset),print=TRUE,step="FALSE")
+coef=1
+
+heatmap(solve(Z.offset),Rowv = NA,Colv = NA)
+heatmap(inf.offset$P,Rowv = NA,Colv = NA)
 
 Z.tree = PLN.tree$model_par$Sigma
 #inf.tree<-TreeGGM(cov2cor(Z.tree),print=TRUE,step="FALSE")

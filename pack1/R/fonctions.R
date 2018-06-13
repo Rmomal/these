@@ -193,10 +193,10 @@ fun.auc.ggplot <- function(pred, obs, title,points){
   ggplot(plotdat, aes(x=FP,y=TP)) +
     geom_abline(intercept=0,slope=1,linetype="dashed",color="grey") +
     geom_line() +
-    geom_point(data=plotdat[rows,], aes(x=FP,y=TP,fill=POINT), pch=23, size=3) +
-    geom_text(data=plotdat[rows,], aes(x=FP,y=TP,fill=POINT), label=round(plotdat$POINT[rows],5), hjust=1.5, vjust=-0.2) +
+    geom_point(data=plotdat[rows,], aes(fill=POINT),color="royalblue3", pch=20, size=3) +
+    geom_text(data=plotdat[rows,],  label=round(plotdat$POINT[rows],5), hjust=-0.2, vjust=1.5) +
     scale_fill_gradientn("Threhsold Cutoff",colours=brewer.pal(5,"RdPu"),guide=FALSE) +
-    scale_x_continuous("False Positive Rate", limits=c(-0.25,1)) +
+    scale_x_continuous("False Positive Rate", limits=c(0,1)) +
     scale_y_continuous("True Positive Rate", limits=c(0,1)) +
     geom_polygon(aes(x=X,y=Y), data=data.frame(X=c(0.77,1,1,0.77),Y=c(0,0,0.33,0.33)), fill="white") +
     annotate("text",x=0.97,y=0.30,label=paste0("Nnods = ",nvar),hjust=1) +
