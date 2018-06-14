@@ -1,0 +1,1302 @@
+\documentclass[10pt]{beamer}
+
+% Beamer style
+%\usetheme[secheader]{Madrid}
+% \usetheme{CambridgeUS}
+\useoutertheme{infolines}
+\usecolortheme[rgb={0.65,0.15,0.25}]{structure}
+% \usefonttheme[onlymath]{serif}
+\beamertemplatenavigationsymbolsempty
+%\AtBeginSubsection
+
+% Packages
+%\usepackage[french]{babel}
+\usepackage[latin1]{inputenc}
+\usepackage{color}
+\usepackage{xspace}
+\usepackage{dsfont, stmaryrd}
+\usepackage{amsmath, amsfonts, amssymb}
+\usepackage{epsfig}
+\usepackage{tikz}
+\usepackage{url}
+\usepackage{/home/robin/LATEX/Biblio/astats}
+%\usepackage[all]{xy}
+\usepackage{graphicx}
+
+% Commands
+\input{TikZcommands.tex}
+\definecolor{darkred}{rgb}{0.65,0.15,0.25}
+\newcommand{\emphase}[1]{\textcolor{darkred}{#1}}
+% \newcommand{\emphase}[1]{{#1}}
+\newcommand{\paragraph}[1]{\textcolor{darkred}{#1}}
+\newcommand{\refer}[1]{{\small{\textcolor{gray}{{[\cite{#1}]}}}}}
+% \newcommand{\Refer}[1]{{\small{\textcolor{gray}{{[#1]}}}}}
+\renewcommand{\newblock}{}
+
+% Symbols
+\newcommand{\Abf}{{\bf A}}
+\newcommand{\Beta}{\text{B}}
+\newcommand{\Bcal}{\mathcal{B}}
+\newcommand{\BIC}{\text{BIC}}
+\newcommand{\Ccal}{\mathcal{C}}
+\newcommand{\dd}{\text{~d}}
+\newcommand{\dbf}{{\bf d}}
+\newcommand{\Dcal}{\mathcal{D}}
+\newcommand{\Esp}{\mathbb{E}}
+\newcommand{\Ebf}{{\bf E}}
+\newcommand{\Ecal}{\mathcal{E}}
+\newcommand{\Gcal}{\mathcal{G}}
+\newcommand{\Gam}{\mathcal{G}\text{am}}
+\newcommand{\Hcal}{\mathcal{H}}
+\newcommand{\Ibb}{\mathbb{I}}
+\newcommand{\Ibf}{{\bf I}}
+\newcommand{\ICL}{\text{ICL}}
+\newcommand{\Cov}{\mathbb{C}\text{ov}}
+\newcommand{\Corr}{\mathbb{C}\text{orr}}
+\newcommand{\Var}{\mathbb{V}}
+\newcommand{\Vsf}{\mathsf{V}}
+\newcommand{\pen}{\text{pen}}
+\newcommand{\Fcal}{\mathcal{F}}
+\newcommand{\Hbf}{{\bf H}}
+\newcommand{\Jcal}{\mathcal{J}}
+\newcommand{\Kbf}{{\bf K}}
+\newcommand{\Lcal}{\mathcal{L}}
+\newcommand{\Mcal}{\mathcal{M}}
+\newcommand{\mbf}{{\bf m}}
+\newcommand{\mum}{\mu(\mbf)}
+\newcommand{\Ncal}{\mathcal{N}}
+\newcommand{\Nbf}{{\bf N}}
+\newcommand{\Nm}{N(\mbf)}
+\newcommand{\Ocal}{\mathcal{O}}
+\newcommand{\Obf}{{\bf 0}}
+\newcommand{\Omegas}{\underset{s}{\Omega}}
+\newcommand{\Pbf}{{\bf P}}
+\newcommand{\Pt}{\widetilde{P}}
+\newcommand{\Pcal}{\mathcal{P}}
+\newcommand{\Qcal}{\mathcal{Q}}
+\newcommand{\Rbb}{\mathbb{R}}
+\newcommand{\Rcal}{\mathcal{R}}
+\newcommand{\Scal}{\mathcal{S}}
+\newcommand{\Tcal}{\mathcal{T}}
+\newcommand{\Ucal}{\mathcal{U}}
+\newcommand{\Vcal}{\mathcal{V}}
+\newcommand{\BP}{\text{BP}}
+\newcommand{\EM}{\text{EM}}
+\newcommand{\VEM}{\text{VEM}}
+\newcommand{\VBEM}{\text{VBEM}}
+\newcommand{\cst}{\text{cst}}
+\newcommand{\obs}{\text{obs}}
+\newcommand{\ra}{\emphase{\mathversion{bold}{$\rightarrow$}~}}
+%\newcommand{\transp}{\text{{\tiny $\top$}}}
+\newcommand{\transp}{\text{{\tiny \mathversion{bold}{$\top$}}}}
+\newcommand{\logit}{\text{logit}\xspace}
+
+% Directory
+\newcommand{\fignet}{/home/robin/Bureau/RECHERCHE/RESEAUX/EXPOSES/FIGURES}
+\newcommand{\figchp}{/home/robin/Bureau/RECHERCHE/RUPTURES/EXPOSES/FIGURES}
+
+
+%====================================================================
+%====================================================================
+
+%====================================================================
+%====================================================================
+\begin{document}
+%====================================================================
+%====================================================================
+
+%====================================================================
+\title[Detecting change-points in network structure]{Detecting change-points in the structure of a network: Exact Bayesian inference}
+
+\author[S. Robin]{S. Robin \\ ~\\
+  \begin{tabular}{ll}
+    Joint work with & A. Cleynen, E. Lebarbier, G. Rigaill, \\
+    & \underline{L. Schwaller}, M. Stumpf
+  \end{tabular}
+  }
+
+\institute[INRA / AgroParisTech]{~ \\%INRA / AgroParisTech \\
+  \vspace{-.1\textwidth}
+  \begin{tabular}{ccc}
+    \includegraphics[height=.25\textheight]{\fignet/LogoINRA-Couleur} & 
+    \hspace{.02\textheight} &
+    \includegraphics[height=.06\textheight]{\fignet/logagroptechsolo} % & 
+%     \hspace{.02\textheight} &
+%     \includegraphics[height=.09\textheight]{\fignet/logo-ssb}
+    \\ 
+  \end{tabular} \\
+  \bigskip
+  }
+
+\date[Dec. 2016, Cambridge]{Statistical Analysis of Networks, INI, Dec. 2016, Cambridge}
+
+%====================================================================
+%====================================================================
+\maketitle
+%====================================================================
+
+%====================================================================
+%====================================================================
+\section*{Motivating example}
+%====================================================================
+\frame{\frametitle{Example: Gene regulatory network along time} 
+
+  \paragraph{Data:} \refer{AFI02}
+  $$
+  Y_{jt} = \text{expression of   $j$ at time $t$}
+  $$
+  
+  \bigskip \pause
+  \paragraph{'Model':} 
+  \begin{eqnarray*}
+    G_t & = & \text{gene regulatory network at time $t$} \\
+    & = & \text{graphical model of $(Y_{jt})_j$}
+  \end{eqnarray*}
+
+  \bigskip \pause
+  \paragraph{Questions:} 
+  \begin{itemize}
+   \item Is $G_t$ constant along time or is there some 'gene rewiring'? \\ ~
+   \item If not, when does it change? \\ ~
+   \item And what is the network within each period?
+  \end{itemize}
+}
+
+%====================================================================
+\frame{\frametitle{Example of output} 
+
+  \paragraph{Data:} $N = 67$ time points, $p = 11$ genes, four expected regions
+
+  \pause \bigskip
+  Posterior probability of change-points:
+  $$
+  \includegraphics[width=.7\textwidth]{\figchp/ScR16-Fig8-chgpt_EMP_ap10_au1}
+  $$
+  \pause
+  Inferred networks:
+  $$
+  \includegraphics[width=.8\textwidth]{\figchp/ScR16-Fig9-network_seuil02}
+  $$
+
+}
+
+%====================================================================
+\frame{\frametitle{Similar problems} 
+
+  \paragraph{Ecology:} 
+  $$
+  Y_{it} = \text{abundance of species $i$ at time $t$ in a given medium}
+  $$
+  $G_t =$ interaction structure between species at time $t$. \\ ~
+  \begin{itemize}
+   \item Time-evolving species interaction network?
+  \end{itemize}
+
+  \pause \bigskip \bigskip
+  \paragraph{Neuroscience:} 
+  $$
+  Y_{it} = \text{activity of brain region $i$ at time $t$}
+  $$
+  $G_t =$ connectivity structure between regions at time $t$. \\ ~
+  
+  \begin{itemize}
+   \item Time-evolving connectivity network?
+  \end{itemize}
+
+}
+
+%====================================================================
+%====================================================================
+\section{Bayesian inference with discrete parameters}
+\frame{\frametitle{Outline} \tableofcontents[currentsection]}
+
+%====================================================================
+\frame{\frametitle{Bayesian inference with discrete parameters}
+
+  \paragraph{Mixed parameter:} $(\theta, T)$
+  \begin{align*}
+  \theta & = (\text{means, variances, correlations}) & & \in \Theta = \text{\emphase{continuous} set}, \\
+  T & = (\text{segmentation, graph}) & & \in \Tcal = \text{\emphase{discrete} (finite) set}, 
+  \end{align*}
+  $$
+  \Rightarrow \qquad 
+  p(Y) 
+  = \emphase{\sum_{T \in \Tcal}} \int_\Theta p(Y, \theta, T) \dd \theta 
+  = \emphase{\sum_{T \in \Tcal}} p(Y, T) 
+  $$
+
+  \bigskip \pause
+  Suppose that the integration wrt $\theta$ raise no issue, %\footnote{Using e.g. conjugate priors.}, 
+  the summation
+  $$
+  \sum_{T \in \Tcal}
+  $$
+  can often not be achieved in a naive way because of the combinatorial complexity. %\footnote{Frequentist counterpart often raises similar issues.}. 
+  \begin{center}
+   \ra Need to find algorithmic or algebraic shortcuts
+  \end{center}
+
+}
+
+%====================================================================
+\frame{\frametitle{Main issue}
+
+  \paragraph{Size of $\Tcal$.}
+  \begin{itemize}
+   \item No big deal if $\Tcal$ is small (e.g. model selection within a small collection).
+  \\ ~
+   \item Big issue if $\# \Tcal$ grows (super-)exponentially with the number of observations $n$ or the number of variables $p$.
+  \end{itemize}
+  
+  \bigskip \bigskip \pause
+  \paragraph{Examples.}
+  \begin{itemize}
+   \item Change-point detection:
+   \\~
+   \item 'Network inference' = inference of the structure of a graphical model \\ ~
+   \item Combination of both
+  \end{itemize}
+  }
+
+%====================================================================
+%====================================================================
+\section{Change-point detection}
+\frame{\frametitle{Outline} \tableofcontents[currentsection]}
+
+%====================================================================
+\subsection*{Change-point detection model}
+%====================================================================
+\frame{\frametitle{A change-point detection model} 
+
+  \paragraph{Segmentation $T$ =} set of adjacent segments. 
+  $\Tcal^K = \Tcal^K_{1:n}$ set of all possible segmentations. 
+  $$
+  \begin{overprint}
+    \onslide<1>
+	 \begin{tikzpicture}
+	   \node[empty] (Y1lu) at (-.25*\edgeunit, 1.5*\edgeunit) {};
+	   \node[empty] (Y1lb) at (-.25*\edgeunit, -.5*\edgeunit) {};
+	   \node[observed] (Y1l) at (0*\edgeunit, 0) {$Y_1$};
+	   \node[empty] (Y1m) at (.75*\edgeunit, 0) {};
+	   \node[observed] (Y1r) at (1.5*\edgeunit, 0) {$Y_s$};
+	   \node[empty] (Y1ru) at (1.75*\edgeunit, 1.5*\edgeunit) {};
+	   \node[empty] (Y1rb) at (1.75*\edgeunit, -.5*\edgeunit) {};
+	   
+	   \node[empty] (Yrlu) at (2.75*\edgeunit, 1.5*\edgeunit) {};
+	   \node[empty] (Yrlb) at (2.75*\edgeunit, -.5*\edgeunit) {};
+	   \node[observed] (Yrl) at (3*\edgeunit, 0) {$Y_t$};
+	   \node[empty] (Yrm) at (3.5*\edgeunit, 0) {};
+	   \node[observed] (Yrr) at (4*\edgeunit, 0) {$Y_u$};
+	   \node[empty] (Yrru) at (4.25*\edgeunit, 1.5*\edgeunit) {};
+	   \node[empty] (Yrrb) at (4.25*\edgeunit, -.5*\edgeunit) {};
+
+	   \node[empty] (YKlu) at (5.25*\edgeunit, 1.5*\edgeunit) {};
+	   \node[empty] (YKlb) at (5.25*\edgeunit, -.5*\edgeunit) {};
+	   \node[observed] (YKl) at (5.5*\edgeunit, 0) {$Y_v$};
+	   \node[empty] (YKm) at (6.5*\edgeunit, 0) {};
+	   \node[observed] (YKr) at (7.5*\edgeunit, 0) {$Y_n$};
+	   \node[empty] (YKru) at (7.75*\edgeunit, 1.5*\edgeunit) {};
+	   \node[empty] (YKrb) at (7.75*\edgeunit, -.5*\edgeunit) {};
+
+	   \draw[edge] (Y1lu) to (Y1lb); \draw[dashededge] (Y1l) to (Y1r); 
+	   \draw[edge] (Y1ru) to (Y1rb); \draw[dashededge] (Y1r) to (Yrl); 
+	   \draw[edge] (Yrlu) to (Yrlb); \draw[dashededge] (Yrl) to (Yrr); 
+	   \draw[edge] (Yrru) to (Yrrb); \draw[dashededge] (Yrr) to (YKl); 
+	   \draw[edge] (YKlu) to (YKlb); \draw[dashededge] (YKl) to (YKr); 
+	   \draw[edge] (YKru) to (YKrb); 
+	 \end{tikzpicture}
+    \onslide<2->
+	 \begin{tikzpicture}
+	   \node[hidden] (theta1) at (.75*\edgeunit, \edgeunit) {$\theta_1$};
+	   \node[hidden] (thetar) at (3.5*\edgeunit, \edgeunit) {$\theta_r$};
+	   \node[hidden] (thetaK) at (6.5*\edgeunit, \edgeunit) {$\theta_K$};
+
+	   \node[empty] (Y1lu) at (-.25*\edgeunit, 1.5*\edgeunit) {};
+	   \node[empty] (Y1lb) at (-.25*\edgeunit, -.5*\edgeunit) {};
+	   \node[observed] (Y1l) at (0*\edgeunit, 0) {$Y_1$};
+	   \node[empty] (Y1m) at (.75*\edgeunit, 0) {};
+	   \node[observed] (Y1r) at (1.5*\edgeunit, 0) {$Y_s$};
+	   \node[empty] (Y1ru) at (1.75*\edgeunit, 1.5*\edgeunit) {};
+	   \node[empty] (Y1rb) at (1.75*\edgeunit, -.5*\edgeunit) {};
+	   
+	   \node[empty] (Yrlu) at (2.75*\edgeunit, 1.5*\edgeunit) {};
+	   \node[empty] (Yrlb) at (2.75*\edgeunit, -.5*\edgeunit) {};
+	   \node[observed] (Yrl) at (3*\edgeunit, 0) {$Y_t$};
+	   \node[empty] (Yrm) at (3.5*\edgeunit, 0) {};
+	   \node[observed] (Yrr) at (4*\edgeunit, 0) {$Y_u$};
+	   \node[empty] (Yrru) at (4.25*\edgeunit, 1.5*\edgeunit) {};
+	   \node[empty] (Yrrb) at (4.25*\edgeunit, -.5*\edgeunit) {};
+
+	   \node[empty] (YKlu) at (5.25*\edgeunit, 1.5*\edgeunit) {};
+	   \node[empty] (YKlb) at (5.25*\edgeunit, -.5*\edgeunit) {};
+	   \node[observed] (YKl) at (5.5*\edgeunit, 0) {$Y_v$};
+	   \node[empty] (YKm) at (6.5*\edgeunit, 0) {};
+	   \node[observed] (YKr) at (7.5*\edgeunit, 0) {$Y_n$};
+	   \node[empty] (YKru) at (7.75*\edgeunit, 1.5*\edgeunit) {};
+	   \node[empty] (YKrb) at (7.75*\edgeunit, -.5*\edgeunit) {};
+
+	   \draw[edge] (Y1lu) to (Y1lb); \draw[dashededge] (Y1l) to (Y1r); 
+	   \draw[edge] (Y1ru) to (Y1rb); \draw[dashededge] (Y1r) to (Yrl); 
+	   \draw[edge] (Yrlu) to (Yrlb); \draw[dashededge] (Yrl) to (Yrr); 
+	   \draw[edge] (Yrru) to (Yrrb); \draw[dashededge] (Yrr) to (YKl); 
+	   \draw[edge] (YKlu) to (YKlb); \draw[dashededge] (YKl) to (YKr); 
+	   \draw[edge] (YKru) to (YKrb); 
+
+	   \draw[arrow] (theta1) to (Y1l); \draw[arrow] (theta1) to (Y1r); \draw[dashedarrow] (theta1) to (Y1m); 
+	   \draw[arrow] (thetar) to (Yrl); \draw[arrow] (thetar) to (Yrr); \draw[dashedarrow] (thetar) to (Yrm); 
+	   \draw[arrow] (thetaK) to (YKl); \draw[arrow] (thetaK) to (YKr); \draw[dashedarrow] (thetaK) to (YKm); 
+	 \end{tikzpicture}
+  \end{overprint}
+  $$
+  \onslide+<3>{
+    \vspace{-.05\textheight}
+    \begin{eqnarray*}
+    p(Y \, | \, T) & = & \prod_{r \in T} \underbrace{\int p(\theta_r) \prod_{t \in r} p(Y_t \, | \, \theta_r) \dd \theta_r} \\
+	 & = & \prod_{r \in T} \qquad \qquad p(Y^r), \qquad \qquad Y^r = (Y_t)_{t \in r}
+    \end{eqnarray*}
+    }
+
+  }
+  
+%====================================================================
+\subsection*{Bayesian inference}
+\frame{\frametitle{Bayesian inference} 
+
+  \paragraph{Factorability assumptions} 
+  \begin{itemize}
+  \item Independent parameters in each segment:
+  $$
+  p(\theta\, | \,T) = \prod_{r \in T} p(\theta_r)
+  $$
+  ~
+  \item Data are independent from one segment to another
+  $$
+  p(Y \, | \, T, \theta) = \prod_{r \in T} p(Y^r \, | \, \theta_r) 
+  $$
+  ~
+  \item Prior distribution for the segmentation:
+  $$
+  p(T\, | \,K) = \prod_{r \in T} a_r , \qquad \text{e.g. } a_r = n_r^\alpha
+  $$
+  \end{itemize}
+
+}
+
+%====================================================================
+\frame{ \frametitle{Some quantities of interest}
+
+  \paragraph{Marginal likelihood.}
+  $$
+  p(Y\, | \,K) = \sum_{T \in \Tcal^K} p(T\, | \,K) p(Y\, | \,T) \propto \sum_{T \in \Tcal^K} \prod_{r \in T} a_r p(Y^r)
+  $$
+  where 
+%   $p(Y^r) = \int p(Y^r\, | \,\theta_r) p(\theta^r) \dd \theta_r$ 
+%   (supposed to be easy to compute using e.g. conjugate priors) and
+  the normalizing constant is
+  $$
+  \sum_{T \in \Tcal^K} \prod_{r \in T} a_r, \qquad \qquad \text{where} \quad \# \Tcal_{1:n}^K = {{n-1}\choose{K-1}}.
+  $$
+
+  \pause \bigskip
+  \paragraph{Posterior distribution of a change-point.}
+  $$
+  \Pr\{\tau_k = t \, | \, Y, K\} \propto \left(\sum_{T \in \Tcal^k_{1:t}} \prod_{r \in T} a_r p(Y^r) \right) \left(\sum_{T \in \Tcal^{K-k}_{t+1:n}} \prod_{r \in T} a_r p(Y^r) \right)
+  $$
+
+}
+
+%====================================================================
+\frame{ \frametitle{Some simple algebra}
+
+  $A= (n+1)\times(n+1)$ upper-triangular matrix (with zero diagonal):
+  $$
+  [A]_{i, j+1} = f_{i, j}, \qquad 1 \leq i \leq j \leq n
+  $$
+  \pause
+  \begin{eqnarray*}
+   [A^2]_{1, n+1} & = & f_{1,1} f_{2,n} + ... + f_{1,i} f_{i+1,n} + ... + f_{1,n-1} f_{n, n} \\ \\
+   & = & \sum_{1 \leq i < n} f_{1, i} \; f_{i+1, n} 
+   \; = \; \sum_{\emphase{T \in \Tcal^2}} \prod_{r \in T} f_r
+  \end{eqnarray*} 
+%   \ra sum over $\Tcal^2$
+  \pause
+  \begin{eqnarray*}
+   [A^3]_{1, n+1} & = & f_{1,1} f_{2,2} f_{3, n} + ... + f_{1,i} f_{i+1,j} f_{j+1, n} + ... + f_{1,n-2} f_{n-1, n-1} f_{n, n} \\ \\
+   & = & \sum_{1 \leq i \leq j < n} f_{1, i} \; f_{i+1, j} \; f_{j+1, n} 
+   \; = \; \sum_{\emphase{T \in \Tcal^3}} \prod_{r \in T} f_r
+  \end{eqnarray*} 
+  }
+
+%====================================================================
+\frame{ \frametitle{Summing over segmentations \refer{RLR11}}
+
+  \paragraph{Property:} {\sl 
+%   To compute
+%   $$
+%   \sum_{T \in \Tcal^K_{1:n}} \prod_{r \in T} f_r,
+%   $$
+  Define the upper triangular $(n+1) \times (n+1)$ matrix $A$:
+  $$
+  A_{i, j+1} = f_r \qquad \text{for } r = \llbracket i, j \rrbracket
+  $$ \pause
+  Then 
+  $$
+  \left[A^K\right]_{1,n+1} = \sum_{T \in \Tcal^K_{1:n}} \prod_{r \in T} f_r
+  $$
+  \ra all terms are computed in {$O(K n^2)$}. }
+  
+  \bigskip
+  \begin{itemize}
+   \item \pause To compute $p(Y\, | \,K)$, take $f_r = a_r p(Y^r)$. 
+%    \item \pause 'sum-product' = counterpart of 'max-sum' in the dynamic programming algorithm.
+   \item \pause Similar ideas in \refer{Fea06}. 
+  \end{itemize}
+  
+  \bigskip \pause
+  \ra R package EBS (exact Bayesian segmentation) %\Refer{Cleynen and R. (2014)} \nocite{ClR14} 
+  \refer{ClR14}
+
+  }
+
+%====================================================================
+\frame{\frametitle{Gene regulatory network} 
+
+  \paragraph{Data:} $N = 67$ time points, $p = 11$ genes, four expected regions \refer{AFI02}
+
+  \bigskip
+  \paragraph{Model:} 
+  $$
+  t \in r: \qquad Y_t \, | \, \theta_r = (\mu_r, \Sigma_r) \sim \Ncal(\mu_r, \Sigma_r)
+  $$
+  \ra Saturated graphical model.
+  
+  \pause \bigskip \bigskip
+  Posterior probability of change-points: \emphase{dotted line}
+  $$
+  \includegraphics[width=.7\textwidth]{\figchp/ScR16-Fig8-chgpt_EMP_ap10_au1}
+  $$
+}
+
+%====================================================================
+%====================================================================
+\section{Network inference}
+\frame{\frametitle{Outline} \tableofcontents[currentsection]}
+%====================================================================
+\subsection*{Graphical model framework}
+\frame{\frametitle{Graphical model framework} 
+
+  \paragraph{Property [Hammersley-Clifford].} $p(Y) = p(Y_1, \dots Y_p)$ is Markov wrt the (decomposable) graph $G$ iff it factorizes wrt the maximal cliques of $G$:
+  $$
+  p(Y) \propto \prod_{C \in \Ccal(G)} \psi_c(Y^c), 
+  \qquad Y^c = (Y_j)_{j \in C}.
+  $$
+  
+  \bigskip 
+  \ra $G$ reveals the structure of conditional independences between the variables $Y_1, \dots Y_p$.
+  
+}
+
+%====================================================================
+\frame{\frametitle{Graphical model} 
+
+  \begin{tabular}{cc}
+    \begin{tabular}{p{.5\textwidth}}
+      \begin{tikzpicture}
+      \node[observed] (Y1) at (0, 0) {$Y_1$};
+      \node[observed] (Y2) at (\edgeunit, 0) {$Y_2$};
+      \node[observed] (Y3) at (.5*\edgeunit, .87*\edgeunit) {$Y_3$};
+      \node[observed] (Y4) at (-.5*\edgeunit, -.87*\edgeunit) {$Y_4$};
+      \node[observed] (Y5) at (.5*\edgeunit, -.87*\edgeunit) {$Y_5$};
+      \node[observed] (Y8) at (-.5*\edgeunit, .87*\edgeunit) {$Y_8$};
+      \node[observed] (Y6) at (1.5*\edgeunit, -.87*\edgeunit) {$Y_6$};
+      
+      \draw[edge] (Y1) to (Y2);  \draw[edge] (Y1) to (Y3);  \draw[edge] (Y2) to (Y3);
+      \draw[edge] (Y1) to (Y4);  \draw[edge] (Y1) to (Y5);
+      \draw[edge] (Y2) to (Y6);  \draw[edge] (Y3) to (Y8);
+      \end{tikzpicture}
+    \end{tabular}
+    & 
+    \hspace{-.2\textwidth}
+    \begin{tabular}{p{.5\textwidth}}
+    Means that
+    \begin{eqnarray*}
+      p(Y_1, \dots, Y_8) & \propto & \psi_1(Y_1, Y_2, Y_3) \\
+      &  & \psi_2(Y_1, Y_4) \ \psi_3(Y_1, Y_5) \\
+      &  & \psi_4(Y_2, Y_6) \ \psi_5(Y_3, Y_8)
+    \end{eqnarray*}
+    which implies\footnote{Under fairly general assumptions on $p$} that
+    \begin{eqnarray*}
+     Y_4 \perp Y_3 & | & Y_1 \\
+     (Y_6, Y_7) \perp Y_3 & | & Y_2 \\
+     \dots
+    \end{eqnarray*}
+    \end{tabular}
+  \end{tabular}
+  
+  \pause
+  \paragraph{'Network inference' problem:} Based on $\{(Y_{i1}, \dots Y_{ip})\}_i$ iid $\sim p$, infer $G$.
+}
+
+%====================================================================
+\frame{\frametitle{Tree-structures network} 
+
+  \paragraph{Tree assumption:} the graph $G$ is a spanning tree $T$.
+  
+  \begin{tabular}{cc}
+    \hspace{.1\textwidth}
+    \begin{tabular}{p{.5\textwidth}}
+      \begin{tikzpicture}
+      \node[observed] (Y1) at (0, 0) {$Y_1$};
+      \node[observed] (Y2) at (\edgeunit, 0) {$Y_2$};
+      \node[observed] (Y3) at (.5*\edgeunit, .87*\edgeunit) {$Y_3$};
+      \node[observed] (Y4) at (-.5*\edgeunit, -.87*\edgeunit) {$Y_4$};
+      \node[observed] (Y5) at (.5*\edgeunit, -.87*\edgeunit) {$Y_5$};
+      \node[observed] (Y8) at (-.5*\edgeunit, .87*\edgeunit) {$Y_8$};
+      \node[observed] (Y6) at (1.5*\edgeunit, -.87*\edgeunit) {$Y_6$};
+      \draw[dashededge] (Y1) to (Y2);  \draw[dashededge] (Y1) to (Y3);  \draw[dashededge] (Y2) to (Y3);
+      \draw[edge] (Y1) to (Y4);  \draw[edge] (Y1) to (Y5);
+      \draw[edge] (Y2) to (Y6);  \draw[edge] (Y3) to (Y8);
+      \end{tikzpicture}
+    \end{tabular}
+    & 
+    \hspace{-.2\textwidth}
+    \begin{tabular}{p{.5\textwidth}}
+	 \begin{overprint}
+	  \onslide<1>
+	   \begin{tikzpicture}
+	   \node[observed] (Y1) at (0, 0) {$Y_1$};
+	   \node[observed] (Y2) at (\edgeunit, 0) {$Y_2$};
+	   \node[observed] (Y3) at (.5*\edgeunit, .87*\edgeunit) {$Y_3$};
+	   \node[observed] (Y4) at (-.5*\edgeunit, -.87*\edgeunit) {$Y_4$};
+	   \node[observed] (Y5) at (.5*\edgeunit, -.87*\edgeunit) {$Y_5$};
+	   \node[observed] (Y8) at (-.5*\edgeunit, .87*\edgeunit) {$Y_8$};
+	   \node[observed] (Y6) at (1.5*\edgeunit, -.87*\edgeunit) {$Y_6$};
+	   \draw[edge] (Y1) to (Y3);  \draw[edge] (Y2) to (Y3);
+	   \draw[edge] (Y1) to (Y4);  \draw[edge] (Y1) to (Y5);
+	   \draw[edge] (Y2) to (Y6);  \draw[edge] (Y3) to (Y8);
+	   \end{tikzpicture}
+	  \onslide<2>
+	   \begin{tikzpicture}
+	   \node[observed] (Y1) at (0, 0) {$Y_1$};
+	   \node[observed] (Y2) at (\edgeunit, 0) {$Y_2$};
+	   \node[observed] (Y3) at (.5*\edgeunit, .87*\edgeunit) {$Y_3$};
+	   \node[observed] (Y4) at (-.5*\edgeunit, -.87*\edgeunit) {$Y_4$};
+	   \node[observed] (Y5) at (.5*\edgeunit, -.87*\edgeunit) {$Y_5$};
+	   \node[observed] (Y8) at (-.5*\edgeunit, .87*\edgeunit) {$Y_8$};
+	   \node[observed] (Y6) at (1.5*\edgeunit, -.87*\edgeunit) {$Y_6$};
+	   \draw[edge] (Y1) to (Y2);  \draw[edge] (Y2) to (Y3);
+	   \draw[edge] (Y1) to (Y4);  \draw[edge] (Y1) to (Y5);
+	   \draw[edge] (Y2) to (Y6);  \draw[edge] (Y3) to (Y8);
+	   \end{tikzpicture}
+  	  \onslide<3->
+	   \begin{tikzpicture}
+	   \node[observed] (Y1) at (0, 0) {$Y_1$};
+	   \node[observed] (Y2) at (\edgeunit, 0) {$Y_2$};
+	   \node[observed] (Y3) at (.5*\edgeunit, .87*\edgeunit) {$Y_3$};
+	   \node[observed] (Y4) at (-.5*\edgeunit, -.87*\edgeunit) {$Y_4$};
+	   \node[observed] (Y5) at (.5*\edgeunit, -.87*\edgeunit) {$Y_5$};
+	   \node[observed] (Y8) at (-.5*\edgeunit, .87*\edgeunit) {$Y_8$};
+	   \node[observed] (Y6) at (1.5*\edgeunit, -.87*\edgeunit) {$Y_6$};
+	   \draw[edge] (Y1) to (Y2);  \draw[edge] (Y1) to (Y3);  
+	   \draw[edge] (Y1) to (Y4);  \draw[edge] (Y1) to (Y5);
+	   \draw[edge] (Y2) to (Y6);  \draw[edge] (Y3) to (Y8);
+	   \end{tikzpicture}
+	  \end{overprint}
+    \end{tabular}
+  \end{tabular}
+  
+  \onslide+<4>{
+  \bigskip \bigskip 
+%     \paragraph{Tree structure assumption.}
+    \begin{itemize}
+    \item Consistent with the usual assumption that the graph is sparse (although much stronger).
+    \\~
+    \item Not true in general, but may be sufficient for the \emphase{inference on local
+    structures}, such as the existence of a given edge.
+    \end{itemize}
+    }
+    
+}
+
+%====================================================================
+\frame{\frametitle{Hyper-Markov prior} 
+
+  \begin{tabular}{cc}
+    \begin{tabular}{p{.5\textwidth}}
+	 \onslide+<1->{
+	   \paragraph{Graphical model:} \\
+	   $p(Y \, | \, \theta, T)$ factorizes wrt edges of $T$ \\
+	   (Markov wrt $T$) \\
+	   ~\\
+	   }
+	 \onslide+<2->{
+	   \paragraph{Desirable prior:} \\
+	   $p(\theta\, | \, T)$ factorizes wrt edges of $T$ as well \\
+	   (Hyper-Markov wrt $T$) \\
+	   ~\\
+	   }
+	 \onslide+<3->{
+	   \paragraph{Averaging over $T$:} \\
+	   This should hold fot any tree $T$
+	   }
+    \end{tabular}
+    & 
+    \hspace{-.02\textwidth}
+    \begin{tabular}{p{.5\textwidth}}
+	 \begin{overprint}
+	 \onslide<1>
+	   \hspace{.01\textwidth} \vspace{-.15\textheight}
+	   \begin{tikzpicture}
+	   \node[observed] (Y1) at (0, 0) {$Y_1$};
+	   \node[observed] (Y2) at (\edgeunit, 0) {$Y_2$};
+	   \node[observed] (Y3) at (.5*\edgeunit, .87*\edgeunit) {$Y_3$};
+	   \node[observed] (Y4) at (-.5*\edgeunit, -.87*\edgeunit) {$Y_4$};
+	   \node[observed] (Y5) at (.5*\edgeunit, -.87*\edgeunit) {$Y_5$};
+	   \draw[edge] (Y1) to (Y3);  \draw[edge] (Y2) to (Y3);
+	   \draw[edge] (Y1) to (Y4);  \draw[edge] (Y1) to (Y5);
+	   \node[empty] (theta1) at (-1*\edgeunit, 0) {};
+	   \node[empty] (theta2) at (2*\edgeunit, 0) {};
+	   \node[empty] (theta3) at (.5*\edgeunit, 1.74*\edgeunit) {};
+	   \end{tikzpicture}
+	 \onslide<2>
+	   \begin{tikzpicture}
+	   \node[observed] (Y1) at (0, 0) {$Y_1$};
+	   \node[observed] (Y2) at (\edgeunit, 0) {$Y_2$};
+	   \node[observed] (Y3) at (.5*\edgeunit, .87*\edgeunit) {$Y_3$};
+	   \node[observed] (Y4) at (-.5*\edgeunit, -.87*\edgeunit) {$Y_4$};
+	   \node[observed] (Y5) at (.5*\edgeunit, -.87*\edgeunit) {$Y_5$};
+	   \draw[edge] (Y1) to (Y3);  \draw[edge] (Y2) to (Y3);
+	   \draw[edge] (Y1) to (Y4);  \draw[edge] (Y1) to (Y5);
+	   \node[hidden] (theta1) at (-1*\edgeunit, 0) {$\theta_1$};
+	   \node[hidden] (theta2) at (2*\edgeunit, 0) {$\theta_2$};
+	   \node[hidden] (theta3) at (.5*\edgeunit, 1.74*\edgeunit) {$\theta_3$};
+	   \node[empty] (Ye13) at (.25*\edgeunit, .435*\edgeunit) {};
+	   \node[empty] (Ye23) at (.75*\edgeunit, .435*\edgeunit) {};
+	   \node[hidden] (theta13) at (-.62*\edgeunit, .935*\edgeunit) {$\theta_{13}$};
+	   \node[hidden] (theta23) at (1.87*\edgeunit, .935*\edgeunit) {$\theta_{23}$};
+	   \draw[arrow] (theta1) to (Y1);  \draw[arrow] (theta2) to (Y2);
+	   \draw[arrow] (theta3) to (Y3);  
+	   \draw[arrow] (theta13) to (Ye13); \draw[arrow] (theta23) to (Ye23);
+	   \end{tikzpicture} 
+	 \onslide<3->
+	   \begin{tikzpicture}
+	   \node[observed] (Y1) at (0, 0) {$Y_1$};
+	   \node[observed] (Y2) at (\edgeunit, 0) {$Y_2$};
+	   \node[observed] (Y3) at (.5*\edgeunit, .87*\edgeunit) {$Y_3$};
+	   \node[observed] (Y4) at (-.5*\edgeunit, -.87*\edgeunit) {$Y_4$};
+	   \node[observed] (Y5) at (.5*\edgeunit, -.87*\edgeunit) {$Y_5$};
+	   \draw[edge] (Y1) to (Y3);  \draw[edge] (Y1) to (Y2);
+	   \draw[edge] (Y1) to (Y4);  \draw[edge] (Y1) to (Y5);
+	   \node[hidden] (theta1) at (-1*\edgeunit, 0) {$\theta_1$};
+	   \node[hidden] (theta2) at (2*\edgeunit, 0) {$\theta_2$};
+	   \node[hidden] (theta3) at (.5*\edgeunit, 1.74*\edgeunit) {$\theta_3$};
+	   \node[empty] (Ye13) at (.25*\edgeunit, .435*\edgeunit) {};
+	   \node[empty] (Ye12) at (.5*\edgeunit, 0) {};
+	   \node[hidden] (theta13) at (-.62*\edgeunit, .935*\edgeunit) {$\theta_{13}$};
+	   \node[hidden] (theta12) at (1.5*\edgeunit, .935*\edgeunit) {$\theta_{12}$};
+	   \draw[arrow] (theta1) to (Y1);  \draw[arrow] (theta2) to (Y2);
+	   \draw[arrow] (theta3) to (Y3);  
+	   \draw[arrow] (theta13) to (Ye13); \draw[arrow] (theta12) to (Ye12);
+	   \end{tikzpicture} 
+	   
+	   \bigskip
+	   ($\theta_4$, $\theta_5$, $\theta_{14}$, $\theta_{15}$ not drawn.)
+	 \end{overprint}
+    \end{tabular}
+  \end{tabular}
+
+  \bigskip 
+  \onslide<4>{
+    \emphase{Compatible family of strong Markov hyper-dist. \refer{DaL93}:} \\
+    \ra multinomial-Dirichlet (conjugacy), \\
+    \ra normal-Wishart (conjugacy), \\
+    \ra Gaussian copulas (numerical integration), ...?
+    }
+  }
+  
+%====================================================================
+\frame{\frametitle{Bayesian inference for tree-structured network \refer{SRS15}} 
+
+  $p(Y\, | \,T)$ Markov wrt $T$
+  \begin{eqnarray*}
+   p(Y\, | \,T) 
+   & = & \prod_j p(Y_j) \prod_{(j, k) \in T} \frac{p(Y_j, Y_k)}{p(Y_j)p(Y_k)} \\
+   & = & \prod_{(j, k) \in T} p(Y_j, Y_k) \left/ \prod_j p^{d_j-1}(Y_j) \right.
+  \end{eqnarray*}
+  where $d_j$ is the degree (number of neighbors in $T$) of node $j$.
+  
+  \bigskip \bigskip \pause
+  \paragraph{Prior on $T$:} factorizes over the edges:
+  $$
+  p(T) \propto \prod_{(j, k) \in T} a_{jk}
+  $$
+
+}
+
+%====================================================================
+\frame{\frametitle{Quantities of interest}
+
+  \paragraph{Marginal distribution.}
+  $$
+  p(Y) 
+  = \sum_{T \in \Tcal} p(T) p(Y\, | \,T)
+  \propto 
+%   \sum_{T \in \Tcal} \prod_{j, k} \frac{a_{jk} \int p(Y_j, Y_k, \theta_{jk}) \dd \theta_{jk}}{\int p(Y_j, \theta_j) \dd \theta_j \times \int p(Y_k, \theta_k) \dd \theta_k}
+  \sum_{T \in \Tcal} \prod_{j, k} \frac{a_{jk} p(Y_j, Y_k)}{p(Y_j) p(Y_k)}
+  $$
+  where $\Tcal$ stands for the set of all spanning trees. 
+  
+  \bigskip \bigskip \pause
+  \paragraph{Posterior probability for an edge to be absent.}
+  $$
+  \Pr\{(j, k) \notin T \, | \,Y\} \propto 
+%   \sum_{T \in \Tcal: (j, k) \notin T} \prod_{j, k} \frac{a_{jk} \int p(Y_j, Y_k, \theta_{jk}) \dd \theta_{jk}}{\int p(Y_j, \theta_j) \dd \theta_j \times \int p(Y_k, \theta_k) \dd \theta_k}
+  \sum_{T \in \Tcal: (j, k) \notin T} \prod_{j, k} \frac{a_{jk} p(Y_j, Y_k)}{p(Y_j) p(Y_k) }
+  $$
+
+  \bigskip \pause
+  \paragraph{Typical form:} 
+  $$
+  \sum_{T \in \Tcal} \prod_{(j, k) \in T} f_{jk},
+  \qquad \qquad \text{with} \quad \# \Tcal = p^{p-2}.
+  $$
+
+}
+
+%====================================================================
+\frame{\frametitle{Summing over spanning trees} 
+
+  \paragraph{Matrix-tree theorem.} \refer{Cha82} {\sl
+  \begin{itemize}
+   \item $F = [f_{jk}]$: a symmetric matrix with $f(j, j) = 0, f_{jk} > 0$;
+   \item $\Delta = [\Delta_{jk}]$ its Laplacian: $\Delta_{jj} = \sum_k f_{jk}, \Delta_{jk} = -f_{jk}$. 
+  \end{itemize} \pause
+  Then the minors $|\Delta^{uv}|$ of $\Delta$ are equal and
+  $$
+  |\Delta^{uv}| = \sum_{T \in \Tcal} \prod_{(j, k) \in T} f_{jk}.
+  $$}
+  
+  \pause \bigskip
+  \begin{itemize}
+   \item $p(Y)$ and the normalizing constant of $p(T)$, ... can be computed at the cost of computing a $p \times p$ determinant, ie \emphase{$O(p^3)$}. \\ ~
+   \item Already used in \refer{MeJ06,Kir07} for tree learning.
+%    \item Again 'sum-product' in place of 'max-sum'.
+  \end{itemize}
+}
+
+%====================================================================
+\frame{\frametitle{Posterior probability of an edge} 
+
+  The existence of an edge between variables $Y_j$ and $Y_k$ can be assessed by
+  $$
+  \Pr\{(j, k) \in T \, | \, Y\} \propto \sum_{T \ni (j, k)} p(T) p(Y\, | \,T)
+  $$
+  which depends on the prior $p(T)$.
+  
+  \bigskip \bigskip
+  The prior probability $\Pr\{(j, k) \in T\}$ can be tuned
+  \begin{itemize}
+   \item with the prior coefficient $a_{jk}$ 
+   \item or set to an arbitrary value using an edge-specific probability change.
+  \end{itemize}
+  
+
+  \pause \bigskip \bigskip
+  All posterior probabilities can \emphase{still be computed in $O(p^3)$} \refer{Kir07}. \\ ~\\
+  \ra R package Saturnin (spanning trees used for network inference) \refer{SRS15}
+
+}
+
+%====================================================================
+\frame{\frametitle{Tree averaging} 
+
+%   \begin{tabular}{cc}
+%     \begin{tabular}{p{.3\textwidth}}
+% %     \paragraph{Sum over all trees}
+%     \end{tabular}
+%     & 
+%     \hspace{-.1\textwidth}
+    \begin{tabular}{p{.4\textwidth}}
+      \begin{tabular}{cccc}
+	   \begin{tabular}{c}
+		\begin{tikzpicture}
+		\node[observed] (Y1) at (0*\edgeunit, 0*\edgeunit) {$Y_1$};
+		\node[observed] (Y2) at (1*\edgeunit, 0*\edgeunit) {$Y_2$};
+		\node[observed] (Y3) at (1*\edgeunit, 1*\edgeunit) {$Y_3$};
+		\node[observed] (Y4) at (0*\edgeunit, 1*\edgeunit) {$Y_4$};
+		\draw[edge] (Y1) to (Y2); \draw[edge] (Y1) to (Y3); \draw[edge] (Y2) to (Y4); 
+		\end{tikzpicture} \\
+		\footnotesize{$P\{T = T_1 | Y\}$}
+	   \end{tabular}
+	   & 
+	   \hspace{-.05\textwidth} \pause
+	   \begin{tabular}{c}
+		\begin{tikzpicture}
+		\node[observed] (Y1) at (0*\edgeunit, 0*\edgeunit) {$Y_1$};
+		\node[observed] (Y2) at (1*\edgeunit, 0*\edgeunit) {$Y_2$};
+		\node[observed] (Y3) at (1*\edgeunit, 1*\edgeunit) {$Y_3$};
+		\node[observed] (Y4) at (0*\edgeunit, 1*\edgeunit) {$Y_4$};
+		\draw[edge] (Y1) to (Y2); \draw[edge] (Y1) to (Y3); \draw[edge] (Y1) to (Y4); 
+		\end{tikzpicture} \\
+		\footnotesize{$P\{T = T_2 | Y\}$}
+	   \end{tabular}
+	   &
+	   \hspace{-.05\textwidth} \pause
+	   \begin{tabular}{c}
+		\begin{tikzpicture}
+		\node[observed] (Y1) at (0*\edgeunit, 0*\edgeunit) {$Y_1$};
+		\node[observed] (Y2) at (1*\edgeunit, 0*\edgeunit) {$Y_2$};
+		\node[observed] (Y3) at (1*\edgeunit, 1*\edgeunit) {$Y_3$};
+		\node[observed] (Y4) at (0*\edgeunit, 1*\edgeunit) {$Y_4$};
+		\draw[edge] (Y1) to (Y2); \draw[edge] (Y2) to (Y3); \draw[edge] (Y2) to (Y4); 
+		\end{tikzpicture}\\
+		\footnotesize{$P\{T = T_3 | Y\}$}
+	   \end{tabular}
+	   &
+	   \hspace{-.05\textwidth} \pause
+	   \begin{tabular}{c}
+		\begin{tikzpicture}
+		\node[observed] (Y1) at (0*\edgeunit, 0*\edgeunit) {$Y_1$};
+		\node[observed] (Y2) at (1*\edgeunit, 0*\edgeunit) {$Y_2$};
+		\node[observed] (Y3) at (1*\edgeunit, 1*\edgeunit) {$Y_3$};
+		\node[observed] (Y4) at (0*\edgeunit, 1*\edgeunit) {$Y_4$};
+		\draw[edge] (Y1) to (Y2); \draw[edge] (Y2) to (Y4); \draw[edge] (Y3) to (Y4); 
+		\end{tikzpicture} \\
+		\footnotesize{$P\{T = T_4 | Y\}$}
+	   \end{tabular}
+	   \\ \\
+	   \\ \pause
+	   \begin{tabular}{l}
+		Edge posterior\\
+		probabilities:
+	   \end{tabular}
+	   &
+	   \hspace{-.05\textwidth}
+	   \begin{tabular}{c}
+		\begin{tikzpicture}
+		\node[observed] (Y1) at (0*\edgeunit, 0*\edgeunit) {$Y_1$};
+		\node[observed] (Y2) at (1*\edgeunit, 0*\edgeunit) {$Y_2$};
+		\node[observed] (Y3) at (1*\edgeunit, 1*\edgeunit) {$Y_3$};
+		\node[observed] (Y4) at (0*\edgeunit, 1*\edgeunit) {$Y_4$};
+		\draw [line width=5pt] (Y1) -- (Y2); 
+		\draw [line width=3pt] (Y1) -- (Y3); 
+		\draw [line width=.5pt] (Y1) -- (Y4); 
+		\draw [line width=2pt] (Y2) -- (Y3); 
+		\draw [line width=.5pt] (Y2) -- (Y4); 
+% 		\draw [line width=.5pt] (Y3) -- (Y4); 
+		\end{tikzpicture}\\
+		\emphase{$P\{(j, k) \in T | Y\}$}
+	   \end{tabular}
+	   &
+	   \hspace{-.05\textwidth} \pause
+	   \begin{tabular}{l}
+		Thresholding\\
+		probabilities:
+	   \end{tabular}
+	   &
+	   \hspace{-.05\textwidth}
+	   \begin{tabular}{c}
+		\begin{tikzpicture}
+		\node[observed] (Y1) at (0*\edgeunit, 0*\edgeunit) {$Y_1$};
+		\node[observed] (Y2) at (1*\edgeunit, 0*\edgeunit) {$Y_2$};
+		\node[observed] (Y3) at (1*\edgeunit, 1*\edgeunit) {$Y_3$};
+		\node[observed] (Y4) at (0*\edgeunit, 1*\edgeunit) {$Y_4$};
+		\draw [line width=1pt] (Y1) -- (Y2); 
+		\draw [line width=1pt] (Y1) -- (Y3); 
+% 		\draw [line width=1pt] (Y1) -- (Y4); 
+		\draw [line width=1pt] (Y2) -- (Y3); 
+% 		\draw [line width=.1pt] (Y2) -- (Y4); 
+% 		\draw [line width=1pt] (Y3) -- (Y4); 
+		\end{tikzpicture}\\
+		\emphase{$P\{(j, k) \in T | Y\}$}
+	   \end{tabular}
+	 \end{tabular}
+    \end{tabular}
+%   \end{tabular}
+
+}
+%====================================================================
+\frame{\frametitle{Simulations: ROC curves for edge detection} 
+
+For various graph topologies ($p=25$, $n = 25, 50, 200$, $B = 100$ simulations)
+$$%\\
+\begin{tabular}{cccc}
+\includegraphics[width=0.18\linewidth]{\fignet/roc_curves_tree_multinomial.pdf}
+& \includegraphics[width=0.18\linewidth]{\fignet/roc_curves_ER2p_multinomial.pdf}
+& \includegraphics[width=0.18\linewidth]{\fignet/roc_curves_ER4p_multinomial.pdf}
+& \includegraphics[width=0.18\linewidth]{\fignet/roc_curves_ER8p_multinomial.pdf} \\
+Tree & Erd\"{o}s-R\'{e}nyi & Erd\"{o}s-R\'{e}nyi & Erd\"{o}s-R\'{e}nyi \\
+& $p_c = 2/p$ & $p_c = 4/p$ &  $p_c = 8/p$ 
+\end{tabular}
+$$
+}
+
+%====================================================================
+\frame{\frametitle{Simulations: Comparison with sampling among DAGs} 
+
+\refer{NPK11}: MCMC sampling over the directed acyclic graphs (multinomial case) 
+$$
+\begin{tabular}{cccc}
+\includegraphics[width=0.18\linewidth]{\fignet/boxplot_tree.pdf}
+& \includegraphics[width=0.18\linewidth]{\fignet/boxplot_ER2p.pdf}
+& \includegraphics[width=0.18\linewidth]{\fignet/boxplot_ER4p.pdf}
+& \includegraphics[width=0.18\linewidth]{\fignet/boxplot_ER8p.pdf} \\
+Tree & Erd\"{o}s-R\'{e}nyi & Erd\"{o}s-R\'{e}nyi & Erd\"{o}s-R\'{e}nyi \\
+& $p_c = 2/p$ & $p_c = 4/p$ &  $p_c = 8/p$ 
+\end{tabular} 
+$$
+Area under the curves: top=ROC, bottom=PR\\
+light grey = multinomial trees (\emphase{2.2''}), dark grey: multinomial DAGs (\emphase{1393''}) 
+
+}	
+
+%====================================================================
+\frame{\frametitle{Illustration: Raf pathway}
+
+Flow cytometry data for $p = 11$ proteins from the Raf signaling pathway \refer{SPP05} \\ ~
+
+\begin{tabular}{cc}
+  \includegraphics[trim = 12mm 35mm 12mm 18mm, clip,width=0.45\linewidth]{\fignet/RAF.pdf}
+  & 
+  \includegraphics[width=0.45\linewidth]{\fignet/RAF_edge_prob_graph_q0_05.pdf} \\
+  'ground truth' & posterior probabilities \\ 
+  ~\\
+  \includegraphics[width=0.45\linewidth]{\fignet/best_1.pdf} 
+  &
+  \includegraphics[width=0.45\linewidth]{\fignet/best_2.pdf} \\
+  most likely tree & second most likely tree
+\end{tabular}
+
+}
+
+%====================================================================
+%====================================================================
+\section{Detecting changes in a graphical model}
+\frame{\frametitle{Outline} \tableofcontents[currentsection]}
+
+%====================================================================
+\frame{\frametitle{Change-point in a graphical model} 
+
+  \pause \paragraph{Problem:} \refer{ScR16} %\Refer{Schwaller and R. (2016)} \nocite{ScR16} 
+  \begin{itemize}
+  \item Consider $p$ variables observed along time; 
+  \item Consider the graph $G_t$ supporting the graphical model at time $t$; 
+  \item Does the graph $G_t$ remain the same along time? 
+  \end{itemize}
+  $$
+  \includegraphics[height=.3\textheight]{\figchp/ChangePoint-Tree.pdf}
+  $$
+
+ \pause \paragraph{Examples:}
+  \begin{enumerate}
+   \item Gene regulatory network along the {\sl Drosophila} life cycle? \\~
+   \item Connections between brain regions along different tasks?
+  \end{enumerate}
+%   }
+  
+}
+
+%====================================================================
+\frame{\frametitle{Model} 
+
+  $$
+  \begin{array}{rcll}
+   K & = & \text{number of segments} & p(K); \\ ~\\ \pause
+   R = (r_k)_k & = & \text{segmentation} & p(R|K) \propto \prod_{r \in R} a_r; \\ ~\\ \pause
+   T = (T_r)_r & = & \text{set of trees} & p(T|R) = \prod_{r \in R} p(T_r|R), \\ 
+   T_r & = & \text{graphical model in segment $r$} & \\ ~\\ \pause
+   \theta = (\theta_r)_ r & = & \text{parameter in each segment} & p(\theta | T) = \prod_{r \in R} p(\theta_r | T_r) \\
+   & & \text{typically: support$(\Sigma_r^{-1}) = T_r$} \\ ~\\ \pause 
+   Y_t = (Y_{jt}) & = & \text{data collected at time $t$} & p(Y | R, \theta) = \prod_{r \in R} \prod_{t \in r} p(Y_t | \theta_r) 
+  \end{array}
+  $$
+  
+  \bigskip \bigskip \pause
+  \paragraph{Typical issue:} Evaluate
+  $$
+  p(Y | K) = \sum_R \sum_{T = (T_r)_{r\in R}} p(R|K) \prod_{r \in R} p(T_r | R) p(Y^r | T_r)
+  $$
+  }
+
+%====================================================================
+\frame{\frametitle{Handling two sums} 
+
+  \paragraph{Double discrete structure:}
+  \begin{itemize}
+   \item $\approx (N/K)^K$ possible segmentations into $K$ segments; \\~
+   \item $p^{K(p-2)}$ possible combination of $K$ trees \\~
+  \end{itemize}
+  \ra sum over $\approx (N/K)^K p^{K(p-2)}$ terms.
+
+  \pause \bigskip \bigskip
+  \paragraph{Combining the two preceding tools:}
+  \begin{itemize}
+   \item Summing of all segmentations in $O(KN^2)$, \\~
+   \item Summing over all trees in $O(p^3)$ (one tree per possible segment) \\~
+  \end{itemize}
+  \ra Global complexity $= O(\max\{K, p^3\}N^2)$
+
+}
+
+%====================================================================
+\frame{\frametitle{Inference} 
+
+  \paragraph{Quantities of interest} can be computed in $O(p^3N^2)$: \\
+  \begin{itemize}
+   \item $P(\text{change-point at time $t$} \, | \, K, Y)$ \\~
+   \item $P(\text{edge $(j, k)$ present at time $t$} \, | \, K, Y)$ \\~
+   \item $P(\text{edge $(j, k)$ present at all $t$} \, | \, Y)$ \\~
+   \item $P(\text{$K$ segments} \, | \, Y)$.
+  \end{itemize}
+  
+  \pause \bigskip 
+  \paragraph{+ Network comparison} \\
+  \begin{itemize}
+   \item $P(T_1 = T_2 \, | \, Y_1, Y_2)$ \\~
+   \item $P(\text{edge $(j, k)$ present in both $T_1$ and $T_2$} \, | \, Y_1 ,Y_2)$.
+  \end{itemize}
+
+}
+%====================================================================
+\frame{\frametitle{Some simulations} 
+
+  \begin{tabular}{ccc}
+   Tree & Erd\"os ($\pi = 2/p$) & Erd\"os ($\pi = 4/p$) \\
+   \begin{tabular}{c}
+    \includegraphics[width=.3\textwidth]{\figchp/ScR16-Fig4-Tree_N_p10_Tree}
+   \end{tabular}
+   &
+   \hspace{-.05\textwidth}
+   \begin{tabular}{c}
+    \includegraphics[width=.3\textwidth]{\figchp/ScR16-Fig4-ER2p_N_p10_Tree}
+   \end{tabular}
+   &
+   \hspace{-.05\textwidth}
+   \begin{tabular}{c}
+    \includegraphics[width=.3\textwidth]{\figchp/ScR16-Fig4-ER4p_N_p10_Tree}
+   \end{tabular}
+   \\
+   \begin{tabular}{c}
+    \includegraphics[width=.3\textwidth]{\figchp/ScR16-Fig4-Tree_N_p10_Complete}
+   \end{tabular}
+   &
+   \hspace{-.05\textwidth}
+   \begin{tabular}{c}
+    \includegraphics[width=.3\textwidth]{\figchp/ScR16-Fig4-ER2p_N_p10_Complete}
+   \end{tabular}
+   &
+   \hspace{-.05\textwidth}
+   \begin{tabular}{c}
+    \includegraphics[width=.3\textwidth]{\figchp/ScR16-Fig4-ER4p_N_p10_Complete}
+   \end{tabular}
+  \end{tabular}
+  Top to bottom: N = 70, 140, 210. %\\
+   \textcolor{blue}{Tree-structured} network. \textcolor{red}{Complete} network.
+
+}
+
+%====================================================================
+\frame{\frametitle{Gene regulatory network} 
+
+  \pause
+  \paragraph{Data:} $N = 67$ time points, $p = 11$ genes, four expected regions
+
+  \pause \bigskip
+  Posterior probability of change-points:
+  $$
+  \includegraphics[width=.7\textwidth]{\figchp/ScR16-Fig8-chgpt_EMP_ap10_au1}
+  $$
+
+  \pause
+  Inferred networks:
+  $$
+  \includegraphics[width=.8\textwidth]{\figchp/ScR16-Fig9-network_seuil02}
+  $$
+
+}
+
+%====================================================================
+\frame{\frametitle{FMRI data \refer{CHA12}} 
+
+  \begin{tabular}{cc}
+    \begin{tabular}{p{.3\textwidth}} 
+	 FMRI data collected on $20$ patients: \\
+	 $p=5$ brain regions,\\
+	 $n = 215$ time-points. \\ ~
+	 
+	 Task changes at $t = 60$ and $120$. \\ ~
+	 
+	 Top: 5 patients analyzed separately. \\ ~
+	 
+	 Bottom: joint analysis of the same 5 patients
+
+    \end{tabular}
+    & 
+    \begin{tabular}{l}
+    \includegraphics[width=.5\textwidth]{\figchp/ScR16-Fig10a} \\
+    \includegraphics[width=.56\textwidth]{\figchp/ScR16-Fig10c}
+    \end{tabular}
+  \end{tabular}
+
+}
+
+%====================================================================
+%====================================================================
+\section{Discussion}
+\frame{\frametitle{Outline} \tableofcontents[currentsection]}
+
+%====================================================================
+\frame{\frametitle{Summary} 
+
+  \paragraph{To summarize.} \\ ~
+  \begin{itemize}
+   \item Exact Bayesian inference can be achieved for some fairly complex models with discrete parameter. \\ ~
+   \item Do not have to care about sampling and convergence. \\ ~
+   \item No systematic way to check when similar algebraic shortcuts exist \\
+   \ra ad-hoc developments.
+  \end{itemize}
+
+}
+
+%====================================================================
+\frame{\frametitle{Algebraic properties} 
+
+  \begin{tabular}{ccc}
+    \begin{tabular}{p{.3\textwidth}}
+    \end{tabular}
+    & 
+    \hspace{-.05\textwidth}
+    \begin{tabular}{p{.3\textwidth}}
+	 Bayesian inference 
+    \end{tabular} 
+    & 
+    \hspace{-.05\textwidth}
+    \begin{tabular}{p{.3\textwidth}}
+	 Maximum likelihood 
+    \end{tabular} \pause
+    \\ ~\\ \hline ~\\
+    \begin{tabular}{p{.3\textwidth}}
+	 Change-point detection
+    \end{tabular}
+    & 
+    \hspace{-.05\textwidth}
+    \begin{tabular}{p{.3\textwidth}}
+	 $\sum_m \prod_{r \in m} p_r$ \\ ~\\
+	 \ra Matrix power 
+    \end{tabular} 
+    & 
+    \hspace{-.05\textwidth}
+    \begin{tabular}{p{.3\textwidth}}
+	 $\max_m \sum_{r \in m} \log p_r$ \\ ~\\
+	 \ra Dynamic programing 
+    \end{tabular} \pause
+    \\ ~\\ \hline ~\\
+    \begin{tabular}{p{.3\textwidth}}
+	 Tree-structured network inference
+    \end{tabular}
+    & 
+    \hspace{-.05\textwidth}
+    \begin{tabular}{p{.3\textwidth}}
+	 $\sum_T \prod_{(jk) \in T} p_{jk}$ \\ ~\\
+	 \ra Matrix-tree theorem 
+    \end{tabular} 
+    & 
+    \hspace{-.05\textwidth}
+    \begin{tabular}{p{.3\textwidth}}
+	 $\max_T \sum_{(jk) \in T} \log p_{jk}$ \\ ~\\
+	 \ra Max. spanning tree 
+    \end{tabular} \pause
+    \\ ~\\ \hline ~\\ 
+    \begin{tabular}{p{.3\textwidth}}
+	 Algebra
+    \end{tabular}
+    & 
+    \hspace{-.05\textwidth}
+    \begin{tabular}{p{.3\textwidth}}
+	 sum-product
+    \end{tabular}
+    & 
+    \hspace{-.05\textwidth}
+    \begin{tabular}{p{.3\textwidth}}
+	 max-sum
+    \end{tabular}
+  \end{tabular}
+  
+  \pause \bigskip \bigskip 
+  Any other example?
+
+}
+
+%====================================================================
+\frame{\frametitle{Future works} 
+
+  \begin{itemize}
+%    \item Combining the two problems: finding change-points in a network structure.
+   \item Dealing with dependency along time. 
+   $$
+   \begin{tikzpicture}
+   \node[observed] (Y1t_2) at (0*\edgeunit, 0*\edgeunit) {$Y^1_{t-2}$};
+   \node[observed] (Y2t_2) at (0*\edgeunit, .66*\edgeunit) {$Y^2_{t-2}$};
+   \node[observed] (Y3t_2) at (0*\edgeunit, 1.33*\edgeunit) {$Y^3_{t-2}$};
+   \node[observed] (Y4t_2) at (0*\edgeunit, 2*\edgeunit) {$Y^4_{t-2}$};
+   \node[observed] (Y1t_1) at (1.5*\edgeunit, 0*\edgeunit) {$Y^1_{t-1}$};
+   \node[observed] (Y2t_1) at (1.5*\edgeunit, .66*\edgeunit) {$Y^2_{t-1}$};
+   \node[observed] (Y3t_1) at (1.5*\edgeunit, 1.33*\edgeunit) {$Y^3_{t-1}$};
+   \node[observed] (Y4t_1) at (1.5*\edgeunit, 2*\edgeunit) {$Y^4_{t-1}$};
+   \draw[arrow] (Y1t_2) to (Y2t_1);  \draw[arrow] (Y2t_2) to (Y4t_1);
+   \draw[arrow] (Y3t_2) to (Y1t_1);  \draw[arrow] (Y4t_2) to (Y3t_1);
+   \node[observed] (Y1t) at (3*\edgeunit, 0*\edgeunit) {$Y^1_{t}$};
+   \node[observed] (Y2t) at (3*\edgeunit, .66*\edgeunit) {$Y^2_{t}$};
+   \node[observed] (Y3t) at (3*\edgeunit, 1.33*\edgeunit) {$Y^3_{t}$};
+   \node[observed] (Y4t) at (3*\edgeunit, 2*\edgeunit) {$Y^4_{t}$};
+   \draw[arrow] (Y1t_1) to (Y2t);  \draw[arrow] (Y2t_1) to (Y4t);
+   \draw[arrow] (Y3t_1) to (Y1t);  \draw[arrow] (Y4t_1) to (Y3t);
+   \node[empty] (Ytru) at (3.75*\edgeunit, 2.5*\edgeunit) {};  
+   \node[empty] (Ytrb) at (3.75*\edgeunit, -.5*\edgeunit) {};  
+   \draw[dashededge] (Ytru) to (Ytrb);
+   \node[observed] (Y1t1) at (4.5*\edgeunit, 0*\edgeunit) {$Y^1_{t+1}$};
+   \node[observed] (Y2t1) at (4.5*\edgeunit, .66*\edgeunit) {$Y^2_{t+1}$};
+   \node[observed] (Y3t1) at (4.5*\edgeunit, 1.33*\edgeunit) {$Y^3_{t+1}$};
+   \node[observed] (Y4t1) at (4.5*\edgeunit, 2*\edgeunit) {$Y^4_{t+1}$};
+%    \draw[arrow] (Y1t) to (Y2t1);  \draw[arrow] (Y2t) to (Y4t1);
+%    \draw[arrow] (Y3t) to (Y1t1);  \draw[arrow] (Y4t) to (Y3t1);
+   \node[observed] (Y1t2) at (6*\edgeunit, 0*\edgeunit) {$Y^1_{t+2}$};
+   \node[observed] (Y2t2) at (6*\edgeunit, .66*\edgeunit) {$Y^2_{t+2}$};
+   \node[observed] (Y3t2) at (6*\edgeunit, 1.33*\edgeunit) {$Y^3_{t+2}$};
+   \node[observed] (Y4t2) at (6*\edgeunit, 2*\edgeunit) {$Y^4_{t+2}$};
+   \draw[arrow] (Y1t1) to (Y4t2);  \draw[arrow] (Y2t1) to (Y3t2);
+   \draw[arrow] (Y3t1) to (Y1t2);  \draw[arrow] (Y4t1) to (Y2t2);
+   \end{tikzpicture} 
+   $$
+   \item Influence of the prior: $p(T)$ depends on $n$ and/or $p$. \\ ~
+   \item Solve numerical issues raised by the exact evaluation of all probabilities.
+  \end{itemize}
+}
+
+
+%====================================================================
+\frame[allowframebreaks]{ \frametitle{References}
+{\footnotesize
+  \bibliography{/home/robin/Biblio/BibGene}
+%   \bibliographystyle{/home/robin/LATEX/Biblio/astats}
+  \bibliographystyle{alpha}
+  }
+}
+
+
+
+%====================================================================
+%====================================================================
+\end{document}
+%====================================================================
+%====================================================================
+
+  \begin{tabular}{cc}
+    \begin{tabular}{p{.5\textwidth}}
+    \end{tabular}
+    & 
+    \hspace{-.02\textwidth}
+    \begin{tabular}{p{.5\textwidth}}
+    \end{tabular}
+  \end{tabular}
+
