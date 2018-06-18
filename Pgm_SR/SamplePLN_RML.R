@@ -44,6 +44,9 @@ while(min(eigen(Omega)$values) < 0) {
   coef = 1.1 * coef
   Omega = Tree + coef * diag(degree)
 }
+# est-ce qu'on est en train de dire que l'arbre est sur les Z en calculant les paramètres 
+# comme ça ??
+
 Sigma = solve(Omega); Rho = cov2cor(Sigma); sigma = sqrt(diag(Sigma))
 Esp.Y = exp(mu + sigma^2/2)
 Var.Y = Esp.Y + Esp.Y^2*(exp(sigma^2)-1)

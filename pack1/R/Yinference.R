@@ -152,3 +152,27 @@ ggdraw() +
   draw_plot(h3, .5, .4, .5, .3) +
   draw_plot(a1, 0, 0, .5, .4) +
   draw_plot(a2, .5, 0, .5, .4)
+
+
+########
+# petit test de performance de l'inverse simple de la matrice de precision de PLN
+# vs inference par mixTreeGGM
+
+# direct
+library(PLNmodels)
+PLN<-PLN(as.matrix(Y) ~ -1 )
+sigmaZ<-PLN$model_par$Sigma
+omegaZ<-abs(solve(sigmaZ))
+fun.auc.ggplot(omegaZ,Tree,"inverse direct",seq(0.06,0.7,0.001))
+
+# notre modele
+phi<-1/sqrt(1 - cov2cor(sigmaZ)^2)
+diag(phi)<-0
+FitZ<-TreeGGMpoisson(phi)
+fun.auc.ggplot(FitZ$beta,Tree,"EM",seq(0,0.7,0.001))
+heatmap(Tree,Rowv=NA,Colv=NA,scale="none",main="Tree")
+heatmap(FitZ$beta,Rowv=NA,Colv=NA,scale="none",main="mean")
+
+
+# dans les Y
+fun.auc.ggplot(FitEM$beta,Tree,"mean",seq(0,0.04,0.005))
