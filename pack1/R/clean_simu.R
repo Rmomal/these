@@ -1,8 +1,8 @@
 
 #############################
 # The Code Idea :
-# Here we initiate a graph with edge probability prob and number of nodes d, and compute the 
-# parameters  sigma and K (with noise u) corresponding to a gaussian graphical model version 
+# Here we initiate a graph with edge probability prob and number of nodes d, and compute the
+# parameters  sigma and K (with noise u) corresponding to a gaussian graphical model version
 # of the network and save their values.
 # Then we use the value of sigma to infer the network according to three methods : glasso,
 # treeGGM and treeGGM1step. Using the truth given by K, we compare the methods performances
@@ -15,9 +15,9 @@
 # ** we have to notice that prob and d affect the shape of the graph, so we have one graph
 # per value of these variables, and then one file of saved parameters per graph, and datasets
 # are generated according to these files.
-# ** As for the variable u, its role is to modify the parameters so we have only one graph, and 
+# ** As for the variable u, its role is to modify the parameters so we have only one graph, and
 # several parameter files, one per value of u. Then, datasets are generated with these files.
-# ** Finally, as the variable n has only an impact on the size of the generated datasets, we have one 
+# ** Finally, as the variable n has only an impact on the size of the generated datasets, we have one
 # graph, one file of parameters, and then one type of dataset per value of n.
 
 # By default : u=0.2, prob=0.4, d=20, n=100
@@ -31,29 +31,34 @@ set.seed(3)
 # install.packages('/home/momal/lib/igraph_1.1.2.tar.gz',repos=NULL,lib="/home/momal/R/lib/")
 # install.packages('/home/momal/lib/igraph_1.0.1.tar.gz',lib='/home/momal/R/lib/',
 #                  repos = c(CRAN = "https://cran.rstudio.com"))
-library(igraph, lib.loc="~/R/x86_64-pc-linux-gnu-library/3.4")
-library(huge, lib.loc="~/R/x86_64-pc-linux-gnu-library/3.4")
+library(igraph)
+#, lib.loc="~/R/x86_64-pc-linux-gnu-library/3.4")
+library(huge)
+#, lib.loc="~/R/x86_64-pc-linux-gnu-library/3.4")
 library(glasso)
 library(ROCR)
 library(Matrix)
 library(dplyr)
 library(tidyr)
+library(parallel)
 library(PLNmodels)
-library(ggplot2, lib.loc="/usr/local/lib/R/site-library")
-library("reshape2", lib.loc="/usr/local/lib/R/site-library")
-source('/home/momal/R/TreeMixture-RML.R')
-source('/home/momal/R/fonctions.R')
-# source('/home/momal/Git/these/pack1/R/TreeMixture-RML.R')
-# source('/home/momal/Git/these/pack1/R/fonctions.R')
+library(ggplot2)
+#, lib.loc="/usr/local/lib/R/site-library")
+library(reshape2)
+#, lib.loc="/usr/local/lib/R/site-library")
+# source('/home/momal/R/TreeMixture-RML.R')
+# source('/home/momal/R/fonctions.R')
+source('/home/momal/Git/these/pack1/R/TreeMixture-RML.R')
+source('/home/momal/Git/these/pack1/R/fonctions.R')
 mvrnorm_rml<-function (n = 1, mu, Sigma, tol = 1e-06, empirical = FALSE, EISPACK = FALSE){
   p <- length(mu)
-  if (!all(dim(Sigma) == c(p, p))) 
+  if (!all(dim(Sigma) == c(p, p)))
     stop("incompatible arguments")
-  if (EISPACK) 
+  if (EISPACK)
     stop("'EISPACK' is no longer supported by R", domain = NA)
   eS <- eigen(Sigma, symmetric = TRUE)
   ev <- eS$values
-  if (!all(ev >= -tol * abs(ev[1L]))) 
+  if (!all(ev >= -tol * abs(ev[1L])))
     stop("'Sigma' is not positive definite")
   X <- matrix(rnorm(p * n), n)
   if (empirical) {
@@ -61,13 +66,13 @@ mvrnorm_rml<-function (n = 1, mu, Sigma, tol = 1e-06, empirical = FALSE, EISPACK
     X <- X %*% svd(X, nu = 0)$v
     X <- scale(X, FALSE, TRUE)
   }
-  X <- drop(mu) + eS$vectors %*% diag(sqrt(pmax(ev, 0)), p) %*% 
+  X <- drop(mu) + eS$vectors %*% diag(sqrt(pmax(ev, 0)), p) %*%
     t(X)
   nm <- names(mu)
-  if (is.null(nm) && !is.null(dn <- dimnames(Sigma))) 
+  if (is.null(nm) && !is.null(dn <- dimnames(Sigma)))
     nm <- dn[[1L]]
   dimnames(X) <- list(nm, NULL)
-  if (n == 1) 
+  if (n == 1)
     drop(X)
   else t(X)
 }
@@ -92,12 +97,12 @@ generator_graph<-function(d = 20, graph = "tree", g = NULL, prob = NULL, vis = F
   }
   theta = matrix(0, d, d)
   if (graph == "cluster") {
-   
+
     theta<-SimCluster(d,3,5/d,10)
 
   }
   if (graph == "scale-free") {
-  
+
     out = .C("SFGen", dd0 = as.integer(2), dd = as.integer(d),
              G = as.integer(theta), PACKAGE = "huge")
     theta = matrix(as.numeric(out$G), d, d)
@@ -197,22 +202,22 @@ diagnostics<-function(file){
     labs(title = paste0("Graph of type ",type,": effect of ",param," on ",variable,".\n Cruves of medians, and 1rst and 3rd quartiles."),y=variable,x=param)+
     scale_color_manual(values=c("#076443", "#56B4E9","#E69F00" ),name="Method:", breaks=c("treeggm","ggm1step", "glasso" ),
                         labels=c("EM ","1 step", "glasso" ))+
-    theme_bw()+ 
+    theme_bw()+
     theme(plot.title = element_text(hjust = 0.5),legend.title=element_blank())
-  
 
-     
+
+
 }
 
 ####################
 ###   Main code  ###
 ####################
 
-save_params<-function(x,variable,type,path,graph,prob,u,nbgraph=nbgraph){ 
+save_params<-function(x,variable,type,path,graph,prob,u,nbgraph=nbgraph){
   if(variable!="u"){
     graph<-switch(variable, "d"=generator_graph(graph=type,d=x,prob=2/x),
                   "prob"=generator_graph(graph=type,prob=x))
-    
+
     param<-generator_param(as.matrix(graph))
   }else{
     param<-generator_param(as.matrix(graph),prob=prob)
@@ -235,14 +240,14 @@ na.omit.list <- function(y) { return(y[!sapply(y, function(x) all(is.na(x)))]) }
 
 compare_methods<-function(x,n,sigma,K,criterion){
   X<-generator_data(n,sigma)
-  
+
   print(paste0("in sapply B = ",x))
   temps<-rep(NA,3)
  try({
     T1<-Sys.time()
   inf_treeggm<-TreeGGM(X,"FALSE")$P
   T2<-Sys.time()
-  temps[1]<- difftime(T2, T1) 
+  temps[1]<- difftime(T2, T1)
   },silent=TRUE)
   try({T1<-Sys.time()
   inf_treeggm1step<-TreeGGM(X,"TRUE")$P
@@ -256,32 +261,32 @@ compare_methods<-function(x,n,sigma,K,criterion){
   diag(inf_glasso)<-0
   T2<-Sys.time()
   temps[3]<- difftime(T2, T1)
-  
-  
+
+
   #if(!exists("inf_treeggm1step") || !exists("inf_treeggm"))  browser()
   if(exists("inf_treeggm1step") && exists("inf_treeggm")){
     diagnost<-c(diagnostic.auc.sens.spe(pred=inf_treeggm,obs=K,criterion),
                 diagnostic.auc.sens.spe(pred=inf_treeggm1step,obs=K,criterion),
                 diagnostic.auc.sens.spe(pred=inf_glasso,obs=K,criterion))
-    
+
     inferences<-list(inf_treeggm,inf_treeggm1step,inf_glasso)
   }else{
       diagnost<-c(NA, NA,diagnostic.auc.sens.spe(pred=inf_glasso,obs=K,criterion))
       inferences<-list(inf_glasso*NA,inf_glasso*NA,inf_glasso)
   }
-  
+
   return(list(diagnost,temps,inferences,estim_reg(X,K)))
 }
 
 record <- function(var, x, col_names, path2,rep=TRUE) {
-  
+
   if (rep){
     frame <- data.frame(var, "B" = rep(1:B,nrow(var)/B), "param" = rep(x, nrow(var)))
   }else{
     frame <- data.frame(var,  "param" = x)
-  } 
+  }
   colnames(frame)[1:length(col_names)] <- col_names
- 
+
   save_path <- paste0(path2, deparse(substitute(var)), ".rds")
   if (file.exists(save_path)) {
     tmp <- rbind(readRDS(save_path), frame)
@@ -308,16 +313,16 @@ bootstrap_summary<-function(x,type,variable,B,path,n,criterion,nbgraph=nbgraph,P
     }
     K<-param$omega
     obj<-lapply(1:B,function(y) compare_methods(y,n=x,sigma=sigma,K=K,criterion=criterion))
-    
+
   }
   res2<-do.call(rbind,lapply(obj, function(x){x[[1]]}))
   res2<-cbind(res2,rep(x,nrow(res2)))
   temps<-do.call(rbind,lapply(obj, function(x){x[[2]]}))
- 
+
   scores<-do.call(list,lapply(obj, function(x){x[[3]]}))
   estim_nb_edges<-do.call(rbind,lapply(obj, function(x){x[[4]]}))
-  
-  
+
+
   method<-c("treeggm","ggm1step","glasso")
   path2<-paste0(path,type,"/",variable,"/")
   record(temps,x,method,paste0(path2,"temps/Graph",nbgraph))
@@ -329,7 +334,7 @@ bootstrap_summary<-function(x,type,variable,B,path,n,criterion,nbgraph=nbgraph,P
   # sup <- mns+qt(0.975,nrow(res2)-1)*sds/sqrt(nrow(res2))
   #cbind(mns,inf,sup,method,var)
   # var<-rep(x,length(mns))
-  
+
   #colnames(res2)<-method
   #res2$param<-rep(x,nrow(res2))
   return(res2)
@@ -338,12 +343,12 @@ bootstrap_summary<-function(x,type,variable,B,path,n,criterion,nbgraph=nbgraph,P
 simu<-function(type,variable,seq,n,B,prob=0.1,path,Bgraph,PLN=FALSE,cores){
   T1<-Sys.time()
   for(nbgraph in 1:Bgraph){
-  print(paste0("graph number ",nbgraph))    
+  print(paste0("graph number ",nbgraph))
     if( variable=="u") graph<-generator_graph(graph=type,prob=prob)
     if( variable=="n"){
       graph<-generator_graph(graph=type,prob=prob)
       param<-generator_param(as.matrix(graph))
-      
+
       file<-paste0(paste0(path,type,"/n/Sets_param/Graph",nbgraph,".rds"))
       saveRDS(param,file)
     }else{
@@ -358,12 +363,12 @@ simu<-function(type,variable,seq,n,B,prob=0.1,path,Bgraph,PLN=FALSE,cores){
       #auc<-data.frame(do.call("rbind",lapply(res,function(x) x[[1]])))
       auc<-data.frame(do.call("rbind",res))
       #print(auc)
-  
+
       auc[,1:3]<-apply(auc[,1:3],2,function(x) as.numeric(x))
       record(auc,nbgraph,c("treeggm","ggm1step","glasso","var"),paste0(path,type,"/",variable,"/"))
-      
+
     }#sortie for
-  }  
+  }
   auc<-readRDS(paste0(path,type,"/",variable,"/auc.rds"))
     fail_rate<-auc %>%
       group_by(var) %>%
@@ -381,10 +386,10 @@ path<-"/home/momal/Git/these/pack1/R/Simu/PLN/"#path =paste0(getwd(),"/R/Simu/")
 parameters<-list(c(seq(10,30,2)),c(seq(20,100,10)),c(seq(0,1.5,0.2)),c(seq(0.5,5,0.5)/20))
 names(parameters)<-c("d","n","u","prob")
 
-for(type in c("tree","cluster","scale-free","erdos")){
+for(type in c("tree","erdos")){
   cparam<-ifelse(type=="tree","d",c("d","prob"))
   for(param in cparam ){
-    simu(type,variable=param,seq=parameters[[param]],n=100,B=2,path=path,Bgraph=40,PLN=TRUE,cores=12)  
+    simu(type,variable=param,seq=parameters[[param]],n=100,B=2,path=path,Bgraph=40,PLN=TRUE,cores=10)
     graph(type,param,path=path)
   }
 }
@@ -407,11 +412,11 @@ for(type in c("tree","cluster","scale-free","erdos")){
 ##### PLN MODEL ######
 ######################
 # # Model parms
-# lambda = 1; Omega = diag(rep(lambda, p)) + G; 
+# lambda = 1; Omega = diag(rep(lambda, p)) + G;
 # while (min(eigen(Omega)$values) < 0){lambda = 1.1*lambda; Omega = diag(rep(lambda, p)) + G}
 # Sigma = solve(Omega)
 # O = matrix(rnorm(n*p), n, p)
-# 
+#
 # # Data
 # Z = rmvnorm(n, sigma=Sigma);
 # Y = matrix(rpois(n*p, exp(O+Z)), n, p)

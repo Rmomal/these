@@ -11,7 +11,7 @@ library(sna);
 library(readxl)
 
 # Data
-Y<-as.matrix(read_excel("~/Documents/codes/Data/Data Files/1. cd3cd28.xls"))[1:200,]
+#Y<-as.matrix(read_excel("~/Documents/codes/Data/Data Files/1. cd3cd28.xls"))[1:200,]
 
 TreeGGM<-function(CorY,step,print){
   p = ncol(CorY);

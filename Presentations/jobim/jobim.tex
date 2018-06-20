@@ -59,7 +59,7 @@
 \newcommand{\edgeunit}{1.5}
 \newcommand{\emphase}[1]{\textcolor{Complement}{#1}}
 \newcommand\independent{\protect\mathpalette{\protect\independenT}{\perp}}\def\independenT#1#2{\mathrel{\rlap{$#1#2$}\mkern2mu{#1#2}}}
-
+\newcommand{\Ncal}{\mathcal{N}}
 \tikzset{%
     observed/.style={%
     scale=0.6,circle,draw=Framableulight,transform shape,fill=white,font=\Large}
@@ -75,7 +75,7 @@
 %}
 \frame{\titlepage}
 \begin{frame} 
-	\tableofcontents[hideallsubsections]
+	\tableofcontents[]
 \end{frame}
 \section{Motivation}
 %====================================================================
@@ -89,12 +89,12 @@ Rising interest in \emphase{jointly analysed }species abundances:
 	\item Microbiologie
 	\item Ecology
 \end{itemize}
-\pause
+%\pause
 
 \begin{block}{Ecological network}
 Tool to better understand species interactions (direct/indirect, nature), eco-systems organizations (clusters ?) 
 \end{block}
-\pause
+%\pause
 Allows for resilience analyses, pathogens control, ecosystem comparison, reaction prediction...
 \end{frame}
 %====================================================================
@@ -116,7 +116,7 @@ Allows for resilience analyses, pathogens control, ecosystem comparison, reactio
 	\item \emphase{Covariates} : coverage, temperature, water depth ... 
 \end{itemize}
 	Repeated signal : $n$ samples of $p$ abundances.
-\pause
+%\pause
 \begin{block}{Notations}
 	$Y = [Y_{ij}]_{(i,j) \in \{1,...,n\} \times \{1,..., p\}} $
 	\begin{itemize}
@@ -168,7 +168,7 @@ Allows for resilience analyses, pathogens control, ecosystem comparison, reactio
 	The joint distribution P is faithful to the graph G iff \[ P(Y_1, \dots, Y_p) \propto \prod_{C \in \Ccal_G} \psi_C(Y_C) \]
   where $\Ccal_G =$ set of cliques of $G$.
 \end{block}
-\pause
+%\pause
 \begin{columns}
 \begin{column}{0.4\linewidth}
 \flushright
@@ -195,9 +195,120 @@ Allows for resilience analyses, pathogens control, ecosystem comparison, reactio
 \end{frame}
 %====================================================================
 %====================================================================
+\begin{frame}{Gaussian Graphical Models (GGM)}
+   \emphase{Gaussian distribution.}
+  $$
+  Y_r \sim \Ncal_p(\mu, \Sigma)
+  $$
+  $\mu =$ vector of means, $\Sigma =$ covariance matrix.
+  
+  \bigskip \bigskip %\pause
+  \emphase{A nice property.} ~ \\
 
-\subsection{Trees}
-\section{Mixture tree}
+  \begin{columns}
+  \begin{column}{0.05\textwidth}
+	
+\end{column}
+  \begin{column}{0.4\textwidth}
+   \begin{tikzpicture}	
+
+       \tikzstyle{every edge}=[-,>=stealth',shorten >=1pt,auto,thin,draw]
+		\node[observed] (Y1) at (0*\edgeunit, 0*\edgeunit) {$Y_1$};
+		\node[observed] (Y2) at (1.5*\edgeunit, -0.5*\edgeunit) {$Y_2$};
+		\node[observed] (Y3) at (1*\edgeunit, 1*\edgeunit) {$Y_3$};
+		\node[observed] (Y4) at (2.5*\edgeunit, 0.2*\edgeunit) {$Y_4$};
+		\path (Y1) edge [] (Y2)
+        (Y1) edge [] (Y3)
+        (Y2) edge [] (Y3)
+        (Y2) edge [] (Y4);
+	\end{tikzpicture}
+    \end{column}
+    \begin{column}{12cm}
+    \flushright
+    \begin{overprint}
+    \onslide<2>
+    \begin{tabular}{p{.5\textwidth}}
+	 Adjacency matrix
+	 $$
+	 A = \left[ \begin{array}{cccc}
+	 0 & 1 & 1 & \emphase{0} \\
+	 1 & 0 & 1 & \emphase{0} \\
+	 1 & 1 & 0 & 1 \\
+	 \emphase{0} & \emphase{0} & 1 & 0 
+	 \end{array} \right]
+	 $$
+    \end{tabular} 
+    \onslide<3>
+    \begin{tabular}{p{.5\textwidth}}
+	 Covariance matrix
+	 $$
+	 \Sigma \propto \left[ \begin{array}{cccc}
+	   1 & -.25 & -.41 &  \emphase{.25} \\
+	   -.25 &  1 & -.41 &  \emphase{.25} \\
+	   -.41 & -.41 &  1 & -.61 \\
+	   \emphase{.25} &  \emphase{.25} & -.61 &  1
+	   \end{array} \right] 
+	 $$
+    \end{tabular} 
+    \onslide<4>
+    \begin{tabular}{p{.5\textwidth}}
+	 Inverse covariance matrix
+	 $$
+	 \Sigma^{-1} \propto \left[ \begin{array}{cccc}
+	   1 & .5 & .5 & \emphase{0} \\
+	   .5 & 1 & .5 & \emphase{0} \\
+	   .5 & .5 & 1 & .5 \\
+	   \emphase{0} & \emphase{0} & .5 & 1
+	   \end{array} \right] 
+	 $$
+    \end{tabular} 
+    \onslide<5>
+    \begin{tabular}{p{.5\textwidth}}
+	 Estimated inverse covariance matrix
+	 $$
+	 \widehat{\Sigma}^{-1} \propto \left[ \begin{array}{cccc}
+	   1 & .48 & .61 & \emphase{.09} \\
+	   .48 & 1 & .67 & \emphase{.06} \\
+	   .61 & .67 & 1 & .46 \\
+	   \emphase{.09} & \emphase{.06} & .46 & 1
+	   \end{array} \right] 
+	 $$
+	 ($n = 100$)
+    \end{tabular} 
+    \end{overprint}
+  \end{column}
+  \end{columns}
+
+
+% $$
+% \widehat{\Sigma} \propto \left[ \begin{array}{cccc}
+%   1 & -.02 & -.49 & .25 \\
+%   -.02 & 1 & -.62 & .36 \\
+%   -.49 & -.62 & 1 & -.61 \\
+%   .25 & .36 & -.61 & 1
+%   \end{array} \right] 
+% $$
+
+\end{frame}
+\begin{frame}{Sparse with Glasso}
+Assumption : the final network is sparse.\\
+{\color{Nicered}Goal: find a sparse estimate for $\Omega=\Sigma^{-1}$}
+\\
+\emphase{Log-likelihood :}
+ \[L(Y,\Omega) \propto \frac{n}{2}\log(det(\Omega))-\frac{n}{2} Y^T\Omega Y\]
+
+
+ \begin{block}{ Graphical LASSO (glasso) :}
+  Le graphical-Lasso pénalise la norme $l_1$ de la matrice de précision :
+  \[\widehat{\Omega}_\lambda = \arg\min_{\Omega \in \mathcal{S}_d^+}\left\{ L(Y,\Omega)+\lambda \sum_{i\neq j} |w_{ij}| \right\}\]
+ \end{block}
+ 
+\end{frame}
+\subsection{Another sparsity}
+\begin{frame}{Spanning trees}
+	
+\end{frame}
+
 %====================================================================
 %====================================================================
 
@@ -222,7 +333,7 @@ Allows for resilience analyses, pathogens control, ecosystem comparison, reactio
 	\footnotesize{$P\{T = T_1 | Y\}$}
 	   \end{tabular}
 	   & 
-	   \hspace{-.05\textwidth} \pause
+	   \hspace{-.05\textwidth}% \pause
 	   \begin{tabular}{c}
 		\begin{tikzpicture}
 		\tikzstyle{every observed}=[draw=none,text=black,scale=0.5,
@@ -239,7 +350,7 @@ Allows for resilience analyses, pathogens control, ecosystem comparison, reactio
 		\footnotesize{$P\{T = T_2 | Y\}$}
 	   \end{tabular}
 	   &
-	   \hspace{-.05\textwidth} \pause
+	   \hspace{-.05\textwidth} %\pause
 	   \begin{tabular}{c}
 		\begin{tikzpicture}
 		\tikzstyle{every observed}=[draw=none,text=black,scale=0.5,
@@ -256,7 +367,7 @@ Allows for resilience analyses, pathogens control, ecosystem comparison, reactio
 		\footnotesize{$P\{T = T_3 | Y\}$}
 	   \end{tabular}
 	   &
-	   \hspace{-.05\textwidth} \pause
+	   \hspace{-.05\textwidth}% \pause
 	   \begin{tabular}{c}
 		\begin{tikzpicture}
 		\tikzstyle{every observed}=[draw=none,text=black,scale=0.5,
@@ -273,7 +384,7 @@ Allows for resilience analyses, pathogens control, ecosystem comparison, reactio
 		\footnotesize{$P\{T = T_4 | Y\}$}
 	   \end{tabular}
 	   & \hspace{-.06\textwidth} \huge{\emphase{...}}\normalsize   \\ \\
-	   \\ \pause
+	   \\% \pause
 	   \begin{tabular}{l}
 		Compute edge\\
 		probabilities:
@@ -296,7 +407,7 @@ Allows for resilience analyses, pathogens control, ecosystem comparison, reactio
 		\emphase{$P\{(j, k) \in T | Y\}$}
 	   \end{tabular}
 	   &
-	   \hspace{-.05\textwidth} \pause
+	   \hspace{-.05\textwidth} %\pause
 	   \begin{tabular}{l}
 		Thresholding\\
 		probabilities:
@@ -326,8 +437,35 @@ Allows for resilience analyses, pathogens control, ecosystem comparison, reactio
 %====================================================================
 
 \section{With count data}
-\subsection{litterature}
-\subsection{PLN}
+\subsection{Model}
+\begin{frame}{PLN model}
+	  
+\begin{block}{Poisson log-Normal distribution}
+\[
+            \left.
+                \begin{array}{rl}
+                Z_i \textit{ iid } &\sim \mathcal{N}_{d}(\mu,\Sigma)\\
+                    &(Y_{ij})_j \independent |Z_i\\
+                    Y_{ij}|Z_{ij} &\sim \mathcal{P}(e^{Z_{ij}}) 
+                   
+                \end{array}
+            \right \} Y \sim \mathcal{PLN}(\mu, \Sigma)  
+            \]
+\end{block}
+\vspace{0.5cm}
+\begin{itemize}
+    \item Gaussian latent layer
+    \item Easily generalized to multi-variate data (contrary to Negative Binomial law)
+    \item Allow adjustment for covariates
+\end{itemize}
+\vspace{0.5cm}
+\pause
+\center{
+    \textbf{ Idea:} Infer the \emphase{latent Gaussian network.}}
+\end{frame}
 
-
+\subsection{Illustration}
+\begin{frame}{Oak Mildew}
+	
+\end{frame}
 \end{document}
