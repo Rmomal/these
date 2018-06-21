@@ -44,15 +44,6 @@ Y = Y[, Rank > Seuil]; O = O[, Rank >Seuil];  n = nrow(Y); p = ncol(Y)
 # summary(model_lin)
 # summary(model_quadra)
 
-# Selection des especes
-YO = Y/O
-Rank = rank(colSums(YO))
-plot(cumsum(sort(colSums(YO))))
-Seuil = 20
-Ycum = colSums(Y); Order = order(Ycum)
-plot(cumsum(Ycum[Order]), col = 1+(Rank[Order]<Seuil))
-Y = Y[, Rank < Seuil]; O = O[, Rank < Seuil];
-
 # PLN models
 PLN.offset = PLN(Y ~ 1 + offset(log(O)))
 PLN.tree = PLN(Y ~ 1 + X$tree + offset(log(O)))
@@ -129,6 +120,8 @@ nbNonEdge<-function(OmegaY,n,p){
   return(EstimM(Pval))
 }
 par(mfrow=c(2,2))
+n<-nrow(Y)
+p<-ncol(Y)
 noffset<-nbNonEdge(Z.offset,n,p)
 ntree<-nbNonEdge(Z.tree,n,p)
 ntreebase<-nbNonEdge(Z.tree.base,n,p)
@@ -149,14 +142,22 @@ net1<-net_precision_density(offset,noffset)
 net2<-net_precision_density(tree,ntree)
 net3<-net_precision_density(tree.base,ntreebase)
 net4<-net_precision_density(tree.base.infect,ntreebaseinfect)
-c(degree(net1)[48],degree(net2)[48],degree(net3)[48],degree(net4)[48])
+c(degree(net1)[44],degree(net2)[44],degree(net3)[44],degree(net4)[44])
 c(gsize(net1),gsize(net2),gsize(net3),gsize(net4))
-
-coords <- layout_(net4, nicely())
-plot(net4, layout = coords,main="tree.base.infect")
-plot(net3,layout=coords,main="tree.base")
-plot(net2,layout=coords,main="tree")
+par(mfrow=c(1,2))
+seuil<-0.1
+net_simple<-function(omega,seuil){
+  net<-net_from_matrix(omega,seuil,FALSE)
+  V(net)$label=NA;  E(net)$color="darkolivegreen3";  E(net)$curved=.1;  V(net)$color="black";  V(net)$size=3
+  return(net)
+}
+net1<-net_simple(offset,seuil)
+net4<-net_simple(tree.base.infect,seuil)
+coords1 <- layout_(net1, nicely())
+coords<-layout_(net1, as_star(center = V(net1)[44]))
 plot(net1,layout=coords,main="offset")
+plot(net4, layout = coords,main="tree.base.infect")
+
 
 # M1<-degree(net1)
 # M4<-degree(net4)
@@ -177,12 +178,12 @@ calcdeg<-function(matrix){
   deg<-c()
   for(nbedges in seq(4000,100,-50)){
   net<-net_precision_density(matrix,nbedges,FALSE)
-  deg<-c(deg,degree(net)[48] )
+  deg<-c(deg,centralization.degree(net)$res[44] )
   }
   return(deg)
 }
 seq<-seq(4000,100,-50)
-
+matrix<-offset
 L<-list(offset,tree,tree.base,tree.base.infect)
 listdeg<-lapply(L,function(x) calcdeg(x))
 dev.off()

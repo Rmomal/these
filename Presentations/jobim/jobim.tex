@@ -478,16 +478,36 @@ $\Rightarrow$ & find a {\color{Nicered} sparse estimate }for $\Omega=\Sigma^{-1}
 \vspace{0.5cm}
 \begin{itemize}
     \item Gaussian latent layer
-    \item Easily generalized to multi-variate data (contrary to Negative binomial distribution)
+    \item Easy handling of multi-variate data (contrary to Negative binomial distribution)
   \only<2-3>{ \item Allow adjustment for covariates}
 \end{itemize}
-\vspace{0.5cm}
 %\pause
 \only<3>{\center{ \textbf{ Idea:} Infer the \emphase{latent Gaussian network.}}}
 \end{frame}
 
 \subsection{Illustration}
 \begin{frame}{Oak Mildew}
-	
+\begin{columns}
+\begin{column}{5cm}
+\begin{figure}[htp]
+\centering
+\includegraphics[scale=0.07]{EA.jpg}
+\caption{\textit{Erysiphe alphitoides.}}
+\end{figure}
+\end{column}
+\begin{column}{6cm}
+\begin{figure}[htp]
+\centering
+\includegraphics[scale=0.1]{mildew.jpg}
+\caption{Oak Lleaf withpowdery mildew.}
+\end{figure}
+\end{column}
+\end{columns}
+\vspace{0.5cm}
+Data : metabarcoding of microbiome on oak tree leaves 
+\begin{itemize}
+	\item 114 sample of 94 microbial species counts (bacteria/fungi)
+	\item 8 covariates (leaf distance to the ground / tree / branch ...)
+\end{itemize}
 \end{frame}
 \end{document}
