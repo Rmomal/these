@@ -13,9 +13,10 @@ library(readxl)
 # Data
 #Y<-as.matrix(read_excel("~/Documents/codes/Data/Data Files/1. cd3cd28.xls"))[1:200,]
 
-TreeGGM<-function(CorY,step,print){
+TreeGGM<-function(Y,step,print){
+  CorY<-cor(Y)
   p = ncol(CorY);
-
+#browser()
 #beta.corr=cor(Y)
   # Cor = cor(Y); alpha = 1; if(n > 50){alpha = 100/n}
   # log.phi = -.5*log(1-Cor^2);
@@ -26,7 +27,7 @@ TreeGGM<-function(CorY,step,print){
 #print(phi)
  beta.unif = matrix(1, p, p); diag(beta.unif) = 0; beta.unif = beta.unif / sum(beta.unif)
 
-  FitEM = switch(step,"FALSE"=FitBetaStatic(beta.init=beta.unif, phi=phi,print=print),
+  FitEM = switch(step,"FALSE"=FitBetaStatic(Y,beta.init=beta.unif, phi=phi,print=print),
                  "TRUE"=FitBeta1step(beta.init=beta.unif, phi=phi))
 
   return(list(P=Kirshner(FitEM$beta)$P,L=FitEM$logpY))

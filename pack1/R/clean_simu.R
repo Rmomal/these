@@ -37,11 +37,13 @@ library(huge)
 #, lib.loc="~/R/x86_64-pc-linux-gnu-library/3.4")
 library(glasso)
 library(ROCR)
+library(SpiecEasi)
 library(Matrix)
 library(dplyr)
 library(tidyr)
 library(parallel)
 library(PLNmodels)
+library(mvtnorm)
 library(ggplot2)
 #, lib.loc="/usr/local/lib/R/site-library")
 library(reshape2)
@@ -50,7 +52,7 @@ library(reshape2)
 # source('/home/momal/R/fonctions.R')
 source('/home/momal/Git/these/pack1/R/TreeMixture-RML.R')
 source('/home/momal/Git/these/pack1/R/fonctions.R')
-mvrnorm_rml<-function (n = 1, mu, Sigma, tol = 1e-06, empirical = FALSE, EISPACK = FALSE){
+mvrnorm_rml<-function (n = 1, mu=0, Sigma, tol = 1e-06, empirical = FALSE, EISPACK = FALSE){
   p <- length(mu)
   if (!all(dim(Sigma) == c(p, p)))
     stop("incompatible arguments")
@@ -155,12 +157,30 @@ generator_data<-function(n,sigma){
   sigmahat = cor(x)
   return(x)
 }
+generator_composi_data<-function(Sigma,offset,covariates){
+ # vraies abondances, log normales
+  n<-nrow(covariates)
+  c<-ncol(covariates)# nb covariables
+  p<-ncol(Sigma) # nb espèces
+  beta<-matrix(runif(c*p),c,p)
+  real_counts <- covariates %*% beta + rmvnorm(n, rep(0,nrow(Sigma)), Sigma)
 
-generator_ZpZhat<-function(Sigma,O=NULL,covariables=NULL,n){
+  # transformation logistique en proportions
+  pi<-exp(real_counts)/rowSums(exp(real_counts))
+#observed counts multinomiaux
+  Y<-matrix(0,n,p)
+  for(i in 1:n){
+    Y[i,]<-rmultinom(1,offset[i],pi[i,]) #offset est un vecteur de taille n
+  }
+  return(Y)
+}
+generator_ZpZhat<-function(Sigma,n=200){#O=NULL,covariables=NULL, pb avec ces argms
   Z = rmvnorm(n, sigma=Sigma);
   p<-ncol(Sigma)
-  Y = matrix(rpois(n*p, exp(O+Z)), n, p)
-  PLN = PLN(Y ~ -1 + offset(O)+covariables)
+  # Y = matrix(rpois(n*p, exp(O+Z)), n, p)
+  # PLN = PLN(Y ~ -1 + offset(O)+covariables)
+  Y = matrix(rpois(n*p, exp(Z)), n, p)
+  PLN = PLN(Y ~ -1 )
   ZpZ.hat = PLN$model_par$Sigma
   return(ZpZ.hat)
 }
@@ -177,7 +197,7 @@ graph<-function(type,param,path){
   print(diagnostics(paste0(path,type,"/",param,"/auc.rds")))
   dev.off()
 }
-
+file<-paste0(path,type,"/",param,"/auc.rds")
 diagnostics<-function(file){
   tab<-data.frame(readRDS(file))
   lignes<-which(is.na(tab[,1]))
@@ -199,7 +219,7 @@ diagnostics<-function(file){
     geom_point()+
     geom_line(size=0.2)+
     # geom_linerange(aes(ymin = quantile(value,0.25), ymax = quantile(value,0.75)),group=tab$method)+
-    labs(title = paste0("Graph of type ",type,": effect of ",param," on ",variable,".\n Cruves of medians, and 1rst and 3rd quartiles."),y=variable,x=param)+
+    labs(y=variable,x=param)+
     scale_color_manual(values=c("#076443", "#56B4E9","#E69F00" ),name="Method:", breaks=c("treeggm","ggm1step", "glasso" ),
                         labels=c("EM ","1 step", "glasso" ))+
     theme_bw()+
@@ -208,7 +228,7 @@ diagnostics<-function(file){
 
 
 }
-
+#title = paste0("Graph of type ",type,": effect of ",param," on ",variable,".\n Cruves of medians, and 1rst and 3rd quartiles.")
 ####################
 ###   Main code  ###
 ####################
@@ -243,21 +263,23 @@ compare_methods<-function(x,n,sigma,K,criterion){
 
   print(paste0("in sapply B = ",x))
   temps<-rep(NA,3)
- try({
+# try({
     T1<-Sys.time()
-  inf_treeggm<-TreeGGM(X,"FALSE")$P
+
+  inf_treeggm<-TreeGGM(X,"FALSE",FALSE)$P
   T2<-Sys.time()
   temps[1]<- difftime(T2, T1)
-  },silent=TRUE)
+#  },silent=TRUE)
   try({T1<-Sys.time()
-  inf_treeggm1step<-TreeGGM(X,"TRUE")$P
+  inf_treeggm1step<-TreeGGM(X,"TRUE",FALSE)$P
   T2<-Sys.time()
   temps[2]<-difftime(T2, T1) },silent=TRUE)
   T1<-Sys.time()
   # rho<-seq(0.0005,1.1,by=0.0002)
   # tab<-tableau3D(X,rho)
   # inf_glasso<-mat_rho(tab,rho,"max")
-  inf_glasso<-inf_glasso_MB(X)
+  #inf_glasso<-inf_glasso_MB(X)
+  inf_glasso<-inf_spieceasi(X) # /!\ X doit être comptages
   diag(inf_glasso)<-0
   T2<-Sys.time()
   temps[3]<- difftime(T2, T1)
@@ -278,11 +300,13 @@ compare_methods<-function(x,n,sigma,K,criterion){
   return(list(diagnost,temps,inferences,estim_reg(X,K)))
 }
 
-record <- function(var, x, col_names, path2,rep=TRUE) {
-
-  if (rep){
-    frame <- data.frame(var, "B" = rep(1:B,nrow(var)/B), "param" = rep(x, nrow(var)))
-  }else{
+record <- function(var, x, col_names, path2, B=1, rep = TRUE) {
+  if (rep) {
+    frame <-
+      data.frame(var,
+                 "B" = rep(1:B, nrow(var) / B),
+                 "param" = rep(x, nrow(var)))
+  } else{
     frame <- data.frame(var,  "param" = x)
   }
   colnames(frame)[1:length(col_names)] <- col_names
@@ -300,7 +324,11 @@ bootstrap_summary<-function(x,type,variable,B,path,n,criterion,nbgraph=nbgraph,P
   print(paste0("seq = ",x))
   if(variable!="n"){
     param<-readRDS(paste0(path,type,"/",variable,"/Sets_param/Graph",nbgraph,"_",x,".rds"))
-    sigma<-param$sigma
+    if( PLN){
+      sigma<-generator_ZpZhat(param$sigma)
+    }else{
+      sigma<-param$sigma
+    }
     K<-param$omega
   # on génère les données B fois pour B inférences, à partir des param sauvés
     obj<-lapply(1:B,function(x) compare_methods(x,n=n,sigma=sigma,K=K,criterion=criterion))
@@ -315,6 +343,7 @@ bootstrap_summary<-function(x,type,variable,B,path,n,criterion,nbgraph=nbgraph,P
     obj<-lapply(1:B,function(y) compare_methods(y,n=x,sigma=sigma,K=K,criterion=criterion))
 
   }
+
   res2<-do.call(rbind,lapply(obj, function(x){x[[1]]}))
   res2<-cbind(res2,rep(x,nrow(res2)))
   temps<-do.call(rbind,lapply(obj, function(x){x[[2]]}))
@@ -325,8 +354,8 @@ bootstrap_summary<-function(x,type,variable,B,path,n,criterion,nbgraph=nbgraph,P
 
   method<-c("treeggm","ggm1step","glasso")
   path2<-paste0(path,type,"/",variable,"/")
-  record(temps,x,method,paste0(path2,"temps/Graph",nbgraph))
-  record(estim_nb_edges,x,c("nb_pred","nb_obs"),paste0(path2,"Graphs_characteristics/Graph",nbgraph))
+  record(temps,x,method,paste0(path2,"temps/Graph",nbgraph),B)
+  record(estim_nb_edges,x,c("nb_pred","nb_obs"),paste0(path2,"Graphs_characteristics/Graph",nbgraph),B)
   save_scores(scores,paste0(path2,"Scores/"),val=x,nbgraph=nbgraph)
   # mns<-colMeans(res2,na.rm = TRUE)
   # sds <- apply(res2,2,function(x)sd(x,na.rm = TRUE))
@@ -363,9 +392,9 @@ simu<-function(type,variable,seq,n,B,prob=0.1,path,Bgraph,PLN=FALSE,cores){
       #auc<-data.frame(do.call("rbind",lapply(res,function(x) x[[1]])))
       auc<-data.frame(do.call("rbind",res))
       #print(auc)
-
+#browser()
       auc[,1:3]<-apply(auc[,1:3],2,function(x) as.numeric(x))
-      record(auc,nbgraph,c("treeggm","ggm1step","glasso","var"),paste0(path,type,"/",variable,"/"))
+      record(auc,nbgraph,c("treeggm","ggm1step","glasso","var"),paste0(path,type,"/",variable,"/"),B)
 
     }#sortie for
   }
@@ -383,17 +412,19 @@ simu<-function(type,variable,seq,n,B,prob=0.1,path,Bgraph,PLN=FALSE,cores){
 #############
 
 path<-"/home/momal/Git/these/pack1/R/Simu/PLN/"#path =paste0(getwd(),"/R/Simu/") || "/home/momal/Git/these/pack1/R/Simu/"
-parameters<-list(c(seq(10,30,2)),c(seq(20,100,10)),c(seq(0,1.5,0.2)),c(seq(0.5,5,0.5)/20))
+parameters<-list(c(seq(10,30,2)),c(seq(20,100,10)),c(seq(0,1.5,0.2)),c(seq(0.5,1.5,0.5)/20))
 names(parameters)<-c("d","n","u","prob")
 
-for(type in c("tree","erdos")){
-  cparam<-ifelse(type=="tree","d",c("d","prob"))
+#for(type in c("tree","erdos")){
+#  cparam<-ifelse(type=="tree","d",c("d","prob"))
+cparam<-c("d","prob")
+type="cluster"
   for(param in cparam ){
-    simu(type,variable=param,seq=parameters[[param]],n=100,B=2,path=path,Bgraph=40,PLN=TRUE,cores=10)
+    simu(type,variable=param,seq=parameters[[param]],n=100,B=2,path=path,Bgraph=40,PLN=TRUE,cores=1)
     graph(type,param,path=path)
   }
-}
-
+#}
+param<-"prob"
 #  type<-"erdos"
 # path<-"/home/momal/Git/these/pack1"
 

@@ -314,34 +314,51 @@ mat_rho<-function(tab,seq_rho,minmax){
   return(results)
 }
 
-grab_grob <- function(){
-  grid.echo()
-  grid.grab()
-}
 
-
+#s = cov(data)
+####################################################
+# fonctions d'inférence
+####################################################
 get.lambda.l1 <- function(S) {
   r.max <- max(0,max(abs(S-diag(diag(S)))))
   return(r.max)
 }
-
-#s = cov(data)
 inf_glasso_MB<-function(X){
   S<-cov(X)
   d<-ncol(X)
   log.lambda.min <- -5
   log.lambda.max <- log(get.lambda.l1(S))
   log.lambda <- seq(log.lambda.min, log.lambda.max, length.out = d*2)
-  MB.res <- lapply(exp(log.lambda), function(lambda) glasso(S, lambda, trace = FALSE, approx = FALSE, penalize.diagonal = FALSE))
-  adjmat.array <- simplify2array(Map("*",exp(log.lambda),lapply(MB.res, function(x){ (abs(x$wi)>0)*1})))
+  MB.res <- lapply(exp(log.lambda),
+                   function(lambda)
+                     glasso(S, lambda, trace = FALSE, approx = FALSE, penalize.diagonal = FALSE))
+  adjmat.array <- simplify2array(Map("*",
+                                     exp(log.lambda),
+                                     lapply(MB.res, function(x){ (abs(x$wi)>0)*1})
+                                     )
+                                 )
   # Let us replace each edge by the  largest Glasso lambda where it disappears (or a sum related to this)
   K.score <- apply(adjmat.array,c(1,2),sum)
   K.score <- K.score / max(K.score)
   return(K.score)
 }
+#install_github("zdk123/SpiecEasi")
+#library(SpiecEasi)
+inf_spieceasi<-function(Y){
+  inf<-spiec.easi(Y, icov.select = FALSE, nlambda = 50, verbose = FALSE)
+
+
+  adjmat.array <- simplify2array(Map("*",
+                                     inf$lambda,
+                                     lapply(inf$path, function(x) {
+                                       (abs(x) > 0) * 1
+                                     })))
+  K.score <- Reduce("+",adjmat.array)
+  K.score <- K.score / max(K.score)
+}
 
 ####################################################
-# Considérantions gaphiques
+# Considérations gaphiques
 # @paramNet créer des paramètres graphiques par défaut pour les graphs
 ####################################################
 #librairaies :library(igraph, RColorBrewer)
@@ -367,4 +384,10 @@ net_from_matrix<-function(precision,seuil, boucles){
   net <- graph_from_adjacency_matrix(matrice, mode="upper", diag = boucles)
   return(net)
 }
+
+grab_grob <- function(){
+  grid.echo()
+  grid.grab()
+}
+
 
