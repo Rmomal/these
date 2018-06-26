@@ -76,9 +76,8 @@
 %   \end{frame} 
 %}
 \frame{\titlepage}
-\begin{frame} 
-	\tableofcontents[]
-\end{frame}
+
+
 \section{Motivation}
 %====================================================================
 %====================================================================
@@ -101,15 +100,7 @@ Allows for resilience analyses, pathogens control, ecosystem comparison, reactio
 \end{frame}
 %====================================================================
 %====================================================================
-\begin{frame}{Example}
-\begin{figure}[]
-\centering
-\includegraphics[scale=0.55]{jukush.png}
-\caption{\textit{Erysiphe alphitoides} pathobiom on oak tree leaves.}
-\end{figure}
-\end{frame}
-%====================================================================
-%====================================================================
+
 
 \begin{frame}{Data}
 	\begin{itemize}
@@ -128,6 +119,15 @@ Allows for resilience analyses, pathogens control, ecosystem comparison, reactio
 \begin{center}
 	\color{Nicered}{Infer the species interaction network from $Y$}
 \end{center}
+\end{frame}
+%====================================================================
+%====================================================================
+\begin{frame}{Challenges}
+	\begin{enumerate}
+	\item  Huge space of possible graphs
+	\item Count data
+	\item Covariables
+\end{enumerate}
 \end{frame}
 %====================================================================
 %====================================================================
@@ -195,121 +195,11 @@ Allows for resilience analyses, pathogens control, ecosystem comparison, reactio
 \end{column}
 \end{columns}
 \end{frame}
-%====================================================================
-%====================================================================
-\begin{frame}{Gaussian Graphical Models (GGM)}
-   \emphase{Gaussian distribution.}
-  $$
-  Y_r \sim \Ncal_p(\mu, \Sigma)
-  $$
-  $\mu =$ vector of means, $\Sigma =$ covariance matrix.
-  
-  \bigskip \bigskip %\pause
-  \emphase{A nice property.} ~ \\
 
-  \begin{columns}
-  \begin{column}{0.05\textwidth}
-	
-\end{column}
-  \begin{column}{0.4\textwidth}
-   \begin{tikzpicture}	
-
-       \tikzstyle{every edge}=[-,>=stealth',shorten >=1pt,auto,thin,draw]
-		\node[observed] (Y1) at (0*\edgeunit, 0*\edgeunit) {$Y_1$};
-		\node[observed] (Y2) at (1.5*\edgeunit, -0.5*\edgeunit) {$Y_2$};
-		\node[observed] (Y3) at (1*\edgeunit, 1*\edgeunit) {$Y_3$};
-		\node[observed] (Y4) at (2.5*\edgeunit, 0.2*\edgeunit) {$Y_4$};
-		\path (Y1) edge [] (Y2)
-        (Y1) edge [] (Y3)
-        (Y2) edge [] (Y3)
-        (Y2) edge [] (Y4);
-	\end{tikzpicture}
-    \end{column}
-    \begin{column}{12cm}
-    \flushright
-    \begin{overprint}
-    \onslide<2>
-    \begin{tabular}{p{.5\textwidth}}
-	 Adjacency matrix
-	 $$
-	 A = \left[ \begin{array}{cccc}
-	 0 & 1 & 1 & \emphase{0} \\
-	 1 & 0 & 1 & \emphase{0} \\
-	 1 & 1 & 0 & 1 \\
-	 \emphase{0} & \emphase{0} & 1 & 0 
-	 \end{array} \right]
-	 $$
-    \end{tabular} 
-    \onslide<3>
-    \begin{tabular}{p{.5\textwidth}}
-	 Covariance matrix
-	 $$
-	 \Sigma \propto \left[ \begin{array}{cccc}
-	   1 & -.25 & -.41 &  \emphase{.25} \\
-	   -.25 &  1 & -.41 &  \emphase{.25} \\
-	   -.41 & -.41 &  1 & -.61 \\
-	   \emphase{.25} &  \emphase{.25} & -.61 &  1
-	   \end{array} \right] 
-	 $$
-    \end{tabular} 
-    \onslide<4>
-    \begin{tabular}{p{.5\textwidth}}
-	 Inverse covariance matrix
-	 $$
-	 \Sigma^{-1} \propto \left[ \begin{array}{cccc}
-	   1 & .5 & .5 & \emphase{0} \\
-	   .5 & 1 & .5 & \emphase{0} \\
-	   .5 & .5 & 1 & .5 \\
-	   \emphase{0} & \emphase{0} & .5 & 1
-	   \end{array} \right] 
-	 $$
-    \end{tabular} 
-    \onslide<5>
-    \begin{tabular}{p{.5\textwidth}}
-	 Estimated inverse covariance matrix
-	 $$
-	 \widehat{\Sigma}^{-1} \propto \left[ \begin{array}{cccc}
-	   1 & .48 & .61 & \emphase{.09} \\
-	   .48 & 1 & .67 & \emphase{.06} \\
-	   .61 & .67 & 1 & .46 \\
-	   \emphase{.09} & \emphase{.06} & .46 & 1
-	   \end{array} \right] 
-	 $$
-	 ($n = 100$)
-    \end{tabular} 
-    \end{overprint}
-  \end{column}
-  \end{columns}
-
-
-% $$
-% \widehat{\Sigma} \propto \left[ \begin{array}{cccc}
-%   1 & -.02 & -.49 & .25 \\
-%   -.02 & 1 & -.62 & .36 \\
-%   -.49 & -.62 & 1 & -.61 \\
-%   .25 & .36 & -.61 & 1
-%   \end{array} \right] 
-% $$
-
-\end{frame}
-\begin{frame}{Sparse with Glasso}
-\begin{tabularx}{\linewidth}{ccc}
-Sparsity assumption &  
-$\Rightarrow$ & find a {\color{Nicered} sparse estimate }for $\Omega=\Sigma^{-1}$\\
-\end{tabularx}
-\vspace{0.5cm}
-
-\emphase{Negative log-likelihood :}
- \[L(Y,\Omega) \propto \frac{n}{2}\log(det(\Omega))-\frac{n}{2} Y^T\Omega Y\]
-
-
- \begin{block}{ Graphical LASSO (glasso) :}
-  Glasso penalises the $L_1$ norm of the concentration matrix:
-  \[\widehat{\Omega}_\lambda = \arg\min_{\Omega \in \mathcal{S}_d^+}\left\{ L(Y,\Omega)+\lambda \sum_{i\neq j} |w_{ij}| \right\}\]
- \end{block}
- 
-\end{frame}
 \subsection{Using trees}
+%====================================================================
+%====================================================================
+
 \begin{frame}{Spanning trees}
 	Spanning trees are another \emphase{sparse} solution :
 	$$
@@ -459,9 +349,15 @@ $\Rightarrow$ & find a {\color{Nicered} sparse estimate }for $\Omega=\Sigma^{-1}
 \end{frame}
 %====================================================================
 %====================================================================
-
+\begin{frame}{Complexity}
+	
+\end{frame}
 \section{With count data}
 \subsection{Model}
+
+%====================================================================
+%====================================================================
+
 \begin{frame}{PLN model}
 \begin{block}{Poisson log-Normal distribution}
 \[
@@ -485,7 +381,85 @@ $\Rightarrow$ & find a {\color{Nicered} sparse estimate }for $\Omega=\Sigma^{-1}
 \only<3>{\center{ \textbf{ Idea:} Infer the \emphase{latent Gaussian network.}}}
 \end{frame}
 
-\subsection{Illustration}
+%====================================================================
+%====================================================================
+\section{Simulation}
+\subsection{Competitor}
+%====================================================================
+%====================================================================
+
+\begin{frame}{Gaussian Graphical Models (GGM) \& SpiecEasi}
+   \emphase{Gaussian distribution.}\\
+   
+  $  Y_r \sim \Ncal_p(\mu, \Sigma) $, $\mu =$ vector of means, $\Sigma =$ covariance matrix.
+ % \[L(Y,\Omega) \propto \frac{n}{2}\log(det(\Omega))-\frac{n}{2} Y^T\Omega Y\]
+ 
+  
+   \bigskip %\pause
+  \emphase{A nice property.} ~ \\
+
+  \begin{columns}
+  \begin{column}{0.05\textwidth}
+	
+\end{column}
+  \begin{column}{0.4\textwidth}
+   \begin{tikzpicture}	
+
+       \tikzstyle{every edge}=[-,>=stealth',shorten >=1pt,auto,thin,draw]
+		\node[observed] (Y1) at (0*\edgeunit, 0*\edgeunit) {$Y_1$};
+		\node[observed] (Y2) at (1.5*\edgeunit, -0.5*\edgeunit) {$Y_2$};
+		\node[observed] (Y3) at (1*\edgeunit, 1*\edgeunit) {$Y_3$};
+		\node[observed] (Y4) at (2.5*\edgeunit, 0.2*\edgeunit) {$Y_4$};
+		\path (Y1) edge [] (Y2)
+        (Y1) edge [] (Y3)
+        (Y2) edge [] (Y3)
+        (Y2) edge [] (Y4);
+	\end{tikzpicture}
+    \end{column}
+    \begin{column}{12cm}
+    \begin{tabular}{p{.5\textwidth}}
+	 Inverse covariance matrix
+	 $$
+	 \Sigma^{-1} = \Omega \propto \left[ \begin{array}{cccc}
+	   1 & .5 & .5 & \emphase{0} \\
+	   .5 & 1 & .5 & \emphase{0} \\
+	   .5 & .5 & 1 & .5 \\
+	   \emphase{0} & \emphase{0} & .5 & 1
+	   \end{array} \right] 
+	 $$
+    \end{tabular} 
+   
+  \end{column}
+  \end{columns}
+ \emphase{Glasso.} ~ \\
+ $\widehat{\Omega}_\lambda = \arg\min_{\Omega \in \mathcal{S}_d^+}\left\{ L(Y,\Omega)+\lambda \sum_{i\neq j} |\omega_{ij}| \right\} \hspace{0.5cm} \Rightarrow$ {\color{Nicered}SpiecEasi method} with log-transformation of count data.
+
+% $$
+% \widehat{\Sigma} \propto \left[ \begin{array}{cccc}
+%   1 & -.02 & -.49 & .25 \\
+%   -.02 & 1 & -.62 & .36 \\
+%   -.49 & -.62 & 1 & -.61 \\
+%   .25 & .36 & -.61 & 1
+%   \end{array} \right] 
+% $$
+
+\end{frame}
+
+%====================================================================
+%====================================================================
+\begin{frame}{Results}
+	
+\end{frame}
+
+
+%====================================================================
+%====================================================================
+\section{Application}
+\subsection{Oak data}
+
+%====================================================================
+%====================================================================
+
 \begin{frame}{Oak Mildew}
 \begin{columns}
 \begin{column}{5cm}
@@ -509,5 +483,11 @@ Data : metabarcoding of microbiome on oak tree leaves
 	\item 114 sample of 94 microbial species counts (bacteria/fungi)
 	\item 8 covariates (leaf distance to the ground / tree / branch ...)
 \end{itemize}
+\end{frame}
+\begin{frame}{Results}
+	
+\end{frame}
+\begin{frame}{Perspectives}
+	
 \end{frame}
 \end{document}
