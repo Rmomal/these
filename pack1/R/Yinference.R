@@ -82,6 +82,14 @@ build_param <- function(Tree,p) {
   phi<-lapply(as.list(as_tibble(t(Y))),function(x) methode_phi(x,mu,sigma,Rho))
   return(phi)
  }
+ matrice_phi_fromSigma<-function(Y,Sigma){
+   simul<-build_param(matrix(as.numeric(Tree),ncol(Y),ncol(Y)),ncol(Y))
+   mu<-simul$mu
+   sigma<-simul$sigma
+   Rho<-simul$rho
+   phi<-lapply(as.list(as_tibble(t(Y))),function(x) methode_phi(x,mu,sigma,Rho))
+   return(phi)
+ }
 
 TreeGGMpoisson<-function(phi){
   p<-ncol(phi)

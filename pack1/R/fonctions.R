@@ -211,7 +211,7 @@ fun.auc.ggplot <- function(pred, obs, title,points){
     theme(plot.title = element_text(hjust = 0.5))
 }
 
-diagnostic.auc.sens.spe <- function(pred, obs,stat){
+diagnostic.auc.sens.spe <- function(pred, obs,stat="auc"){
   nvar<-ncol(obs)
   obs[which(abs(obs)<1e-16)]<-0
 

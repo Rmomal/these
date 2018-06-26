@@ -13,8 +13,8 @@ library(readxl)
 # Data
 #Y<-as.matrix(read_excel("~/Documents/codes/Data/Data Files/1. cd3cd28.xls"))[1:200,]
 
-TreeGGM<-function(Y,step,print){
-  CorY<-cor(Y)
+TreeGGM<-function(CorY,step,print){
+ # CorY<-cor(Y)
   p = ncol(CorY);
 #browser()
 #beta.corr=cor(Y)

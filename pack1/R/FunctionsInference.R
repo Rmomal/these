@@ -6,13 +6,20 @@ F_NegLikelihood <- function(beta.vec, log.phi, P){
 }
 F_NegGradient <- function(beta.vec, log.phi, P){
   M = Kirshner(F_Vec2Sym(beta.vec)*exp(log.phi))$Q
+  options(error = recover)
   lambda = SetLambda(P, M)
   return(- F_Sym2Vec(P)/beta.vec + F_Sym2Vec(M) + rep(lambda, length(beta.vec)))
 }
 #########################################################################
 SetLambda <- function(P, M, eps = 1e-6){
   # F.x has to be increasing. The target value is 0
-  F.x <- function(x){1 - sum(P / (x+M))}
+  F.x <- function(x){
+    if(x!=0){
+      1 - sum(P / (x+M))
+    }else{
+      1 - (2*sum(P[upper.tri(P)] / M[upper.tri(M)]))
+    }
+  }
   suite=TRUE
   # if(F.x(1e-16) >0){
   #   F.x <- function(x){0.99 - sum(P / (x+M))}
@@ -35,7 +42,13 @@ SetLambda <- function(P, M, eps = 1e-6){
     # plot(x.list, sapply(x.list, function(l){F.x(l)}), type='l', log='xy'); abline(h=0)
     # points(c(x.min, x, x.max), c(f.min, f, f.max), col=c(1, 2, 1))
     while(abs(x.max-x.min) > eps){
-      if(f > 0){x.max = x; f.max = f}else{x.min = x; f.min = f}
+      if(f > 0) {
+        x.max = x
+        f.max = f
+      } else{
+        x.min = x
+        f.min = f
+      }
       x = (x.max+x.min)/2;
       f = F.x(x)
 
@@ -62,7 +75,7 @@ FitBetaStatic <- function(Y,beta.init, phi, iterMax = 20, eps = 1e-4,print=FALSE
     print(iter)
     iter = iter+1
     # P = Kirshner(beta.old*phi)$P # sum(P)
-if(dim(beta.old)!=dim(phi)) browser()
+    options(error = recover)
     P = EdgeProba(beta.old*phi)
 
     beta = F_Vec2Sym(optim(F_Sym2Vec(beta.old), F_NegLikelihood, gr=F_NegGradient,
@@ -95,7 +108,7 @@ FitBeta1step <- function(beta.init, phi, iterMax = 1e3, eps = 1e-6){
   iter = 0
   logpY = 0
   diff = 2*eps
-
+  options(error = recover)
   P = EdgeProba(beta.old*phi)
 
   beta = F_Vec2Sym(optim(F_Sym2Vec(beta.old), F_NegLikelihood, gr=F_NegGradient,

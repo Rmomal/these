@@ -3,6 +3,7 @@ rm(list=ls()); par(pch=20);
 library(PLNmodels); library(sna);
 library(igraph)
 library(RColorBrewer)
+library(ggplot2)
 source('/home/momal/Git/these/pack1/R/FunctionsMatVec.R')
 source('/home/momal/Git/these/pack1/R/FunctionsTree.R')
 source('/home/momal/Git/these/pack1/R/FunctionsInference.R')
