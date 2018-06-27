@@ -26,7 +26,10 @@ plot(cumsum(sort(colSums(YO))))
 Seuil = 20
 Ycum = colSums(Y); Order = order(Ycum)
 plot(cumsum(Ycum[Order]), col = 1+(Rank[Order]<Seuil))
-Y = Y[, Rank > Seuil]; O = O[, Rank >Seuil];  n = nrow(Y); p = ncol(Y)
+
+Y = Y[X$tree=="2", Rank > Seuil];
+O = O[X$tree=="2", Rank >Seuil];
+n = nrow(Y); p = ncol(Y)
 
 # dev.off()
 # plot(X$distTObase^2,X$distTOground^2+X$distTOtrunk^2)
@@ -47,51 +50,32 @@ Y = Y[, Rank > Seuil]; O = O[, Rank >Seuil];  n = nrow(Y); p = ncol(Y)
 
 # PLN models
 PLN.offset = PLN(Y ~ 1 + offset(log(O)))
-PLN.tree = PLN(Y ~ 1 + X$tree + offset(log(O)))
-PLN.tree.base = PLN(Y ~ 1 + X$tree + X$distTObase + offset(log(O)))
-PLN.tree.base.infect = PLN(Y ~ 1 + X$tree + X$distTObase + X$pmInfection + offset(log(O)))
-
-save(PLN.offset, PLN.tree, PLN.tree.base, PLN.tree.base.infect, file='resPLN.rdata')
+PLN.dist = PLN(Y ~ 1 + X$distTObase[X$tree=="2"] + offset(log(O)))
 
 # BIC
-Crit = rbind(PLN.offset$criteria, PLN.tree$criteria, PLN.tree.base$criteria, PLN.tree.base.infect$criteria)
-Crit
+Crit = rbind(PLN.offset$criteria, PLN.dist$criteria)
 apply(Crit, 2, which.max)
 
 # inférences
 Z.offset = PLN.offset$model_par$Sigma
 inf.offset<-TreeGGM(cov2cor(Z.offset),print=TRUE,step="FALSE")
-coef=1
+Z.dist = PLN.dist$model_par$Sigma
+inf.dist<-TreeGGM(cov2cor(Z.dist),print=TRUE,step="FALSE")
 
 heatmap(solve(Z.offset),Rowv = NA,Colv = NA)
 heatmap(inf.offset$P,Rowv = NA,Colv = NA)
-
-Z.tree = PLN.tree$model_par$Sigma
-#inf.tree<-TreeGGM(cov2cor(Z.tree),print=TRUE,step="FALSE")
-
-Z.tree.base = PLN.tree.base$model_par$Sigma
-#inf.tree.base<-TreeGGM(cov2cor(Z.tree.base),print=TRUE,step="FALSE")
-
-Z.tree.base.infect = PLN.tree.base.infect$model_par$Sigma
-#inf.tree.base.infect<-TreeGGM(cov2cor(Z.tree.base.infect),print=TRUE,step="FALSE")
+heatmap(solve(Z.dist),Rowv = NA,Colv = NA)
+heatmap(inf.dist$P,Rowv = NA,Colv = NA)
 
 saveRDS(inf.offset,"inf_offset.rds")
-saveRDS(inf.tree,"inf_tree.rds")
-saveRDS(inf.tree.base,"inf_treebase.rds")
-saveRDS(inf.tree.base.infect,"inf_treebaseinfect.rds")
 saveRDS(Z.offset,"Z.offset.rds")
-saveRDS(Z.tree,"Z.tree.rds")
-saveRDS(Z.tree.base,"Z.tree.base.rds")
-saveRDS(Z.tree.base.infect,"Z.tree.base.infect.rds")
-
+saveRDS(inf.dist,"inf_dist.rds")
+saveRDS(Z.dist,"Z.dist.rds")
+########
 offset<-readRDS("/home/momal/Git/these/pack1/R/inf_offset.rds")[[1]]
-tree<-readRDS("/home/momal/Git/these/pack1/R/inf_tree.rds")[[1]]
-tree.base<-readRDS("/home/momal/Git/these/pack1/R/inf_treebase.rds")[[1]]
-tree.base.infect<-readRDS("/home/momal/Git/these/pack1/R/inf_treebaseinfect.rds")[[1]]
+dist<-readRDS("/home/momal/Git/these/pack1/R/inf_dist.rds")[[1]]
 Z.offset<-readRDS("/home/momal/Git/these/pack1/R/Z.offset.rds")
-Z.tree<-readRDS("/home/momal/Git/these/pack1/R/Z.tree.rds")
-Z.tree.base<-readRDS("/home/momal/Git/these/pack1/R/Z.tree.base.rds")
-Z.tree.base.infect<-readRDS("/home/momal/Git/these/pack1/R/Z.tree.base.infect.rds")
+Z.dist<-readRDS("/home/momal/Git/these/pack1/R/Z.dist.rds")
 
 
 # par(mfrow=c(2,2))
@@ -107,57 +91,88 @@ Z.tree.base.infect<-readRDS("/home/momal/Git/these/pack1/R/Z.tree.base.infect.rd
 # lines(density(tree.base),col="purple")
 
 #@ nb non edges from pvalue matrix
-EstimM <- function(Prob){
-  p = ncol(Prob);
-  M = 2*sum(Prob[upper.tri(Prob)]>.5);
-  return(M)
-}
-#@ build pvalue matrix and return nb non edges using estimM
-nbNonEdge<-function(OmegaY,n,p){
-  Rpart= -diag(1/sqrt(diag(OmegaY)))%*%OmegaY%*%diag(1/sqrt(diag(OmegaY)))
-  Stat = Rpart * sqrt((n-2)/(1-Rpart^2))
-  Pval =  matrix(2*pt(abs(Stat), lower.tail=F, df=n-p-2), p, p)
-  hist(Pval)
-  return(EstimM(Pval))
-}
-par(mfrow=c(2,2))
-n<-nrow(Y)
-p<-ncol(Y)
-noffset<-nbNonEdge(Z.offset,n,p)
-ntree<-nbNonEdge(Z.tree,n,p)
-ntreebase<-nbNonEdge(Z.tree.base,n,p)
-ntreebaseinfect<-nbNonEdge(Z.tree.base.infect,n,p)
+# EstimM <- function(Prob){
+#   p = ncol(Prob);
+#   M = 2*sum(Prob[upper.tri(Prob)]>.5);
+#   return(M)
+# }
+# #@ build pvalue matrix and return nb non edges using estimM
+# nbNonEdge<-function(OmegaY,n,p){
+#   Rpart= -diag(1/sqrt(diag(OmegaY)))%*%OmegaY%*%diag(1/sqrt(diag(OmegaY)))
+#   Stat = Rpart * sqrt((n-2)/(1-Rpart^2))
+#   Pval =  matrix(2*pt(abs(Stat), lower.tail=F, df=n-p-2), p, p)
+#   hist(Pval)
+#   return(EstimM(Pval))
+# }
+# par(mfrow=c(2,2))
+# n<-nrow(Y)
+# p<-ncol(Y)
+# noffset<-nbNonEdge(Z.offset,n,p)
+# ntree<-nbNonEdge(Z.tree,n,p)
+# ntreebase<-nbNonEdge(Z.tree.base,n,p)
+# ntreebaseinfect<-nbNonEdge(Z.tree.base.infect,n,p)
+#
+# #@ build net from precision matrix with specified number of non edges by default,
+# #@ edges if boolean FALSE
+# net_precision_density<-function(omega,nbnonedges, absence=TRUE){
+#   p<-ncol(omega)
+#   nb<-ifelse(absence,nbnonedges, p*(p-1)/2)
+#   seuil<-sort(omega[upper.tri(omega)])[nb]
+#   net<-net_from_matrix(omega,seuil,FALSE)
+#   V(net)$label=NA;  E(net)$color="darkolivegreen3";  E(net)$curved=.1;  V(net)$color="black";  V(net)$size=3
+#   return(net)
+# }
+#
+# net1<-net_precision_density(offset,noffset)
+# net2<-net_precision_density(tree,ntree)
+# net3<-net_precision_density(tree.base,ntreebase)
+# net4<-net_precision_density(tree.base.infect,ntreebaseinfect)
+# c(degree(net1)[44],degree(net2)[44],degree(net3)[44],degree(net4)[44])
+# c(gsize(net1),gsize(net2),gsize(net3),gsize(net4))
 
-#@ build net from precision matrix with specified number of non edges by default,
-#@ edges if boolean FALSE
-net_precision_density<-function(omega,nbnonedges, absence=TRUE){
-  p<-ncol(omega)
-  nb<-ifelse(absence,nbnonedges, p*(p-1)/2)
-  seuil<-sort(omega[upper.tri(omega)])[nb]
+net_seuil<-function(omega,seuil){
   net<-net_from_matrix(omega,seuil,FALSE)
-  V(net)$label=NA;  E(net)$color="darkolivegreen3";  E(net)$curved=.1;  V(net)$color="black";  V(net)$size=3
+  V(net)$label = NA
+  V(net)[44]$label = colnames(omega)[44]
+  E(net)$color = "black"
+  E(net)$curved = .1
+  E(net)$width=3
+  deg <- degree(net, mode="out")
+  V(net)$size <- deg*2+2
+  V(net)$color = "darkolivegreen3"
+  return(net)
+}
+net_nbedges<-function(omega,nbedges){
+  pal<-brewer.pal(8, "Spectral")
+  seuil<-sort(omega[upper.tri(omega)],decreasing=TRUE)[nbedges]
+  net<-net_from_matrix(omega,seuil,FALSE)
+  V(net)$label = NA
+  V(net)[44]$label = colnames(omega)[44]
+  E(net)$color = "black"
+ # E(net)$curved = .1
+  #E(net)$width=3
+  deg <- degree(net, mode="out")
+  V(net)$size <- deg*2+2
+ # V(net)$color = "darkolivegreen3"
+  V(net)$color=pal
   return(net)
 }
 
-net1<-net_precision_density(offset,noffset)
-net2<-net_precision_density(tree,ntree)
-net3<-net_precision_density(tree.base,ntreebase)
-net4<-net_precision_density(tree.base.infect,ntreebaseinfect)
-c(degree(net1)[44],degree(net2)[44],degree(net3)[44],degree(net4)[44])
-c(gsize(net1),gsize(net2),gsize(net3),gsize(net4))
 par(mfrow=c(1,2))
-seuil<-0.1
-net_simple<-function(omega,seuil){
-  net<-net_from_matrix(omega,seuil,FALSE)
-  V(net)$label=NA;  E(net)$color="darkolivegreen3";  E(net)$curved=.1;  V(net)$color="black";  V(net)$size=3
-  return(net)
-}
-net1<-net_simple(offset,seuil)
-net4<-net_simple(tree.base.infect,seuil)
-coords1 <- layout_(net1, nicely())
+colnames(offset)<-colnames(Y)
+colnames(dist)<-colnames(Y)
+
+hist(offset,breaks=100)
+hist(dist,breaks=100)
+summary(c(offset))
+summary(c(dist))
+seuil<-0.11
+net1<-net_nbedges(offset,100)
+net4<-net_nbedges(dist,100)
+coords1 <- layout_(net4, nicely())
 coords<-layout_(net1, as_star(center = V(net1)[44]))
-plot(net1,layout=coords,main="offset")
-plot(net4, layout = coords,main="tree.base.infect")
+plot(net1,layout=coords1,main="offset")
+plot(net4, layout = coords1,main="dist")
 
 
 # M1<-degree(net1)

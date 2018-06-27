@@ -163,7 +163,7 @@ generator_composi_data<-function(Sigma,offset,covariates){#c = nb covaiables
   c<-ncol(covariates)# nb covariables
   p<-ncol(Sigma) # nb espèces
   beta<-matrix(runif(c*p),c,p)
-  real_counts <- covariates %*% beta + rmvnorm(n, rep(0,nrow(Sigma)), Sigma)
+  real_counts <- 1 + covariates %*% beta + rmvnorm(n, rep(0,nrow(Sigma)), Sigma)
 
   # transformation logistique en proportions
   pi<-exp(real_counts)/rowSums(exp(real_counts))
@@ -172,17 +172,25 @@ generator_composi_data<-function(Sigma,offset,covariates){#c = nb covaiables
   for(i in 1:n){
     Y[i,]<-rmultinom(1,offset[i],pi[i,]) #offset est un vecteur de taille n
   }
-
-
   return(Y)
 }
-generator_ZpZhat<-function(Sigma,n=200){#O=NULL,covariables=NULL, pb avec ces argms
+
+generator_PLN<-function(Sigma,covariates){
+  # vraies abondances, log normales
+  n<-nrow(covariates)
+  c<-ncol(covariates)# nb covariables
+  p<-ncol(Sigma) # nb espèces
+  beta<-matrix(runif(c*p),c,p)
+ # browser()
+  Z<- rmvnorm(n, rep(0,nrow(Sigma)), Sigma)
+  Y = matrix(rpois(n*p, exp(Z+ covariates %*% beta)), n, p)
+  return(Y)
+}
+generator_ZpZhat<-function(Sigma,O,covariables,n=200){#O=NULL,covariables=NULL, pb avec ces argms
   Z = rmvnorm(n, sigma=Sigma);
   p<-ncol(Sigma)
-  # Y = matrix(rpois(n*p, exp(O+Z)), n, p)
-  # PLN = PLN(Y ~ -1 + offset(O)+covariables)
-  Y = matrix(rpois(n*p, exp(Z)), n, p)
-  PLN = PLN(Y ~ -1 )
+   Y = matrix(rpois(n*p, exp(O+Z)), n, p)
+  PLN = PLN(Y ~  offset(O)+covariables)
   ZpZ.hat = PLN$model_par$Sigma
   return(ZpZ.hat)
 }
@@ -199,7 +207,7 @@ graph<-function(type,param,path){
   print(diagnostics(paste0(path,type,"/",param,"/auc.rds")))
   dev.off()
 }
-file<-paste0(path,type,"/",param,"/auc.rds")
+#file<-paste0(path,type,"/",param,"/auc.rds")
 diagnostics<-function(file){
   tab<-data.frame(readRDS(file))
   lignes<-which(is.na(tab[,1]))
@@ -302,9 +310,10 @@ compare_methods<-function(x,n,sigma,K,criterion){
   return(list(diagnost,temps,inferences,estim_reg(X,K)))
 }
 
-compare_methods2<-function(x,n,Y,K,offset,covariables){
-
-  PLN = PLN(Y ~ -1 +offset+covariables)
+compare_methods2<-function(x,n,Y,K,covariables){
+  #browser()
+#offset<-matrix(offset,n,ncol(Y))
+  PLN = PLN(Y ~ -1+covariables)
  Sigma<-PLN$model_par$Sigma
   corY<-cov2cor(Sigma)
 
@@ -367,14 +376,16 @@ record <- function(var, x, col_names, path2, B=1, rep = TRUE) {
   }
 }
 
-bootstrap_summary<-function(x,type,variable,B,path,n,criterion,nbgraph=nbgraph,PLN,offset,covariables){
+bootstrap_summary<-function(x,type,variable,B,path,n,criterion,nbgraph=nbgraph,PLN,covariables){
   print(paste0("seq = ",x))
   if(variable!="n"){
     param<-readRDS(paste0(path,type,"/",variable,"/Sets_param/Graph",nbgraph,"_",x,".rds"))
     if( PLN){
       K<-param$omega
-      Y<-generator_composi_data(param$sigma,offset,covariables)
-      obj<-lapply(1:B,function(x) compare_methods2(x,n=n,Y=Y,K=K,offset,covariables))
+    #  Y<-generator_composi_data(param$sigma,offset,covariables)
+     # offset<-round(matrix(runif(n*ncol(K)),n,ncol(K))*100+1)
+      Y<-generator_PLN(param$sigma,covariables)
+      obj<-lapply(1:B,function(x) compare_methods2(x,n=n,Y=Y,K=K,covariables))
     }else{
       K<-param$omega
       sigma<-param$sigma
@@ -387,8 +398,9 @@ bootstrap_summary<-function(x,type,variable,B,path,n,criterion,nbgraph=nbgraph,P
     param<-readRDS(paste0(path,type,"/n/Sets_param/Graph",nbgraph,".rds"))
     if( PLN){
       K<-param$omega
-      Y<-generator_composi_data(param$sigma,offset,covariables)
-      obj<-lapply(1:B,function(y) compare_methods2(y,n=x,Y=Y,K=K,offset,covariables))
+      #Y<-generator_composi_data(param$sigma,offset,covariables)
+      Y<-generator_PLN(param$sigma,covariables)
+      obj<-lapply(1:B,function(y) compare_methods2(y,n=x,Y=Y,K=K,covariables))
     }else{
       K<-param$omega
       sigma<-param$sigma
@@ -421,7 +433,7 @@ bootstrap_summary<-function(x,type,variable,B,path,n,criterion,nbgraph=nbgraph,P
   return(res2)
 }
 
-simu<-function(type,variable,seq,n,B,prob=0.1,path,Bgraph,PLN=FALSE,offset,covariables,cores){
+simu<-function(type,variable,seq,n,B,prob=0.1,path,Bgraph,PLN=FALSE,covariables,cores){
   T1<-Sys.time()
   for(nbgraph in 1:Bgraph){
     print(paste0("graph number ",nbgraph))
@@ -439,7 +451,7 @@ simu<-function(type,variable,seq,n,B,prob=0.1,path,Bgraph,PLN=FALSE,offset,covar
     for(criterion in c("auc")){
       res<-mclapply(seq,function(x) bootstrap_summary(x,type=type,variable=variable,
                                                       B=B,path=path,n=n,
-                                                      criterion=criterion,nbgraph=nbgraph,PLN,offset,covariables),
+                                                      criterion=criterion,nbgraph=nbgraph,PLN,covariables),
                     mc.cores=cores)
       #print(res)
       #auc<-data.frame(do.call("rbind",lapply(res,function(x) x[[1]])))
@@ -465,17 +477,19 @@ simu<-function(type,variable,seq,n,B,prob=0.1,path,Bgraph,PLN=FALSE,offset,covar
 #############
 
 path<-"/home/momal/Git/these/pack1/R/Simu/PLN/"#path =paste0(getwd(),"/R/Simu/") || "/home/momal/Git/these/pack1/R/Simu/"
-parameters<-list(c(seq(10,30,2)),c(seq(20,100,10)),c(seq(0,1.5,0.2)),c(seq(0.5,1.5,0.5)/20))
+parameters<-list(c(seq(10,30,2)),c(seq(20,100,10)),c(seq(0,1.5,0.2)),c(seq(0.5,5,0.5)/20))
 names(parameters)<-c("d","n","u","prob")
 
 
 cparam<-c("d","prob")
-type="erdos"
+type=c("erdos","cluster","tree","scale-free")
 n<-100
-covariables<-cbind(rnorm(n,1,1),rnorm(n,3,2),rnorm(n,8,0.5))
-offset<-round(runif(n)*1000)
-# for(type in c("tree", "erdos")) {
-#   cparam <- ifelse(type == "tree", "d", c("d", "prob"))
+covariables<-cbind(rep(c(0,1),each=n/2),rnorm(n,8,0.5),
+                   c(rep(c(1,0,1),each=round(n/3)),rep(1,n-3*round(n/3))),
+                   round(runif(n)*10))
+#offset<-round(matrix(runif(n*)*10000)
+for(type in type) {
+  cparam <- ifelse(type == "tree", "d", cparam)
   for (param in cparam) {
     simu(
       type,
@@ -486,14 +500,30 @@ offset<-round(runif(n)*1000)
       path = path,
       Bgraph = 40,
       PLN = TRUE,
-      offset = offset,
       covariables = covariables,
-      cores = 1
+      cores = 10
     )
     graph(type, param, path = path)
   }
+}
 
-param<-"d"
+for (type in type) {
+  for (param in "n") {
+    simu(
+      type,
+      variable = param,
+      seq = parameters[[param]],
+      n = n,
+      B = 2,
+      path = path,
+      Bgraph = 40,
+      PLN = TRUE,
+      covariables = covariables,
+      cores = 10
+    )
+    graph(type, param, path = path)
+  }
+}
 #  type<-"erdos"
 # path<-"/home/momal/Git/these/pack1"
 
