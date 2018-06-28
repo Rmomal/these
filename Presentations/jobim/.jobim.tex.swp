@@ -203,7 +203,18 @@ Allows for resilience analyses, pathogens control, ecosystem comparison, reactio
 %====================================================================
 
 \begin{frame}{Spanning trees}
-	Spanning trees are a \emphase{sparse} solution :
+	
+  \begin{columns}
+  \begin{column}{6cm}Much \emphase{ smaller space} to explore:\\ $\text{\#} \mathcal{G} = 2^{\frac{p(p-1)}{2}}$ vs. $\text{\#} \mathcal{T} = p^{(p-2)}$
+	
+	\end{column}
+	 \begin{column}{6cm}
+	\begin{figure}[htp]
+\includegraphics[width=5cm]{compar_typegraphs.png}
+	\end{figure}
+\end{column}
+\end{columns}
+Spanning trees are a \emphase{sparse} solution :
 	$$
   \left. \begin{tabular}{l}
           $G$ is connected \\
@@ -211,20 +222,13 @@ Allows for resilience analyses, pathogens control, ecosystem comparison, reactio
          \end{tabular} \right\}
   \text{ $G$ has $(p-1)$ edges}
   $$
-  \begin{columns}
-  \begin{column}{6cm}
-	\begin{figure}[htp]
-\includegraphics[width=5cm]{compar_typegraphs.png}
-	\end{figure}
-	\end{column}
-	 \begin{column}{6cm}
-	Much \emphase{ smaller space} to explore:\\ $\text{\#} \mathcal{G} = 2^{\frac{p(p-1)}{2}}$ vs. $\text{\#} \mathcal{T} = p^{(p-2)}$
-\end{column}
-\end{columns}
-
 
 \end{frame}
-
+%====================================================================
+%====================================================================
+\begin{frame}{Complexity}
+	
+\end{frame}
 %====================================================================
 %====================================================================
 
@@ -351,9 +355,8 @@ Allows for resilience analyses, pathogens control, ecosystem comparison, reactio
 \end{frame}
 %====================================================================
 %====================================================================
-\begin{frame}{Complexity}
-	
-\end{frame}
+
+
 \section{With count data}
 \subsection{Model}
 
@@ -365,19 +368,19 @@ Allows for resilience analyses, pathogens control, ecosystem comparison, reactio
 \[
             \left.
                 \begin{array}{rl}
-                Z_i \textit{ iid } &\sim \mathcal{N}_{d}(\mu,\Sigma)\\
+                Z_i \textit{ iid } &\sim \mathcal{N}_{d}(0,\Sigma)\\
                     &(Y_{ij})_j \independent |Z_i\\
-                    Y_{ij}|Z_{ij} &\sim \mathcal{P}(e^{\only<2-3>{\emphase{x_i^{\text{T}}\Theta_j} +}Z_{ij}}) 
+                    Y_{ij}|Z_{ij} &\sim \mathcal{P}(e^{\only<2-3>{\emphase{o_{ij}+x_i^{\text{T}}\Theta_j} +}Z_{ij}}) 
                    
                 \end{array}
-            \right \} Y \sim \mathcal{PLN}(\only<2-3>{\emphase{x^{\text{T}}\Theta }+}\mu, \Sigma)  
+            \right \} Y \sim \mathcal{PLN}(\only<2-3>{\emphase{O+x^{\text{T}}\Theta }}\only<1>{0}, \Sigma)  
             \]
 \end{block}
 \vspace{0.5cm}
 \begin{itemize}
     \item Gaussian latent layer
     \item Easy handling of multi-variate data (contrary to Negative binomial distribution)
-  \only<2-3>{ \item Allow adjustment for covariates}
+  \only<2-3>{ \item Allow adjustment for covariates and offsets}
 \end{itemize}
 %\pause
 \only<3>{\center{ \textbf{ Idea:} Infer the \emphase{latent Gaussian network.}}}
@@ -438,7 +441,7 @@ Allows for resilience analyses, pathogens control, ecosystem comparison, reactio
  \emphase{Glasso.}\\\bigskip
  On gaussian data : $\widehat{\Omega}_\lambda = \arg\min_{\Omega \in \mathcal{S}_d^+}\left\{ L(Y,\Omega)+\lambda \sum_{i\neq j} |\omega_{ij}| \right\} \hspace{0.5cm} $\\
  \begin{center}
-	$\Rightarrow$ {\color{Nicered}SpiecEasi method} with log-transformation of count data.
+	$\Rightarrow$ {\color{Nicered}SpiecEasi method} with centered log-ratio transformation of count data.
 \end{center}
 
 % $$
@@ -451,9 +454,30 @@ Allows for resilience analyses, pathogens control, ecosystem comparison, reactio
 % $$
 
 \end{frame}
+%====================================================================
+%====================================================================
 
+\subsection{}
 %====================================================================
 %====================================================================
+
+\begin{frame}{Simulation agenda}
+\begin{enumerate}
+     \item Draw $G$ \vspace{0.3cm}
+     \item Derive $\Omega$  from the adjacency matrix\vspace{0.3cm} 
+     \item Generate count data $Y$ under PLN model with parameter $\Omega$ and possible covariates
+     \item Infer{\fontfamily{qcr}\selectfont
+PLNmodels} : ajuster le modèle de régression PLN à partir de $\Sigma_Z$, $\Rightarrow \hat{\Sigma}_Z$\vspace{0.3cm}
+   
+     \item Appliquer le glasso et notre EM à $\hat{\Sigma}_Z$\vspace{0.3cm}
+     \item Comparer les graphes obtenus et G
+ \end{enumerate}
+
+	
+\end{frame}
+%====================================================================
+%====================================================================
+
 \begin{frame}{Results}
 	\begin{figure}[htp]
 \centering
@@ -494,18 +518,33 @@ Allows for resilience analyses, pathogens control, ecosystem comparison, reactio
 Data : metabarcoding of microbiome on oak tree leaves 
 \begin{itemize}
 	\item 114 sample of 94 microbial species counts (bacteria/fungi)
-	\item 8 covariates (leaf distance to the ground / tree / branch ...)
+	\item Offsets for each sample and specific for bacteria and fungi
+	\item 4 covariables : 3 distances (quantitative), 1 orientation (qualitative)
 \end{itemize}
 \end{frame}
+%====================================================================
+%====================================================================
+
 \begin{frame}{Results}
-	\begin{figure}[htp]
 
-\includegraphics[width=13cm]{compar_reseaux.png}
-\caption{}
-\label{}
+\begin{columns}
+\begin{column}{0.5\linewidth}
+\begin{figure}[H]
+\caption{Offset only}
+\includegraphics[width=6cm]{net1.png}
 \end{figure}
-
+\end{column}
+\begin{column}{0.5\linewidth}
+\begin{figure}[H]
+\caption{Offset and distance covariables}
+\includegraphics[width=6cm]{netdist.png}
+\end{figure}
+\end{column}
+\end{columns}
 \end{frame}
+%====================================================================
+%====================================================================
+
 \begin{frame}{Perspectives}
 We provide : \\
 What is next :

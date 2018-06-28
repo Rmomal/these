@@ -186,6 +186,15 @@ generator_PLN<-function(Sigma,covariates){
   Y = matrix(rpois(n*p, exp(Z+ covariates %*% beta)), n, p)
   return(Y)
 }
+generator_PLN_nocov<-function(Sigma,n){
+
+  # vraies abondances, log normales
+  p<-ncol(Sigma) # nb espèces
+  # browser()
+  Z<- rmvnorm(n, rep(0,nrow(Sigma)), Sigma)
+  Y = matrix(rpois(n*p, exp(Z)), n, p)
+  return(Y)
+}
 generator_ZpZhat<-function(Sigma,O,covariables,n=200){#O=NULL,covariables=NULL, pb avec ces argms
   Z = rmvnorm(n, sigma=Sigma);
   p<-ncol(Sigma)
@@ -230,8 +239,10 @@ diagnostics<-function(file){
     geom_line(size=0.2)+
     # geom_linerange(aes(ymin = quantile(value,0.25), ymax = quantile(value,0.75)),group=tab$method)+
     labs(y=variable,x=param)+
-    scale_color_manual(values=c("#076443", "#56B4E9","#E69F00" ),name="Method:", breaks=c("treeggm","ggm1step", "glasso" ),
+    scale_color_manual(values=c("#076443", "#56B4E9","#E69F00" ),name="Method:",
+                       breaks=c("treeggm","ggm1step", "glasso" ),
                        labels=c("EM ","1 step", "glasso" ))+
+    scale_y_continuous(limits = c(0.5,1))+
     theme_bw()+
     theme(plot.title = element_text(hjust = 0.5),legend.title=element_blank())
 
@@ -310,13 +321,18 @@ compare_methods<-function(x,n,sigma,K,criterion){
   return(list(diagnost,temps,inferences,estim_reg(X,K)))
 }
 
-compare_methods2<-function(x,n,Y,K,covariables){
+compare_methods2<-function(x,n,Y,K,covariables,estim_cov=TRUE){
   #browser()
 #offset<-matrix(offset,n,ncol(Y))
-  PLN = PLN(Y ~ -1+covariables)
+  if(estim_cov){
+    PLN = PLN(Y ~ -1+covariables)
  Sigma<-PLN$model_par$Sigma
   corY<-cov2cor(Sigma)
-
+  }else{
+    PLN = PLN(Y ~ -1)
+    Sigma<-PLN$model_par$Sigma
+    corY<-cov2cor(Sigma)
+}
   print(paste0("in sapply B = ",x))
   temps<-rep(NA,3)
   # try({
@@ -376,7 +392,9 @@ record <- function(var, x, col_names, path2, B=1, rep = TRUE) {
   }
 }
 
-bootstrap_summary<-function(x,type,variable,B,path,n,criterion,nbgraph=nbgraph,PLN,covariables){
+bootstrap_summary<-function(x,type,variable,B,path,n,criterion,nbgraph=nbgraph,PLN,covariables,cov,
+                            estim_cov){
+
   print(paste0("seq = ",x))
   if(variable!="n"){
     param<-readRDS(paste0(path,type,"/",variable,"/Sets_param/Graph",nbgraph,"_",x,".rds"))
@@ -384,8 +402,14 @@ bootstrap_summary<-function(x,type,variable,B,path,n,criterion,nbgraph=nbgraph,P
       K<-param$omega
     #  Y<-generator_composi_data(param$sigma,offset,covariables)
      # offset<-round(matrix(runif(n*ncol(K)),n,ncol(K))*100+1)
-      Y<-generator_PLN(param$sigma,covariables)
-      obj<-lapply(1:B,function(x) compare_methods2(x,n=n,Y=Y,K=K,covariables))
+      if(cov){
+
+        Y<-generator_PLN(param$sigma,covariables)
+      obj<-lapply(1:B,function(x) compare_methods2(x,n=n,Y=Y,K=K,covariables,estim_cov=estim_cov))
+      }else{
+        Y<-generator_PLN_nocov(param$sigma,n)
+        obj<-lapply(1:B,function(x) compare_methods2(x,n=n,Y=Y,K=K,covariables,estim_cov=FALSE))
+      }
     }else{
       K<-param$omega
       sigma<-param$sigma
@@ -433,7 +457,7 @@ bootstrap_summary<-function(x,type,variable,B,path,n,criterion,nbgraph=nbgraph,P
   return(res2)
 }
 
-simu<-function(type,variable,seq,n,B,prob=0.1,path,Bgraph,PLN=FALSE,covariables,cores){
+simu<-function(type,variable,seq,n,B,prob=0.1,path,Bgraph,PLN=FALSE,covariables,cov=TRUE,estim_cov=TRUE,cores){
   T1<-Sys.time()
   for(nbgraph in 1:Bgraph){
     print(paste0("graph number ",nbgraph))
@@ -451,7 +475,8 @@ simu<-function(type,variable,seq,n,B,prob=0.1,path,Bgraph,PLN=FALSE,covariables,
     for(criterion in c("auc")){
       res<-mclapply(seq,function(x) bootstrap_summary(x,type=type,variable=variable,
                                                       B=B,path=path,n=n,
-                                                      criterion=criterion,nbgraph=nbgraph,PLN,covariables),
+                                                      criterion=criterion,nbgraph=nbgraph,PLN,covariables,
+                                                      cov=cov,estim_cov=estim_cov),
                     mc.cores=cores)
       #print(res)
       #auc<-data.frame(do.call("rbind",lapply(res,function(x) x[[1]])))
@@ -498,12 +523,24 @@ for(type in type) {
       n = n,
       B = 2,
       path = path,
-      Bgraph = 1,
+      Bgraph = 40,
       PLN = TRUE,
-      covariables = covariables,
+      covariables = covariables,cov=FALSE,estim_cov=FALSE,
       cores = 10
     )
-    graph(type, param, path = path)
+    simu(
+      type,
+      variable = param,
+      seq = parameters[[param]],
+      n = n,
+      B = 2,
+      path = path,
+      Bgraph = 1,
+      PLN = TRUE,
+      covariables = covariables,cov=TRUE,estim_cov=FALSE,
+      cores = 1
+    )
+    #graph(type, param, path = path)
   }
 }
 type<-"erdos"
