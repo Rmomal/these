@@ -498,7 +498,7 @@ for(type in type) {
       n = n,
       B = 2,
       path = path,
-      Bgraph = 40,
+      Bgraph = 1,
       PLN = TRUE,
       covariables = covariables,
       cores = 10
@@ -506,7 +506,8 @@ for(type in type) {
     graph(type, param, path = path)
   }
 }
-
+type<-"erdos"
+param<-"prob"
 for (type in type) {
   for (param in "n") {
     simu(

@@ -455,7 +455,13 @@ Allows for resilience analyses, pathogens control, ecosystem comparison, reactio
 %====================================================================
 %====================================================================
 \begin{frame}{Results}
-	
+	\begin{figure}[htp]
+\centering
+\includegraphics[scale=0.6]{erdos_d.pdf}
+\caption{}
+\label{}
+\end{figure}
+
 \end{frame}
 
 
@@ -492,7 +498,13 @@ Data : metabarcoding of microbiome on oak tree leaves
 \end{itemize}
 \end{frame}
 \begin{frame}{Results}
-	
+	\begin{figure}[htp]
+
+\includegraphics[width=13cm]{compar_reseaux.png}
+\caption{}
+\label{}
+\end{figure}
+
 \end{frame}
 \begin{frame}{Perspectives}
 We provide : \\

@@ -48,12 +48,17 @@ n = nrow(Y); p = ncol(Y)
 # summary(model_lin)
 # summary(model_quadra)
 
+######
+#Spieceasi
+#####
+inf_spiec<-inf_spieceasi(Y)
 # PLN models
 PLN.offset = PLN(Y ~ 1 + offset(log(O)))
 PLN.dist = PLN(Y ~ 1 + X$distTObase[X$tree=="2"] + offset(log(O)))
-
+PLN.orient = PLN(Y ~ 1 + X$orientation[X$tree=="2"] + offset(log(O)))
+PLN.dist.orient = PLN(Y ~ 1 + X$distTObase[X$tree=="2"] + X$orientation[X$tree=="2"] + offset(log(O)))
 # BIC
-Crit = rbind(PLN.offset$criteria, PLN.dist$criteria)
+Crit = rbind(PLN.offset$criteria, PLN.dist$criteria, PLN.orient$criteria,PLN.dist.orient$criteria)
 apply(Crit, 2, which.max)
 
 # inférences
@@ -61,6 +66,10 @@ Z.offset = PLN.offset$model_par$Sigma
 inf.offset<-TreeGGM(cov2cor(Z.offset),print=TRUE,step="FALSE")
 Z.dist = PLN.dist$model_par$Sigma
 inf.dist<-TreeGGM(cov2cor(Z.dist),print=TRUE,step="FALSE")
+Z.orient = PLN.orient$model_par$Sigma
+inf.orient<-TreeGGM(cov2cor(Z.orient),print=TRUE,step="FALSE")
+Z.dist.orient = PLN.dist.orient$model_par$Sigma
+inf.dist.orient<-TreeGGM(cov2cor(Z.dist.orient),print=TRUE,step="FALSE")
 
 heatmap(solve(Z.offset),Rowv = NA,Colv = NA)
 heatmap(inf.offset$P,Rowv = NA,Colv = NA)
@@ -71,12 +80,21 @@ saveRDS(inf.offset,"inf_offset.rds")
 saveRDS(Z.offset,"Z.offset.rds")
 saveRDS(inf.dist,"inf_dist.rds")
 saveRDS(Z.dist,"Z.dist.rds")
+saveRDS(inf.orient,"inf_orient.rds")
+saveRDS(Z.orient,"Z.orient.rds")
+saveRDS(inf_spiec,"spiec.rds")
+saveRDS(Z.dist.orient,"Z.dist.orient.rds")
+saveRDS(inf.dist.orient,"inf_dist_orient.rds")
 ########
 offset<-readRDS("/home/momal/Git/these/pack1/R/inf_offset.rds")[[1]]
 dist<-readRDS("/home/momal/Git/these/pack1/R/inf_dist.rds")[[1]]
+orient<-readRDS("/home/momal/Git/these/pack1/R/inf_orient.rds")[[1]]
+Z.orient<-readRDS("/home/momal/Git/these/pack1/R/Z.orient.rds")
 Z.offset<-readRDS("/home/momal/Git/these/pack1/R/Z.offset.rds")
 Z.dist<-readRDS("/home/momal/Git/these/pack1/R/Z.dist.rds")
-
+spiec<-readRDS("/home/momal/Git/these/pack1/R/spiec.rds")
+Z.dist.orient<-readRDS("/home/momal/Git/these/pack1/R/Z.dist.orient.rds")
+dist_orient<-readRDS("/home/momal/Git/these/pack1/R/inf_dist_orient.rds")[[1]]
 
 # par(mfrow=c(2,2))
 # hist(offset,breaks=100)
@@ -143,38 +161,88 @@ net_seuil<-function(omega,seuil){
   return(net)
 }
 net_nbedges<-function(omega,nbedges){
-  pal<-brewer.pal(8, "Spectral")
+  pal<-brewer.pal(11, "Spectral")
   seuil<-sort(omega[upper.tri(omega)],decreasing=TRUE)[nbedges]
   net<-net_from_matrix(omega,seuil,FALSE)
   V(net)$label = NA
-  V(net)[44]$label = colnames(omega)[44]
+ V(net)[44]$label = "EA"
   E(net)$color = "black"
  # E(net)$curved = .1
   #E(net)$width=3
   deg <- degree(net, mode="out")
-  V(net)$size <- deg*2+2
+  V(net)$size <- deg*2+1
  # V(net)$color = "darkolivegreen3"
   V(net)$color=pal
+  inc.edges <- incident(net,  V(net)[44], mode="all")
+  ecol <- rep("gray80", ecount(net))
+  ecol[inc.edges] <- "orange"
+  ew <- rep(2, ecount(net))
+  ew[inc.edges] <- 4
+  vcol <- rep("grey40", vcount(net))
+  vcol[V(net)[44]] <- "gold"
+  neigh.nodes <- neighbors(net, V(net)[44], mode="out")
+  # Set colors to plot the neighbors:
+  vcol[neigh.nodes] <- "#ff9d00"
+  V(net)$color=vcol
+  E(net)$color=ecol
+  E(net)$width=ew
   return(net)
 }
 
-par(mfrow=c(1,2))
+par(mfrow=c(2,2))
+
+
 colnames(offset)<-colnames(Y)
 colnames(dist)<-colnames(Y)
+colnames(orient)<-colnames(Y)
+colnames(spiec)<-colnames(Y)
+colnames(dist_orient)<-colnames(Y)
+
 
 hist(offset,breaks=100)
 hist(dist,breaks=100)
+hist(orient,breaks=100)
 summary(c(offset))
 summary(c(dist))
-seuil<-0.11
-net1<-net_nbedges(offset,100)
-net4<-net_nbedges(dist,100)
-coords1 <- layout_(net4, nicely())
+summary(c(orient))
+#seuil<-0.11
+
+coords1 <- layout_(net_spiec, nicely())
 coords<-layout_(net1, as_star(center = V(net1)[44]))
-plot(net1,layout=coords1,main="offset")
-plot(net4, layout = coords1,main="dist")
+par(mfrow=c(2,2))
+plot(net1,layout=coords,main="offset")
+plot(net2, layout = coords,main="dist")
+plot(net3, layout = coords,main="orient")
+plot(net_spiec, layout = coords,main="Spieceasi")
+plot(net4, layout = coords,main="DistOrient")
 
+############# NETS ##############
+nbedges<-200
+net1<-net_nbedges(offset,nbedges)
+net2<-net_nbedges(dist,nbedges)
+net3<-net_nbedges(orient,nbedges)
+net_spiec<-net_nbedges(spiec,nbedges)
+net4<-net_nbedges(dist_orient,nbedges)
+############ PLOTS ############
 
+par(mfrow=c(1,3))
+coords<-coords
+plot(net_spiec, layout = coords,main="Spieceasi")
+plot(net1,layout=coords,main="offset")
+#plot(net2, layout = coords,main="dist")
+#plot(net3, layout = coords,main="orient")
+plot(net4, layout = coords,main="DistOrient")
+########### BOXES #############
+data<-data.frame(degree=c(degree(net1),degree(net2),degree(net3),degree(net_spiec),degree(net4)),
+                model=rep(c("Offset","Distance","Orientation","Spieceasi","DistOrient"),each=length(degree(net1))))
+p<-ggplot(data, aes(x=model, y=degree,fill=model)) +
+  scale_fill_brewer(palette="Blues")+
+  theme_minimal()+
+  theme(legend.position="none")
+par(mfrow=c(1,1))
+p+geom_boxplot(notch=TRUE,width=0.5)
+p+geom_violin(alpha = 0.5)  + stat_summary(fun.y=median, geom="point", shape=16, size=2)
+###############################
 # M1<-degree(net1)
 # M4<-degree(net4)
 # degree_table<-data.frame(nods=1:ncol(Y),M1=M1,M4=M4)
