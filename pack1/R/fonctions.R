@@ -384,7 +384,10 @@ net_from_matrix<-function(precision,seuil, boucles){
   net <- graph_from_adjacency_matrix(matrice, mode="upper", diag = boucles)
   return(net)
 }
-
+net_from_weight<-function(precision,seuil, boucles){
+  net <- graph_from_adjacency_matrix(precision, mode="upper", diag = boucles,weighted=TRUE)
+  return(net)
+}
 grab_grob <- function(){
   grid.echo()
   grid.grab()

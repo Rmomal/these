@@ -166,23 +166,29 @@ net_nbedges<-function(omega,size){
   net<-net_from_weight(plotG(omega),seuil,FALSE)
   E(net)$width=E(net)$weight*size
   V(net)$label = NA
+  V(net)$label.color="white"
  V(net)[44]$label = "EA"
  V(net)[14]$label = "F19"
-  V(net)$size =1
+ V(net)[44]$frame.color="#993400"
+ V(net)[14]$frame.color="#004366"
+  V(net)$size =2
+  V(net)[44]$size = 20
+ V(net)[14]$size = 20
   vcol <- rep("grey40", vcount(net))
-  vcol[V(net)[44]] <- "gold"
-  vcol[V(net)[14]] <- "deepskyblue"
+  vcol[V(net)[44]] <- "#993400"
+  vcol[V(net)[14]] <- "#004366"
+ V(net)$label.family="Helvetica"
+ V(net)$label.cex=0.8
   ecol <- rep("gray80", ecount(net))
   inc.edges44 <- incident(net,  V(net)[44], mode="all")
   inc.edges14 <- incident(net,  V(net)[14], mode="all")
-   ecol[inc.edges44] <- "orange"
+   ecol[inc.edges44] <- "#CC4600"
    ecol[inc.edges14] <- "#0086CC"
 
  # E(net)$curved = .1
   #E(net)$width=3
   # deg <- degree(net, mode="out")
   # V(net)$size <- deg*2+1
- V(net)$color = "darkolivegreen3"
   # V(net)$color=pal
 
   # ecol <- rep("gray80", ecount(net))
@@ -200,7 +206,18 @@ net_nbedges<-function(omega,size){
   return(net)
 }
 
-par(mfrow=c(2,2))
+par(mfrow=c(1,2))
+par(mar=c(0,0,0,0)+.1)
+size<-1.5
+net1<-net_nbedges(offset,size)
+plot(net1,layout=coords)
+title("Offset", line = -2.5)
+net2<-net_nbedges(dist,size)
+plot(net2, layout = coords)
+title("Adding distance covariables", line = -2.5)
+################################
+
+par(mfrow=c(1,1))
 
 
 colnames(offset)<-colnames(Y)
@@ -230,9 +247,14 @@ plot(net_spiec, layout = coords,main="Spieceasi")
 plot(net4, layout = coords,main="DistOrient")
 
 ############# NETS ##############
+par(mfrow=c(1,2))
 size<-1.5
 net1<-net_nbedges(offset,size)
+plot(net1,layout=coords,main="")
 net2<-net_nbedges(dist,size)
+plot(net2, layout = coords,main="")
+
+
 net3<-net_nbedges(orient,size)
 spiec2<-spiec
 spiec2[which(spiec2==0)]<-1e-4

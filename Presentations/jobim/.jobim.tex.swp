@@ -7,7 +7,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage{tikz}
 \usepackage{tabularx}
-\usepackage{amsmath,graphicx}
+\usepackage{amsmath,graphicx,dsfont}
 \usetikzlibrary{shapes,backgrounds,arrows,automata,snakes,shadows,positioning, mindmap}
 %===================================
 \makeatletter
@@ -66,6 +66,7 @@
     observed/.style={%
     scale=0.6,circle,draw=Framableulight,transform shape,fill=white,font=\Large}
 }
+\newcommand{\argmax}{\mathop{\mathrm{argmax}}}   
 %#################################################################
 \usepackage{graphicx}
 \begin{document}
@@ -230,8 +231,9 @@ Still a huge complexity...
 %====================================================================
 \begin{frame}{Algebra tools}
 \begin{description}
-	\item[Maximum spanning tree] Kruskall's algorithm, quadratic complexity
-\item[tree averaging] Matrix tree theoem (Kirchhoff)
+\item[Maximum spanning tree] Kruskall's algorithm\\ $ \hat{T} = \underset{T}{\mathrm{argmax }} \left\{ \mathds{P}(Y|T) \right\}  \rightarrow \Theta (p^2)$
+\item[Tree averaging] Matrix tree theoem (Kirchhoff)\\ 
+$ \mathds{P}(Y) = \sum_T \mathds{P}(T)\mathds{P}(Y|T)  \rightarrow \Theta (p^3)$
 \end{description}
 
 	
@@ -484,14 +486,11 @@ Still a huge complexity...
 %====================================================================
 %====================================================================
 
-\begin{frame}{Results}
-	\begin{figure}[htp]
+\begin{frame}{Results: Erdös, 20 nodes}
+\begin{figure}[htp]
 \centering
-\includegraphics[scale=0.6]{erdos_prob_covcov.pdf}
-\caption{}
-\label{}
+\includegraphics[width=11cm]{mosaic.png}
 \end{figure}
-
 \end{frame}
 
 
@@ -532,21 +531,12 @@ Data : metabarcoding of microbiome on oak tree leaves
 %====================================================================
 
 \begin{frame}{Results}
+\begin{figure}[htp]
+\centering
+\includegraphics[width=11cm]{compare_reseaux.png}
 
-\begin{columns}
-\begin{column}{0.5\linewidth}
-\begin{figure}[H]
-\caption{Offset only}
-\includegraphics[width=6cm]{net1.png}
 \end{figure}
-\end{column}
-\begin{column}{0.5\linewidth}
-\begin{figure}[H]
-\caption{Offset and distance covariables}
-\includegraphics[width=6cm]{netdist.png}
-\end{figure}
-\end{column}
-\end{columns}
+
 \end{frame}
 %====================================================================
 %====================================================================

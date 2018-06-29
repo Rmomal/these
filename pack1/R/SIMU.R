@@ -242,7 +242,7 @@ diagnostics<-function(file){
     scale_color_manual(values=c("#076443", "#56B4E9","#E69F00" ),name="Method:",
                        breaks=c("treeggm","ggm1step", "glasso" ),
                        labels=c("EM ","1 step", "glasso" ))+
-    scale_y_continuous(limits = c(0.5,1))+
+    scale_y_continuous(limits = c(0,1))+
     theme_bw()+
     theme(plot.title = element_text(hjust = 0.5),legend.title=element_blank())
 
@@ -254,7 +254,7 @@ diagnostics<-function(file){
 ###   Main code  ###
 ####################
 
-save_params<-function(x,variable,type,path,graph,prob,u,nbgraph=nbgraph){
+save_params<-function(x,variable,type,path,graph,prob,nbgraph=nbgraph){
   if(variable!="u"){
     graph<-switch(variable, "d"=generator_graph(graph=type,d=x,prob=2/x),
                   "prob"=generator_graph(graph=type,prob=x))
@@ -324,12 +324,13 @@ compare_methods<-function(x,n,sigma,K,criterion){
 compare_methods2<-function(x,n,Y,K,covariables,estim_cov=TRUE){
   #browser()
 #offset<-matrix(offset,n,ncol(Y))
+
   if(estim_cov){
     PLN = PLN(Y ~ -1+covariables)
  Sigma<-PLN$model_par$Sigma
   corY<-cov2cor(Sigma)
   }else{
-    PLN = PLN(Y ~ -1)
+    PLN = PLN(Y ~ 1)
     Sigma<-PLN$model_par$Sigma
     corY<-cov2cor(Sigma)
 }
@@ -390,7 +391,7 @@ record <- function(var, x, col_names, path2, B=1, rep = TRUE) {
 
   save_path <- paste0(path2, deparse(substitute(var)), ".rds")
   if (file.exists(save_path)) {
-    tmp <- rbind(, frame)
+    tmp <- rbind(readRDS(save_path), frame)
     saveRDS(tmp, save_path)
   } else{
     saveRDS(frame, save_path)
@@ -517,6 +518,7 @@ n<-100
 covariables<-cbind(rep(c(0,1),each=n/2),rnorm(n,8,0.5),
                    c(rep(c(1,0,1),each=round(n/3)),rep(1,n-3*round(n/3))),
                    round(runif(n)*10))
+covariables2<-matrix(c(rep(c(1,0,1),each=round(n/3)),rep(1,n-3*round(n/3))),n,1)
 #offset<-round(matrix(runif(n*)*10000)
 # for(type in type) {
 #   cparam <- ifelse(type == "tree", "d", cparam)
@@ -544,8 +546,8 @@ path<-"/home/momal/Git/these/pack1/R/Simu/"#path =paste0(getwd(),"/R/Simu/") || 
       path = path,
       Bgraph = 30,
       PLN = TRUE,
-      covariables = covariables,cov=TRUE,estim_cov=FALSE,
-      cores = 10
+      covariables = covariables,cov=FALSE,estim_cov=TRUE,
+      cores = 8
     )
     graph(type, param, path = path)
 #   }
