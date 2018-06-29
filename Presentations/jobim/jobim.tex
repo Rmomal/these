@@ -7,9 +7,19 @@
 \usepackage[utf8]{inputenc}
 \usepackage{tikz}
 \usepackage{tabularx}
-\usepackage{amsmath,graphicx}
+\usepackage{lipsum}
+\usepackage{amsmath,graphicx,dsfont}
 \usetikzlibrary{shapes,backgrounds,arrows,automata,snakes,shadows,positioning, mindmap}
 %===================================
+\newcommand{\backupbegin}{
+   \newcounter{framenumberappendix}
+   \setcounter{framenumberappendix}{\value{framenumber}}
+}
+\newcommand{\backupend}{
+   \addtocounter{framenumberappendix}{-\value{framenumber}}
+   \addtocounter{framenumber}{\value{framenumberappendix}} 
+}
+
 \makeatletter
 \setbeamertemplate{footline}
 {
@@ -32,15 +42,17 @@
 \definecolor{Framableu}{RGB}{12,91,122}
 \definecolor{Framableulight}{RGB}{18,144,176}
 \definecolor{Nicered}{RGB}{176,18,65}
+%\definecolor{Nicered}{RGB}{141,14,52}
 \definecolor{Lightpink}{RGB}{229,177,218}
 \definecolor{Green}{RGB}{144,176,18}
 \definecolor{Lightcomplement}{RGB}{235,204,196}
 \definecolor{Darkgoldenrod}{RGB}{176,144,18}
 \definecolor{Darkomplement}{RGB}{122,43,12}
 \definecolor{Complement}{RGB}{176,50,18}
+\definecolor{Darkgreen}{RGB}{52,141,14}
 %===================================
 \setbeamertemplate{itemize items}[square]
-\setbeamertemplate{blocks}[rounded][shadow=false]
+\setbeamertemplate{blocks}[shadow=false]
 \setbeamertemplate{caption}{\raggedright\insertcaption\par}
 %===================================
 \setbeamercolor{section in head/foot}{fg=white,bg=Framableu}
@@ -60,12 +72,16 @@
 \newcommand{\Ccal}{\mathcal{C}}
 \newcommand{\edgeunit}{1.5}
 \newcommand{\emphase}[1]{\textcolor{Complement}{#1}}
+\newcommand{\bleu}[1]{\textcolor{Framableulight}{#1}}
+\newcommand{\pos}[1]{\textcolor{Darkgreen}{#1}}
+\newcommand{\nega}[1]{\textcolor{Nicered}{#1}}
 \newcommand\independent{\protect\mathpalette{\protect\independenT}{\perp}}\def\independenT#1#2{\mathrel{\rlap{$#1#2$}\mkern2mu{#1#2}}}
 \newcommand{\Ncal}{\mathcal{N}}
 \tikzset{%
     observed/.style={%
     scale=0.6,circle,draw=Framableulight,transform shape,fill=white,font=\Large}
 }
+\newcommand{\argmax}{\mathop{\mathrm{argmax}}}   
 %#################################################################
 \usepackage{graphicx}
 \begin{document}
@@ -95,7 +111,7 @@ Rising interest in \emphase{jointly analysed }species abundances:
 
 \begin{block}{Ecological network}
 Tool to better understand species interactions (direct/indirect, nature), eco-systems organizations (clusters ?) 
-\end{block}
+\end{block}\bigskip
 %\pause
 Allows for resilience analyses, pathogens control, ecosystem comparison, reaction prediction...
 \end{frame}
@@ -105,8 +121,8 @@ Allows for resilience analyses, pathogens control, ecosystem comparison, reactio
 
 \begin{frame}{Data}
 	\begin{itemize}
-	\item \emphase{Species} : animal, bacteria, gene ...
-	\item \emphase{Abundances} : ecological counts, Next-Generation Sequencing technologies...
+	\item \emphase{Species} : bacteria, fungi ...
+	\item \emphase{Abundances} : read counts from Next-Generation Sequencing technologies (metabarcoding)
 	\item \emphase{Covariates} : coverage, temperature, water depth ... 
 \end{itemize}
 	Repeated signal : $n$ samples of $p$ abundances.
@@ -123,12 +139,12 @@ Allows for resilience analyses, pathogens control, ecosystem comparison, reactio
 \end{frame}
 %====================================================================
 %====================================================================
-\begin{frame}{Challenges}
+\begin{frame}{Challenges}\large{
 	\begin{enumerate}
-	\item  Huge space of possible graphs
-	\item Count data
-	\item Covariables
-\end{enumerate}
+	\item  Statistical network inference \bigskip\bigskip
+	\item Count data \bigskip\bigskip
+	\item Offsets and covariates
+\end{enumerate}}
 \end{frame}
 %====================================================================
 %====================================================================
@@ -168,7 +184,7 @@ Allows for resilience analyses, pathogens control, ecosystem comparison, reactio
 %====================================================================
 
 \begin{frame}{Graphical models}
-\begin{block}{Definition}
+\begin{block}{Definition \cite{Lau96}}
 	The joint distribution P is faithful to the graph G iff \[ P(Y_1, \dots, Y_p) \propto \prod_{C \in \Ccal_G} \psi_C(Y_C) \]
   where $\Ccal_G =$ set of cliques of $G$.
 \end{block}
@@ -203,18 +219,9 @@ Allows for resilience analyses, pathogens control, ecosystem comparison, reactio
 %====================================================================
 
 \begin{frame}{Spanning trees}
+	Very large space to explore: {\color{Nicered}$\text{\#} \mathcal{G} = 2^{\frac{p(p-1)}{2}}$}\\ \bigskip
 	
-  \begin{columns}
-  \begin{column}{6cm}Much \emphase{ smaller space} to explore:\\ $\text{\#} \mathcal{G} = 2^{\frac{p(p-1)}{2}}$ vs. $\text{\#} \mathcal{T} = p^{(p-2)}$
-	
-	\end{column}
-	 \begin{column}{6cm}
-	\begin{figure}[htp]
-\includegraphics[width=5cm]{compar_typegraphs.png}
-	\end{figure}
-\end{column}
-\end{columns}
-Spanning trees are a \emphase{sparse} solution :
+	Spanning trees are a \emphase{sparse} solution :
 	$$
   \left. \begin{tabular}{l}
           $G$ is connected \\
@@ -222,11 +229,30 @@ Spanning trees are a \emphase{sparse} solution :
          \end{tabular} \right\}
   \text{ $G$ has $(p-1)$ edges}
   $$
-
+  \begin{columns}
+  \begin{column}{6cm}
+	\begin{figure}[htp]
+\includegraphics[width=5cm]{compar_typegraphs.png}
+	\end{figure}
+	\end{column}
+	 \begin{column}{6cm}
+Much \emphase{ smaller space} to explore:\\  {\color{Nicered} $\text{\#} \mathcal{T} = p^{(p-2)}$}\\ \bigskip
+\pause
+Still a huge complexity...
+\end{column}
+\end{columns}
 \end{frame}
 %====================================================================
 %====================================================================
-\begin{frame}{Complexity}
+\begin{frame}{Algebra tools}
+\begin{description}
+\item[Maximum spanning tree] Kruskall's algorithm\\
+ $$ \hat{T} = \underset{T}{\mathrm{argmax }} \left\{ \mathds{P}(Y|T) \right\}  \rightarrow \Theta ((\text{\# nodes})^2)$$ \bigskip 
+\item[Tree averaging] Matrix tree theoem \cite{matrixtree}\\ 
+$$\mathds{P}(Y) = \sum_T \mathds{P}(T)\mathds{P}(Y|T)  \rightarrow \Theta ((\text{\# nodes})^3)$$
+\end{description}\pause \bigskip 
+\center{
+\textbf{Idea}: infer the network by \emphase{averaging spanning trees}}
 	
 \end{frame}
 %====================================================================
@@ -364,7 +390,7 @@ Spanning trees are a \emphase{sparse} solution :
 %====================================================================
 
 \begin{frame}{PLN model}
-\begin{block}{Poisson log-Normal distribution}
+\begin{block}{Poisson log-Normal distribution \cite{AiH89}}
 \[
             \left.
                 \begin{array}{rl}
@@ -383,7 +409,7 @@ Spanning trees are a \emphase{sparse} solution :
   \only<2-3>{ \item Allow adjustment for covariates and offsets}
 \end{itemize}
 %\pause
-\only<3>{\center{ \textbf{ Idea:} Infer the \emphase{latent Gaussian network.}}}
+\only<3>{\center{ \textbf{ Idea:} Infer the \emphase{latent Gaussian network} with an \emphase{EM algorithm.}}}
 \end{frame}
 
 %====================================================================
@@ -429,9 +455,9 @@ Spanning trees are a \emphase{sparse} solution :
 	 $$
 	 \Sigma^{-1} = \Omega \propto \left[ \begin{array}{cccc}
 	   1 & .5 & .5 & \emphase{0} \\
-	   .5 & 1 & .5 & \emphase{0} \\
-	   .5 & .5 & 1 & .5 \\
-	   \emphase{0} & \emphase{0} & .5 & 1
+	   .5 & 1 & .5 & .5 \\
+	   .5 & .5 & 1 & \emphase{0} \\
+	   \emphase{0} & .5& \emphase{0}  & 1
 	   \end{array} \right] 
 	 $$
     \end{tabular} 
@@ -441,7 +467,7 @@ Spanning trees are a \emphase{sparse} solution :
  \emphase{Glasso.}\\\bigskip
  On gaussian data : $\widehat{\Omega}_\lambda = \arg\min_{\Omega \in \mathcal{S}_d^+}\left\{ L(Y,\Omega)+\lambda \sum_{i\neq j} |\omega_{ij}| \right\} \hspace{0.5cm} $\\
  \begin{center}
-	$\Rightarrow$ {\color{Nicered}SpiecEasi method} with centered log-ratio transformation of count data.
+	$\Rightarrow$ {\color{Framableulight}SpiecEasi method \cite{kurtz}}: glasso on transformed counts
 \end{center}
 
 % $$
@@ -461,31 +487,26 @@ Spanning trees are a \emphase{sparse} solution :
 %====================================================================
 %====================================================================
 
-\begin{frame}{Simulation agenda}
+\begin{frame}{Simulation design}For each parameter settings, repeat 40 times:\bigskip
+
 \begin{enumerate}
-     \item Draw $G$ \vspace{0.3cm}
-     \item Derive $\Omega$  from the adjacency matrix\vspace{0.3cm} 
-     \item Generate count data $Y$ under PLN model with parameter $\Omega$ and possible covariates
-     \item Infer{\fontfamily{qcr}\selectfont
-PLNmodels} : ajuster le modèle de régression PLN à partir de $\Sigma_Z$, $\Rightarrow \hat{\Sigma}_Z$\vspace{0.3cm}
-   
-     \item Appliquer le glasso et notre EM à $\hat{\Sigma}_Z$\vspace{0.3cm}
-     \item Comparer les graphes obtenus et G
- \end{enumerate}
+     \item Draw \emphase{$G$} \vspace{0.3cm}
+     \item Derive \emphase{$\Omega$}  from the adjacency matrix\vspace{0.3cm} 
+     \item Generate count data \emphase{$Y$} under PLN model with parameter $\Omega$ and possible covariates
+     \item Infer the network with \emphase{PLN + mixture tree EM}  and \emphase{SpiecEasi} \vspace{0.3cm}
+     \item Compare results with \emphase{AUC} (presence/absence of edges)
+\end{enumerate}
 
 	
 \end{frame}
 %====================================================================
 %====================================================================
 
-\begin{frame}{Results}
-	\begin{figure}[htp]
+\begin{frame}{Results: Erdös, 20 nodes}
+\begin{figure}[htp]
 \centering
-\includegraphics[scale=0.6]{erdos_d.pdf}
-\caption{}
-\label{}
+\includegraphics[width=11cm]{mosaic.png}
 \end{figure}
-
 \end{frame}
 
 
@@ -515,44 +536,96 @@ PLNmodels} : ajuster le modèle de régression PLN à partir de $\Sigma_Z$, $\Ri
 \end{column}
 \end{columns}
 \vspace{0.5cm}
-Data : metabarcoding of microbiome on oak tree leaves 
+Data: metabarcoding of oak tree leaves microbiome.\\
+
 \begin{itemize}
 	\item 114 sample of 94 microbial species counts (bacteria/fungi)
-	\item Offsets for each sample and specific for bacteria and fungi
-	\item 4 covariables : 3 distances (quantitative), 1 orientation (qualitative)
+	\item Different read depth for bacteria and fungi
+	\item 3 distances covariates (quantitative)
 \end{itemize}
 \end{frame}
 %====================================================================
 %====================================================================
 
-\begin{frame}{Results}
+\begin{frame}{Inferred networks}
+\begin{figure}[htp]
+\centering
+\includegraphics[width=11cm]{compare_reseaux.png}
 
-\begin{columns}
-\begin{column}{0.5\linewidth}
-\begin{figure}[H]
-\caption{Offset only}
-\includegraphics[width=6cm]{net1.png}
 \end{figure}
-\end{column}
-\begin{column}{0.5\linewidth}
-\begin{figure}[H]
-\caption{Offset and distance covariables}
-\includegraphics[width=6cm]{netdist.png}
-\end{figure}
-\end{column}
-\end{columns}
+
+\end{frame}
+
+\begin{frame}{Including distance covariates}
+	\begin{description}
+	\item[Regression coefficients]\begin{itemize}
+	\item []
+\end{itemize} \begin{table}[]
+\begin{tabular}{l|lllll}
+    & Offset & \multicolumn{4}{|c}{Adding distances}   \\\cline{2-6}
+    & \multicolumn{1}{l|}{Int.}  & Int.  & to base & to trunk & to ground \\\hline
+EA  & \nega{-4.39}  &\pos{ 0.710 }&  \nega{-0.0200} &\pos{ 0.0215  } &  \nega{-0.0251  } \\
+F19 &  \nega{-4.37}  &  \nega{-8.52} & \pos{0.0219 } &  \nega{-0.0172}  & \pos{0.0143  } 
+\end{tabular}
+\end{table}
+	\item[Degree estimation]\begin{itemize}
+	\item []
+\end{itemize} \begin{table}[]
+\begin{tabular}{l|ll}
+    & Offset & Distances \\\hline
+EA  & 2.20   & 1.86      \\
+F19 & 3.03   & 2.80     
+\end{tabular}
+\end{table}
+\end{description}
 \end{frame}
 %====================================================================
 %====================================================================
 
 \begin{frame}{Perspectives}
-We provide : \\
-What is next :
-	\begin{itemize}
-	\item threshold study
-	\item Network comparison
-	\item Inference in the observe counts layer
-	\item Missing major entity (species / covariable)
+\begin{description}
+\item[We provide:] 
+\begin{itemize}
+\item[]  
+	\item Formal probabilistic model for network inference with \emphase{count data}
+	\item  Estimation algorithm
+	\item Allows to account for \emphase{offsets} and \emphase{covariates}
 \end{itemize}
+\bigskip 
+\item[What is next:]
+
+\begin{itemize}
+\item[]  
+	\item Method for determining the threshold
+	\item Network comparison
+	\item Inference in the observed counts layer
+	\item Missing major entity (species/covariable)
+\end{itemize}
+\end{description}
 \end{frame}
+%====================================================================
+%====================================================================
+
+\appendix
+\backupbegin
+\begin{frame}{Thank you}
+\begin{center}
+	Thank you for your attention.
+\end{center}	
+\end{frame}
+
+\begin{frame}[allowframebreaks]
+ \bibliographystyle{apalike}
+    \bibliography{biblio2.bib}
+% \frametitle{References}
+%\bibliography{cellcite}
+
+
+
+
+
+\end{frame}\backupend
+%====================================================================
+%====================================================================
+
 \end{document}

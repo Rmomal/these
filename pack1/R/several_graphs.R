@@ -5,7 +5,7 @@ library(grid)
 
 
 grid_arrange_shared_legend <- function(..., ncol = length(list(...)), nrow = 1, position = c("bottom", "right")) {
-  
+
   plots <- list(...)
   position <- match.arg(position)
   g <- ggplotGrob(plots[[1]] + theme(legend.position = position))$grobs
@@ -14,7 +14,7 @@ grid_arrange_shared_legend <- function(..., ncol = length(list(...)), nrow = 1, 
   lwidth <- sum(legend$width)
   gl <- lapply(plots, function(x) x + theme(legend.position="none"))
   gl <- c(gl, ncol = ncol, nrow = nrow)
-  
+
   combined <- switch(position,
                      "bottom" = arrangeGrob(do.call(arrangeGrob, gl),
                                             legend,
@@ -24,24 +24,14 @@ grid_arrange_shared_legend <- function(..., ncol = length(list(...)), nrow = 1, 
                                            legend,
                                            ncol = 2,
                                            widths = unit.c(unit(1, "npc") - lwidth, lwidth)))
-  
+
   grid.newpage()
   grid.draw(combined)
-  
+
   # return gtable invisibly
   invisible(combined)
-  
+
 }
-
-
-dsamp <- diamonds[sample(nrow(diamonds), 1000), ]
-p1 <- qplot(carat, price, data = dsamp, colour = clarity)
-p2 <- qplot(cut, price, data = dsamp, colour = clarity)
-p3 <- qplot(color, price, data = dsamp, colour = clarity)
-p4 <- qplot(depth, price, data = dsamp, colour = clarity)
-grid_arrange_shared_legend(p1, p2, p3, p4, ncol = 4, nrow = 1)
-grid_arrange_shared_legend(p1, p2, p3, p4, ncol = 2, nrow = 2)
-
 auc_cov_no_estim<-readRDS("/home/momal/Git/these/pack1/R/Simu/erdos/prob/auc_1cov.rds")
   auc_covcov<-readRDS("/home/momal/Git/these/pack1/R/Simu/PLN/erdos/prob/auc_covcov.rds")
   auc_nocov<-readRDS("/home/momal/Git/these/pack1/R/Simu/PLN/erdos/prob/auc.rds")
@@ -67,7 +57,7 @@ auc_cov_no_estim<-readRDS("/home/momal/Git/these/pack1/R/Simu/erdos/prob/auc_1co
     param <- "prob"
     type <- "erdos"
     variable <- "AUC"
-    
+
     ggplot(tab, aes(
       y = mns,
       x = as.numeric(as.character(var)),
@@ -96,8 +86,7 @@ auc_cov_no_estim<-readRDS("/home/momal/Git/these/pack1/R/Simu/erdos/prob/auc_1co
   }
 
   p1 <- plot_auc(  auc_cov_no_estim , "With unestimated covariable" )
-  p2 <-plot_auc(auc_covcov  , "Estimated covariables")
-  p3 <- plot_auc(auc_nocov, "No covariables" )
+  p2 <-plot_auc(auc_covcov  , "With covariates")
+  p3 <- plot_auc(auc_nocov, "Without covariates" )
   p4 <-plot_auc(auc4_nocov_estim, "Estimated covariables unrelated to the data")
-  grid_arrange_shared_legend(p2, p3, ncol = 2, nrow = 1)
-  
+  grid_arrange_shared_legend(p3, p2, ncol = 2, nrow = 1)
