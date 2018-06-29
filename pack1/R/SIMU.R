@@ -346,27 +346,32 @@ compare_methods2<-function(x,n,Y,K,covariables,estim_cov=TRUE){
   inf_treeggm1step<-TreeGGM(corY,"TRUE",FALSE)$P
   T2<-Sys.time()
   temps[2]<-difftime(T2, T1) },silent=TRUE)
-  T1<-Sys.time()
+
   # rho<-seq(0.0005,1.1,by=0.0002)
   # tab<-tableau3D(X,rho)
   # inf_glasso<-mat_rho(tab,rho,"max")
   #inf_glasso<-inf_glasso_MB(X)
+
+  try({T1<-Sys.time()
   inf_glasso<-inf_spieceasi(Y) # /!\ Y doit être comptages
   diag(inf_glasso)<-0
   T2<-Sys.time()
+  temps[3]<-difftime(T2, T1) },silent=TRUE)
+
+
   temps[3]<- difftime(T2, T1)
 
 
   #if(!exists("inf_treeggm1step") || !exists("inf_treeggm"))  browser()
-  if(exists("inf_treeggm1step") && exists("inf_treeggm")){
+  if(exists("inf_treeggm1step") && exists("inf_treeggm") && exists("inf_glasso")){
     diagnost<-c(diagnostic.auc.sens.spe(pred=inf_treeggm,obs=K),
                 diagnostic.auc.sens.spe(pred=inf_treeggm1step,obs=K),
                 diagnostic.auc.sens.spe(pred=inf_glasso,obs=K))
 
     inferences<-list(inf_treeggm,inf_treeggm1step,inf_glasso)
   }else{
-    diagnost<-c(NA, NA,diagnostic.auc.sens.spe(pred=inf_glasso,obs=K))
-    inferences<-list(inf_glasso*NA,inf_glasso*NA,inf_glasso)
+    diagnost<-c(NA, NA,NA)
+    inferences<-list(matrix(NA,ncol(K),ncol(K)),matrix(NA,ncol(K),ncol(K)),matrix(NA,ncol(K),ncol(K)))
   }
 
   return(list(diagnost,temps,inferences,estim_reg(generator_data(n,Sigma),K)))
@@ -385,7 +390,7 @@ record <- function(var, x, col_names, path2, B=1, rep = TRUE) {
 
   save_path <- paste0(path2, deparse(substitute(var)), ".rds")
   if (file.exists(save_path)) {
-    tmp <- rbind(readRDS(save_path), frame)
+    tmp <- rbind(, frame)
     saveRDS(tmp, save_path)
   } else{
     saveRDS(frame, save_path)
@@ -513,9 +518,9 @@ covariables<-cbind(rep(c(0,1),each=n/2),rnorm(n,8,0.5),
                    c(rep(c(1,0,1),each=round(n/3)),rep(1,n-3*round(n/3))),
                    round(runif(n)*10))
 #offset<-round(matrix(runif(n*)*10000)
-for(type in type) {
-  cparam <- ifelse(type == "tree", "d", cparam)
-  for (param in cparam) {
+# for(type in type) {
+#   cparam <- ifelse(type == "tree", "d", cparam)
+#   for (param in cparam) {
     simu(
       type,
       variable = param,
@@ -523,11 +528,13 @@ for(type in type) {
       n = n,
       B = 2,
       path = path,
-      Bgraph = 40,
+      Bgraph = 30,
       PLN = TRUE,
       covariables = covariables,cov=FALSE,estim_cov=FALSE,
       cores = 10
     )
+    graph(type, param, path = path)
+path<-"/home/momal/Git/these/pack1/R/Simu/"#path =paste0(getwd(),"/R/Simu/") || "/home/momal/Git/these/pack1/R/Simu/"
     simu(
       type,
       variable = param,
@@ -535,14 +542,14 @@ for(type in type) {
       n = n,
       B = 2,
       path = path,
-      Bgraph = 1,
+      Bgraph = 30,
       PLN = TRUE,
       covariables = covariables,cov=TRUE,estim_cov=FALSE,
-      cores = 1
+      cores = 10
     )
-    #graph(type, param, path = path)
-  }
-}
+    graph(type, param, path = path)
+#   }
+# }
 type<-"erdos"
 param<-"prob"
 for (type in type) {

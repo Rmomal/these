@@ -203,18 +203,9 @@ Allows for resilience analyses, pathogens control, ecosystem comparison, reactio
 %====================================================================
 
 \begin{frame}{Spanning trees}
+	Very large space to explore: {\color{Nicered}$\text{\#} \mathcal{G} = 2^{\frac{p(p-1)}{2}}$}\\ \bigskip
 	
-  \begin{columns}
-  \begin{column}{6cm}Much \emphase{ smaller space} to explore:\\ $\text{\#} \mathcal{G} = 2^{\frac{p(p-1)}{2}}$ vs. $\text{\#} \mathcal{T} = p^{(p-2)}$
-	
-	\end{column}
-	 \begin{column}{6cm}
-	\begin{figure}[htp]
-\includegraphics[width=5cm]{compar_typegraphs.png}
-	\end{figure}
-\end{column}
-\end{columns}
-Spanning trees are a \emphase{sparse} solution :
+	Spanning trees are a \emphase{sparse} solution :
 	$$
   \left. \begin{tabular}{l}
           $G$ is connected \\
@@ -222,11 +213,27 @@ Spanning trees are a \emphase{sparse} solution :
          \end{tabular} \right\}
   \text{ $G$ has $(p-1)$ edges}
   $$
-
+  \begin{columns}
+  \begin{column}{6cm}
+	\begin{figure}[htp]
+\includegraphics[width=5cm]{compar_typegraphs.png}
+	\end{figure}
+	\end{column}
+	 \begin{column}{6cm}
+Much \emphase{ smaller space} to explore:\\  {\color{Nicered} $\text{\#} \mathcal{T} = p^{(p-2)}$}\\ \bigskip
+\pause
+Still a huge complexity...
+\end{column}
+\end{columns}
 \end{frame}
 %====================================================================
 %====================================================================
-\begin{frame}{Complexity}
+\begin{frame}{Algebra tools}
+\begin{description}
+	\item[Maximum spanning tree] Kruskall's algorithm, quadratic complexity
+\item[tree averaging] Matrix tree theoem (Kirchhoff)
+\end{description}
+
 	
 \end{frame}
 %====================================================================
@@ -461,17 +468,16 @@ Spanning trees are a \emphase{sparse} solution :
 %====================================================================
 %====================================================================
 
-\begin{frame}{Simulation agenda}
+\begin{frame}{Simulation agenda}For each parameter settings, repeat 40 times:\\
+
 \begin{enumerate}
      \item Draw $G$ \vspace{0.3cm}
      \item Derive $\Omega$  from the adjacency matrix\vspace{0.3cm} 
      \item Generate count data $Y$ under PLN model with parameter $\Omega$ and possible covariates
-     \item Infer{\fontfamily{qcr}\selectfont
-PLNmodels} : ajuster le modèle de régression PLN à partir de $\Sigma_Z$, $\Rightarrow \hat{\Sigma}_Z$\vspace{0.3cm}
-   
-     \item Appliquer le glasso et notre EM à $\hat{\Sigma}_Z$\vspace{0.3cm}
-     \item Comparer les graphes obtenus et G
- \end{enumerate}
+     \item Adjust PLN model on Y \vspace{0.3cm}
+     \item Infer the network with our mixture tree EM  and SpiecEasi \vspace{0.3cm}
+     \item Compare results with AUC (presence/absence of edges for a varying threshold)
+\end{enumerate}
 
 	
 \end{frame}
@@ -481,7 +487,7 @@ PLNmodels} : ajuster le modèle de régression PLN à partir de $\Sigma_Z$, $\Ri
 \begin{frame}{Results}
 	\begin{figure}[htp]
 \centering
-\includegraphics[scale=0.6]{erdos_d.pdf}
+\includegraphics[scale=0.6]{erdos_prob_covcov.pdf}
 \caption{}
 \label{}
 \end{figure}
