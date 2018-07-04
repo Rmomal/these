@@ -1,4 +1,4 @@
-\documentclass{beamer}
+\documentclass[aspectratio=169]{beamer}
 \usetheme{Luebeck}
 %\usecolortheme{seahorse}
 \useinnertheme{rectangles}
@@ -66,9 +66,17 @@
 \setbeamercolor{block title}{fg=white, bg=Framableulight}  
 %===================================
 \title{Mixture tree model for network inference}
- \subtitle{JOBIM}
+ \subtitle{Supervision:  S. Robin$^{\inst{1}}$ et C. Ambroise$^{\inst{1}\inst{2}$ }}
 \author{Raphaëlle Momal} 
-\institute{UMR518 AgroParis Tech/INRA}
+\institute[]
+{
+  \inst{1}%
+  UMR AgroParisTech / INRA MIA-Paris \\
+  \inst{2}%
+  LaMME, Evry
+  }
+\date{July 7, 2018}
+
 \newcommand{\Ccal}{\mathcal{C}}
 \newcommand{\edgeunit}{1.5}
 \newcommand{\emphase}[1]{\textcolor{Complement}{#1}}
@@ -110,7 +118,7 @@ Rising interest in \emphase{jointly analysed }species abundances:
 %\pause
 
 \begin{block}{Ecological network}
-Tool to better understand species interactions (direct/indirect, nature), eco-systems organizations (clusters ?) 
+Tool to better understand species interactions (direct/indirect), eco-systems organizations (clusters ?) 
 \end{block}\bigskip
 %\pause
 Allows for resilience analyses, pathogens control, ecosystem comparison, response prediction...
@@ -119,11 +127,12 @@ Allows for resilience analyses, pathogens control, ecosystem comparison, respons
 %====================================================================
 
 
-\begin{frame}{Data}
+\begin{frame}{Data example}
 	\begin{itemize}
 	\item \emphase{Species}: bacteria, fungi...
 	\item \emphase{Abundances}: read counts from Next-Generation Sequencing technologies (metabarcoding)
-	\item \emphase{Covariates}: sequencing depth, temperature, water depth... 
+	\item \emphase{Covariates}: sequencing depth, temperature, water depth...  \bigskip
+	
 \end{itemize}
 	Repeated signal : $n$ samples, $p$ abundances.
 %\pause
@@ -152,11 +161,12 @@ Allows for resilience analyses, pathogens control, ecosystem comparison, respons
 \section{Network inference}
 \subsection{General Framework}
 %====================================================================
-%====================================================================
+%===================================================================
 
-\begin{frame}{Graphical models: a statistical framework}
+\begin{frame}{Graphical models: a statistical framework for network inference}
+\bleu{Example}:\bigskip
 \begin{columns}
-\begin{column}{0.4\linewidth}
+\begin{column}{0.3\linewidth}\hspace{0.5cm}
 \begin{tikzpicture}	
 
       \tikzstyle{every edge}=[-,>=stealth',shorten >=1pt,auto,thin,draw]
@@ -170,7 +180,7 @@ Allows for resilience analyses, pathogens control, ecosystem comparison, respons
         (Y2) edge [] (Y4);
 	\end{tikzpicture}\\
 \end{column}
-\begin{column}{0.6\linewidth}
+\begin{column}{0.5\linewidth}
 	\begin{itemize}
 	\item All variables are dependant \bigskip
 	\item Some are \emphase{conditionally independent} (i.e. indirectly dependeant)\\\bigskip
@@ -247,9 +257,9 @@ Still a huge complexity...
 \begin{frame}{Maximizing and summing over spanning trees}
 \begin{description}
 \item[Maximum spanning tree] Kruskall's algorithm\\
- $$ \hat{T} = \underset{T}{\mathrm{argmax }} \left\{\prod_k q_k (Y)\prod_{(k,l) \in T} q_{k,l}(Y) \right\}  \rightarrow \emphase{\Theta (p^2)}$$ \bigskip 
-\item[Tree averaging] Matrix tree theoem \cite{matrixtree}\\ 
-$$\mathds{P}(Y) = \sum_T \mathds{P}(T)\mathds{P}(Y|T)  \rightarrow \emphase{\Theta (p^3)}$$
+ $$ \hat{T} = \underset{T}{\mathrm{argmax }} \left\{\prod_{(k,l) \in T} \psi_{k,l}(Y) \right\}  \rightarrow \emphase{\Theta (p^2)}$$ \bigskip 
+\item[Tree averaging] Matrix tree theorem \cite{matrixtree}\\ 
+$$ \sum_T\prod_{(k,l) \in T} \psi_{k,l}(Y) = \det(L(Y))  \rightarrow \emphase{\Theta (p^3)}$$
 \end{description}\pause \bigskip 
 \center{
 \textbf{Approach}: infer the network by \emphase{averaging spanning trees}}
@@ -259,8 +269,11 @@ $$\mathds{P}(Y) = \sum_T \mathds{P}(T)\mathds{P}(Y|T)  \rightarrow \emphase{\The
 %====================================================================
 
 \begin{frame}{Tree averaging} 
+\begin{center}
+    
 
-\begin{tabular}{p{.4\textwidth}}
+%\begin{tabular}{p{\linewidth}}
+%\begin{tabularx}{\linewidth}{ccccl}
  \begin{tabular}{ccccl}
    \begin{tabular}{c}
 	\begin{tikzpicture}
@@ -279,7 +292,7 @@ $$\mathds{P}(Y) = \sum_T \mathds{P}(T)\mathds{P}(Y|T)  \rightarrow \emphase{\The
 	\footnotesize{$P\{T = T_1 | Y\}$}
 	   \end{tabular}
 	   & 
-	   \hspace{-.05\textwidth}% \pause
+	 %  \hspace{-.05\textwidth}% \pause
 	   \begin{tabular}{c}
 		\begin{tikzpicture}
 		\tikzstyle{every observed}=[draw=none,text=black,scale=0.5,
@@ -296,7 +309,7 @@ $$\mathds{P}(Y) = \sum_T \mathds{P}(T)\mathds{P}(Y|T)  \rightarrow \emphase{\The
 		\footnotesize{$P\{T = T_2 | Y\}$}
 	   \end{tabular}
 	   &
-	   \hspace{-.05\textwidth} %\pause
+	  % \hspace{-.05\textwidth} %\pause
 	   \begin{tabular}{c}
 		\begin{tikzpicture}
 		\tikzstyle{every observed}=[draw=none,text=black,scale=0.5,
@@ -313,7 +326,7 @@ $$\mathds{P}(Y) = \sum_T \mathds{P}(T)\mathds{P}(Y|T)  \rightarrow \emphase{\The
 		\footnotesize{$P\{T = T_3 | Y\}$}
 	   \end{tabular}
 	   &
-	   \hspace{-.05\textwidth}% \pause
+	  % \hspace{-.05\textwidth}% \pause
 	   \begin{tabular}{c}
 		\begin{tikzpicture}
 		\tikzstyle{every observed}=[draw=none,text=black,scale=0.5,
@@ -329,14 +342,15 @@ $$\mathds{P}(Y) = \sum_T \mathds{P}(T)\mathds{P}(Y|T)  \rightarrow \emphase{\The
 		\end{tikzpicture} \\
 		\footnotesize{$P\{T = T_4 | Y\}$}
 	   \end{tabular}
-	   & \hspace{-.06\textwidth} \huge{\emphase{...}}\normalsize   \\ \\
+	   & %\hspace{-.06\textwidth} 
+	   \huge{\emphase{...}}\normalsize   \\ \\
 	   \\% \pause
 	   \begin{tabular}{l}
 		Compute edge\\
 		probabilities:
 	   \end{tabular}
 	   &
-	   \hspace{-.05\textwidth}
+	  % \hspace{-.05\textwidth}
 	   \begin{tabular}{c}
 		\begin{tikzpicture}
 		\node[observed] (Y1) at (0*\edgeunit, 0*\edgeunit) {$Y_1$};
@@ -353,13 +367,13 @@ $$\mathds{P}(Y) = \sum_T \mathds{P}(T)\mathds{P}(Y|T)  \rightarrow \emphase{\The
 		\emphase{$P\{(j, k) \in T | Y\}$}
 	   \end{tabular}
 	   &
-	   \hspace{-.05\textwidth} %\pause
+	  % \hspace{-.05\textwidth} %\pause
 	   \begin{tabular}{l}
 		Thresholding\\
 		probabilities:
 	   \end{tabular}
 	   &
-	   \hspace{-.05\textwidth}
+	   %\hspace{-.05\textwidth}
 	   \begin{tabular}{c}
 		\begin{tikzpicture}
 		\node[observed] (Y1) at (0*\edgeunit, 0*\edgeunit) {$Y_1$};
@@ -377,7 +391,9 @@ $$\mathds{P}(Y) = \sum_T \mathds{P}(T)\mathds{P}(Y|T)  \rightarrow \emphase{\The
 	   \end{tabular}
 	   &
 	 \end{tabular}
-    \end{tabular}
+   % \end{tabular}
+   %\end{tabularx}
+   \end{center}
 \end{frame}
 %====================================================================
 %====================================================================
@@ -394,22 +410,23 @@ $$\mathds{P}(Y) = \sum_T \mathds{P}(T)\mathds{P}(Y|T)  \rightarrow \emphase{\The
 \[
             \left.
                 \begin{array}{rl}
-                Z_i \textit{ iid } &\sim \mathcal{N}_{d}(0,\Sigma)\\
-                    &(Y_{ij})_j \independent |Z_i\\
+               \vspace{0.2cm}    Z_i \textit{ iid } &\sim \mathcal{N}_{d}(0,\Sigma)\\
+              \vspace{0.2cm}    &(Y_{ij})_j \independent |Z_i\\
                     Y_{ij}|Z_{ij} &\sim \mathcal{P}(e^{\only<2-3>{\emphase{o_{ij}+x_i^{\text{T}}\Theta_j} +}Z_{ij}}) 
                    
                 \end{array}
             \right \} Y \sim \mathcal{PLN}(\only<2-3>{\emphase{O+x^{\text{T}}\Theta }}\only<1>{0}, \Sigma)  
             \]
 \end{block}
-\vspace{0.5cm}
+
 \begin{itemize}
-    \item Gaussian latent layer
+    \item Dependency structure in the Gaussian latent layer
     \item Easy handling of multi-variate data (contrary to Negative binomial distribution)
-  \only<2-3>{ \item Allow adjustment for covariates and offsets}
+  \only<2->{ \item Allow adjustment for covariates and offsets}
+  \only<3>{\item Variational estimation algorithm \cite{CMR17}}
 \end{itemize}
 %\pause
-\only<3>{\center{ \textbf{ Approach:} Infer the \emphase{latent Gaussian network} with an \emphase{EM algorithm.}}}
+\only<3>{\center{ \textbf{ Approach:} Infer the \emphase{latent Gaussian network} with an \emphase{VEM algorithm.}}}
 \end{frame}
 
 %====================================================================
@@ -419,7 +436,7 @@ $$\mathds{P}(Y) = \sum_T \mathds{P}(T)\mathds{P}(Y|T)  \rightarrow \emphase{\The
 %====================================================================
 %====================================================================
 
-\begin{frame}{Gaussian Graphical Models (GGM) \& SpiecEasi}
+\begin{frame}{Gaussian Graphical Models (GGM) }
    \emphase{Gaussian distribution:}\\
  \begin{center}
 	$  Y_i \sim \Ncal_p(\mu, \Sigma) $, $\mu =$ vector of means, $\Sigma =$ covariance matrix.
@@ -432,7 +449,7 @@ $$\mathds{P}(Y) = \sum_T \mathds{P}(T)\mathds{P}(Y|T)  \rightarrow \emphase{\The
   \emphase{A nice property:} ~ \\
 
   \begin{columns}
-  \begin{column}{0.05\textwidth}
+  \begin{column}{0.15\textwidth}
 	
 \end{column}
   \begin{column}{0.4\textwidth}
@@ -449,7 +466,8 @@ $$\mathds{P}(Y) = \sum_T \mathds{P}(T)\mathds{P}(Y|T)  \rightarrow \emphase{\The
         (Y2) edge [] (Y4);
 	\end{tikzpicture}
     \end{column}
-    \begin{column}{12cm}
+    \begin{column}{8cm}
+ 
     \begin{tabular}{p{.5\textwidth}}
 	 Inverse covariance matrix
 	 $$
@@ -465,8 +483,7 @@ $$\mathds{P}(Y) = \sum_T \mathds{P}(T)\mathds{P}(Y|T)  \rightarrow \emphase{\The
   \end{column}
   \end{columns}
   \pause
- \emphase{Glasso:}\\\bigskip
- On gaussian data : $\widehat{\Omega}_\lambda = \arg\min_{\Omega \in \mathcal{S}_d^+}\left\{ L(Y,\Omega)+\lambda \sum_{i\neq j} |\omega_{ij}| \right\} \hspace{0.5cm} $\\
+ \emphase{Glasso on gaussian data:}\hspace{0.2cm} $\widehat{\Omega}_\lambda = \arg\min_{\Omega \in \mathcal{S}_d^+}\left\{ L(Y,\Omega)+\lambda \sum_{i\neq j} |\omega_{ij}| \right\} \hspace{0.5cm} $\\
  \begin{center}
 	$\Rightarrow$ {\color{Framableulight}SpiecEasi method \cite{kurtz}}: glasso on transformed counts
 \end{center}
@@ -493,10 +510,10 @@ $$\mathds{P}(Y) = \sum_T \mathds{P}(T)\mathds{P}(Y|T)  \rightarrow \emphase{\The
 \begin{enumerate}
      \item Choose  \emphase{$G$} and define  \emphase{$\Omega$} accordingly\vspace{0.3cm} 
      \item Sample count data \emphase{$Y$} from $\mathcal{PLN}(0,\Omega^{-1})$ with possible covariates
-     \item Infer the network with \emphase{PLN + mixture tree EM}  and \emphase{SpiecEasi} \vspace{0.3cm}
+     \item Infer the network with \emphase{PLN + mixture tree VEM}  and \emphase{SpiecEasi} \vspace{0.3cm}
      \item Compare results with \emphase{AUC} (presence/absence of edges)
-\end{enumerate}
-$\Rightarrow$ 40 replicates for each setting $(p, n, \text{edge probability})$
+\end{enumerate}\bigskip\bigskip
+\hspace{1cm}$\Rightarrow$ 40 replicates for each setting $(p, n, \text{edge probability})$
 	
 \end{frame}
 %====================================================================
@@ -505,7 +522,7 @@ $\Rightarrow$ 40 replicates for each setting $(p, n, \text{edge probability})$
 \begin{frame}{Results: Erdös, 20 nodes}
 \begin{figure}[htp]
 \centering
-\includegraphics[width=11cm]{mosaic.png}
+\includegraphics[width=13cm]{mosaic.png}
 \end{figure}
 \end{frame}
 
@@ -536,28 +553,20 @@ $\Rightarrow$ 40 replicates for each setting $(p, n, \text{edge probability})$
 \end{column}
 \end{columns}
 \vspace{0.5cm}
-Data: metabarcoding of oak tree leaves microbiome.\\
+Metabarcoding of oak tree leaves microbiome \cite{jakuch}.\\
 
 \begin{itemize}
 	\item 114 sample of 94 microbial species counts (bacteria/fungi)
 	\item Different read depth for bacteria and fungi: unsuited for normalization with SpiecEasi
-	\item 3 quantitative covariates (distances to the trunk, to the ground, to the tree base)
-\end{itemize}
+	\item 3 quantitative covariates 
+\end{itemize}\bigskip
+We are interested in EA and F19, a second major fungi.
 \end{frame}
 %====================================================================
 %====================================================================
 
-\begin{frame}{Inferred networks}
-EA and F19, a second major, unidentified fungi.
-\begin{figure}[htp]
-\centering
-\includegraphics[width=11cm]{compare_reseaux.png}
 
-\end{figure}
-
-\end{frame}
-
-\begin{frame}{Including distance covariates}
+\begin{frame}{Model with covariates}
 	\begin{description}
 	\item[Regression coefficients]\begin{itemize}
 	\item []
@@ -572,7 +581,7 @@ EA and F19, a second major, unidentified fungi.
 
 \begin{table}[]
 \begin{tabular}{l|lll}
-  & \multicolumn{2}{|c}{Adding distances $(\times 10^{-2})$}   \\\cline{2-4}
+  & \multicolumn{3}{|c}{Covariates $(\times 10^{-2})$}   \\\cline{2-4}
    .  & to base & to trunk & to ground \\\hline
 EA  &  \nega{-2.00} &\pos{ 2.15  } &  \nega{-2.51  } \\
 F19 & \pos{2.19 } &  \nega{-1.72}  & \pos{1.43  } 
@@ -592,24 +601,33 @@ F19 & 3.03   & 2.80
 \end{frame}
 %====================================================================
 %====================================================================
+\begin{frame}{Inferred networks}
+\begin{figure}[htp]
+\centering
+\includegraphics[width=11cm]{compare_reseaux.png}
 
-\begin{frame}{Perspectives}
+\end{figure}
+
+\end{frame}
+%-----------------------------
+%---------------------------
+\begin{frame}{Conclusion}
 \begin{description}
 \item[Contributions:] 
 \begin{itemize}
 \item[]  
 	\item Formal probabilistic model for network inference with \emphase{count data}
-	\item  Estimation algorithm
-	\item Allows to account for \emphase{offsets} and \emphase{covariates}
+	\item  EM Estimation algorithm
+	\item Inclusion of \emphase{offsets} and \emphase{covariates}
 \end{itemize}
 \bigskip 
-\item[What is next:]
+\item[Perspectives:]
 
 \begin{itemize}
 \item[]  
 	\item Method for determining the threshold
 	\item Network comparison
-	\item Inference in the observed counts layer
+	\item Model for the inference in the observed counts layer
 	\item Missing major actor (species/covariable)
 \end{itemize}
 \end{description}
@@ -617,24 +635,37 @@ F19 & 3.03   & 2.80
 %====================================================================
 %====================================================================
 
+
+\begin{frame}{Acknowledgments}
+
+Special thanks :\\
+\begin{description}
+\item[Supervisors] Stéphane Robin, Christophe Ambroise
+\item[PLN team] Julien Chiquet (MIA-Paris), Mahendra Mariadassou (INRA Jouy)
+\item[Data] Corinne Vacher (INRA Bordeaux)
+\end{description}
+Contact :\\
+\begin{description}
+\item[email] raphaelle.momal@agroparistech.fr
+\item[Web]Rmomal.github.io\\
+\end{description}
+\begin{center}
+	\includegraphics[width=0.25\linewidth]{logo_inra.jpg}\hspace{0.1cm}
+	\includegraphics[width=0.25\linewidth]{agro.PNG}
+	\includegraphics[width=0.25\linewidth]{lmh.png}\hspace{0.1cm}
+	\includegraphics[width=0.15\linewidth]{upsud.jpg}
+    
+\end{center}
+
+\end{frame}
 \appendix
 \backupbegin
-\begin{frame}{Thank you}
-\begin{center}
-	Thank you for your attention.
-\end{center}	
-\end{frame}
-
 \begin{frame}[allowframebreaks]
- \bibliographystyle{apalike}
-    \bibliography{biblio3.bib}
-% \frametitle{References}
+\bibliographystyle{apalike}
+{\footnotesize 
+    \bibliography{biblio3.bib}}
+\frametitle{References}
 %\bibliography{cellcite}
-
-
-
-
-
 \end{frame}\backupend
 %====================================================================
 %====================================================================
