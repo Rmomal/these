@@ -542,18 +542,33 @@ Where \[ \psi_{kl}(Y) = \frac{\mathds{P}(Y_k,Y_l)}{\mathds{P}(Y_k)\times \mathds
 
 \begin{frame}{PLN + mixture tree}
   %  \center{ \textbf{ Approach:} tree averaging to infer the \emphase{latent Gaussian network} }\
-    $G$ is taken as a spanning tree $T$, the dependency structure is encoded in $\Sigma_T$.
+  \begin{columns}
+  \begin{column}{4.5cm}
+   $G$ is taken as a spanning tree $T$, the dependency structure is encoded in $\Sigma_T$.
     \[Z_T \sim \mathcal{N}(0,\Sigma_T) \]
     \\ \bigskip
     Tree averaging (mixture model):
     \[Z \sim \sum_T w_T \mathcal{N}(0,\Sigma_T)\]
     $$\Rightarrow \mathds{P}(Z) \propto \sum_T \prod_{k,l \in T} \beta_{k,l} \psi_{k,l}(Z_T)$$ 
+  \end{column}
+  
+  \begin{column}{7.5cm}
+   \begin{figure}[htp]
+   \flushleft
+\includegraphics[scale=0.3]{YZgraph.png}
+\caption{Figure 1 from \cite{VEM}}
+\end{figure}
+  \end{column}
+  \end{columns}
+   
+  
+
 \end{frame}
 \section{}
 \subsection{}
 \begin{frame}{}
 \begin{center}
-\huge{\bleu{Detailed method}}
+\huge{\bleu{Detailed inference}}
 \end{center}
 \end{frame}
 %====================================================================
@@ -893,8 +908,22 @@ F19 & 3.03   & 2.80
 \subsection{}
 \begin{frame}{}
 \begin{center}
-\huge{\bleu{Further developments}}
+\huge{\bleu{Further developments}} \bigskip
 \end{center}
+\begin{columns}
+\begin{column}{3cm}
+\end{column}
+\begin{column}{10cm}
+\Large{
+\begin{enumerate}
+	\item Latent layer network inference
+	\item Observed counts network inference
+	\item A thresholding idea
+	\item Missing actor
+	\item REMMOA data
+\end{enumerate}}
+\end{column}
+\end{columns}
 \end{frame}
 
 \section{Further developments}
@@ -902,7 +931,7 @@ F19 & 3.03   & 2.80
 \begin{frame}{Latent network models}
 \large{
     \begin{itemize}
-        \item 2 steps model: $\hat{\Sigma}_Z$ with {\fontfamily{qcr}\selectfont
+        \item 2 steps inference: $\hat{\Sigma}_Z$ with {\fontfamily{qcr}\selectfont
 PLNmodels}, and then network inference starting from $\hat{\Sigma}_Z$
 \begin{itemize}
 	\item Formal probabilistic model for network inference with \emphase{count data}
@@ -912,38 +941,55 @@ PLNmodels}, and then network inference starting from $\hat{\Sigma}_Z$
 {\fontfamily{qcr}\selectfont
 PLNmodels} adds some variability \bigskip
         \end{itemize}
-        \item VEM Model: rewrite the Variational EM used in {\fontfamily{qcr}\selectfont
+        \item VEM inference: rewrite the Variational EM used in {\fontfamily{qcr}\selectfont
 PLNmodels}, to incorporate the latent layer tree dependency structure.
          \begin{itemize}
-             \item Would allow to re-estimate  $\hat{\Sigma}_Z$ at each iteration\bigskip
+             \item Would allow to re-estimate  $\hat{\Sigma}_Z$ at each iteration
          \end{itemize}
          
-         \item PLNnetworks : PLN + glasso
     \end{itemize}}
 \end{frame}
-
-\begin{frame}{Direct model}
-   The {\fontfamily{qcr}\selectfont
-poilog} R package computes the uni and bi-variate densities of the $\mathcal{PLN}$ distribution \vspace{0.5cm}
+\subsection{Inference in the observed layer}
+\begin{frame}{Inference approach }
+  \large{$\psi_{kl}(Y) = \frac{\mathds{P}(Y_k,Y_l)}{\mathds{P}(Y_k)\times \mathds{P}(Y_l)} $} \normalsize are \emphase{directly accessible} \vspace{0.5cm}
     \begin{itemize}
-        \item \large{$\psi_{kl}(Y) = \frac{\mathds{P}(Y_k,Y_l)}{\mathds{P}(Y_k)\times \mathds{P}(Y_l)} $} \normalsize are \emphase{directly accessible}
+        \item The {\fontfamily{qcr}\selectfont
+poilog} R package computes the uni and bi-variate densities of the $\mathcal{PLN}$ distribution 
     \end{itemize}
 
 
 \begin{center}
     $\Rightarrow$ Direct network inference in the Y space\\
 \end{center}
-\begin{block}{Direct model}
+\begin{block}{Direct inference}
 \[\mathds{P}(Y|T) = \prod_k \mathds{P}(Y_k) \prod_{kl \in T} \mathds{P}(Y_k,Y_l)\]
 
 \end{block}
-\begin{itemize}
-    \item Metropolis-Hasting simulation strategy (it works)
-    \item No competitor
-\end{itemize}
+
 \end{frame}
 
+\begin{frame}{Pros and cons}
+\begin{description}
+	\item[Pros]
+	\begin{itemize}
+		\item[]
+		\item Good news for ecologists/biologists
+		\item Maximum likelihood
+		\item Network comparison made possible (ex: likelihood ratio)
+		\item No competitor
+	\end{itemize}
+    
+	\item[Cons] 
+	\begin{itemize}
+		\item[]
+		\item Recursive calls to poilog: might be long
+		\item No straightforward to simulate (Metropolis-Hasting simulation strategy)
+	\end{itemize}
+	
+\end{description}
+	
 
+\end{frame}
 %====================================================================
 %====================================================================
 \subsection{Thresholding the network}
@@ -981,6 +1027,7 @@ poilog} R package computes the uni and bi-variate densities of the $\mathcal{PLN
 \subsection{}
 
 \begin{frame}{Missing major actor (species/covariable)}
+In the latent layer :\\
 Missing a major actor induces spurious edges, and distort the network interpretation \cite{LatentCWP} :
 \vspace{0.2cm}
 \begin{columns}
@@ -1059,6 +1106,18 @@ $$\mathbf{\mathcal{G}}\text{ }\Omega=\underbrace{\begin{pmatrix}
 \vspace{0.4cm}
 $$\mathbf{\mathcal{G}_m}\text{ : }\Omega_m= \underbrace{\Omega_{OO} - \color{red}\Omega_{OH}\Omega_{HH}^{-1}\Omega_{HO}}_{\text{edges from }E_m}\color{black} \quad \Sigma_m = \Sigma_{OO}$$
 
+\end{frame}
+\subsection{Collaboration}
+\begin{frame}{REMMOA data}
+\Large{
+\emphase{RE}censement des \emphase{M}ammifères marins et autre \emphase{M}égafaune pélagique par \emphase{O}bservation \emphase{A}érienne}\\\bigskip
+\normalsize{
+\begin{itemize}
+	\item Count data from marine mega-fauna
+	\item Network comparison between Nouvelle-Calédonie and Wallis-et-Futuna
+	\item Collaboration to develop and highlight the benefits from ecological network study 
+\end{itemize}
+}
 \end{frame}
 %====================================================================
 %====================================================================

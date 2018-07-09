@@ -37,7 +37,7 @@ F_LogRatioNegBin <- function(Y, Tree, mu, sigma, Rho, size.Y, Esp.Y){
 W = matrix(runif(p^2), p, p); W = W + t(W)
 Tree = mst(W); gplot(Tree, gmode='graph', label=1:p)
 degree = colSums(Tree)
-saveRDS(Tree,"/home/momal/Git/these/pack1/R/Simu/PLNTree/Tree.rds")
+#saveRDS(Tree,"/home/momal/Git/these/pack1/R/Simu/PLNTree/Tree.rds")
 # Parms
 mu = rep(1, p); coef = 1.1; Omega = Tree + coef*diag(degree)
 while(min(eigen(Omega)$values) < 0) {
@@ -86,7 +86,7 @@ Y.sample = Y.path[-(1:B.burn), ] # remove burn-in (needed ?)
 Y.sample = Y.sample[R.subsample*(1:floor(B.path/R.subsample)), ] # sample 1 out of 100
 B.sample = nrow(Y.sample)
 Y.sample=as_tibble(Y.sample)
-saveRDS(Y.sample,"/home/momal/Git/these/pack1/R/Simu/PLNTree/Ysample.rds")
+#saveRDS(Y.sample,"/home/momal/Git/these/pack1/R/Simu/PLNTree/Ysample.rds")
 
 # Check
 par(mfrow=c(5, 2), mex=.3); 
