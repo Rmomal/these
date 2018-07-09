@@ -114,19 +114,18 @@ for (b in 1:B){
    colnames(Res)<-c("ref","regZ","regY","corZ","corY","partCorZ","partCorY")
 }
 
-Diff = Res[, 2:7] - Res[, 1]%o%rep(1, 6)
+Diff = (Res[, 2:7] - Res[, 1]%o%rep(1, 6))/Res[, 1]%o%rep(1, 6)
 graphics.off()
 #boxplot(Diff, col=rep(c(2, 4), 3)); abline(h=0)
 dataDiff<-Diff %>%  data.frame() %>%  gather(col,val)
 dataDiff$layer<-ifelse(grepl("Z", dataDiff$col),"Z","Y")
 ggplot(dataDiff,aes(col,val,fill=layer))+ 
-  geom_hline(yintercept=0,col="darkcyan",linetype="dashed",size=1.2)+
+  geom_hline(yintercept=0,col="deepskyblue3",linetype="dashed",size=1.2)+
   geom_violin(position=position_dodge(1),alpha=0.5)+
   geom_boxplot(width=0.15,outlier.colour="black", outlier.shape=16,
              outlier.size=1.5,fill="white",alpha=0.5, notch=FALSE)+
- 
-  scale_fill_brewer(palette="Dark2") + 
-  labs(x=" ",y="Difference")+
+  scale_fill_manual(values=c("#56B4E9","#D55E00"))+
+  labs(x=" ",y="Relative difference")+
   theme_minimal()+
   theme(axis.text=element_text(size=11))
   

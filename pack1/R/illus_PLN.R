@@ -55,6 +55,15 @@ inf_spiec<-inf_spieceasi(Y)
 # PLN models
 PLN.offset = PLN(Y ~ 1 + offset(log(O)))
 PLN.dist = PLN(Y ~ 1 + X$distTObase[X$tree=="2"]+ X$distTOtrunk[X$tree=="2"] + X$distTOground[X$tree=="2"]  + offset(log(O)))
+
+# coefs
+saveRDS(PLN.offset ,"PLN.offset.rds")
+saveRDS(PLN.dist ,"PLN.dist.rds")
+
+
+coefs_offset<-as_tibble(PLN.offset$model_par$Theta)
+coefs_dist<-as_tibble(PLN.dist$model_par$Theta)
+
 PLN.orient = PLN(Y ~ 1 + X$orientation[X$tree=="2"] + offset(log(O)))
 PLN.dist.orient = PLN(Y ~ 1 + X$distTObase[X$tree=="2"] + X$orientation[X$tree=="2"] + offset(log(O)))
 # BIC
