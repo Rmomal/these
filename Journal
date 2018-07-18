@@ -90,5 +90,23 @@
 		Réflexion sur l'inférence du réseau dans la couche Y : revient au même modèle que précédemment ? Ne devrait pas car P(Y) ne se factorise pas en arbre pour l'inférence dans la couche Z (du moins on ne le voit pas). Il faudrait s'assurer que ces modèles sont bien différents (densités joints P1(Y) et P2(Y) différentes), sinon pb existentiel.
 		Présentation ok le 15/05 au soir, nouvelles slides.
 		Super cours de J. Josse.
+
+
+06/06/18
+	Mise au point code SimuPLN par Metropolis-Hastings
+12/06/18
+	Code inférence direct, révision du paramètre lambda d'optimisation des betas
+15/06/18
+	Etude du lien entre omega, sigma, les corrélations et corrélations partielles
+21/06/18
+	Révision abstract jobim, slides
+26/06/18
+	Echec simulation données compositionnelles 
+	Prise en compte d'offset et covariables dans oak
+	SpiecEasi
+	Simu avec covariables mais sans offset
+
+03/07 au 06/07/18 JOBIM
+10/07/18 comité
 		
 
