@@ -62,7 +62,7 @@ erdos<-function(d,prob){
   G[lower.tri(G, diag=T)] = 0; G = G+t(G)
 }
 SimCluster <- function(p, k, d, r){
-  # k = nb clusters, d = graph density, r = within/between connection probability
+  # k = nb clusters, d = graph density, r = within/between ratio connection probability
   beta = d/(r/k + (k-1)/k); alpha = r*beta
   while(alpha > 1){r = .9*r; beta = d/(r/k + (k-1)/k); alpha = r*beta}
   Z = t(rmultinom(p, 1, rep(1/k, k)))

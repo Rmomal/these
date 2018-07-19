@@ -83,7 +83,7 @@ mvrnorm_rml<-function (n = 1, mu=0, Sigma, tol = 1e-06, empirical = FALSE, EISPA
 # functions of generation #
 ###########################
 generator_graph<-function(d = 20, graph = "tree", g = NULL, prob = NULL, vis = FALSE,
-                          verbose = TRUE){
+                          verbose = TRUE,r=10){
   gcinfo(FALSE)
   if (verbose)
     cat("Generating data from the multivariate normal distribution with the",
@@ -99,8 +99,8 @@ generator_graph<-function(d = 20, graph = "tree", g = NULL, prob = NULL, vis = F
   }
   theta = matrix(0, d, d)
   if (graph == "cluster") {
-
-    theta<-SimCluster(d,3,5/d,10)
+browser()
+    theta<-SimCluster(d,3,5/d,r)
 
   }
   if (graph == "scale-free") {
@@ -231,7 +231,7 @@ diagnostics<-function(file){
   variable<-switch(variable,"auc"="AUC","sens"="Sensitivity","spec"="Specificity")
   # geom_line(aes(y=mns,color=method),size=1)+
   # geom_ribbon(aes(ymin=inf, ymax=sup,fill=method), alpha=0.2)+
-
+tab$var<-as.numeric(as.character(tab$var))
   ggplot(tab, aes(y=mns,x=as.numeric(as.character(var)),group=method,color=method))+
     geom_errorbar(aes(ymin=inf, ymax=sup), width=0,position=position_dodge((max(tab$var)-min(tab$var))/100))+
     #geom_smooth(se=FALSE,size=0.3)+
@@ -240,7 +240,7 @@ diagnostics<-function(file){
     # geom_linerange(aes(ymin = quantile(value,0.25), ymax = quantile(value,0.75)),group=tab$method)+
     labs(y=variable,x=param)+
     scale_color_manual(values=c("#076443", "#56B4E9","#E69F00" ),name="Method:",
-                       breaks=c("treeggm","ggm1step", "glasso" ),
+                       breaks=c("treeggm","ggm1step", "SpiecEasi" ),
                        labels=c("EM ","1 step", "glasso" ))+
     scale_y_continuous(limits = c(0,1))+
     theme_bw()+
@@ -257,7 +257,8 @@ diagnostics<-function(file){
 save_params<-function(x,variable,type,path,graph,prob,nbgraph=nbgraph){
   if(variable!="u"){
     graph<-switch(variable, "d"=generator_graph(graph=type,d=x,prob=2/x),
-                  "prob"=generator_graph(graph=type,prob=x))
+                  "prob"=generator_graph(graph=type,prob=x),
+                  "r"=generator_graph(graph=type,r=x))
 
     param<-generator_param(as.matrix(graph))
   }else{
@@ -429,8 +430,14 @@ bootstrap_summary<-function(x,type,variable,B,path,n,criterion,nbgraph=nbgraph,P
     if( PLN){
       K<-param$omega
       #Y<-generator_composi_data(param$sigma,offset,covariables)
-      Y<-generator_PLN(param$sigma,covariables)
-      obj<-lapply(1:B,function(y) compare_methods2(y,n=x,Y=Y,K=K,covariables))
+      if(cov){
+
+        Y<-generator_PLN(param$sigma,covariables[1:x,])
+        obj<-lapply(1:B,function(y) compare_methods2(y,n=x,Y=Y,K=K,covariables,estim_cov=estim_cov))
+      }else{
+        Y<-generator_PLN_nocov(param$sigma,n=x)
+        obj<-lapply(1:B,function(y) compare_methods2(y,n=x,Y=Y,K=K,covariables,estim_cov=FALSE))
+      }
     }else{
       K<-param$omega
       sigma<-param$sigma
@@ -508,12 +515,14 @@ simu<-function(type,variable,seq,n,B,prob=0.1,path,Bgraph,PLN=FALSE,covariables,
 #############
 
 path<-"/home/momal/Git/these/pack1/R/Simu/PLN/"#path =paste0(getwd(),"/R/Simu/") || "/home/momal/Git/these/pack1/R/Simu/"
-parameters<-list(c(seq(10,30,2)),c(seq(20,100,10)),c(seq(0,1.5,0.2)),c(seq(0.5,5,0.5)/20))
-names(parameters)<-c("d","n","u","prob")
+parameters<-list(c(seq(10,30,2)),c(seq(10,200,20)),c(seq(0,1.5,0.2)),c(seq(0.5,1.5,0.5)/20),1:15)
+names(parameters)<-c("d","n","u","prob","r")
 
 
 cparam<-c("d","prob")
 type=c("erdos","cluster","tree","scale-free")
+type<-"cluster"
+param<-"r"
 n<-100
 covariables<-cbind(rep(c(0,1),each=n/2),rnorm(n,8,0.5),
                    c(rep(c(1,0,1),each=round(n/3)),rep(1,n-3*round(n/3))),
@@ -523,6 +532,7 @@ covariables2<-matrix(c(rep(c(1,0,1),each=round(n/3)),rep(1,n-3*round(n/3))),n,1)
 # for(type in type) {
 #   cparam <- ifelse(type == "tree", "d", cparam)
 #   for (param in cparam) {
+
     simu(
       type,
       variable = param,
@@ -530,10 +540,10 @@ covariables2<-matrix(c(rep(c(1,0,1),each=round(n/3)),rep(1,n-3*round(n/3))),n,1)
       n = n,
       B = 2,
       path = path,
-      Bgraph = 30,
+      Bgraph = 5,
       PLN = TRUE,
       covariables = covariables,cov=FALSE,estim_cov=FALSE,
-      cores = 10
+      cores = 1
     )
     graph(type, param, path = path)
 path<-"/home/momal/Git/these/pack1/R/Simu/"#path =paste0(getwd(),"/R/Simu/") || "/home/momal/Git/these/pack1/R/Simu/"

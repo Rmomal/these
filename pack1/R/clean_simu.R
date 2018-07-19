@@ -83,7 +83,7 @@ mvrnorm_rml<-function (n = 1, mu=0, Sigma, tol = 1e-06, empirical = FALSE, EISPA
 # functions of generation #
 ###########################
 generator_graph<-function(d = 20, graph = "tree", g = NULL, prob = NULL, vis = FALSE,
-                          verbose = TRUE){
+                          verbose = TRUE,r=10){
   gcinfo(FALSE)
   if (verbose)
     cat("Generating data from the multivariate normal distribution with the",
@@ -100,7 +100,7 @@ generator_graph<-function(d = 20, graph = "tree", g = NULL, prob = NULL, vis = F
   theta = matrix(0, d, d)
   if (graph == "cluster") {
 
-    theta<-SimCluster(d,3,5/d,10)
+    theta<-SimCluster(d,3,5/d,r)
 
   }
   if (graph == "scale-free") {
@@ -197,7 +197,7 @@ graph<-function(type,param,path){
   print(diagnostics(paste0(path,type,"/",param,"/auc.rds")))
   dev.off()
 }
-file<-paste0(path,type,"/",param,"/auc.rds")
+#file<-paste0(path,type,"/",param,"/auc.rds")
 diagnostics<-function(file){
   tab<-data.frame(readRDS(file))
   lignes<-which(is.na(tab[,1]))
@@ -236,7 +236,7 @@ diagnostics<-function(file){
 save_params<-function(x,variable,type,path,graph,prob,u,nbgraph=nbgraph){
   if(variable!="u"){
     graph<-switch(variable, "d"=generator_graph(graph=type,d=x,prob=2/x),
-                  "prob"=generator_graph(graph=type,prob=x))
+                  "prob"=generator_graph(graph=type,prob=x), "r"=generator_graph(graph=type,r=x))
 
     param<-generator_param(as.matrix(graph))
   }else{
@@ -412,19 +412,19 @@ simu<-function(type,variable,seq,n,B,prob=0.1,path,Bgraph,PLN=FALSE,cores){
 #############
 
 path<-"/home/momal/Git/these/pack1/R/Simu/PLN/"#path =paste0(getwd(),"/R/Simu/") || "/home/momal/Git/these/pack1/R/Simu/"
-parameters<-list(c(seq(10,30,2)),c(seq(20,100,10)),c(seq(0,1.5,0.2)),c(seq(0.5,1.5,0.5)/20))
-names(parameters)<-c("d","n","u","prob")
+parameters<-list(c(seq(10,30,2)),c(seq(20,100,10)),c(seq(0,1.5,0.2)),c(seq(0.5,1.5,0.5)/20),1:15)
+names(parameters)<-c("d","n","u","prob","r")
 
 #for(type in c("tree","erdos")){
 #  cparam<-ifelse(type=="tree","d",c("d","prob"))
 cparam<-c("d","prob")
 type="cluster"
   for(param in cparam ){
-    simu(type,variable=param,seq=parameters[[param]],n=100,B=2,path=path,Bgraph=40,PLN=TRUE,cores=1)
+    simu(type,variable=param,seq=parameters[[param]],n=100,B=2,path=path,Bgraph=1,PLN=TRUE,cores=1)
     graph(type,param,path=path)
   }
 #}
-param<-"prob"
+param<-"r"
 #  type<-"erdos"
 # path<-"/home/momal/Git/these/pack1"
 
