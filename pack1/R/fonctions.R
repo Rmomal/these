@@ -63,17 +63,28 @@ erdos<-function(d,prob){
 }
 SimCluster <- function(p, k, d, r){
   # k = nb clusters, d = graph density, r = within/between ratio connection probability
-  beta = d/(r/k + (k-1)/k); alpha = r*beta
-  while(alpha > 1){r = .9*r; beta = d/(r/k + (k-1)/k); alpha = r*beta}
-  Z = t(rmultinom(p, 1, rep(1/k, k)))
-  ZZ = Z %*% t(Z); diag(ZZ) = 0; ZZ = F_Sym2Vec(ZZ)
-  G = F_Vec2Sym(rbinom(p*(p-1)/2, 1, alpha*ZZ + beta*(1-ZZ)))
-  # gplot(G, gmode='graph', label=1:p, vertex.col=Z%*%(1:k))
+  beta = d / (r / k + (k - 1) / k)
+  alpha = r * beta
+  while (alpha > 1) {
+    r = .9 * r
+    beta = d / (r / k + (k - 1) / k)
+    alpha = r * beta
+  }
+  Z = t(rmultinom(p, 1, rep(1 / k, k)))
+  ZZ = Z %*% t(Z)
+  diag(ZZ) = 0
+  ZZ = F_Sym2Vec(ZZ)
+  G = F_Vec2Sym(rbinom(p * (p - 1) / 2, 1, alpha * ZZ + beta * (1 - ZZ)))
+  gplot(G, gmode='graph', label=1:p, vertex.col=Z%*%(1:k))
 
-  return(G)
+ # return(G)
 }
-
-
+d=10
+par(mfrow=c(2,2))
+SimCluster(d,3,5/d,1)
+SimCluster(d,3,5/d,5)
+SimCluster(d,3,5/d,10)
+SimCluster(d,3,5/d,15)
 ####################################################
 # construction de matrice de précision
 # @curseur utilise le résultat de génération de matrice aléatoire symmétrique par
