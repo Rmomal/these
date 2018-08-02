@@ -99,7 +99,7 @@ generator_graph<-function(d = 20, graph = "tree", g = NULL, prob = NULL, vis = F
   }
   theta = matrix(0, d, d)
   if (graph == "cluster") {
-browser()
+#browser()
     theta<-SimCluster(d,3,5/d,r)
 
   }
@@ -240,8 +240,8 @@ tab$var<-as.numeric(as.character(tab$var))
     # geom_linerange(aes(ymin = quantile(value,0.25), ymax = quantile(value,0.75)),group=tab$method)+
     labs(y=variable,x=param)+
     scale_color_manual(values=c("#076443", "#56B4E9","#E69F00" ),name="Method:",
-                       breaks=c("treeggm","ggm1step", "SpiecEasi" ),
-                       labels=c("EM ","1 step", "glasso" ))+
+                       breaks=c("treeggm","ggm1step", "glasso" ),
+                       labels=c("EM ","1 step", "SpiecEasi" ))+
     scale_y_continuous(limits = c(0,1))+
     theme_bw()+
     theme(plot.title = element_text(hjust = 0.5),legend.title=element_blank())
@@ -515,7 +515,7 @@ simu<-function(type,variable,seq,n,B,prob=0.1,path,Bgraph,PLN=FALSE,covariables,
 #############
 
 path<-"/home/momal/Git/these/pack1/R/Simu/PLN/"#path =paste0(getwd(),"/R/Simu/") || "/home/momal/Git/these/pack1/R/Simu/"
-parameters<-list(c(seq(10,30,2)),c(seq(10,200,20)),c(seq(0,1.5,0.2)),c(seq(0.5,1.5,0.5)/20),1:15)
+parameters<-list(c(seq(10,30,2)),c(seq(10,200,20)),c(seq(0,1.5,0.2)),c(seq(0.5,1.5,0.5)/20),c(seq(1,50,10)))
 names(parameters)<-c("d","n","u","prob","r")
 
 
@@ -540,10 +540,10 @@ covariables2<-matrix(c(rep(c(1,0,1),each=round(n/3)),rep(1,n-3*round(n/3))),n,1)
       n = n,
       B = 2,
       path = path,
-      Bgraph = 5,
+      Bgraph = 1,
       PLN = TRUE,
       covariables = covariables,cov=FALSE,estim_cov=FALSE,
-      cores = 1
+      cores = 8
     )
     graph(type, param, path = path)
 path<-"/home/momal/Git/these/pack1/R/Simu/"#path =paste0(getwd(),"/R/Simu/") || "/home/momal/Git/these/pack1/R/Simu/"

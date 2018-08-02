@@ -75,16 +75,16 @@ SimCluster <- function(p, k, d, r){
   diag(ZZ) = 0
   ZZ = F_Sym2Vec(ZZ)
   G = F_Vec2Sym(rbinom(p * (p - 1) / 2, 1, alpha * ZZ + beta * (1 - ZZ)))
-  gplot(G, gmode='graph', label=1:p, vertex.col=Z%*%(1:k))
+ # gplot(G, gmode='graph', label=1:p, vertex.col=Z%*%(1:k))
 
- # return(G)
+ return(G)
 }
 d=10
 par(mfrow=c(2,2))
 SimCluster(d,3,5/d,1)
 SimCluster(d,3,5/d,5)
 SimCluster(d,3,5/d,10)
-SimCluster(d,3,5/d,15)
+SimCluster(d,3,5/d,30)
 ####################################################
 # construction de matrice de précision
 # @curseur utilise le résultat de génération de matrice aléatoire symmétrique par

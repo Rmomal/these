@@ -1,0 +1,173 @@
+---
+title: "REMMOA Analysis"
+author: "Raphaëlle Momal"
+date: "1 août 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Data
+
+```{r , echo=FALSE, message=FALSE,warning=FALSE}
+# nettoyer l'environnement de travail
+library(tidyverse)
+rm(list = ls())
+
+setwd(WorkDir <- "/home/momal/Git/these/Data/REMMOA")
+DataDir <- paste(WorkDir, "output", sep = "/")
+
+load(paste(DataDir, "20180620_PLN_REMMOANC.RData", sep = "/"))
+
+# nettoyer les données : lignes nulles de N
+emptyrows<-which(rowSums(N)==0)
+X<-X[-emptyrows,]
+N<-N[-emptyrows,]
+Y<-Y[-emptyrows,]
+```
+Available data :
+
+* counts $Y$,
+* detections $N$
+* covarites $X$.
+  
+## Covariates
+
+Gathers information about the time( date, campaign), the transect (transect.label, sample.label, seg), the region (latitude, longitude, region.label, depth, DistCanyon, DistSeaMou, Dist200m, DistCot), the conditions (Effort, sea_state). To be checked : SlopePerce, Exoset, subjective, X and Y.
+```{r}
+str(X)
+```
+
+
+## Detection matrix
+
+**A lot of zeros **.
+
+```{r}
+N<-as_tibble(N)
+N
+apply(N, 2, sum)
+```
+
+## Counts matrix
+
+```{r}
+Y<-as_tibble(Y)
+Y
+apply(Y, 2, sum)
+
+```
+
+## Species
+
+32 observed species/groups. Aquatic species:
+
+* SMADEL/BIGDEL : petit dauphin indéterminé (BIGDEL : big ?)
+* SMAGLO/BIGGLO
+* BALSPP : Baleinoptéridé indéterminé
+* PHYMAC : Cachalot
+* KOGIA
+* ZIPHIUS :baleine à bec de Cuvier/ ZIPCAV
+* DUGONG : Dugong / DUGDUG
+* CHESPP :Tortue à écailles
+* RHITYP : requin baleine
+* MARTEAU :Requin marteau/ SPHSPP
+* SHARKS : requin indeterminés (SHARK)
+* DAURADE : Daurade coryphène/ CORHIP
+* THON : Thons, Bonites/ THUSPP
+* BILLFISH
+* MANBIR : raie manta
+* MOBSPP : diable de mer
+* DASSPP : raie pastenague
+* AETNAR : raie léopard
+* RAIESP
+* PHAETON
+
+Birds:
+
+* GRETER : sternes grises
+* BROTER : sternes brunes
+* GREPET : pétrels gris
+* BROPET : pétrels et puffins bruns
+* LARNOV : mouette argentée
+* ANOSPP : noddis bruns
+* GYGALB : gygis blanches
+* FREGATE
+* FOUS : Fou indéterminé/ SULSPP
+
+# Graphical visualizations
+
+Global co-occurances per date (not transect) : 1 if detected on a day. (in $N$, possibility of several detections per transect).
+```{r,echo=FALSE, fig.width=10}
+Nlong<- N %>% 
+  cbind(X$date,X$Transect.Label) %>% 
+  gather(species,detect,-"X$date",-"X$Transect.Label")
+
+colnames(Nlong)[1:2]<-c("date","transect")
+Nlong<- Nlong %>% 
+  group_by(date,species) %>% 
+  summarise(n=sum(detect))
+Nlong$n<-ifelse(Nlong$n!=0,1,0)
+
+ggplot(Nlong,aes(date,n,fill=species))+
+  geom_bar(stat = "identity")+
+  theme_bw()+
+  labs(y="# species")
+```
+
+Per transect : 1 if detected on the transect.
+```{r,echo=FALSE, fig.width=10}
+Nlong<- N %>% 
+  cbind(X$date,X$Transect.Label) %>% 
+  gather(species,detect,-"X$date",-"X$Transect.Label")
+
+colnames(Nlong)[1:2]<-c("date","transect")
+Nlong<- Nlong %>% 
+  group_by(date,transect,species) %>% 
+  summarise(n=sum(detect))
+Nlong$n<-ifelse(Nlong$n!=0,1,0)
+
+ggplot(Nlong,aes(transect,n,fill=species))+
+  geom_bar(stat = "identity")+
+  theme_bw()+
+  theme(axis.text.x = element_blank())+
+  labs(y="# species")
+
+
+```
+
+
+
+
+Percentages of nul counts accross species :
+```{r,echo=FALSE, fig.width=10}
+v<-colSums(spread(Nlong,species,n)[,-c(1,2)])*100/nrow(N)
+data<-data.frame(v,species=names(v))
+
+ggplot(data, aes(x = reorder(data$species, -v), y = v)) + 
+  geom_bar(stat = "identity",fill="dodgerblue4")+
+   geom_text(aes(label=round(v,1)), position=position_dodge(width=0.9), vjust=-0.25)+
+  theme(axis.text.x = element_text(angle =45, hjust = 1))+
+  labs(x = "",y="non nul counts (%)")
+
+order<-reorder(data$species, -v)
+```
+
+  
+
+Non nul counts vary largely between species.
+
+```{r,echo=FALSE, fig.width=10}
+Ylong<-Y %>% 
+  gather(species,counts)
+
+ggplot(Ylong[-which(Ylong$counts==0),],aes(reorder(species, counts,max),counts))+
+  geom_boxplot()+
+  theme_bw()+
+    theme(axis.text.x = element_text(angle =45, hjust = 1))+
+  labs(x="")+
+  coord_cartesian(ylim = c(0,150))
+```
+  
