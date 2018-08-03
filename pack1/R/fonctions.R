@@ -222,7 +222,7 @@ fun.auc.ggplot <- function(pred, obs, title,points){
     theme(plot.title = element_text(hjust = 0.5))
 }
 
-diagnostic.auc.sens.spe <- function(pred, obs,stat="auc"){
+diagnostic.auc.sens.spe <- function(pred, obs,stat="auc",method){
   nvar<-ncol(obs)
   obs[which(abs(obs)<1e-16)]<-0
 
@@ -235,10 +235,15 @@ diagnostic.auc.sens.spe <- function(pred, obs,stat="auc"){
   # Run the AUC calculations
   ROC_sens <- performance(prediction,"sens","spec")
   ROC_auc <- performance(prediction,"auc")
+  ROC_precision<-performance(prediction,"prec")
+  ROC_recal<-performance(prediction,"rec")
+  precrec<-data.frame(ROC_precision@y.values,ROC_recal@y.values,method)[-1,]
+  colnames(precrec)<-c("prec","rec","method")
+  plot(ROC_precision)
   res<-switch(stat,"auc"=round(ROC_auc@y.values[[1]],digits=3),
               "sens"=round(mean(as.data.frame(ROC_sens@y.values)[,1]),digits=3),
               "spec"=round(mean(as.data.frame(ROC_sens@x.values)[,1]),digits=3))
-  return(res)
+  return(list(res,precrec))
 }
 ####################################################
 # Exploration des valeurs critiques de rho

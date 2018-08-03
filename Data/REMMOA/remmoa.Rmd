@@ -169,5 +169,8 @@ ggplot(Ylong[-which(Ylong$counts==0),],aes(reorder(species, counts,max),counts))
     theme(axis.text.x = element_text(angle =45, hjust = 1))+
   labs(x="")+
   coord_cartesian(ylim = c(0,150))
+
+
+
 ```
   
