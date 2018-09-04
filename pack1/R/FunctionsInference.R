@@ -55,7 +55,7 @@ SetLambda <- function(P, M, eps = 1e-6){
       # points(c(x.min, x, x.max), c(f.min, f, f.max), col=c(1, 2, 1))
       # cat(x.min, x, x.max, '/', f.min, f, f.max, '\n')
     }
-    cat("lambda : ", x,"F.x(lambda) : ",f,"\n")
+   # cat("lambda : ", x,"F.x(lambda) : ",f,"\n")
   }
   return(x)
 }
@@ -72,7 +72,7 @@ FitBetaStatic <- function(Y,beta.init, phi, iterMax = 20, eps = 1e-4,print=FALSE
   diff = 2*eps
 
   while ((diff > eps) & (iter < iterMax)){
-    print(iter)
+    #print(iter)
     iter = iter+1
     # P = Kirshner(beta.old*phi)$P # sum(P)
     options(error = recover)
@@ -88,7 +88,7 @@ FitBetaStatic <- function(Y,beta.init, phi, iterMax = 20, eps = 1e-4,print=FALSE
     d<-ncol(P)
     beta.old = beta
 
-    if(print) cat(" max(P) =",max(P)," sum(P)/2 =", sum(P)/2,'\n','sum(beta)= ', sum(beta),"\n Diff =",diff)
+    #if(print) cat(" max(P) =",max(P)," sum(P)/2 =", sum(P)/2,'\n','sum(beta)= ', sum(beta),"\n Diff =",diff)
 
   }
   #cat(" max(P) =",max(P)," sum(P)/2 =", sum(P)/2,'\n','sum(beta)= ', sum(beta),"\n")

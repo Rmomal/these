@@ -2,8 +2,8 @@
 
 
 ####################################################
-#génération de graph
-# @graphER donne une matrice symétrique aléatoire de taille n*n obtenue par
+#g??n??ration de graph
+# @graphER donne une matrice sym??trique al??atoire de taille n*n obtenue par
 #          bernoulli de param p
 ####################################################
 makeSymm <- function(m) {
@@ -75,23 +75,24 @@ SimCluster <- function(p, k, d, r){
   diag(ZZ) = 0
   ZZ = F_Sym2Vec(ZZ)
   G = F_Vec2Sym(rbinom(p * (p - 1) / 2, 1, alpha * ZZ + beta * (1 - ZZ)))
- # gplot(G, gmode='graph', label=1:p, vertex.col=Z%*%(1:k))
+ gplot(G, gmode='graph', label=1:p, vertex.col=Z%*%(1:k),
+       main=paste0(round(r,2),"// alpha ",round(alpha,2),"// beta ",round(beta,2)))
 
  return(G)
 }
 d=10
 par(mfrow=c(2,2))
-SimCluster(d,3,5/d,1)
+SimCluster(d,3,5/d,2)
 SimCluster(d,3,5/d,5)
-SimCluster(d,3,5/d,10)
-SimCluster(d,3,5/d,30)
+SimCluster(d,3,5/d,9)
+SimCluster(d,3,5/d,15)
 ####################################################
-# construction de matrice de précision
-# @curseur utilise le résultat de génération de matrice aléatoire symmétrique par
-#         une fonction donnée et permet de faire varier la diagonale par g
+# construction de matrice de pr??cision
+# @curseur utilise le r??sultat de g??n??ration de matrice al??atoire symm??trique par
+#         une fonction donn??e et permet de faire varier la diagonale par g
 # @findG permet d'obtenir la plus petite valeure de g possible pour avoir une
-#         matrice définie positive
-# @Omega utilise le g optimal pour générer la matrice de précision voulue
+#         matrice d??finie positive
+# @Omega utilise le g optimal pour g??n??rer la matrice de pr??cision voulue
 ####################################################
 # librairies :library(matrixcalc)
 
@@ -129,11 +130,11 @@ simMatrix<-function(n){
 
 ####################################################
 # Simulation et comparaison du graph avec l'originel
-# @simu permet de simuler des variables indépendantes selon une loi normale
-#       multi-variée de mat de précision omega
+# @simu permet de simuler des variables ind??pendantes selon une loi normale
+#       multi-vari??e de mat de pr??cision omega
 # @roc utilise le package ROCR et permet de comparer les matrices omega et omega_hat. Cette
 #       fonction est utile pour un plot direct ou superposition de plot faciles.
-# @fun.auc.ggplot calcule UNE courbe ROC à partir de deux matrices. Donne les statistiques
+# @fun.auc.ggplot calcule UNE courbe ROC ?? partir de deux matrices. Donne les statistiques
 #       de sens, spec et auc. Joli ggplot.
 ####################################################
 
@@ -145,8 +146,11 @@ simMatrix<-function(n){
 
 estim_reg<-function(Y,G){
   d<-ncol(Y)
-  S = P  = matrix(0, d,d)
+  n<-nrow(Y)
+  if(n>d){ 
+    S = P  = matrix(0, d,d)
   for (j in 1:d){
+  #  browser()
     LM = lm(Y[, j] ~ -1 + Y[, -j])
     P[j, -j] = summary(LM)$coef[, 4]
     S[j, -j] = summary(LM)$coef[, 3]
@@ -154,7 +158,11 @@ estim_reg<-function(Y,G){
   # hist(as.vector(P), breaks=p)
   # boxplot(as.vector(S) ~ as.vector(Gdiag))
   # qqnorm(as.vector(S[which(Gdiag==0)]))
-  return(c(2*sum(P>.5), sum(G==0)))
+    res<-c(2*sum(P>.5), sum(G==0))
+  }else{
+    res<-c("not enough obs",sum(G==0))
+  }
+  return(res)
 }
 
 
@@ -239,7 +247,7 @@ diagnostic.auc.sens.spe <- function(pred, obs,stat="auc",method){
   ROC_recal<-performance(prediction,"rec")
   precrec<-data.frame(ROC_precision@y.values,ROC_recal@y.values,method)[-1,]
   colnames(precrec)<-c("prec","rec","method")
-  plot(ROC_precision)
+  #plot(ROC_precision)
   res<-switch(stat,"auc"=round(ROC_auc@y.values[[1]],digits=3),
               "sens"=round(mean(as.data.frame(ROC_sens@y.values)[,1]),digits=3),
               "spec"=round(mean(as.data.frame(ROC_sens@x.values)[,1]),digits=3))
@@ -247,13 +255,13 @@ diagnostic.auc.sens.spe <- function(pred, obs,stat="auc",method){
 }
 ####################################################
 # Exploration des valeurs critiques de rho
-# @tableau3D créer le tableau à trois dimension composé des matrices omega_hat pour
-#           des rho différents
-# @monotonie permet l'étude de la monotonie du phénomène d'extinction d'une arête (case
-#           de la matrice omega_hat). Renvoie les indices en trois dimensions des incohérences.
-# @mat_rho donne, selon la valeur du paramètre minmax, la valeur min ou la valeur max
-#         de rho qui annule une case de omega_hat. Retourne la heatmap non réordonnée
-#         des valeurs critiques, ainsi que leur densité, en échelle log.
+# @tableau3D cr??er le tableau ?? trois dimension compos?? des matrices omega_hat pour
+#           des rho diff??rents
+# @monotonie permet l'??tude de la monotonie du ph??nom??ne d'extinction d'une ar??te (case
+#           de la matrice omega_hat). Renvoie les indices en trois dimensions des incoh??rences.
+# @mat_rho donne, selon la valeur du param??tre minmax, la valeur min ou la valeur max
+#         de rho qui annule une case de omega_hat. Retourne la heatmap non r??ordonn??e
+#         des valeurs critiques, ainsi que leur densit??, en ??chelle log.
 ####################################################
 # install.packages(c("grid","gridGraphics","gridExtra"))
 # library(grid)
@@ -333,7 +341,7 @@ mat_rho<-function(tab,seq_rho,minmax){
 
 #s = cov(data)
 ####################################################
-# fonctions d'inférence
+# fonctions d'inf??rence
 ####################################################
 get.lambda.l1 <- function(S) {
   r.max <- max(0,max(abs(S-diag(diag(S)))))
@@ -366,7 +374,7 @@ inf_spieceasi<-function(Y){
 
   adjmat.array <- simplify2array(Map("*",
                                      inf$lambda,
-                                     lapply(inf$path, function(x) {
+                                     lapply(inf$est$path, function(x) {
                                        (abs(x) > 0) * 1
                                      })))
   K.score <- Reduce("+",adjmat.array)
@@ -374,8 +382,8 @@ inf_spieceasi<-function(Y){
 }
 
 ####################################################
-# Considérations gaphiques
-# @paramNet créer des paramètres graphiques par défaut pour les graphs
+# Consid??rations gaphiques
+# @paramNet cr??er des param??tres graphiques par d??faut pour les graphs
 ####################################################
 #librairaies :library(igraph, RColorBrewer)
 
@@ -409,4 +417,27 @@ grab_grob <- function(){
   grid.grab()
 }
 
-
+grid_arrange_shared_legend <- function(..., ncol = length(list(...)), nrow = 1, position = c("bottom", "right")) {
+  plots <- list(...)
+  position <- match.arg(position)
+  g <- ggplotGrob(plots[[1]] + theme(legend.position = position))$grobs
+  legend <- g[[which(sapply(g, function(x) x$name) == "guide-box")]]
+  lheight <- sum(legend$height)
+  lwidth <- sum(legend$width)
+  gl <- lapply(plots, function(x) x + theme(legend.position="none"))
+  gl <- c(gl, ncol = ncol, nrow = nrow)
+  combined <- switch(position,
+                     "bottom" = arrangeGrob(do.call(arrangeGrob, gl),
+                                            legend,
+                                            ncol = 1,
+                                            heights = unit.c(unit(1, "npc") - lheight, lheight)),
+                     "right" = arrangeGrob(do.call(arrangeGrob, gl),
+                                           legend,
+                                           ncol = 2,
+                                           widths = unit.c(unit(1, "npc") - lwidth, lwidth)))
+  
+  grid.newpage()
+  grid.draw(combined)
+  # return gtable invisibly
+  invisible(combined)
+}
