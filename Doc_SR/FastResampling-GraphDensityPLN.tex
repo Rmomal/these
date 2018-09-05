@@ -1,0 +1,116 @@
+\documentclass[a4paper, 10pt]{article}
+
+%% Language and font encodings
+\usepackage[english]{babel}
+\usepackage[utf8x]{inputenc}
+\usepackage[T1]{fontenc}
+
+%% Sets page size and margins
+\usepackage[a4paper,top=2cm,bottom=2cm,left=2cm,right=2cm,marginparwidth=1.75cm]{geometry}
+
+%% Useful packages
+\usepackage{amsfonts,amssymb,amsmath,amscd,amsthm,latexsym}
+\usepackage{tikz}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage[colorinlistoftodos]{todonotes}
+\usepackage[colorlinks=true, allcolors=blue]{hyperref}
+
+\newcommand{\Zt}{\widetilde{Z}}
+
+\title{Graph density estimation via multiple testing on resampled $p$-values}
+\author{SR}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Problem} 
+We consider a dataset $Z$ ($n \times p$) arising from a Gaussian graphical model (GGM):
+\begin{equation} \label{eq:GGM}
+\{Z_i\}_{1 \leq i \leq n} \text{ iid } \sim \mathcal{N}_p(0, \Sigma = \Omega^{-1}).
+\end{equation}
+We assume that non-zeros entries of $\Omega$ correspond to the edges of a graph $G$. The aim is to estimate the number of edges in $G$ using a multiple testing procedure applied to the regression coefficients $\beta_{jk}$ of the $p$ linear models induced by Model \eqref{eq:GGM}: 
+$$
+Z_{ik} = \sum_{j \neq k} \beta_{jk} Z_{ij} + E_{ik}, 
+\qquad \{E_{ik}\}_i \text{ iid } \sim \mathcal{N}(0, \sigma^2_k),
+$$
+or equivalently
+\begin{equation} \label{eq:LM}
+Z^k = Z^{-k} \beta_k + E^k, 
+\qquad E^k \sim \mathcal{N}_n(0, \sigma^2_k I_n).
+\end{equation}
+where $Z^k$ stands for the $k$th column of $Z$ and $Z^{-k}$ stands or the matrix $Z$ deprived from its $k$th column.
+
+\section{Test statistics} 
+
+\paragraph{A reminder on Gaussian linear model.}
+Consider a linear model where $X$ is $n \times q$,
+$$
+Y = X \beta + E, 
+\qquad E \sim \mathcal{N}_n(0, \sigma^2 I_n).
+$$
+We know that $\widehat{\beta} = (X' X)^{-1} X' Y$, $\widehat{\sigma}^2 = \|Y - X \widehat{\beta}\|^2 / (n-q)$, $\widehat{\mathbb{V}}(\widehat{\beta}) = (X' X)^{-1} \widehat{\sigma}^2$ and that, under $H_0 = \{\beta_h = 0\}$, 
+$T_h = \widehat{\beta}_h / \left[\widehat{\mathbb{V}}(\widehat{\beta})\right]_{h, h} \sim \mathcal{T}_{n-q}$. 
+
+\paragraph{Schur complement.} 
+An important ingredient for what follows is the notion of Schur complement. Consider a matrix
+$$
+M = \left[\begin{array}{cc} A & B \\ C & D \end{array}\right],
+$$
+we have that the bottom right block of $M^{-1}$ (with same dimension as $D$) is 
+$\left(D - C A^{-1} B\right)^{-1}$.
+
+\paragraph{Computing the test statistics.}
+Our first aim is to compute the test statistics $T_{jk}$ associated to the regression coefficients from Models \eqref{eq:LM} (for $1 \leq k \leq p$) in a fast manner. Following the reminder, we get for Model \eqref{eq:LM}
+$$
+\widehat{\beta}_k = \left((Z^{-k})' Z^{-k}\right)^{-1} (Z^{-k})' Z^k, 
+\qquad
+\widehat{\sigma}_k^2 = \|Z^k - Z^{-k} \widehat{\beta}_k\|^2  / (n-p-1).
+$$
+This quantities can be computed  in a fast manner as Schur complement, taking $M = Z' Z$ and either $D = (Z^{-k})' Z^{-k}$ or $D = (Z^k)' Z^k$. Namely
+\begin{align} \label{eq:Schur}
+ \left((Z^{-k})' Z^{-k}\right)^{-1} & = \left[(Z' Z)^{-1}\right]_{-k, -k} - \left[(Z' Z)^{-1}\right]_{-k, k} \left[(Z' Z)^{-1}\right]_{k, -k} / \left[(Z' Z)^{-1}\right]_{k, k}, \\
+ \|Z^k - Z^{-k} \widehat{\beta}_k\|^2 & = \left[(Z' Z)^{-1}\right]_{k, k}, \nonumber
+\end{align}
+where $M_{I, J}$ stands for the sub-matrix of $M$ keeping rows from set $I$ and columns from set $J$ and denoting '$-k$' the set $\{1, \dots, p\} \setminus \{k\}$.
+As a consequence, all test statistics $T_{jk}$ can be computed at the cost of one single inversion of the matrix $Z'Z$, that is $O(p^3)$.
+
+\section{$p$-value resampling}
+
+The distribution of $T_{jk}$ is known under $H_0 = \{\beta_{jk} = 0\}$ in the Gaussian setting, but not in general. To be robust to the Gaussian assumption, we use resampling to assess the significance of $\beta_{jk}$. To this aim, we consider the following resampling scheme: for each $1 \leq b \leq B$, and $1 \leq k \leq p$,
+\begin{enumerate}[($i$)]
+ \item draw $Y^{k, b}$ as a random uniform permutation of the entries of $Z^k$
+ \item compute the test statistics $T_{jk}^b$ for $1 \leq j \leq p$ by fitting the model
+ $Y^{k, b} = Z^{-k} \beta^b_k + E^{k,b}$.
+\end{enumerate}
+The resampling-based $p$-value is then defined as
+$$
+P_{jk} = \sum_b \mathbb{I}\{|T_{jk}^b| > |T_{jk}|\} / B.
+$$
+
+\paragraph{Computing the resampled test statistics.}
+We now consider the calculation of all $T_{jk}^b$. For a given $k$, observe that the design matrix $Z^{-k}$ remains constant across resamples $1 \leq b \leq B$, so $\left((Z^{-k})' Z^{-k}\right)^{-1}$ can be computed once for all, as given in \eqref{eq:Schur}. We are left with the calculation of $(\widehat{\sigma}^b_k)^2$, that is with the calculation of the scalar
+$$
+\left[\left((\Zt^{kb})' \Zt^{kb}\right)^{-1}\right]_{k, k},
+$$
+where $\Zt^{kb}$ stands for the matrix $Z$, the $k$th column $Z^k$ of which has been replaced with its permuted version $Y^{k, b}$. Again, using Schur complement, we have that
+$$
+[(A'A)^{-1}]_{k, k}  
+=
+\left((A^k)' A^k - A^k A^{-k} ((A^{-k})' A^{-k})^{-1} A^{-k} A^k \right)^{-1}.
+$$
+When applied to $A = \Zt^{kb}$, we have that $A^{-k} = Z^{-k}$, so we get
+$$
+\left[\left((\Zt^{kb})' \Zt^{kb}\right)^{-1}\right]_{k, k}
+=
+\left((Y^{k, b})' Y^{k, b} - Y^{k, b} Z^{-k} ((Z^{-k})' Z^{-k})^{-1} Z^{-k} Y^{k, b} \right)^{-1},
+$$
+which does not require any matrix inversion, all terms being available in $(\Zt^{kb})' \Zt^{kb}$ and in $((Z^{-k})' Z^{-k})^{-1}$.
+
+
+
+\section{Application to PLN}
+
+\end{document}
