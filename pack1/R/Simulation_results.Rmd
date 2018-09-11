@@ -1,0 +1,323 @@
+---
+title: "Simulation results"
+runtime: shiny
+output:
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_float: yes
+  html_notebook:
+    toc: yes
+    toc_float: yes
+---
+
+```{r include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, cache=TRUE)
+```
+
+
+```{r,echo=FALSE}
+library(ggplot2)
+library(tidyverse)
+library(gridExtra)
+library(grid)
+
+
+grid_arrange_shared_legend <- function(..., ncol = length(list(...)), nrow = 1, position = c("bottom", "right")) {
+  pdf()
+  plots <- list(...)
+  position <- match.arg(position)
+  g <- ggplotGrob(plots[[1]] + theme(legend.position = position))$grobs
+  legend <- g[[which(sapply(g, function(x) x$name) == "guide-box")]]
+  lheight <- sum(legend$height)
+  lwidth <- sum(legend$width)
+  gl <- lapply(plots, function(x) x + theme(legend.position="none"))
+  gl <- c(gl, ncol = ncol, nrow = nrow)
+  combined <- switch(position,
+                     "bottom" = arrangeGrob(do.call(arrangeGrob, gl),
+                                            legend,
+                                            ncol = 1,
+                                            heights = unit.c(unit(1, "npc") - lheight, lheight)),
+                     "right" = arrangeGrob(do.call(arrangeGrob, gl),
+                                           legend,
+                                           ncol = 2,
+                                           widths = unit.c(unit(1, "npc") - lwidth, lwidth)))
+  
+  dev.off()
+  grid.newpage()
+  grid.draw(combined)
+  # return gtable invisibly
+  #invisible(combined)
+}
+
+diagnostics<-function(file,title){
+  tab<-data.frame(readRDS(file))
+  lignes<-which(is.na(tab[,1]))
+  if (length(lignes)!=0) tab<-tab[-lignes,]
+  tab<- gather(tab,key=method,value=value,treeggm,ggm1step,oracle,spiecEasi, spiecResid)
+  tab<-summarise(group_by(tab,var,method),mns=median(value),inf=quantile(value,0.25),sup=quantile(value,0.75))
+  elmts<-unlist(strsplit(file,"/"))
+  variable<-elmts[length(elmts)]
+  param<-elmts[length(elmts)-1]
+  type<-elmts[length(elmts)-2]
+  variable<-substr(variable,1,nchar(variable)-4)
+  variable<-switch(variable,"auc"="AUC","sens"="Sensitivity","spec"="Specificity")
+  
+  # geom_line(aes(y=mns,color=method),size=1)+
+  # geom_ribbon(aes(ymin=inf, ymax=sup,fill=method), alpha=0.2)+
+  tab$var<-as.numeric(as.character(tab$var))
+  p<-ggplot(tab, aes(y=mns,x=as.numeric(as.character(var)),shape=method,color=method))+
+    geom_errorbar(aes(ymin=inf, ymax=sup), width=0,position=position_dodge((max(tab$var)-min(tab$var))/100))+
+    geom_point(size=2.3)+
+    geom_line(size=0.2)+
+   labs(y=variable,x=param)+
+    scale_shape_manual(values=c(15,8,9,17,16),
+                       breaks=c("treeggm","ggm1step", "spiecEasi","spiecResid" ,"oracle"),
+                       labels=c("EM ","1 step","SpiecEasi","spiecResid", "oracle" ) )+
+     scale_color_manual(values=c("#076443","#fc5f94", "#8037c9","#56B4E9" ,"#E69F00"),
+                      breaks=c("treeggm","ggm1step", "spiecEasi","spiecResid" ,"oracle"),
+                       labels=c("EM ","1 step","SpiecEasi","spiecResid", "oracle" ) )+
+    scale_y_continuous(limits = c(0.5,1))+
+    theme_bw()+
+    theme(plot.title = element_text(hjust = 0.5),legend.title=element_blank())
+  print(p)
+}
+
+# bright_graph<-function(path="~/simulations/Simu/",nocov="PLN/",covar="PLNcov/",type,param){
+#   p1 <-diagnostics(paste0(path,nocov,type,param,"auc.rds"),title="Without covariates")
+#   p2 <-diagnostics(paste0(path,covar,type,param,"auc.rds"),title="With covariates")
+#   grid_arrange_shared_legend(p1, p2, ncol = 2, nrow = 1)
+# }
+bright_graph<-function(path="~/simulations/Simu/",nocov="PLN/",covar="PLNcov/",type,param){
+   diagnostics(paste0(path,covar,type,param,"auc.rds"),title="")
+  #grid_arrange_shared_legend(p2, ncol = 1, nrow = 1)
+}
+```
+
+# Preamble
+Simulations details:
+
+* 4 graph types: erdös, cluster, tree and scale-free
+* 2 global parameters: number of nodes (d), number of observations
+* Some additive parameters depending on graph types: densit and r for clusters, edge probability for erdös
+* Running on 100 generated graphs
+* Results are available with or without covariates
+* The covariates used are a set of 3 (cbind(rep(c(0,1),each=n/2),rnorm(n,8,0.5),
+                   round(runif(n)*10))) one binary, one gaussian and a categorical one with 10 groups. This last covariate is the hardest for SpiecEasi.
+
+Each simulation (type x parameter x cov/no cov) takes about 100 minutes on my mac, parallellized on 3 cores.
+
+# AUC
+## Erdös
+### edge probabilty
+
+```{r}
+type<-"erdos/"
+param<-"prob/"
+bright_graph(type=type,param=param)
+```
+
+### d
+
+```{r}
+type<-"erdos/"
+param<-"d/"
+bright_graph(type=type,param=param)
+```
+
+### n
+
+```{r}
+type<-"erdos/"
+param<-"n/"
+bright_graph(type=type,param=param)
+```
+
+## Cluster
+### density
+
+```{r}
+type<-"cluster/"
+param<-"dens/"
+bright_graph(type=type,param=param)
+```
+
+### r
+
+```{r}
+type<-"cluster/"
+param<-"r/"
+bright_graph(type=type,param=param)
+```
+
+### d
+
+```{r}
+type<-"cluster/"
+param<-"d/"
+bright_graph(type=type,param=param)
+```
+
+
+### n
+
+```{r, results='hide'}
+type<-"cluster/"
+param<-"n/"
+bright_graph(type=type,param=param)
+```
+
+## Tree
+### d
+
+```{r}
+type<-"tree/"
+param<-"d/"
+bright_graph(type=type,param=param)
+```
+
+###n
+
+```{r}
+type<-"tree/"
+param<-"n/"
+bright_graph(type=type,param=param)
+```
+
+## Scale-free
+### d
+
+```{r}
+type<-"scale-free/"
+param<-"d/"
+bright_graph(type=type,param=param)
+```
+
+### n
+
+```{r, results='hide'}
+type<-"scale-free/"
+param<-"n/"
+bright_graph(type=type,param=param)
+```
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+
+# Precision Recall
+## Table
+
+Data about precresion/recal criteria has been extracted from simulations under frames "precrec.auc", in each files. Column names are not straightforward:
+
+* `var` is the value of the parameter (ex: 10 nodes)
+* `param` is the graph number
+
+```{r, echo=TRUE, results=TRUE}
+precrec <- as_tibble(readRDS("~/simulations/Simu/PLNcov/erdos/d/precrec.rds"))
+precrec
+```
+
+
+
+## Figures on all genrated graphs
+
+Smoothed curves including results for all graphs on a partiuclar value of the tested parameter. Here : number of nodes fixed at 10.
+
+```{r}
+path<-paste0("/Users/raphaellemomal/simulations/Simu/PLNcov/")
+
+graph_val<-function(x,type="erdos",variable="d"){
+precrec<- readRDS(paste0(path,type,"/",variable,"/precrec_",x,".rds"))
+
+ggplot(precrec,aes(rec,prec,colour=method,linetype=method))+
+  geom_line(size=1)+
+  # scale_type_manual(values=c(16,15,9,8,17),
+  #                    breaks=c("treeggm","one_step", "glasso","spiecResid" ,"oracle"),
+  #                    labels=c("EM ","1 step","SpiecEasi","spiecResid", "oracle" ) )+
+  scale_linetype_manual(values=c("twodash", "solid", "dashed", "dotted", "dotdash" ),breaks=c("treeggm","one_step", "glasso","spiecResid" ,"oracle"),
+                   labels=c("EM ","1 step","SpiecEasi","SpiecResid", "Oracle" ) )+
+  scale_color_manual(values=c("#E69F00","#076443", "#8037c9","#fc5f94" ,"#56B4E9"),
+                     breaks=c("treeggm","one_step", "glasso","spiecResid" ,"oracle"),
+                     labels=c("EM ","1 step","SpiecEasi","SpiecResid", "Oracle" ) 
+  )+
+  guides(shape = guide_legend(override.aes = list(size = 2)))+
+  labs(title="")+
+  scale_y_continuous(limits = c(0,1))+
+  theme_bw()
+
+}
+graph_val(100,"cluster","n")
+```
+
+Mosaic plot of Precision/Recal curves for different values of the parameter (here number of nodes is 10, 16, 20 or 30), summary results on all generated graphs.
+```{r, results=FALSE,warning=FALSE}
+val<-c(10,16,20,30)
+p1<-graph_val(val[1])
+p2<-graph_val(val[2])
+p3<-graph_val(val[3])
+p4<-graph_val(val[4])
+
+grid_arrange_shared_legend(p1, p2, p3, p4, ncol = 2, nrow = 2)
+```
+```{r , echo=FALSE, cache=FALSE}
+library(shiny)
+library(tidyverse)
+fluidRow( column(4,
+
+selectInput(
+   'type', label = 'Graph type:',
+   choices = c("Erdös","Cluster","Tree","Scale-free"), selected = "Erdös"
+ ),
+
+selectInput(
+   'param', label = 'Varying parameter:',
+   choices = c("number of nodes","number of observations","edge probability","connection ratio","density"), selected = "number of observations"
+ )),
+    column(4,
+selectInput(
+   'value_n', label = 'Value of n:',
+   choices = c(seq(10,120,10)), selected = 20
+ ),
+selectInput(
+   'value_d', label = 'Value of d:',
+   choices = c(seq(10,30,2)), selected = 20
+ ),
+selectInput(
+   'value_dens', label = 'Value of density (Cluster):',
+   choices = c(seq(0.1,0.4,0.05)), selected = 20
+ ),
+selectInput(
+   'value_r', label = 'Value of connection ratio (Cluster):',
+   choices = c(seq(1,30,5)), selected = 20
+ ),
+selectInput(
+   'value_prob', label = 'Value of prob (Erdös):',
+   choices = c(seq(0.5,5,0.5)/20), selected = 20
+ )))
+
+renderPlot({
+  type<-switch(input$type, "Erdös"="erdos","Cluster"="cluster","Tree"="tree","Scale-free"="scale-free")
+  param<-switch(input$param,"number of nodes"="d","number of observations"="n",
+                "edge probability"="prob","connection ratio"="r","density"="dens")
+  
+  inputvalue<-switch(param,"d"=as.numeric(input$value_d),
+                     "n"=as.numeric(input$value_n),"r"=as.numeric(input$value_r),
+                     "dens"=as.numeric(input$value_dens),"prob"=as.numeric(input$value_prob))
+  precrec <- as_tibble(readRDS(paste0("~/simulations/Simu/PLNcov/",type,"/",param,"/precrec_",inputvalue,".rds")))
+  
+  ggplot(precrec,aes(rec,prec,colour=method, linetype=method))+
+    geom_line(size=1)+
+    scale_linetype_manual(values=c("twodash", "solid", "dashed", "dotted", "dotdash" ),
+                          breaks=c("treeggm","one_step", "glasso","spiecResid" ,"oracle"),
+                          labels=c("EM ","1 step","SpiecEasi","SpiecResid", "Oracle" ) )+
+    scale_color_manual(values=c("#E69F00","#076443", "#8037c9","#fc5f94" ,"#56B4E9"),
+                       breaks=c("treeggm","one_step", "glasso","spiecResid" ,"oracle"),
+                       labels=c("EM ","1 step","SpiecEasi","SpiecResid", "Oracle" ))+
+    guides(shape = guide_legend(override.aes = list(size = 2)))+
+    theme_bw()+
+    theme(legend.position="bottom",legend.title=element_blank(),text = element_text(size=20))
+  
+  
+  
+ })
+```
+
+
