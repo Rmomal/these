@@ -21,6 +21,11 @@ TreeGGM <- function(CorY, step, print){
 }
 F_ResampleTreePLN <- function(Y, X, O, v=0.8, B=1e2){
   # v = 0.8; B = 1e2
+  # Resampling edge probability
+  # Y, X, O: same as for PLN
+  # v = (subsample size) / (total sample size)
+  # B = nb resamples
+  # Out = Pmat = B x p(p-1)/2 matrix with edge probability for each resample
   V = round(v*n); Pmat = matrix(0, B, P); 
   for (b in 1:B){
     cat('\n', b, '')
