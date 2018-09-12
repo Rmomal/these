@@ -29,7 +29,6 @@ abline(LM2$coef[1], LM2$coef[2], col=2)
 GM = Mclust(log(Psort))
 # GM = Mclust(log(Psort), modelNames='E')
 print(GM)
-plot(GM)
 plot(log(Psort), col=GM$classification)
 colSums(GM$z)
 
