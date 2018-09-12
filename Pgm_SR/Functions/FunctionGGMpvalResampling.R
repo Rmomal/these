@@ -1,4 +1,4 @@
-# Fast resampling for PL-network density estimaition
+ # Fast resampling for PL-network density estimaition
 # Based on Schur's trick used in https://arxiv.org/pdf/1505.07281.pdf, p23
 
 # Functions
