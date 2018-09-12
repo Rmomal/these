@@ -4,14 +4,14 @@ library(PLNmodels); library(sna);
 library(igraph)
 library(RColorBrewer)
 library(ggplot2)
-source('/home/momal/Git/these/pack1/R/FunctionsMatVec.R')
-source('/home/momal/Git/these/pack1/R/FunctionsTree.R')
-source('/home/momal/Git/these/pack1/R/FunctionsInference.R')
-source('/home/momal/Git/these/pack1/R/TreeMixture-RML.R')
-source('/home/momal/Git/these/pack1/R/fonctions.R')
+source('~/these/pack1/R/codes/FunctionsMatVec.R')
+source('~/these/pack1/R/codes/FunctionsTree.R')
+source('~/these/pack1/R/codes/FunctionsInference.R')
+source('TreeMixture-mac.R')
+source('~/these/pack1/R/codes/fonctions.R')
 # Data
-data.dir = '/home/momal/Git/these/Data/Oaks-CVacher/'
-data.dir = '../../Data/Oaks-CVacher/'
+data.dir = '~/these/Data/Oaks-CVacher/'
+#data.dir = '../../Data/Oaks-CVacher/'
 data.name = 'oaks'
 load(paste0(data.dir, data.name, '.RData'))
 theme_set(theme_bw())
@@ -49,9 +49,50 @@ n = nrow(Y); p = ncol(Y)
 # summary(model_quadra)
 
 ######
-#Spieceasi
+# SpiecResid
 #####
-inf_spiec<-inf_spieceasi(Y)
+X2<-X[which(X$tree=="2"),-c(1:3)]
+library(SpiecEasi)
+U<-clr(Y)
+model<-lm(U~X2$distTObase+X2$distTOtrunk+X2$distTOground+X2$pmInfection+X2$orientation)
+summary(model)
+resid<-model$residuals
+inf_spieresid<-inf_spieceasi(resid)
+
+# PLN 
+library(PLNmodels)
+PLN.allcovariates<-PLN(Y ~ 1 + X2$distTObase+X2$distTOtrunk+X2$distTOground+X2$pmInfection+X2$orientation+ offset(log(O)))
+Z.allcovariates = PLN.allcovariates$model_par$Sigma
+inf.PLNallcovariates<-TreeGGM(cov2cor(Z.allcovariates),print=TRUE,step="FALSE")# 3 minutes
+
+
+# plots pour coude
+par(mfrow=c(1,2))
+plot(sort(inf_spieresid))
+plot(sort(inf.PLNallcovariates$P))
+dataPLN<-inf.PLNallcovariates$P
+length<-length(which(upper.tri(inf_spieresid,diag=FALSE)))
+
+dataggplot<-data.frame(SpiecResid=sort(inf_spieresid[upper.tri(inf_spieresid,diag=FALSE)]),
+                       PLN=sort(dataPLN[upper.tri(dataPLN,diag=FALSE)]),
+                       index=seq(1,length)
+                       )
+dataggplot<-gather(dataggplot,method,scores,-"index")
+ggplot(dataggplot,aes(index,scores))+
+  geom_point()+
+  facet_grid(rows=vars(method))
+
+# les 1000 plus forts sont-ils les mêmes ?
+seuil_spiec<-dataggplot[length-1000,3]
+seuil_PLN<-dataggplot[nrow(dataggplot)-1000,3]
+indices_spiec<-which(as.matrix(inf_spieresid)>seuil_spiec)
+indices_PLN<-which(as.matrix(dataPLN)>seuil_PLN)
+setdiff(indices_spiec,indices_PLN)
+setdiff(indices_PLN,indices_spiec)
+intersect(indices_spiec,indices_PLN)
+
+saveRDS(dataPLN,"/Users/raphaellemomal/these/pack1/R/SavedPLNfiles/scores_PLN.rds")
+###########################
 # PLN models
 PLN.offset = PLN(Y ~ 1 + offset(log(O)))
 PLN.dist = PLN(Y ~ 1 + X$distTObase[X$tree=="2"]+ X$distTOtrunk[X$tree=="2"] + X$distTOground[X$tree=="2"]  + offset(log(O)))
