@@ -9,15 +9,12 @@ source('../pack1/R/codes/FunctionsInference.R')
 library(mvtnorm); library(PLNmodels); library(sna)
 
 # Functions
-TreeGGM <- function(CorY, step, print){
+TreeGGM <- function(CorY){
   p = ncol(CorY);
   phi = 1/sqrt(1 - CorY^2); diag(phi) = 0
-  beta.unif = matrix(1, p, p); diag(beta.unif) = 0; beta.unif = beta.unif / sum(beta.unif)
-  
-  FitEM = switch(step,"FALSE"=FitBetaStatic(Y,beta.init=beta.unif, phi=phi,print=print),
-                 "TRUE"=FitBeta1step(beta.init=beta.unif, phi=phi))
-  
-  return(list(P=Kirshner(FitEM$beta)$P,L=FitEM$logpY))
+  beta.unif = matrix(1, p, p); 
+  FitEM = FitBetaStatic(Y, beta.init=beta.unif, phi=phi)
+  return(list(P=Kirshner(FitEM$beta)$P, L=FitEM$logpY))
 }
 F_ResampleTreePLN <- function(Y, X, O, v=0.8, B=1e2){
   # v = 0.8; B = 1e2
@@ -31,7 +28,7 @@ F_ResampleTreePLN <- function(Y, X, O, v=0.8, B=1e2){
     cat('\n', b, '')
     sample = sample(1:n, V, replace=F)
     Y.sample = Y[sample, ]; X.sample = X[sample, ]; O.sample = O[sample, ];
-    # Use inception to accelerate: problem with dimension test (cannot update PLN$n)
+    # Use PLN 'inception' option to accelerate: problem with the dimension test (cannot update PLN$n)
     # PLN.init = PLN;
     # PLN.init$var_par = list(M=PLN$var_par$M[sample, ], S=PLN$var_par$S[sample, ])
     # control$inception = PLN.init
@@ -74,7 +71,9 @@ Pvec = F_Sym2Vec(TreeGGM(cov2cor(Sigma.hat), "FALSE", FALSE)$P)
 Porder = order(Pvec); plot(Pvec[Porder], col=1+Gvec[Porder]); abline(h=2/p)
 
 # Resampled edge probabilities
-Pmat = F_ResampleTreePLN(Y, X, O, B=5e2)
+Pmat1 = F_ResampleTreePLN(Y, X, O, B=5e2)
+Pmat2 = F_ResampleTreePLN(Y, X, O, v=0.5, B=5e2)
+Pmat = Pmat1
 
 # Stability selection
 Pfreq = 1*(Pmat > 2/p) # Threshold at tree density

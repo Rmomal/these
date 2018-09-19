@@ -11,11 +11,11 @@ Psort = sort(Pvec); plot(Psort)
 
 # Find elbow
 par(mfrow=c(2, 1), mex=.7)
-# SS = rep(Inf, P)
-# for(i in (2:P)){
-#   SS[i] = anova(lm(Psort[1:i] ~ 1 + as.vector(1:i)))[2, 2]
-#   SS[i] = SS[i] + anova(lm(Psort[(i+1):P] ~ 1 + as.vector(1:(P-i))))[2, 2]
-# }
+SS = rep(Inf, P)
+for(i in (2:P)){
+  SS[i] = anova(lm(Psort[1:i] ~ 1 + as.vector(1:i)))[2, 2]
+  SS[i] = SS[i] + anova(lm(Psort[(i+1):P] ~ 1 + as.vector(1:(P-i))))[2, 2]
+}
 plot(SS)
 i.min = which.min(SS)
 LM1 = lm(Psort[1:i.min] ~ 1 + as.vector(1:i.min))
@@ -31,4 +31,6 @@ GM = Mclust(log(Psort))
 print(GM)
 plot(log(Psort), col=GM$classification)
 colSums(GM$z)
+
+
 
