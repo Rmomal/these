@@ -17,28 +17,28 @@ TreeGGM <- function(CorY){
   return(list(P=Kirshner(FitEM$beta)$P, L=FitEM$logpY))
 }
 F_ResampleTreePLN <- function(Y, X, O, v=0.8, B=1e2){
-  # v = 0.8; B = 1e2
-  # Resampling edge probability
-  # Y, X, O: same as for PLN
-  # v = (subsample size) / (total sample size)
-  # B = nb resamples
-  # Out = Pmat = B x p(p-1)/2 matrix with edge probability for each resample
-  V = round(v*n); Pmat = matrix(0, B, P); 
-  for (b in 1:B){
-    cat('\n', b, '')
-    sample = sample(1:n, V, replace=F)
-    Y.sample = Y[sample, ]; X.sample = X[sample, ]; O.sample = O[sample, ];
-    # Use PLN 'inception' option to accelerate: problem with the dimension test (cannot update PLN$n)
-    # PLN.init = PLN;
-    # PLN.init$var_par = list(M=PLN$var_par$M[sample, ], S=PLN$var_par$S[sample, ])
-    # control$inception = PLN.init
-    # PLN.sample = PLN(Y.sample ~ -1 + X.sample + offset(O.sample), control=control)
-    PLN.sample = PLN(Y.sample ~ -1 + X.sample + offset(O.sample))
-    Sigma.sample = PLN.sample$model_par$Sigma
-    Pmat[b, ] = F_Sym2Vec(TreeGGM(cov2cor(Sigma.sample), "FALSE", FALSE)$P)
-    # if(b%%10==0){boxplot(log10(Pmat[1:b, ]) ~ Gmat[1:b, ])}
-  }
-  return(Pmat)
+   # v = 0.8; B = 1e2
+   # Resampling edge probability
+   # Y, X, O: same as for PLN
+   # v = (subsample size) / (total sample size)
+   # B = nb resamples
+   # Out = Pmat = B x p(p-1)/2 matrix with edge probability for each resample
+   n = nrow(Y); p = ncol(Y); P = p*(p-1)/2; V = round(v*n); Pmat = matrix(0, B, P); 
+   for (b in 1:B){
+      cat('\n', b, '')
+      sample = sample(1:n, V, replace=F)
+      Y.sample = Y[sample, ]; X.sample = X[sample, ]; O.sample = O[sample, ];
+      # Use PLN 'inception' option to accelerate: problem with the dimension test (cannot update PLN$n)
+      # PLN.init = PLN;
+      # PLN.init$var_par = list(M=PLN$var_par$M[sample, ], S=PLN$var_par$S[sample, ])
+      # control$inception = PLN.init
+      # PLN.sample = PLN(Y.sample ~ -1 + X.sample + offset(O.sample), control=control)
+      PLN.sample = PLN(Y.sample ~ -1 + X.sample + offset(O.sample))
+      Sigma.sample = PLN.sample$model_par$Sigma
+      Pmat[b, ] = F_Sym2Vec(TreeGGM(cov2cor(Sigma.sample), "FALSE", FALSE)$P)
+      # if(b%%10==0){boxplot(log10(Pmat[1:b, ]) ~ Gmat[1:b, ])}
+   }
+   return(Pmat)
 }
 
 # Sim parms
