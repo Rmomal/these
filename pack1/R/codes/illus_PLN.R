@@ -52,8 +52,11 @@ n = nrow(Y); p = ncol(Y)
 # SpiecResid
 #####
 X2<-X[which(X$tree=="2"),-c(1:3)]
+rownames(X2)<-1:nrow(X2)
+
 library(SpiecEasi)
 U<-clr(Y)
+rownames(U)<-1:nrow(U)
 model<-lm(U~X2$distTObase+X2$distTOtrunk+X2$distTOground+X2$pmInfection+X2$orientation)
 summary(model)
 resid<-model$residuals
@@ -63,18 +66,23 @@ inf_spieresid<-inf_spieceasi(resid)
 library(PLNmodels)
 PLN.allcovariates<-PLN(Y ~ 1 + X2$distTObase+X2$distTOtrunk+X2$distTOground+X2$pmInfection+X2$orientation+ offset(log(O)))
 Z.allcovariates = PLN.allcovariates$model_par$Sigma
-inf.PLNallcovariates<-TreeGGM(cov2cor(Z.allcovariates),print=TRUE,step="FALSE")# 3 minutes
-
-
+inf.EM20<-TreeGGM(cov2cor(Z.allcovariates),print=FALSE,step="FALSE", maxIter=20)# 3 minutes
+T1<-Sys.time()
+inf.EM100<-TreeGGM(cov2cor(Z.allcovariates),print=FALSE,step="FALSE", maxIter=100)# 3 minutes
+T2<-Sys.time()
+difftime(T2,T1)
 # plots pour coude
 par(mfrow=c(1,2))
 plot(sort(inf_spieresid))
 plot(sort(inf.PLNallcovariates$P))
+plot(sort(inf.PLNallcovariates$probaCond))
 dataPLN<-inf.PLNallcovariates$P
-length<-length(which(upper.tri(inf_spieresid,diag=FALSE)))
+dataPLNcond<-inf.PLNallcovariates$probaCond
+length<-length(which(upper.tri(dataPLN,diag=FALSE)))
 
-dataggplot<-data.frame(SpiecResid=sort(inf_spieresid[upper.tri(inf_spieresid,diag=FALSE)]),
+dataggplot<-data.frame(#SpiecResid=sort(inf_spieresid[upper.tri(inf_spieresid,diag=FALSE)]),
                        PLN=sort(dataPLN[upper.tri(dataPLN,diag=FALSE)]),
+                       PLNcond=sort(dataPLNcond[upper.tri(dataPLNcond,diag=FALSE)]),
                        index=seq(1,length)
                        )
 dataggplot<-gather(dataggplot,method,scores,-"index")
@@ -83,13 +91,35 @@ ggplot(dataggplot,aes(index,scores))+
   facet_grid(rows=vars(method))
 
 # les 1000 plus forts sont-ils les mêmes ?
-seuil_spiec<-dataggplot[length-1000,3]
-seuil_PLN<-dataggplot[nrow(dataggplot)-1000,3]
-indices_spiec<-which(as.matrix(inf_spieresid)>seuil_spiec)
-indices_PLN<-which(as.matrix(dataPLN)>seuil_PLN)
-setdiff(indices_spiec,indices_PLN)
-setdiff(indices_PLN,indices_spiec)
-intersect(indices_spiec,indices_PLN)
+
+seuil<-100
+compute_intersect<-function(seuil){
+  seuil_spiec<-dataggplot[length-seuil,3]
+  seuil_cond<-dataggplot[nrow(dataggplot)-seuil,3]
+  seuil_PLN<-dataggplot[2*length-seuil,3]
+  indices_cond<-which(as.matrix(dataPLNcond[upper.tri(dataPLNcond)])>seuil_cond)
+  indices_PLN<-which(as.matrix(dataPLN[upper.tri(dataPLN)])>seuil_PLN)
+  indices_spiec<-which(as.matrix(inf_spieresid[upper.tri(inf_spieresid)])>seuil_spiec)
+ # print(list(indices_PLN,indices_cond))
+  vec1<-length(intersect(indices_cond,indices_PLN))*100/length(union(indices_cond,indices_PLN))
+  vec2<-length(intersect(indices_cond,indices_spiec))*100/length(union(indices_cond,indices_spiec))
+  vec3<-length(intersect(indices_spiec,indices_PLN))*100/length(union(indices_spiec,indices_PLN))
+  return(c(vec1,vec2,vec3))
+}
+
+res_seuil<-sapply(1:2000,function(x) compute_intersect(x))
+res_seuil<-data.frame(t(res_seuil))
+colnames(res_seuil)<-c("PLN/cond","spiec/cond", "spiec/PLN" )
+res_seuil$index<-1:nrow(res_seuil)
+res_seuil<-gather(res_seuil,comparison,percent,-"index")
+
+ggplot(res_seuil,aes(index,percent,color=comparison))+
+  geom_point(size=0.6)+
+  geom_line()+
+  labs(x = "quantity of most probable edges",y="in common (%)")
+
+par(mfrow=c(1,1))
+plot(res_seuil, xlab = "quantity of most probable edges",ylab="in common (%)")
 
 saveRDS(dataPLN,"/Users/raphaellemomal/these/pack1/R/SavedPLNfiles/scores_PLN.rds")
 ###########################

@@ -26,19 +26,25 @@ Kirshner <- function(W){
    # Kirshner (07) formulas
    # W = beta.unif*phi
 
-   if(!isSymmetric(W)){cat('Pb: W non symmpetric!')}
-   p = nrow(W)
-   L = Laplacian(W)[-1, -1]
-   Leigen = eigen(L); Q = (Leigen$vectors) %*% diag(1/Leigen$values) %*% t(Leigen$vectors)
-   # Q = chol2inv(chol(L));
-   # Q = solve(L[-1, -1]);
-   # P = W[-1, -1] * (diag(Q)%o%rep(1, p-1) + rep(1, p-1)%o%diag(Q) - 2*Q)
-   # P = rbind(c(0, W[1, -1]*diag(Q)), cbind(W[-1, 1]*diag(Q), P))
-   Q = rbind(c(0, diag(Q)),
-                 cbind(diag(Q), (diag(Q)%o%rep(1, p-1) + rep(1, p-1)%o%diag(Q) - 2*Q)))
-   Q = .5*(Q + t(Q))
-   P = W * Q
-   P = .5*(P + t(P))
+  if(!isSymmetric(W)) {
+    cat('Pb: W non symmpetric!')
+  }
+  p = nrow(W)
+  L = Laplacian(W)[-1,-1]
+  Leigen = eigen(L)
+  Q = (Leigen$vectors) %*% diag(1 / Leigen$values) %*% t(Leigen$vectors)
+  # Q = chol2inv(chol(L));
+  # Q = solve(L[-1, -1]);
+  # P = W[-1, -1] * (diag(Q)%o%rep(1, p-1) + rep(1, p-1)%o%diag(Q) - 2*Q)
+  # P = rbind(c(0, W[1, -1]*diag(Q)), cbind(W[-1, 1]*diag(Q), P))
+  Q = rbind(c(0, diag(Q)),
+            cbind(diag(Q), (
+              diag(Q) %o% rep(1, p - 1) + rep(1, p - 1) %o% diag(Q) - 2 * Q
+            )))
+  Q = .5*(Q + t(Q))
+  P = W * Q
+  P = .5*(P + t(P)
+  )
    return(list(P=P, Q=Q))
 }
 
@@ -74,7 +80,8 @@ EdgeProba <- function(W){
           function(j){
             sapply((j+1):p,
               function(k){
-                W_jk = W; W_jk[j, k] = W_jk[k, j] = 0 #tuer l'arête kj dans W_kj
+                 W_jk = W
+                W_jk[j, k] = W_jk[k, j] = 0 #tuer l'arête kj dans W_kj
                 P[k, j] <<- 1 - SumTree(W_jk) / Wcum
                 P[j, k] <<- P[k, j]
               }
