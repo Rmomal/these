@@ -61,7 +61,7 @@ SetLambda <- function(P, M, eps = 1e-6){
 }
 
 #########################################################################
-FitBetaStatic <- function(Y,beta.init, phi, iterMax = 20, eps = 1e-4,print=FALSE){
+FitBetaStatic <- function(Y,beta.init, phi, iterMax = 20, eps = 1e-6,print=FALSE){
   # beta.init = beta.unif; iterMax = 1e3; eps = 1e-6; log.phi = log(phi)
   beta.tol = 1e-4
   beta.min = 1e-30

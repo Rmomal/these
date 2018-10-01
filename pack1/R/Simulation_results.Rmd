@@ -222,7 +222,7 @@ precrec
 Smoothed curves including results for all graphs on a partiuclar value of the tested parameter. Here : number of nodes fixed at 10.
 
 ```{r}
-path<-paste0("/Users/raphaellemomal/simulations/Simu/PLNcov/")
+path<-paste0("~/Git/these/pack1/R/Simu/PLNcov/")
 
 graph_val<-function(x,type="erdos",variable="d"){
 precrec<- readRDS(paste0(path,type,"/",variable,"/precrec_",x,".rds"))
@@ -301,7 +301,7 @@ renderPlot({
   inputvalue<-switch(param,"d"=as.numeric(input$value_d),
                      "n"=as.numeric(input$value_n),"r"=as.numeric(input$value_r),
                      "dens"=as.numeric(input$value_dens),"prob"=as.numeric(input$value_prob))
-  precrec <- as_tibble(readRDS(paste0("~/simulations/Simu/PLNcov/",type,"/",param,"/precrec_",inputvalue,".rds")))
+  precrec <- as_tibble(readRDS(paste0(path,type,"/",param,"/precrec_",inputvalue,".rds")))
   
   ggplot(precrec,aes(rec,prec,colour=method, linetype=method))+
     geom_line(size=1)+

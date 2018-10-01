@@ -23,6 +23,10 @@ F_Sym2Vec <- function(A.mat){
    # Makes a vector from the lower triangular par of a symmetric matrix
    return(A.mat[lower.tri(A.mat)])
 }
+F_Sym2Vec2 <- function(A.mat){
+  # Makes a vector from the lower triangular par of a symmetric matrix
+  return(A.mat[lower.tri(A.mat),diag=FALSE])
+}
 ##################################################################
 F_Array2Mat <- function(A.array){
   # Makes an n x pq matrix from a n x p x q array
