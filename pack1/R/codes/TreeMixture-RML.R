@@ -16,11 +16,13 @@ library(readxl)
 TreeGGM<-function(CorY,step,print,maxIter){
   p = ncol(CorY);
   phi = 1/sqrt(1 - CorY^2); diag(phi) = 0
+
   beta.unif = matrix(1, p, p); diag(beta.unif) = 0; beta.unif = beta.unif / sum(beta.unif)
   
   FitEM = switch(step,"FALSE"=FitBetaStatic(Y,beta.init=beta.unif, phi=phi,print=print,iterMax = maxIter),
                  "TRUE"=FitBeta1step(beta.init=beta.unif, phi=phi))
   
+
   return(list(P=Kirshner(FitEM$beta)$P,L=FitEM$logpY,probaCond=FitEM$P, itermax=FitEM$itermax))
 }
 

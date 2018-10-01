@@ -61,7 +61,9 @@ SetLambda <- function(P, M, eps = 1e-6){
 }
 
 #########################################################################
-FitBetaStatic <- function(Y,beta.init, phi, iterMax = 20, eps = 1e-6,print=FALSE){
+
+FitBetaStatic <- function(Y,beta.init, phi, iterMax , eps = 1e-4,print=FALSE){
+
   # beta.init = beta.unif; iterMax = 1e3; eps = 1e-6; log.phi = log(phi)
   beta.tol = 1e-4
   beta.min = 1e-30
@@ -91,12 +93,35 @@ FitBetaStatic <- function(Y,beta.init, phi, iterMax = 20, eps = 1e-6,print=FALSE
     #if(print) cat(" max(P) =",max(P)," sum(P)/2 =", sum(P)/2,'\n','sum(beta)= ', sum(beta),"\n Diff =",diff)
 
   }
+  if(iter==1){
+    eps=1e-6
+    while ((diff > eps) & (iter < iterMax)){
+      #print(iter)
+      iter = iter+1
+      # P = Kirshner(beta.old*phi)$P # sum(P)
+      options(error = recover)
+      P = EdgeProba(beta.old*phi)
+      
+      beta = F_Vec2Sym(optim(F_Sym2Vec(beta.old), F_NegLikelihood, gr=F_NegGradient,
+                             method='BFGS', log.phi, P)$par)
+      beta[which(beta < beta.min)] = beta.min; diag(beta) = 0
+      #cat("beta = ", beta)
+      logpY[iter] = - F_NegLikelihood(F_Sym2Vec(beta), log.phi, P)
+      # Test
+      diff = max(abs(beta.old-beta))
+      d<-ncol(P)
+      beta.old = beta
+      
+      #if(print) cat(" max(P) =",max(P)," sum(P)/2 =", sum(P)/2,'\n','sum(beta)= ', sum(beta),"\n Diff =",diff)
+      
+    }
+  }
   #cat(" max(P) =",max(P)," sum(P)/2 =", sum(P)/2,'\n','sum(beta)= ', sum(beta),"\n")
   cat("\n Fin while final iter: ",iter,", diff= ",diff)
   logpY = logpY[1:iter]
   # plot(logpY)
-
-  return(list(beta=beta, logpY=logpY))
+  P = EdgeProba(beta.old*phi)
+  return(list(beta=beta, logpY=logpY, P=P,itermax=iter))
 }
 
 FitBeta1step <- function(beta.init, phi, iterMax = 1e3, eps = 1e-6){
