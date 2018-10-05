@@ -1,0 +1,228 @@
+ata sets in package ‘ade4’:
+
+abouheif.eg                   Phylogenies and quantitative traits from Abouheif
+acacia                        Spatial pattern analysis in plant communities
+aminoacyl                     Codon usage
+apis108                       Allelic frequencies in ten honeybees populations at eight
+                              microsatellites loci
+aravo                         Distribution of Alpine plants in Aravo (Valloire, France)			6 covariables
+ardeche                       Fauna Table with double (row and column) partitioning
+arrival                       Arrivals at an intensive care unit
+atlas                         Small Ecological Dataset
+atya                          Genetic variability of Cacadors
+avijons                       Bird species distribution : 						donnees spatialisees
+avimedi                       Fauna Table for Constrained Ordinations
+aviurba                       Ecological Tables Triplet
+bacteria                      Genomes of 43 Bacteria
+banque                        Table of Factors
+baran95                       African Estuary Fishes							2 covariables : date et site
+bf88                          Cubic Ecological Data
+bordeaux                      Wine Tasting
+bsetal97                      Ecological and Biological Traits
+buech                         Buech basin
+butterfly                     Genetics-Ecology-Environment Triple
+capitales                     Road Distances
+carni19                       Phylogeny and quantative trait of carnivora
+carni70                       Phylogeny and quantitative traits of carnivora
+carniherbi49                  Taxonomy, phylogenies and quantitative traits of carnivora
+                              and herbivora
+casitas                       Enzymatic polymorphism in Mus musculus
+chatcat                       Qualitative Weighted Variables
+chats                         Pair of Variables
+chazeb                        Charolais-Zebus
+chevaine                      Enzymatic polymorphism in Leuciscus cephalus
+chickenk                      Veterinary epidemiological study to assess the risk factors
+                              for losses in broiler chickens
+clementines                   Fruit Production
+cnc2003                       Frequenting movie theaters in France in 2003
+coleo                         Table of Fuzzy Biological Traits
+corvus                        Corvus morphology
+deug                          Exam marks for some students
+doubs                         Pair of Ecological Tables
+dunedata                      Dune Meadow Data								petit
+ecg                           Electrocardiogram data
+ecomor                        Ecomorphological Convergence
+elec88                        Electoral Data
+escopage                      K-tables of wine-tasting
+euro123                       Triangular Data
+fission                       Fission pattern and heritable morphological traits
+friday87                      Faunistic K-tables
+fruits                        Pair of Tables
+ggtortoises                   Microsatellites of Galapagos tortoises populations
+granulo                       Granulometric Curves
+hdpg                          Genetic Variation In Human Populations
+housetasks                    Contingency Table
+humDNAm                       human mitochondrial DNA restriction data
+ichtyo                        Point sampling of fish community
+irishdata                     Geary's Irish Data
+julliot                       Seed dispersal
+jv73                          K-tables Multi-Regions
+kcponds                       Ponds in a nature reserve
+lascaux                       Genetic/Environment and types of variables
+lizards                       Phylogeny and quantitative traits of lizards
+macaca                        Landmarks
+macon                         Wine Tasting
+macroloire                    Assemblages of Macroinvertebrates in the Loire River
+                              (France)
+mafragh                       Phyto-Ecological Survey
+maples                        Phylogeny and quantitative traits of flowers
+mariages                      Correspondence Analysis Table
+meau                          Ecological Data : sites-variables, sites-species, where and			petit
+                              when
+meaudret                      Ecological Data : sites-variables, sites-species, where and
+                              when
+microsatt                     Genetic Relationships between cattle breeds with
+                              microsatellites
+mjrochet                      Phylogeny and quantitative traits of teleos fishes
+mollusc                       Faunistic Communities and Sampling Experiment
+monde84                       Global State of the World in 1984
+morphosport                   Athletes' Morphology
+newick.eg                     Phylogenetic trees in Newick format
+njplot                        Phylogeny and trait of bacteria
+olympic                       Olympic Decathlon
+oribatid                      Oribatid mite
+ours                          A table of Qualitative Variables
+palm                          Phylogenetic and quantitative traits of amazonian palm trees
+pap                           Taxonomy and quantitative traits of carnivora
+pcw                           Distribution of of tropical trees along the Panama canal
+perthi02                      Contingency Table with a partition in Molecular Biology
+piosphere                     Plant traits response to grazing
+presid2002                    Results of the French presidential elections of 2002
+procella                      Phylogeny and quantitative traits of birds
+rankrock                      Ordination Table
+rhizobium                     Genetic structure of two nitrogen fixing bacteria influenced
+                              by geographical isolation and host specialization
+rhone                         Physico-Chemistry Data
+rpjdl                         Avifauna and Vegetation
+santacatalina                 Indirect Ordination
+sarcelles                     Array of Recapture of Rings
+seconde                       Students and Subjects
+skulls                        Morphometric Evolution
+steppe                        Transect in the Vegetation
+syndicats                     Two Questions asked on a Sample of 1000 Respondents
+t3012                         Average temperatures of 30 French cities
+tarentaise                    Mountain Avifauna
+taxo.eg                       Examples of taxonomy
+tintoodiel                    Tinto and Odiel estuary geochemistry
+tithonia                      Phylogeny and quantitative traits of flowers
+tortues                       Morphological Study of the Painted Turtle
+toxicity                      Homogeneous Table
+trichometeo                   Pair of Ecological Data
+ungulates                     Phylogeny and quantitative traits of ungulates.
+vegtf                         Vegetation in Trois-Fontaines
+veuvage                       Example for Centring in PCA
+westafrica                    Freshwater fish zoogeography in west Africa
+woangers                      Plant assemblages in woodlands of the conurbation of Angers
+                              (France)
+worksurv                      French Worker Survey (1970)
+yanomama                      Distance Matrices
+zealand                       Road distances in New-Zealand
+
+Data sets in package ‘datasets’:
+
+AirPassengers                 Monthly Airline Passenger Numbers 1949-1960
+BJsales                       Sales Data with Leading Indicator
+BJsales.lead (BJsales)        Sales Data with Leading Indicator
+BOD                           Biochemical Oxygen Demand
+CO2                           Carbon Dioxide Uptake in Grass Plants
+ChickWeight                   Weight versus age of chicks on different diets
+DNase                         Elisa assay of DNase
+EuStockMarkets                Daily Closing Prices of Major European Stock Indices,
+                              1991-1998
+Formaldehyde                  Determination of Formaldehyde
+HairEyeColor                  Hair and Eye Color of Statistics Students
+Harman23.cor                  Harman Example 2.3
+Harman74.cor                  Harman Example 7.4
+Indometh                      Pharmacokinetics of Indomethacin
+InsectSprays                  Effectiveness of Insect Sprays
+JohnsonJohnson                Quarterly Earnings per Johnson & Johnson Share
+LakeHuron                     Level of Lake Huron 1875-1972
+LifeCycleSavings              Intercountry Life-Cycle Savings Data
+Loblolly                      Growth of Loblolly pine trees
+Nile                          Flow of the River Nile
+Orange                        Growth of Orange Trees
+OrchardSprays                 Potency of Orchard Sprays
+PlantGrowth                   Results from an Experiment on Plant Growth
+Puromycin                     Reaction Velocity of an Enzymatic Reaction
+Seatbelts                     Road Casualties in Great Britain 1969-84
+Theoph                        Pharmacokinetics of Theophylline
+Titanic                       Survival of passengers on the Titanic
+ToothGrowth                   The Effect of Vitamin C on Tooth Growth in Guinea Pigs
+UCBAdmissions                 Student Admissions at UC Berkeley
+UKDriverDeaths                Road Casualties in Great Britain 1969-84
+UKgas                         UK Quarterly Gas Consumption
+USAccDeaths                   Accidental Deaths in the US 1973-1978
+USArrests                     Violent Crime Rates by US State
+USJudgeRatings                Lawyers' Ratings of State Judges in the US Superior Court
+USPersonalExpenditure         Personal Expenditure Data
+UScitiesD                     Distances Between European Cities and Between US Cities
+VADeaths                      Death Rates in Virginia (1940)
+WWWusage                      Internet Usage per Minute
+WorldPhones                   The World's Telephones
+ability.cov                   Ability and Intelligence Tests
+airmiles                      Passenger Miles on Commercial US Airlines, 1937-1960
+airquality                    New York Air Quality Measurements
+anscombe                      Anscombe's Quartet of 'Identical' Simple Linear Regressions
+attenu                        The Joyner-Boore Attenuation Data
+attitude                      The Chatterjee-Price Attitude Data
+austres                       Quarterly Time Series of the Number of Australian Residents
+beaver1 (beavers)             Body Temperature Series of Two Beavers
+beaver2 (beavers)             Body Temperature Series of Two Beavers
+cars                          Speed and Stopping Distances of Cars
+chickwts                      Chicken Weights by Feed Type
+co2                           Mauna Loa Atmospheric CO2 Concentration
+crimtab                       Student's 3000 Criminals Data
+discoveries                   Yearly Numbers of Important Discoveries
+esoph                         Smoking, Alcohol and (O)esophageal Cancer
+euro                          Conversion Rates of Euro Currencies
+euro.cross (euro)             Conversion Rates of Euro Currencies
+eurodist                      Distances Between European Cities and Between US Cities
+faithful                      Old Faithful Geyser Data
+fdeaths (UKLungDeaths)        Monthly Deaths from Lung Diseases in the UK
+freeny                        Freeny's Revenue Data
+freeny.x (freeny)             Freeny's Revenue Data
+freeny.y (freeny)             Freeny's Revenue Data
+infert                        Infertility after Spontaneous and Induced Abortion
+iris                          Edgar Anderson's Iris Data
+iris3                         Edgar Anderson's Iris Data
+islands                       Areas of the World's Major Landmasses
+ldeaths (UKLungDeaths)        Monthly Deaths from Lung Diseases in the UK
+lh                            Luteinizing Hormone in Blood Samples
+longley                       Longley's Economic Regression Data
+lynx                          Annual Canadian Lynx trappings 1821-1934
+mdeaths (UKLungDeaths)        Monthly Deaths from Lung Diseases in the UK
+morley                        Michelson Speed of Light Data
+mtcars                        Motor Trend Car Road Tests
+nhtemp                        Average Yearly Temperatures in New Haven
+nottem                        Average Monthly Temperatures at Nottingham, 1920-1939
+npk                           Classical N, P, K Factorial Experiment
+occupationalStatus            Occupational Status of Fathers and their Sons
+precip                        Annual Precipitation in US Cities
+presidents                    Quarterly Approval Ratings of US Presidents
+pressure                      Vapor Pressure of Mercury as a Function of Temperature
+quakes                        Locations of Earthquakes off Fiji
+randu                         Random Numbers from Congruential Generator RANDU
+rivers                        Lengths of Major North American Rivers
+rock                          Measurements on Petroleum Rock Samples
+sleep                         Student's Sleep Data
+stack.loss (stackloss)        Brownlee's Stack Loss Plant Data
+stack.x (stackloss)           Brownlee's Stack Loss Plant Data
+stackloss                     Brownlee's Stack Loss Plant Data
+state.abb (state)             US State Facts and Figures
+state.area (state)            US State Facts and Figures
+state.center (state)          US State Facts and Figures
+state.division (state)        US State Facts and Figures
+state.name (state)            US State Facts and Figures
+state.region (state)          US State Facts and Figures
+state.x77 (state)             US State Facts and Figures
+sunspot.month                 Monthly Sunspot Data, from 1749 to "Present"
+sunspot.year                  Yearly Sunspot Data, 1700-1988
+sunspots                      Monthly Sunspot Numbers, 1749-1983
+swiss                         Swiss Fertility and Socioeconomic Indicators (1888) Data
+treering                      Yearly Treering Data, -6000-1979
+trees                         Girth, Height and Volume for Black Cherry Trees
+uspop                         Populations Recorded by the US Census
+volcano                       Topographic Information on Auckland's Maunga Whau Volcano
+warpbreaks                    The Number of Breaks in Yarn during Weaving
+women                         Average Heights and Weights for American Women
+
