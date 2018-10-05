@@ -47,10 +47,9 @@ par(mfrow=c(M, 1)); sapply(1:M, function(m){plot(EMtree[[m]]$L)})
 
 # Compare edge probabilities
 invisible(sapply(1:M, function(m){cat(VEM[[m]]$loglik, EMtree[[m]]$log.pY[length(EMtree[[m]]$log.pY)], '\n')}))
-Pedge = cbind(F_Sym2Vec(EMtree[[1]]$probaCond), F_Sym2Vec(EMtree[[2]]$probaCond), F_Sym2Vec(EMtree[[3]]$probaCond), F_Sym2Vec(EMtree[[4]]$probaCond), F_Sym2Vec(EMtree[[5]]$probaCond))
-colnames(Pedge) = c('M.null', 'M.date', 'M.site', 'M.both', 'M.inter')
-cor(Pedge, method='kendall')
-par(mfrow=c(3, 4))
+Pedge = cbind(F_Sym2Vec(EMtree[[1]]$probaCond), F_Sym2Vec(EMtree[[2]]$probaCond), F_Sym2Vec(EMtree[[3]]$probaCond), F_Sym2Vec(EMtree[[4]]$probaCond))
+colnames(Pedge) = c('M.null', 'M.date', 'M.site', 'M.all')
+par(mfrow=c(3, 2))
 for (m1 in (1:(M-1))){for (m2 in ((m1+1):M)){plot(qlogis(Pedge[, m1]),qlogis(Pedge[, m2]))}}
 invisible(sapply(1:M, function(m){
    if(m==1){plot(sort(Pedge[, m]), type='b', ylim=c(0, 1)); abline(h=2/p)}else{points(sort(Pedge[, m]), col=m, type='b')}
@@ -62,19 +61,18 @@ if(Tree.res){
    Stab.sel = list()
    X = list(); 
    X[[1]] = matrix(1, n, 1); 
-   X[[2]] = as.matrix(lm(Data$count[, 1] ~ Data$covariates$date, x=T)$x)
-   X[[3]] = as.matrix(lm(Data$count[, 1] ~ Data$covariates$site, x=T)$x)
-   X[[4]] = as.matrix(lm(Data$count[, 1] ~ Data$covariates$date+Data$covariates$site, x=T)$x)
-   X[[5]] = as.matrix(lm(Data$count[, 1] ~ Data$covariates$date*Data$covariates$site, x=T)$x)
+   X[[2]] = Data$covariates[, 1];
+   X[[3]] = Data$covariates[, 2];
+   X[[4]] = Data$covariates
    invisible(sapply(1:M, function(m){
-      Stab.sel[[m]] <<- F_ResampleTreePLN(Data$count, X[[m]], matrix(0, n, p), B=B.resample, maxIter=100, cond.tol=1e-8)
+      Stab.sel[[m]] <<- F_ResampleTreePLN(Data$count, X[[m]], matrix(0, n, p), B=B.resample, maxIter=300, cond.tol=1e-8)
    }))
    save(Stab.sel, file=paste0(data.dir, data.name, '-StabSel.Rdata'))
 }
 load(paste0(data.dir, data.name, '-StabSel.Rdata'))
 
 # Edge selection and comparisons
-par(mfrow=c(3, 2))
+par(mfrow=c(2, 2))
 edge.sel = freq.sel = list()
 invisible(sapply(1:M, function(m){
    freq.sel[[m]] <<- colMeans(1*(Stab.sel[[m]] > 2/p))
