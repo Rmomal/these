@@ -1,0 +1,394 @@
+---
+title: "Packages"
+author: "Raphaëlle Momal"
+date: "4 octobre 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Glasso : Graphical lasso
+
+Ce package implémente la méthode du graphical lasso avec pénalité l1. Il permet d'estimer une matrice de précision creuse, qui peut correspondre à une variable suivant une normale multi-variée. La matrice de précision donne dans ce cas accès aux arrêtes du graph représentant les relations d'indépendances conditionnelles au sein de la variable.
+
+```{r , echo=FALSE}
+library(glasso)
+```
+
+### Exemple
+
+Ci-dessous on explicite l'exemple donné dans le package.
+
+```{r}
+set.seed(100)
+
+x<-matrix(rnorm(50*20),ncol=20)
+s<- var(x)
+```
+
+On considère une matrice $X$ de taille 50*20, correspondant à 50 échantillons d'une variable de dimension 20. Cette variable suit une loi normale multi-variée centrée, de variance $s$.
+
+glasso prend en entrée à minima la matrice de covariance et le paramètre de pénalisation rho (rho=0 signifie pas de régularisation). Il est également possible de forcer certains coefficients de l'estimée de l'inverse de la matrice de covariance à zéro, afin d'estimer un graph avec des arêtes manquantes.\ 
+
+En sortie on récupère une liste de 7 éléments
+
+  * la matrice w, estimée de la matrice de covariance, 
+  * la matrice wi, estimée de l'inverse de la matrice de covariance
+  * la log vraisemblance
+  * le nombre d'itération utilisées
+  * trois autres valeurs : un indice d'erreur, la valeur de l'input approx, et le changement (variation ?) du paramètre à convergence\
+
+
+
+```{r}
+a<-glasso(s, rho=.01)
+aa<-glasso(s,rho=.1, w.init=a$w, wi.init=a$wi)
+```
+
+
+
+Un autre exemple : introduction de zéros structurels et absence de régularisation (Whittaker's book on graphical models) :
+
+```{r}
+
+S=matrix(0,nrow=4,ncol=4)
+s=c(10,1,5,4,10,2,6,10,3,10)
+S[row(S)>=col(S)]=s # remplissage de la partie triangulaire inférieure
+
+S=(S+t(S)) 
+diag(S)<-10 # symmétrisation en gardant la diagonale
+zero<-matrix(c(1,3,2,4),ncol=2,byrow=TRUE)
+a_zeros<-glasso(S,0,zero=zero)
+```
+Dans cet exemple, on a défini la matrice des zéros. Lignes en colonne 1, colonne en colonne deux. On observe bien des 0 aux positions [1,3] et [2,4] de la matrice wi.
+
+## Heatmap
+
+```{r , fig.height=10, fig.width=8}
+library(ggplot2)
+library(reshape2)
+library(grid)
+library(gridExtra)
+library(RColorBrewer)
+pal<-brewer.pal(8, "Spectral")
+g1<-ggplot(data = melt(a$w), aes(x=Var1, y=Var2, fill=value)) + 
+  geom_tile()+
+  labs(title="K, rho = 0.01")+
+  scale_fill_gradient2(low="red", high="blue",mid="white",midpoint=0)
+g2<-ggplot(data = melt(a$wi), aes(x=Var1, y=Var2, fill=value)) + 
+  geom_tile()+
+  labs(title="inverse de K, rho = 0.01")+
+  scale_fill_gradient2(low="red", high="blue",mid="white",midpoint=0)
+g3<-ggplot(data = melt(aa$w), aes(x=Var1, y=Var2, fill=value)) + 
+  geom_tile()+
+  labs(title="K à partir d'une première estimation,\n rho = 0.1")+
+  scale_fill_gradient2(low="red", high="blue",mid="white",midpoint=0)
+g4<-ggplot(data = melt(aa$wi), aes(x=Var1, y=Var2, fill=value)) + 
+  geom_tile()+
+  labs(title="inverse de K à partir d'une première estimation,\n rho = 0.1")+
+  scale_fill_gradient2(low="red", high="blue",mid="white",midpoint=0)
+g5<-ggplot(data = melt(a_zeros$wi), aes(x=Var1, y=Var2, fill=value)) + 
+  geom_tile()+
+  labs(title="inverse, zéros forcés, rho=0")+
+  scale_fill_gradient2(low="red", high="blue",mid="white",midpoint=0)
+
+
+grid.arrange(g1, g2, g3, g4,g5)
+
+```
+
+## Représentation des réseaux
+
+Tout ce qui suit vient du site génial de Katherine Ognyanova <www.kateto.net/network-visualization>. Les packages de base sont igraph, network, sna, visNetwork, threejs,, networkD3 et ndtv. A noter le bug du package igraph, résolu sur github.
+
+```{r, warning=FALSE, message=FALSE}
+library(network)
+library(visNetwork)
+library(sna)
+library(ndtv)
+# install.packages("devtools")
+# library(devtools)
+# install_github("igraph/rigraph")
+library(igraph) #bug on the CRAN package, resolved on github
+library(threejs)
+library(networkD3)
+```
+
+Pour la suite nous allons continuer avec les deux exemples, afin d'avoir différentes dimensions de réseaux.
+
+### Construction de réseaux avec igraph
+
+La matrice d'adjacence est composée de 0 et de valeurs non nulles qui correspondent aux indicatrices de liens entre les différents noeuds du réseau. Dans nos exemple on reste dans le cas gaussien : on va seuiller la matrice inverse de covariance, estimée par glasso, afin de déduire les arêtes du graph. \
+
+
+Le package igraph permet de créer des graphs à partir de différents format : data frame, matrice d'adjacence ou matrice d'incidence. Par data frame, la fonction va prendre en paramètres deux sources de données : les liens et les noeuds, dont chacun peut avoir plusieurs autres colonnes renseignant des attributs supplémentaires. Le package peut aussi tout construire à partir de la matrice d'adjacence (matrice carrée, pas forcément symmétrique si dirigé, et les valeurs peuvent signifier des poids si elles sont différentes de 1). La matrice d'incidence enfin n'est pas forcément carrée et représente les liens entre deux sets de variables, et les sets ne peuvent pas avoir de liaisons internes. \
+
+On a les fonctions :
+
+
+  * matrice_adj qui construit la matrice d'adjacence à partir de la matrice de précision et d'un seuil
+  * build_net qui construit un réseau à partir des data.frames d'arêtes et de noeuds
+  * net_from_matrix qui construit le réseau à partir de la matrice d'adjacence.
+
+
+```{r , message=FALSE, results="hide",fig.height=10}
+library(tidyr)
+library(dplyr)
+library(magrittr)
+
+matrice_adj<-function(precision,seuil){
+  adj<-unlist(apply(precision,1, function(x) ifelse(abs(x)<seuil,0,1)))
+  return(adj)
+}
+
+build_net<-function(precision,seuil, multiple, boucles){
+matrice<-data.frame(matrice_adj(precision,seuil))
+matrice$start<-colnames(matrice)
+links<-filter(gather(matrice,vertices,status,-start),status==1)[,1:2]
+nodes<-colnames(matrice)[-grep("start",colnames(matrice))]
+net <- graph_from_data_frame(d=links, vertices=nodes, directed=F)%>% simplify( remove.multiple = multiple, remove.loops = boucles) 
+return(net)
+}
+net_from_matrix<-function(precision,seuil, boucles){
+matrice<-matrice_adj(precision,seuil)
+net <- graph_from_adjacency_matrix(matrice, mode="upper", diag = boucles) 
+return(net)
+}
+
+net_adj<-net_from_matrix(aa$wi,0.1,F)
+net2_adj<-net_from_matrix(a_zeros$wi,0.005,F)
+net<-build_net(aa$wi,0.1,T,T)
+net2<-build_net(a_zeros$wi,0.005,T,F)
+l1 <- layout_with_fr(net)
+l1 <- norm_coords(l1, ymin=-1, ymax=1, xmin=-1, xmax=1)
+l2 <- layout_with_fr(net_adj)
+l2 <- norm_coords(l2, ymin=-1, ymax=1, xmin=-1, xmax=1)
+l3 <- layout_with_fr(net2)
+l3 <- norm_coords(l3, ymin=-1, ymax=1, xmin=-1, xmax=1)
+l4 <- layout_with_fr(net2_adj)
+l4 <- norm_coords(l4, ymin=-1, ymax=1, xmin=-1, xmax=1)
+
+par(mfrow=c(2,2))
+plot(net,main="dim=20", rescale=F, layout=l1,vertex.label=NA,margin=c(0,0,0,0))
+plot(net_adj,main="dim 20 adj", rescale=F, layout=l2,margin=c(0,0,0,0))
+plot(net2, main="Whittaker", rescale=F, layout=l3,margin=c(0,0,0,0))
+plot(net2_adj, main="Whittaker adj", rescale=F, layout=l4,margin=c(0,0,0,0))
+```
+
+
+### Personnalisation
+
+#### Paramètres de plot
+```{r, results="hide"}
+deg <- degree(net_adj, mode="out")
+V(net_adj)$size <- deg*2+5
+V(net_adj)$color=pal
+E(net_adj)$color=pal[7]
+V(net_adj)$label = NA
+E(net_adj)$curved=.1
+V(net_adj)$frame.color=pal[1]
+plot(net_adj,margin=c(0,0,0,0)   )
+
+```
+
+#### Disposition des noeuds
+
+```{r, message=FALSE, results="hide"}
+plot(net_adj, layout=layout_randomly)
+```
+
+Calcul des coordonnées du réseau à l'avance :
+```{r, message=FALSE, results="hide"}
+l <- layout_in_circle(net_adj)
+plot(net_adj, layout=l)
+l <- layout_on_sphere(net_adj)
+plot(net_adj, layout=l)
+```
+
+L'algorithme de Fruchterman-Reingold est très utilisé. Il optimise la disposition des points : arêtes de taille similaires et minimum de croisements. Le résultat n'est pas fixe sur plusieurs simulations. Pour garder la même disposition, on peut sauver le layout dans une variable l.
+
+L'algorithme de Kamada Kawai est similaire : il tente d'optimier la structure du réseau dans l'espace. L'algorithme LGL permet de spécifier une racine au centre du graph. Enfin l'algorithme MDS permet de spécifier une matrice de distance, ce qui donne une interprétation claire des positions et des distances entre noeuds. Cependant les noeuds peuvent se superposer ce qui limite la clarté du graph. L'algorithme essaie de repérer des similarités entre les noeuds.
+
+```{r, message=FALSE, results="hide"}
+l <- layout_with_fr(net_adj)
+plot(net_adj, layout=l)
+l <- layout_with_kk(net_adj)
+plot(net_adj, layout=l)
+plot(net_adj, layout=layout_with_lgl, root=5)
+plot(net_adj, layout=layout_with_mds)
+```
+
+
+### Mettre en valeur certains aspects
+
+#### Noeuds importants
+
+```{r, results="hide"}
+cut.off <- mean(deg) 
+net.sp <- delete_edges(net_adj, E(net_adj)[deg<cut.off])
+plot(net.sp) #je ne comprends pas ce qu'il fait, ce code est plus pour la démo
+
+```
+
+#### Clusters
+
+Le package igraph implémente une large palette de méthodes pour la clusterisation du grpah :
+
+  * cluster_edge_betweennedd : fondé sur un critère de connectivité
+  * cluster_fast_greedy : trouve des sous-graphs denses (communautés) par optimisation directe d'un score de modularité
+  * cluster_infomap : trouve la structure qui minimise la longueur d'une marche aléatoire
+  * cluster_label_prop : fondé sur les labels des noeuds
+  * cluster_leading_eigen : trouve des communautés fortement liées en calculant le vecteur propre principal de la matrice de modularité
+  * cluster_louvain : algorithme d'optimisation multi-niveaux de la modularité pour trouver les structures de communauté, fondé sur la modularité et une approche hiérarchique
+  * cluster_optimal : maximise la modularité parmi toutes les partitions possibles
+  * cluster_spinglass : utilise le travail de Reichardt sur le model spin-glass
+  * cluster_walktrap : suivant l'idée que de courtes marches aléatoires restent dans la même communauté (clique).
+
+```{r, results="hide",fig.width=15,fig.height=20}
+
+# Community detection returns an object of class "communities" 
+# which igraph knows how to plot: 
+clust<-function(methode){
+  if(methode=="cluster_spinglass"){
+    net<-delete_vertices(net_adj,deg<1)
+  }else{
+     net<-net_adj
+  }
+clp <- get(methode)(net)
+plot(clp, net, main=methode)
+}
+par(mfrow=c(5,2))
+clust("cluster_edge_betweenness")
+clust("cluster_fast_greedy")
+clust("cluster_infomap")
+clust("cluster_label_prop")
+clust("cluster_leading_eigen")
+clust("cluster_louvain")
+clust("cluster_optimal")
+clust("cluster_spinglass")
+clust("cluster_walktrap")
+ 
+# We can also plot the communities without relying on their built-in plot:
+clp <- cluster_walktrap(net)
+V(net_adj)$community <- clp$membership
+plot(net_adj, vertex.color=pal[V(net_adj)$community])
+```
+
+
+#### Distances entre noeuds
+
+Ce code permet de colorier le graph selon la longueur de propagation depuis le noeud numéro 3. Il faut noter que ce code ne fonctionne pas en présence de noeud isolé (Inf dans les distances).
+
+```{r, results="hide"}
+net<-delete_vertices(net_adj,deg<1)
+dist <- distances(net, v=V(net)[3], 
+                           to=V(net), weights=NA)
+
+# Set colors to plot the distances:
+oranges <- colorRampPalette(c("dark red", "gold"))
+col <- oranges(max(dist))
+col <- col[dist+1]
+
+plot(net,vertex.color=col, vertex.label = dist)
+```
+
+
+On peut également mettre en valeur un chemin particulier. \'{A} noter les fonctions shortest_paths, ecount, ew, vcount et les attributs vpath et epath.
+
+```{r , results="hide"}
+news.path <- shortest_paths(net_adj, 
+                            from = V(net_adj)[5], 
+                             to  = V(net_adj)[6],
+                             output = "both") # both path nodes and edges
+
+# Generate edge color variable to plot the path:
+ecol <- rep("gray80", ecount(net_adj))
+ecol[unlist(news.path$epath)] <- "orange"
+# Generate edge width variable to plot the path:
+ew <- rep(2, ecount(net_adj))
+ew[unlist(news.path$epath)] <- 4
+# Generate node color variable to plot the path:
+vcol <- rep("gray40", vcount(net_adj))
+vcol[unlist(news.path$vpath)] <- "gold"
+
+plot(net_adj, vertex.color=vcol, edge.color=ecol, 
+     edge.width=ew, edge.arrow.mode=0 )
+```
+
+
+Ici on utilise les fonction incident et neighbors.
+
+```{r, results="hide"}
+nb<-12
+inc.edges <- incident(net_adj,  V(net_adj)[nb], mode="all")
+# Set colors to plot the selected edges.
+ecol <- rep("gray80", ecount(net_adj))
+ecol[inc.edges] <- "orange"
+ew <- rep(2, ecount(net_adj))
+ew[inc.edges] <- 4
+vcol <- rep("grey40", vcount(net_adj))
+vcol[V(net_adj)[nb]] <- "gold"
+
+neigh.nodes <- neighbors(net_adj, V(net_adj)[12], mode="out")
+# Set colors to plot the neighbors:
+vcol[neigh.nodes] <- "#ff9d00"
+
+plot(net_adj, vertex.color=vcol, edge.color=ecol,edge.width=ew)
+```
+
+
+Il est aussi possible de "marquer" des groupes.
+
+```{r, results="hide"}
+plot(net_adj, mark.groups=list(c(1 , 9, 10 ,15 ,16 ,19), c(4,6,7)), 
+          mark.col=c("#C5E5E7","#ECD89A"), mark.border=NA)
+```
+
+### Graphs interactifs !
+
+Pour déplacer les noeuds à l'envie. On récupère les coordonnées modifiées à la main.
+
+```{r}
+tkid <- tkplot(net_adj) #tkid is the id of the tkplot that will open
+l <- tkplot.getcoords(tkid) # grab the coordinates from tkplot
+plot(net_adj, layout=l)
+```
+
+
+
+Un réseau en utiilisant le package visNetwork. Besoin des dataframes de noeuds et d'arêtes.
+
+```{r}
+
+v<-visIgraph(net_adj,physics=TRUE)
+visClusteringByHubsize(v)
+```
+
+
+NetworkD3
+
+
+```{r}
+matrice<-data.frame(matrice_adj(aa$wi,0.1))
+matrice$start<-colnames(matrice)
+links<-filter(gather(matrice,vertices,status,-start),status==1)[,1:2]
+
+colnames(links)<-c("from","to")
+
+
+el <- data.frame(from=as.numeric(factor(links$from))-1,
+                 to=as.numeric(factor(links$to))-1 )
+nodes<-data.frame(el$from[which(!duplicated(el$from))])
+colnames(nodes)<-c("id")
+nodes$level<-rep(seq(1:4),each=5)
+nl <- cbind(idn=factor(nodes$id, levels=nodes$id), nodes)
+
+forceNetwork(Links = el, Nodes = nl, Source="from", Target="to",
+               NodeID = "idn", Group = "level",linkWidth = 1,
+               linkColour = "#afafaf", fontSize=12, zoom=F, legend=T,
+               Nodesize=2, opacity = 0.8, charge=-20,
+               width = 600, height = 400)
+```
+
