@@ -67,17 +67,28 @@ SetLambda <- function(P, M, eps = 1e-6){
 # Choice of alpha for alpha * n
 F_AlphaN <- function(CorY, n, cond.tol=1e-10){
   # Grid on alpha
-  alpha.grid = (1:n)/n; alpha.nb = length(alpha.grid); cond = rep(0, alpha.nb)
-  for (a in 1: alpha.nb){
-    psi.vec = F_Sym2Vec(-alpha.grid[a]*n*log(1 - CorY^2)/2); 
-    psi.vec = psi.vec - mean(psi.vec)
-    psi = F_Vec2Sym(exp(psi.vec))
-    # image(psi, main=alpha.grid[a])
-    lambda = svd(psi)$d
-    cond[a] = (min(abs(lambda))/max(abs(lambda)))
-    # plot(alpha.grid, cond, log='y')
+  alpha.grid = (1:n)/n; alpha.nb = length(alpha.grid); 
+  # cond = rep(0, alpha.nb)
+  # for (a in 1:alpha.nb){
+  #   psi.vec = F_Sym2Vec(-alpha.grid[a]*n*log(1 - CorY^2)/2);
+  #   psi.vec = psi.vec - mean(psi.vec)
+  #   psi = F_Vec2Sym(exp(psi.vec))
+  #   # image(psi, main=alpha.grid[a])
+  #   lambda = svd(psi)$d
+  #   cond[a] = (min(abs(lambda))/max(abs(lambda)))
+  #   # plot(alpha.grid, cond, log='y')
+  # }
+  # alpha = alpha.grid[max(which(cond>cond.tol))]
+  cond = Inf; a = 0
+  while(cond > cond.tol){
+     a = a+1
+     psi.vec = F_Sym2Vec(-alpha.grid[a]*n*log(1 - CorY^2)/2);
+     psi.vec = psi.vec - mean(psi.vec)
+     psi = F_Vec2Sym(exp(psi.vec))
+     lambda = svd(psi)$d
+     cond = min(abs(lambda))/max(abs(lambda))
   }
-  alpha = alpha.grid[max(which(cond>cond.tol))]
+  alpha = alpha.grid[a-1]
   psi.vec = F_Sym2Vec(-alpha*n*log(1 - CorY^2)/2); 
   psi.vec = psi.vec - mean(psi.vec)
   psi = F_Vec2Sym(exp(psi.vec))
@@ -182,6 +193,7 @@ F_ResampleTreePLN <- function(Y, X, O, v=0.8, B=1e2, maxIter, cond.tol=1e-10){
   alpha = rep(0, B)
   for (b in 1:B){
     cat('\n', b, '')
+     set.seed(b)
     sample = sample(1:n, V, replace=F)
     Y.sample = Y[sample, ]; X.sample = X[sample, ]; O.sample = O[sample, ]
     # if(ncol(Y)>1){Y.sample = Y[sample, ]}else{Y.sample = matrix(Y[sample], V, 1)}; 
@@ -193,6 +205,6 @@ F_ResampleTreePLN <- function(Y, X, O, v=0.8, B=1e2, maxIter, cond.tol=1e-10){
     Pmat[b, ] = F_Sym2Vec(TGGM$probaCond)
     alpha[B] = TGGM$alpha
   }
-  return(Pmat, alpha)
+  return(list(Pmat=Pmat, alpha=alpha))
 }
 
