@@ -17,9 +17,9 @@ n = nrow(Data$count); p = ncol(Data$count); species = colnames(Data$count)
 
 # Algo parms
 freq.sel.thres = 0.80; iter.max = 1e2; B.resample = 5e2
-VEM.fit = T; Tree.fit = T; Tree.res = T
+VEM.fit = F; Tree.fit = F; Tree.res = T
 
-# Fit VEM-PLN with 1 = no covariates, 2 = all covariates
+# Fit VEM-PLN with 1 = no covariates, 2 = date, 3 = site, 4 = both, 5 = interaction
 if(VEM.fit){
    VEM = list()
    VEM[[1]] = PLN(Data$count ~ 1)
@@ -37,8 +37,9 @@ if(Tree.fit){
    EMtree = list()
    invisible(sapply(1:M, function(m){
       EMtree[[m]] <<- TreeGGM(cov2cor(VEM[[m]]$model_par$Sigma), n, step='FALSE', maxIter=500)
-      plot(F_Sym2Vec(EMtree[[m]]$P), F_Sym2Vec(EMtree[[m]]$probaCond),
-           xlim=c(0, 1), ylim=c(0, 1))
+      par(mfrow=c(2, 1))
+      plot(EMtree[[m]]$L)
+      plot(F_Sym2Vec(EMtree[[m]]$P), F_Sym2Vec(EMtree[[m]]$probaCond), xlim=c(0, 1), ylim=c(0, 1))
    }))
    save(EMtree, file=paste0(data.dir, data.name, '-EMtree.Rdata'))
 }
@@ -47,8 +48,9 @@ par(mfrow=c(M, 1)); sapply(1:M, function(m){plot(EMtree[[m]]$L)})
 
 # Compare edge probabilities
 invisible(sapply(1:M, function(m){cat(VEM[[m]]$loglik, EMtree[[m]]$log.pY[length(EMtree[[m]]$log.pY)], '\n')}))
-Pedge = cbind(F_Sym2Vec(EMtree[[1]]$probaCond), F_Sym2Vec(EMtree[[2]]$probaCond), F_Sym2Vec(EMtree[[3]]$probaCond), F_Sym2Vec(EMtree[[4]]$probaCond))
-colnames(Pedge) = c('M.null', 'M.date', 'M.site', 'M.all')
+Pedge = cbind(F_Sym2Vec(EMtree[[1]]$probaCond), F_Sym2Vec(EMtree[[2]]$probaCond), 
+              F_Sym2Vec(EMtree[[3]]$probaCond), F_Sym2Vec(EMtree[[4]]$probaCond), F_Sym2Vec(EMtree[[5]]$probaCond))
+colnames(Pedge) = c('M.null', 'M.date', 'M.site', 'M.both', 'M.inter')
 par(mfrow=c(3, 2))
 for (m1 in (1:(M-1))){for (m2 in ((m1+1):M)){plot(qlogis(Pedge[, m1]),qlogis(Pedge[, m2]))}}
 invisible(sapply(1:M, function(m){
@@ -61,9 +63,10 @@ if(Tree.res){
    Stab.sel = list()
    X = list(); 
    X[[1]] = matrix(1, n, 1); 
-   X[[2]] = Data$covariates[, 1];
-   X[[3]] = Data$covariates[, 2];
-   X[[4]] = Data$covariates
+   X[[2]] = as.matrix(lm(Data$count ~ Data$covariates$date, x=T)$x)
+   X[[3]] = as.matrix(lm(Data$count ~ Data$covariates$site, x=T)$x)
+   X[[4]] = as.matrix(lm(Data$count ~ Data$covariates$date+Data$covariates$site, x=T)$x)
+   X[[5]] = as.matrix(lm(Data$count ~ Data$covariates$date*Data$covariates$site, x=T)$x)
    invisible(sapply(1:M, function(m){
       Stab.sel[[m]] <<- F_ResampleTreePLN(Data$count, X[[m]], matrix(0, n, p), B=B.resample, maxIter=300, cond.tol=1e-8)
    }))
