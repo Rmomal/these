@@ -2,28 +2,29 @@
 # beta = coef for 'prior' edge probabilities : p(T) = prod_{ij \in T} beta_ij / B
 # phi = coef for conditional distribution of : P(Y | T) = prod_{ij \in T} phi_ij
 
-setwd("/home/momal/Git/these/pack1/R")
-rm(list=ls()); par(pch=20, mfrow=c(2, 2), mex=3/4);
-source('/home/momal/Git/these/pack1/R/codes/FunctionsMatVec.R')
-source('/home/momal/Git/these/pack1/R/codes/FunctionsTree.R')
-source('/home/momal/Git/these/pack1/R/codes/FunctionsInference.R')
-library(sna);
-library(readxl)
+# setwd("/home/momal/Git/these/pack1/R")
+# rm(list=ls()); par(pch=20, mfrow=c(2, 2), mex=3/4);
+# source('/home/momal/Git/these/pack1/R/codes/FunctionsMatVec.R')
+# source('/home/momal/Git/these/pack1/R/codes/FunctionsTree.R')
+# source('/home/momal/Git/these/pack1/R/codes/FunctionsInference.R')
+# library(sna);
+# library(readxl)
 
 # Data
 #Y<-as.matrix(read_excel("~/Documents/codes/Data/Data Files/1. cd3cd28.xls"))[1:200,]
 
-TreeGGM<-function(CorY,step,print,maxIter){
+TreeGGM<-function(CorY,step,print,maxIter,model){
   p = ncol(CorY);
   phi = 1/sqrt(1 - CorY^2); diag(phi) = 0
 
   beta.unif = matrix(1, p, p); diag(beta.unif) = 0; beta.unif = beta.unif / sum(beta.unif)
   
-  FitEM = switch(step,"FALSE"=FitBetaStatic(Y,beta.init=beta.unif, phi=phi,print=print,iterMax = maxIter),
+  FitEM = switch(step,"FALSE"=FitBetaStatic(beta.init=beta.unif, phi=phi,print=print,iterMax = maxIter,model=model),
                  "TRUE"=FitBeta1step(beta.init=beta.unif, phi=phi))
   
 
-  return(list(P=Kirshner(FitEM$beta)$P,L=FitEM$logpY,probaCond=FitEM$P, itermax=FitEM$itermax))
+  return(list(P=Kirshner(FitEM$beta)$P,L=FitEM$logpY,probaCond=FitEM$P, itermax=FitEM$itermax,
+              diff_likelihood=FitEM$diff_likelihood,diff_beta=FitEM$diff_beta, summ=FitEM$summ))
 }
 
 #

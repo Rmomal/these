@@ -529,7 +529,7 @@ names(parameters)<-c("d","n","u","prob","r")
 
 
 cparam<-c("d","prob","n")
-type=c("erdos","tree","scale-free")
+type=c("erdos","tree","scale-free","cluster")
 n<-100
 covariables<-cbind(rep(c(0,1),each=n/2),rnorm(n,8,0.5),
                    c(rep(c(1,0,1),each=round(n/3)),rep(1,n-3*round(n/3))),
@@ -540,7 +540,7 @@ covariables2<-matrix(c(rep(c(1,0,1),each=round(n/3)),rep(1,n-3*round(n/3))),n,1)
 #   cparam <- ifelse(type == "tree", c("d","n"), cparam)
 #   for (param in cparam) {
 type<-"tree"
-for(type in "scale-free") {
+for(type in type) {
   for(param in c("d","n")){
     simu(
       type,
