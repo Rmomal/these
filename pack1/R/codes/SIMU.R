@@ -50,8 +50,8 @@ library(reshape2)
 #, lib.loc="/usr/local/lib/R/site-library")
 # source('/home/momal/R/TreeMixture-RML.R')
 # source('/home/momal/R/fonctions.R')
-source('/home/momal/Git/these/pack1/R/TreeMixture-RML.R')
-source('/home/momal/Git/these/pack1/R/fonctions.R')
+source('~/TreeMixture-mac.R')
+source('~/these/pack1/R/fonctions.R')
 mvrnorm_rml<-function (n = 1, mu=0, Sigma, tol = 1e-06, empirical = FALSE, EISPACK = FALSE){
   p <- length(mu)
   if (!all(dim(Sigma) == c(p, p)))
@@ -82,25 +82,26 @@ mvrnorm_rml<-function (n = 1, mu=0, Sigma, tol = 1e-06, empirical = FALSE, EISPA
 ###########################
 # functions of generation #
 ###########################
-generator_graph<-function(d = 20, graph = "tree", g = NULL, prob = NULL, vis = FALSE,
-                          verbose = TRUE,r=10){
+generator_graph<-function(d = 20, graph = "tree", g = NULL, prob = NULL, dens=0.3, vis = FALSE,
+                          verbose = TRUE,r=5){
   gcinfo(FALSE)
   if (verbose)
     #cat("Generating data from the multivariate normal distribution with the",
-    #     graph, "graph structure....")
-    if (is.null(g)) {
-      g = 1
-      if (graph == "hub" || graph == "cluster") {
-        if (d > 40)
-          g = ceiling(d/20)
-        if (d <= 40)
-          g = 2
-      }
+   #     graph, "graph structure....")
+  if (is.null(g)) {
+    g = 1
+    if (graph == "hub" || graph == "cluster") {
+      if (d > 40)
+        g = ceiling(d/20)
+      if (d <= 40)
+        g = 2
     }
+  }
   theta = matrix(0, d, d)
   if (graph == "cluster") {
     #browser()
-    theta<-SimCluster(d,3,prob,r) #prob=5/d ?
+  
+    theta<-SimCluster(d,3,dens,r) #prob=5/d ?
 
   }
   if (graph == "scale-free") {
@@ -144,7 +145,7 @@ generator_param<-function(G,v=1){
     cste = 1.1*cste
     omega = diag(rep(cste, ncol(G))) + G*v
   }
-  #browser()
+  browser()
   sigma = cov2cor(solve(omega))
   #omega = solve(sigma)
   sim=list(sigma=sigma,omega=omega,cste=cste)
@@ -218,11 +219,10 @@ graph<-function(type,param,path){
 }
 #file<-paste0(path,type,"/",param,"/auc.rds")
 diagnostics<-function(file){
-
   tab<-data.frame(readRDS(file))
   lignes<-which(is.na(tab[,1]))
   if (length(lignes)!=0) tab<-tab[-lignes,]
-  tab<- gather(tab,key=method,value=value,treeggm,ggm1step,oracle,glasso)
+  tab<- gather(tab,key=method,value=value,EM150,ggm1step,oracle,spiecEasi, spiecResid)
   tab<-summarise(group_by(tab,var,method),mns=median(value),inf=quantile(value,0.25),sup=quantile(value,0.75))
   elmts<-unlist(strsplit(file,"/"))
   variable<-elmts[length(elmts)]
@@ -230,24 +230,29 @@ diagnostics<-function(file){
   type<-elmts[length(elmts)-2]
   variable<-substr(variable,1,nchar(variable)-4)
   variable<-switch(variable,"auc"="AUC","sens"="Sensitivity","spec"="Specificity")
-
-  # geom_line(aes(y=mns,color=method),size=1)+
-  # geom_ribbon(aes(ymin=inf, ymax=sup,fill=method), alpha=0.2)+
+  
   tab$var<-as.numeric(as.character(tab$var))
-  ggplot(tab, aes(y=mns,x=as.numeric(as.character(var)),group=method,color=method))+
+ ggplot(tab, aes(y=mns,x=as.numeric(as.character(var)),shape=method,color=method))+
     geom_errorbar(aes(ymin=inf, ymax=sup), width=0,position=position_dodge((max(tab$var)-min(tab$var))/100))+
-    #geom_smooth(se=FALSE,size=0.3)+
-    geom_point()+
+    geom_point(size=2.5)+
     geom_line(size=0.2)+
-    # geom_linerange(aes(ymin = quantile(value,0.25), ymax = quantile(value,0.75)),group=tab$method)+
     labs(y=variable,x=param)+
-    scale_color_manual(values=c("#076443", "#56B4E9","#fc5f94","#E69F00" ),name="Method:",
-                       breaks=c("treeggm","ggm1step","oracle", "glasso" ),
-                       labels=c("EM ","1 step", "oracle","SpiecEasi" ))+
+    scale_shape_manual(values=c(16,15,8,9,17),
+                       breaks=c("EM150","ggm1step", "spiecEasi","spiecResid" ,"oracle"),
+                       labels=c("EM" ,"1 step","SpiecEasi","SpiecResid", "Oracle") )+
+    scale_color_manual(values=c("#E69F00","#076443","#fc5f94", "#8037c9","#56B4E9"),
+                       breaks=c("EM150","ggm1step", "spiecEasi","spiecResid" ,"oracle"),
+                       labels=c("EM", "1 step","SpiecEasi","SpiecResid", "Oracle" ) 
+                       # ,
+                       # breaks=c("EM150","ggm1step", "spiecEasi","spiecResid" ,"oracle"),
+                       # labels=c("EM ","1 step","SpiecEasi","spiecResid", "oracle" ) 
+                       )+
     scale_y_continuous(limits = c(0.5,1))+
     theme_bw()+
     theme(plot.title = element_text(hjust = 0.5),legend.title=element_blank())
+
 }
+
 #title = paste0("Graph of type ",type,": effect of ",param," on ",variable,".\n Cruves of medians, and 1rst and 3rd quartiles.")
 ####################
 ###   Main code  ###
@@ -257,7 +262,8 @@ save_params<-function(x,variable,type,path,graph,prob,nbgraph=nbgraph){
   if(variable!="u"){
     graph<-switch(variable, "d"=generator_graph(graph=type,d=x,prob=2/x),
                   "prob"=generator_graph(graph=type,prob=x),
-                  "r"=generator_graph(graph=type,r=x))
+                  "r"=generator_graph(graph=type,r=x),
+                  "dens"=generator_graph(graph=type,dens=x))
 
     param<-generator_param(as.matrix(graph))
   }else{
@@ -322,7 +328,7 @@ compare_methods<-function(x,n,sigma,K,criterion){
 }
 
 compare_methods2<-function(x,n,Y,K,covariables,estim_cov=TRUE,corZ){
-  browser()
+  #browser()
   #offset<-matrix(offset,n,ncol(Y))
 
   if(estim_cov){
@@ -366,13 +372,13 @@ compare_methods2<-function(x,n,Y,K,covariables,estim_cov=TRUE,corZ){
 
   #if(!exists("inf_treeggm1step") || !exists("inf_treeggm"))  browser()
   if(exists("inf_treeggm1step") && exists("inf_treeggm") && exists("inf_treeggmOracle") && exists("inf_glasso")){
-    #browser()
-    diagnost_total<-list(diagnostic.auc.sens.spe(pred=inf_treeggm,obs=K,method="treeggm"),
-                         diagnostic.auc.sens.spe(pred=inf_treeggm1step,obs=K,method="1step"),
-                         diagnostic.auc.sens.spe(pred=inf_treeggmOracle,obs=K,method="oracle"),
-                         diagnostic.auc.sens.spe(pred=inf_glasso,obs=K,method="SpiecEasi"))
-    diagnost<-t(do.call(rbind,lapply(diagnost_total, function(x){x[[1]]})))
-    precrec<-do.call(rbind,lapply(diagnost_total, function(x){x[[2]]}))
+   #browser()
+     diagnost_total<-list(diagnostic.auc.sens.spe(pred=inf_treeggm,obs=K,method="treeggm"),
+                diagnostic.auc.sens.spe(pred=inf_treeggm1step,obs=K,method="1step"),
+                diagnostic.auc.sens.spe(pred=inf_treeggmOracle,obs=K,method="oracle"),
+                diagnostic.auc.sens.spe(pred=inf_glasso,obs=K,method="SpiecEasi"))
+     diagnost<-t(do.call(rbind,lapply(diagnost_total, function(x){x[[1]]})))
+     precrec<-do.call(rbind,lapply(diagnost_total, function(x){x[[2]]}))
 
     inferences<-list(inf_treeggm,inf_treeggm1step,inf_treeggmOracle,inf_glasso)
   }else{
@@ -383,7 +389,7 @@ compare_methods2<-function(x,n,Y,K,covariables,estim_cov=TRUE,corZ){
   return(list(diagnost,temps,inferences,estim_reg(generator_PLN_nocov(Sigma,n)[[1]],K),precrec=precrec))
 }
 
-record <- function(var, x, col_names, path2, B=1, rep = TRUE) {
+ record <- function(var, x, col_names, path2, B=1, rep = TRUE) {
   if (rep) {
     frame <-
       data.frame(var,
@@ -439,8 +445,9 @@ bootstrap_summary<-function(x,type,variable,B,path,n,criterion,nbgraph=nbgraph,P
       K<-param$omega
       #Y<-generator_composi_data(param$sigma,offset,covariables)
       if(cov){
-        covariables<-matrix(c(rep(c(1,0,1),each=round(x/3)),rep(1,max(x-3*round(x/3),0))),x,1)
-
+        #covariables<-matrix(c(rep(c(1,0,1),each=round(x/3)),rep(1,max(x-3*round(x/3),0))),x,1)
+        covariables<-cbind(rep(c(0,1),each=x/2),rnorm(x,3,2),
+                           round(runif(x)*10))
         Y<-generator_PLN(param$sigma,covariables)[[1]]
         corZ<-generator_PLN(param$sigma,covariables)[[2]]
         obj<-lapply(1:B,function(y) compare_methods2(y,n=x,Y=Y,K=K,covariables,
@@ -457,7 +464,7 @@ bootstrap_summary<-function(x,type,variable,B,path,n,criterion,nbgraph=nbgraph,P
       obj<-lapply(1:B,function(y) compare_methods(y,n=x,sigma=sigma,K=K,criterion=criterion))
     }
   }
-  #browser()
+#browser()
   res_auc<-do.call(rbind,lapply(obj, function(x){x[[1]]}))
   res_auc<-cbind(res_auc,rep(x,nrow(res_auc)))
 
@@ -474,7 +481,7 @@ bootstrap_summary<-function(x,type,variable,B,path,n,criterion,nbgraph=nbgraph,P
   record(estim_nb_edges,x,c("nb_pred","nb_obs"),paste0(path2,"Graphs_characteristics/Graph",nbgraph),B)
   save_scores(scores,paste0(path2,"Scores/"),val=x,nbgraph=nbgraph)
 
-  #print(res_auc)
+#print(res_auc)
   return(list(res_auc,res_precrec))
 }
 
@@ -494,16 +501,16 @@ simu<-function(type,variable,seq,n,B,prob=0.1,path,Bgraph,PLN=FALSE,covariables,
                                          prob=prob,nbgraph=nbgraph))
     }
     for(criterion in c("auc")){
-
+     
       res<-mclapply(seq,function(x) bootstrap_summary(x,type=type,variable=variable,
                                                       B=B,path=path,n=n,
                                                       criterion=criterion,nbgraph=nbgraph,PLN,covariables,
                                                       cov=cov,estim_cov=estim_cov),mc.cores=cores)
-      # print(res[[1]][[1]])
+     # print(res[[1]][[1]])
       auc<-data.frame(do.call(rbind,lapply(res,function(x){x[[1]]})))
       precrec<-data.frame(do.call(rbind,lapply(res,function(x){x[[2]]})))
       #auc<-data.frame(do.call("rbind",res))
-      # browser()
+  # browser()
       auc[,1:4]<-apply(auc[,1:4],2,function(x) as.numeric(x))
       record(auc,nbgraph,c("treeggm","ggm1step","oracle","glasso","var"),paste0(path,type,"/",variable,"/"),B)
       record(precrec,nbgraph,c("prec","rec","method","var"),paste0(path,type,"/",variable,"/"),B)
@@ -523,90 +530,43 @@ simu<-function(type,variable,seq,n,B,prob=0.1,path,Bgraph,PLN=FALSE,covariables,
 #**  RUN  **#
 #############
 
-path<-"/home/momal/Git/these/pack1/R/Simu/test/"#path =paste0(getwd(),"/R/Simu/") || "/home/momal/Git/these/pack1/R/Simu/"
-parameters<-list(c(seq(10,30,2)),c(seq(10,120,10)),c(seq(0,1.5,0.2)),c(seq(0.5,5,0.5)/20),c(seq(1,50,10)))
-names(parameters)<-c("d","n","u","prob","r")
+path<-"~/these/pack1/R/Simu/PLNcov/"#path =paste0(getwd(),"/R/Simu/") || "/home/momal/Git/these/pack1/R/Simu/"
+parameters<-list(c(seq(10,30,2)),c(seq(10,120,10)),c(seq(0,1.5,0.2)),
+                 c(seq(0.5,5,0.5)/20),c(seq(1,30,5)),c(seq(0.1,0.4,0.05)))
+names(parameters)<-c("d","n","u","prob","r","dens")
 
 
 cparam<-c("d","prob","n")
-type=c("erdos","tree","scale-free","cluster")
+type=c("erdos","tree","scale-free")
 n<-100
 covariables<-cbind(rep(c(0,1),each=n/2),rnorm(n,8,0.5),
-                   c(rep(c(1,0,1),each=round(n/3)),rep(1,n-3*round(n/3))),
                    round(runif(n)*10))
 covariables2<-matrix(c(rep(c(1,0,1),each=round(n/3)),rep(1,n-3*round(n/3))),n,1)
+covariables3<-cbind(rep(c(0,1),each=n/2),rnorm(n,8,0.5),
+                   c(rep(c(1,0,1),each=round(n/3)),rep(1,n-3*round(n/3))))
+covariables4<-matrix(c(round(runif(n)*10)),n,1)
+covariables5<-matrix(c(rnorm(n,8,0.5)),n,1)
 #offset<-round(matrix(runif(n*)*10000)
-# for(type in type) {
-#   cparam <- ifelse(type == "tree", c("d","n"), cparam)
-#   for (param in cparam) {
-type<-"tree"
-for(type in type) {
-  for(param in c("d","n")){
-    simu(
-      type,
-      variable = param,
-      seq = parameters[[param]],
-      n = n,
-      B = 2,
-      path = path,
-      Bgraph = 100,
-      PLN = TRUE,
-      covariables = covariables,cov=FALSE,estim_cov=FALSE,
-      cores = 3
-    )
-  }
-}
-#difftime(T2, T1)
-graph(type, param, path = path)
-# }
-# }
-##### avec covariables, stockages dans Simu/type/
-for(type in c("erdos")) {
-  #  cparam <- ifelse(type == "tree", c("d","n"), cparam)
-  for (param in c("prob")) {
 
-    simu(
-      type,
-      variable = param,
-      seq = parameters[[param]],
-      n = n,
-      B = 2,
-      path = path,
-      Bgraph = 3,
-      PLN = TRUE,
-      covariables = covariables2,cov=TRUE,estim_cov=TRUE,
-      cores = 1
-    )
-     graph(type, param, path = path)
+for(type in c("erdos","tree","scale-free","cluster")) {
+  cparam<-switch(type,"erdos"=c("d","n","prob"),"tree"=c("d","n"),
+                 "cluster"=c("d","n","dens","r"),"scale-free"=c("d","n"))
+  for (param in cparam) {
+    
+    # simu(
+    #   type,
+    #   variable = param,
+    #   seq = parameters[[param]],
+    #   n = n,
+    #   B = 2,
+    #   path = path,
+    #   Bgraph = 100,
+    #   PLN = TRUE,
+    #   covariables = covariables,cov=TRUE,estim_cov=TRUE,
+    #   cores = 3
+    # )
+    graph(type, param, path = path)
   }
 }
 
-
-
-
-
-
-# # SMALL RUN for local tests :
-# type<-"tree"
-#  B<-2
-# # simu(type,variable="n",c(seq(20,30,5)),n=100,B=B,path=path,Bgraph=2)
-#  simu(type,variable="d",c(seq(10,14,2)),n=100,B=2,path=path,Bgraph=3,PLN=TRUE,cores=12)
-# #
-# # # param<-"d"
-#  graph(type,param="d",path="/home/momal/Git/these/pack1")
-
-######################
-##### PLN MODEL ######
-######################
-# # Model parms
-# lambda = 1; Omega = diag(rep(lambda, p)) + G;
-# while (min(eigen(Omega)$values) < 0){lambda = 1.1*lambda; Omega = diag(rep(lambda, p)) + G}
-# Sigma = solve(Omega)
-# O = matrix(rnorm(n*p), n, p)
-#
-# # Data
-# Z = rmvnorm(n, sigma=Sigma);
-# Y = matrix(rpois(n*p, exp(O+Z)), n, p)
-# PLN = PLN(Y ~ -1 + offset(O))
-# ZpZ.hat = PLN$model_par$Sigma
 

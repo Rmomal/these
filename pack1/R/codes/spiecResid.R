@@ -96,13 +96,16 @@ T2<-Sys.time()
 difftime(T2, T1)
 
 
-build_auc<-function(path, nbgraph,x,variable){
+build_auc<-function(path, nbgraph,x,variable,method,colonne="EM"){ #method="_spiecResid"
   if(variable=="n"){
     obs<-readRDS(paste0(path,"/Sets_param/Graph",nbgraph,".rds"))$omega
   }else{
     obs<-readRDS(paste0(path,"/Sets_param/Graph",nbgraph,"_",x,".rds"))$omega  
   } 
-  pred<- readRDS(paste0(path,"/Scores/Graph",nbgraph,"_spiecResid",x,".rds"))
+  if(method=="_treeggm_"){
+    pred<- readRDS(paste0(path,"/Scores/Graph",nbgraph,method,x,".rds"))[[colonne]]
+  }else{
+    pred<- readRDS(paste0(path,"/Scores/Graph",nbgraph,method,x,".rds"))}
   return(diagnost_auc(obs,pred))
 }
 diagnost_auc<-function(obs, pred){
@@ -121,13 +124,11 @@ diagnost_auc<-function(obs, pred){
 }
 ### see performances
 diagnostics<-function(file){
-  file<-paste0(path,type,"/", variable,"/auc.rds" )
   tab<-data.frame(readRDS(file))
-  lignes<-which(is.na(tab[,"EMCond"]))
+  lignes<-which(is.na(tab[,1]))
   if (length(lignes)!=0) tab<-tab[-lignes,]
-  tab<- gather(tab,key=method,value=value,EMCond,EM1Cond,spiecEasi, spiecResid)
-  tab<-summarise(group_by(tab,var,method),mns=median(value),
-                 inf=quantile(value,0.25),sup=quantile(value,0.75))
+  tab<- gather(tab,key=method,value=value,EMCond,ggm1step,MInt,spiecEasi, spiecResid)
+  tab<-summarise(group_by(tab,var,method),mns=median(value),inf=quantile(value,0.25),sup=quantile(value,0.75))
   elmts<-unlist(strsplit(file,"/"))
   variable<-elmts[length(elmts)]
   param<-elmts[length(elmts)-1]
@@ -138,48 +139,32 @@ diagnostics<-function(file){
   tab$var<-as.numeric(as.character(tab$var))
   p<-ggplot(tab, aes(y=mns,x=as.numeric(as.character(var)),shape=method,color=method))+
     geom_errorbar(aes(ymin=inf, ymax=sup), width=0,position=position_dodge((max(tab$var)-min(tab$var))/100))+
-    geom_point(size=2)+
+    geom_point(size=2.5)+
     geom_line(size=0.2)+
    labs(y=variable,x=param)+
-    scale_shape_manual(values=c(15,16,17,9),
-                       breaks=c("EMCond","EM1Cond","spiecResid", "spiecEasi" ),
-                       labels=c("EM ","1 step","SpiecResid" ,"SpiecEasi") )+
-    scale_color_nejm(breaks=c("EMCond","EM1Cond","spiecResid", "spiecEasi" ),
-                      labels=c("EM ","1 step","SpiecResid","SpiecEasi" ))+
+    scale_shape_manual(values=c(15,8,9,17,16)
+                       # ,
+                       # breaks=c("treeggm","ggm1step", "spiecEasi","spiecResid" ,"oracle"),
+                       # labels=c("EM ","1 step","SpiecEasi","spiecResid", "oracle" ) 
+                       )+
+     scale_color_manual(values=c("#076443","#fc5f94", "#8037c9","#56B4E9" ,"#E69F00")
+                      #   ,
+                      # breaks=c("treeggm","ggm1step", "spiecEasi","spiecResid" ,"oracle"),
+                      #  labels=c("EM ","1 step","SpiecEasi","spiecResid", "oracle" ) 
+                      )+
     scale_y_continuous(limits = c(0.5,1))+
     theme_bw()+
     theme(plot.title = element_text(hjust = 0.5),legend.title=element_blank())
-
   print(p)
 }
-type<-"tree"
-variable<-"n"
-propNA<-function(type, variable){
-  file<-paste0(path,type,"/", variable,"/auc.rds" )
-tab<-readRDS(file)
-print(length(which(is.na(tab$EM1Cond)))/nrow(tab))
-}
-for(type in c("erdos","tree","cluster","scale-free")){
-  cparam<-switch(type,"erdos"=c("prob","d", "n"),"tree"=c("n"),
-                 "cluster"=c("n","dens","r"),"scale-free"=c("n"))
-  
-  for(variable in cparam){
-    propNA(type,variable)
-  }
-}
+type<-"scale-free"
+variable<-"d"
+file<-paste0(path,type,"/",variable,"/auc.rds")
 diagnostics(file)
-for(type in c("erdos","tree","cluster","scale-free")){
-  cparam<-switch(type,"erdos"=c("prob", "n"),"tree"=c("n"),
-                 "cluster"=c("n","dens","r"),"scale-free"=c("n"))
-  for(variable in cparam){
-    pdf(paste0(path,"images/SansOracle/",type,"_",variable,".pdf"),
-        width=6,
-        height=4,onefile=TRUE)
-    file<-paste0(path,type,"/", variable,"/auc.rds" )
-    diagnostics(file)
-    dev.off()
-  }
-}
+#############################################################################################
+#############################################################################################
+
+
 ######
 # precrec pool
 ######
@@ -242,7 +227,7 @@ for(type in c("erdos","tree","scale-free","cluster")){
       })
       #les frames pour les diffferentes methodes sont concatenes en vue des plots
       fatfatListe<-as_tibble(do.call(rbind,fatListe_methodes)) #42e3 lignes
-      saveRDS(fatfatListe,paste0(path,type,"/",variable,"/precrec_pool/precrec_",x,".rds"))
+      saveRDS(fatfatListe,paste0(path,type,"/",variable,"/precrec_",x,".rds"))
     })
   }
 }
@@ -251,7 +236,7 @@ for(type in c("erdos","tree","scale-free","cluster")){
 type<-"cluster"
 variable<-"n"
 x<-100
-precrec<- readRDS(paste0(path,type,"/",variable,"/precrec/precrec_",x,".rds"))
+precrec<- readRDS(paste0(path,type,"/",variable,"/precrec_",x,".rds"))
 
 ggplot(precrec,aes(rec,prec,colour=method,shape=method))+
   geom_point()+

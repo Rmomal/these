@@ -75,17 +75,77 @@ SimCluster <- function(p, k, d, r){
   diag(ZZ) = 0
   ZZ = F_Sym2Vec(ZZ)
   G = F_Vec2Sym(rbinom(p * (p - 1) / 2, 1, alpha * ZZ + beta * (1 - ZZ)))
- gplot(G, gmode='graph', label=1:p, vertex.col=Z%*%(1:k),
-       main=paste0(round(r,2),"// alpha ",round(alpha,2),"// beta ",round(beta,2)))
-
- return(G)
+  #gplot(G, gmode='graph', label=1:p, vertex.col=Z%*%(1:k),
+  #     main=paste0(round(r,2),"// alpha ",round(alpha,2),"// beta ",round(beta,2)))
+  
+  return(G)
 }
-d=10
-par(mfrow=c(2,2))
-SimCluster(d,3,5/d,2)
-SimCluster(d,3,5/d,5)
-SimCluster(d,3,5/d,9)
-SimCluster(d,3,5/d,15)
+# d=10
+# par(mfrow=c(2,2))
+# SimCluster(d,3,5/d,2)
+# SimCluster(d,3,5/d,5)
+# SimCluster(d,3,5/d,9)
+# SimCluster(d,3,5/d,15)
+generator_graph<-function(d = 20, graph = "tree", g = NULL, prob = NULL, dens=0.3, vis = FALSE,
+                          verbose = TRUE,r=5){
+  gcinfo(FALSE)
+  if (verbose)
+    #cat("Generating data from the multivariate normal distribution with the",
+    #     graph, "graph structure....")
+    if (is.null(g)) {
+      g = 1
+      if (graph == "hub" || graph == "cluster") {
+        if (d > 40)
+          g = ceiling(d/20)
+        if (d <= 40)
+          g = 2
+      }
+    }
+  theta = matrix(0, d, d)
+  if (graph == "cluster") {
+    #browser()
+    
+    theta<-SimCluster(d,3,dens,r) #prob=5/d ?
+    
+  }
+  if (graph == "scale-free") {
+    
+    out = .C("SFGen", dd0 = as.integer(2), dd = as.integer(d),
+             G = as.integer(theta), PACKAGE = "huge")
+    theta = matrix(as.numeric(out$G), d, d)
+  }
+  if(graph=="tree"){
+    theta<-SpannTree(d)
+  }
+  if(graph=="erdos"){
+    theta<- erdos(d=d,p=prob)
+    if(sum(theta)<4){
+      while(sum(theta)<4){
+        theta<- erdos(d=d,p=prob)
+      }
+    }
+  }
+  
+  #browser()
+  if (verbose)
+    cat("done.\n")
+  rm(vis, verbose)
+  gc()
+  return(theta = Matrix(theta, sparse = TRUE))
+}
+generator_param<-function(G,v=1){
+  cste = 1
+  omega = diag(rep(cste, ncol(G))) + G*v
+  while (min(eigen(omega)$values) < 1e-6){
+    cste = 1.1*cste
+    omega = diag(rep(cste, ncol(G))) + G*v
+  }
+  #browser()
+  sigma = cov2cor(solve(omega))
+  #omega = solve(sigma)
+  sim=list(sigma=sigma,omega=omega,cste=cste)
+  return(sim)
+}
 ####################################################
 # construction de matrice de pr??cision
 # @curseur utilise le r??sultat de g??n??ration de matrice al??atoire symm??trique par
@@ -149,15 +209,15 @@ estim_reg<-function(Y,G){
   n<-nrow(Y)
   if(n>d){ 
     S = P  = matrix(0, d,d)
-  for (j in 1:d){
-  #  browser()
-    LM = lm(Y[, j] ~ -1 + Y[, -j])
-    P[j, -j] = summary(LM)$coef[, 4]
-    S[j, -j] = summary(LM)$coef[, 3]
-  }
-  # hist(as.vector(P), breaks=p)
-  # boxplot(as.vector(S) ~ as.vector(Gdiag))
-  # qqnorm(as.vector(S[which(Gdiag==0)]))
+    for (j in 1:d){
+      #  browser()
+      LM = lm(Y[, j] ~ -1 + Y[, -j])
+      P[j, -j] = summary(LM)$coef[, 4]
+      S[j, -j] = summary(LM)$coef[, 3]
+    }
+    # hist(as.vector(P), breaks=p)
+    # boxplot(as.vector(S) ~ as.vector(Gdiag))
+    # qqnorm(as.vector(S[which(Gdiag==0)]))
     res<-c(2*sum(P>.5), sum(G==0))
   }else{
     res<-c("not enough obs",sum(G==0))
@@ -193,22 +253,22 @@ fun.auc.ggplot <- function(pred, obs, title,points){
   ROC_perf <- performance(prediction,"tpr","fpr")
   ROC_sens <- performance(prediction,"sens","spec")
   ROC_auc <- performance(prediction,"auc")
-
+  
   # Make plot data
   plotdat <- data.frame(FP=ROC_perf@x.values[[1]],TP=ROC_perf@y.values[[1]],CUT=ROC_perf@alpha.values[[1]],POINT=NA)
-
+  
   if(max(points)<max(plotdat$CUT[is.finite(plotdat$CUT)])){
     points<-points[-which(points>max(plotdat$CUT[is.finite(plotdat$CUT)]))]
   }
-
-  plotdat[unlist(lapply(points,function(x){which.min(abs(plotdat$CUT-x))})),"POINT"]<- points
-
+  
+  #plotdat[unlist(lapply(points,function(x){which.min(abs(plotdat$CUT-x))})),"POINT"]<- points
+  
   # Plot the curve
   rows<-which(!is.na(plotdat$POINT))
   while(length(rows)>20){
     rows<-rows[seq(1,length(rows),2)]
   }
-
+  
   ggplot(plotdat, aes(x=FP,y=TP)) +
     geom_abline(intercept=0,slope=1,linetype="dashed",color="grey") +
     geom_line() +
@@ -233,11 +293,11 @@ fun.auc.ggplot <- function(pred, obs, title,points){
 diagnostic.auc.sens.spe <- function(pred, obs,stat="auc",method){
   nvar<-ncol(obs)
   obs[which(abs(obs)<1e-16)]<-0
-
+  
   indices_nuls<-which(obs==0)
   label<-matrix(1,nrow=nrow(obs),ncol=ncol(obs))
   label[indices_nuls]<-0
-    prediction<-prediction(as.vector(pred[upper.tri(pred)]),
+  prediction<-prediction(as.vector(pred[upper.tri(pred)]),
                          as.vector(label[upper.tri(label)]))
   obs<-as.vector(label[upper.tri(label)])
   # Run the AUC calculations
@@ -252,6 +312,52 @@ diagnostic.auc.sens.spe <- function(pred, obs,stat="auc",method){
               "sens"=round(mean(as.data.frame(ROC_sens@y.values)[,1]),digits=3),
               "spec"=round(mean(as.data.frame(ROC_sens@x.values)[,1]),digits=3))
   return(list(res,precrec))
+}
+
+build_crit<-function(path, nbgraph,x,variable,method, crit="auc"){ #method="_spiecResid" 
+  if(variable=="n"){
+    obs<-readRDS(paste0(path,"/Sets_param/Graph",nbgraph,".rds"))$omega
+  }else{
+    obs<-readRDS(paste0(path,"/Sets_param/Graph",nbgraph,"_",x,".rds"))$omega  
+  } 
+  # if(method=="_treeggm_" || method=="_oracle"|| method=="_one_step_" || method=="_mint_"){
+  #   pred<- readRDS(paste0(path,"/Scores/Graph",nbgraph,method,x,".rds"))[[colonne]]
+  # }else{
+  #   pred<- readRDS(paste0(path,"/Scores/Graph",nbgraph,method,x,".rds"))}
+  
+    pred<- readRDS(paste0(path,"/Scores/",method,"_graph",nbgraph,"_",x,".rds"))
+#mehtod: EMmarg, EMCond, OneMarg, OneCond
+    res<-switch(crit,"auc"=diagnost_auc(obs,pred), "precrec"=diagnost_precrec(obs,pred),
+                "precrecPool"=vec_obs_pred(obs,pred))
+  return(res)
+}
+
+vec_obs_pred<-function(obs, pred){
+  nvar<-ncol(obs)
+  obs[which(abs(obs)<1e-16)]<-0
+  indices_nuls<-which(obs==0)
+  label<-matrix(1,nrow=nrow(obs),ncol=ncol(obs))
+  label[indices_nuls]<-0
+  
+  vec_pred<-as.vector(pred[upper.tri(pred)])
+  vec_obs<-as.vector(label[upper.tri(label)])
+  
+  return(list(vec_pred,vec_obs))
+}
+diagnost_precrec<-function(obs, pred){
+  obs_pred<-vec_obs_pred(obs,pred)
+  prediction<-prediction(obs_pred[[1]],obs_pred[[2]])
+  ROC_precision<-performance(prediction,"prec")
+  ROC_recal<-performance(prediction,"rec")
+  return(list(ROC_precision@y.values,ROC_recal@y.values))
+}
+diagnost_auc<-function(obs, pred){
+  obs_pred<-vec_obs_pred(obs,pred)
+  prediction<-prediction(obs_pred[[1]],obs_pred[[2]])
+  # Run the AUC calculations
+  ROC_auc <- performance(prediction,"auc")
+  res<-round(ROC_auc@y.values[[1]],digits=3)
+  return(res)
 }
 ####################################################
 # Exploration des valeurs critiques de rho
@@ -273,7 +379,7 @@ tableau3D<-function(samples,seq_rho){
   tab <- array( dim=c(n,n,length(seq_rho)))
   #nb_nuls<-data.frame(matrix(ncol=2,nrow=length(seq_rho)))
   for(rho in seq_rho){
-
+    
     omega_hat<-glasso(var(samples),rho=rho,penalize.diagonal = FALSE)$wi
     tab[,,which(seq_rho==rho)]<-omega_hat
     #nb_nuls[which(seq_rho==rho),"nuls"]<-length(which(omega_hat==0))*100/length(omega_hat)
@@ -319,7 +425,7 @@ mat_rho<-function(tab,seq_rho,minmax){
       indices_remplis<-which(!is.na(results))
       if(length(indices_remplis)!=0){
         indices_a_remplir<-setdiff(indices_nuls,indices_remplis) #indices nuls - les indices remplis
-
+        
       }else{
         indices_a_remplir<-indices_nuls
       }
@@ -359,8 +465,8 @@ inf_glasso_MB<-function(X){
   adjmat.array <- simplify2array(Map("*",
                                      exp(log.lambda),
                                      lapply(MB.res, function(x){ (abs(x$wi)>0)*1})
-                                     )
-                                 )
+  )
+  )
   # Let us replace each edge by the  largest Glasso lambda where it disappears (or a sum related to this)
   K.score <- apply(adjmat.array,c(1,2),sum)
   K.score <- K.score / max(K.score)
@@ -370,8 +476,8 @@ inf_glasso_MB<-function(X){
 #library(SpiecEasi)
 inf_spieceasi<-function(Y){
   inf<-spiec.easi(Y, icov.select = FALSE, nlambda = 50, verbose = FALSE)
-
-
+  
+  #browser()
   adjmat.array <- simplify2array(Map("*",
                                      inf$lambda,
                                      lapply(inf$est$path, function(x) {
@@ -379,6 +485,12 @@ inf_spieceasi<-function(Y){
                                      })))
   K.score <- Reduce("+",adjmat.array)
   K.score <- K.score / max(K.score)
+}
+inf_spiecresid<-function(Y,covar){
+  U<-clr(Y)
+  model<-lm(U~covar)
+  inf<-inf_spieceasi(model$residuals)
+  return(inf)
 }
 
 ####################################################
@@ -441,3 +553,4 @@ grid_arrange_shared_legend <- function(..., ncol = length(list(...)), nrow = 1, 
   # return gtable invisibly
   invisible(combined)
 }
+

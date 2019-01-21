@@ -80,13 +80,13 @@ F_AlphaN <- function(CorY, n, cond.tol=1e-10){
   # }
   # alpha = alpha.grid[max(which(cond>cond.tol))]
   cond = Inf; a = 0
-  while(cond > cond.tol){
-     a = a+1
-     psi.vec = F_Sym2Vec(-alpha.grid[a]*n*log(1 - CorY^2)/2);
-     psi.vec = psi.vec - mean(psi.vec)
-     psi = F_Vec2Sym(exp(psi.vec))
-     lambda = svd(psi)$d
-     cond = min(abs(lambda))/max(abs(lambda))
+  while(cond > cond.tol && a<length(alpha.grid)){
+    a = a+1
+    psi.vec = F_Sym2Vec(-alpha.grid[a]*n*log(1 - CorY^2)/2);
+    psi.vec = psi.vec - mean(psi.vec)
+    psi = F_Vec2Sym(exp(psi.vec))
+    lambda = svd(psi)$d
+    cond = min(abs(lambda))/max(abs(lambda))
   }
   alpha = alpha.grid[a-1]
   psi.vec = F_Sym2Vec(-alpha*n*log(1 - CorY^2)/2); 
@@ -110,7 +110,7 @@ FitBetaStatic <- function(beta.init, psi, maxIter, eps1 = 1e-6,eps2=1e-4, print=
     iter = iter+1
     P = EdgeProba(beta.old*psi)
     beta = F_Vec2Sym(optim(F_Sym2Vec(beta.old), F_NegLikelihood, gr=F_NegGradient,
-                     method='BFGS', log.psi, P)$par)
+                           method='BFGS', log.psi, P)$par)
     # sv<-svd(Laplacian(beta)[-1, -1])
     # cat( "terme1 ",- sum(F_Sym2Vec(P)*(log(F_Sym2Vec(beta))+F_Sym2Vec(log.psi))) ,
     #      "// min vs ",min(sv$d),"// condi ",abs(max(sv$d))/abs(min(sv$d)),
@@ -120,17 +120,17 @@ FitBetaStatic <- function(beta.init, psi, maxIter, eps1 = 1e-6,eps2=1e-4, print=
     beta[which(beta< beta.min)] = beta.min; 
     diag(beta) = 0
     logpY[iter] = -F_NegLikelihood(F_Sym2Vec(beta),log.psi,P) 
-   # beta<-beta/sum(beta)
+    # beta<-beta/sum(beta)
     # Test
     beta.diff = max(abs(beta.old-beta))
     if(iter > 1){diff.loglik =  abs(logpY[iter]-logpY[iter-1])}else{diff.loglik=1}
     d<-ncol(P)
-    cat(iter, logpY[iter], beta.diff, diff.loglik ,'\n')
+    #cat(iter, logpY[iter], beta.diff, diff.loglik ,'\n')
     beta.old = beta
     #if(print) cat(" max(P) =",max(P)," sum(P)/2 =", sum(P)/2,'\n','sum(beta)= ', sum(beta),"\n Diff =",diff)
   }
   #cat(" max(P) =",max(P)," sum(P)/2 =", sum(P)/2,'\n','sum(beta)= ', sum(beta),"\n")
-  cat("\n Fin while final iter: ",iter,", diff= ",diff.loglik)
+  cat("\n Fin while final iter: ",iter,", diff= ",diff.loglik ,'\n')
   logpY = logpY[1:iter]
   # plot(logpY)
   P = EdgeProba(beta.old*psi)
@@ -138,29 +138,20 @@ FitBetaStatic <- function(beta.init, psi, maxIter, eps1 = 1e-6,eps2=1e-4, print=
 }
 
 FitBeta1step <- function(beta.init, psi, maxIter = 1e3, eps = 1e-6){
-  # beta.init = beta.unif; maxIter = 1e3; eps = 1e-6; log.psi = log(psi)
-  beta.tol = 1e-4
   beta.min = 1e-30
   beta.old = beta.init / sum(beta.init)
   log.psi = log(psi)
   iter = 0
   logpY = 0
-  diff = 2*eps
-  # options(error = recover)
-  P = EdgeProba(beta.old*psi)
   
+  P = EdgeProba(beta.old*psi)
   beta = F_Vec2Sym(optim(F_Sym2Vec(beta.old), F_NegLikelihood, gr=F_NegGradient,
                          method='BFGS', log.psi, P)$par)
   beta[which(beta < beta.min)] = beta.min; diag(beta) = 0
   logpY= - F_NegLikelihood(F_Sym2Vec(beta), log.psi, P)
-  # Test
-  diff = max(abs(beta.old-beta))
-  #cat( ':', min(P), max(P), sum(P),'/', sum(beta)/2, '/', logpY, diff, '\n')
   beta.old = beta
-  
-  
-  # plot(logpY)
-  return(list(beta=beta, logpY=logpY))
+  print("iter=1 !")
+  return(list(beta=beta, logpY=logpY, P=P))
 }
 
 #########################################################################
@@ -181,7 +172,7 @@ TreeGGM<-function(CorY, n, step, print, maxIter, cond.tol=1e-10){
 
 #################################################################################
 # Resampling
-F_ResampleTreePLN <- function(Y, X, O, v=0.8, B=1e2, maxIter, cond.tol=1e-10){
+F_ResampleTreePLN <- function(Y, X, O, v=0.8, B=1e2, maxIter, cond.tol=1e-14){
   # v = 0.8; B = 1e2
   # Resampling edge probability
   # Y, X, O: same as for PLN
@@ -190,21 +181,34 @@ F_ResampleTreePLN <- function(Y, X, O, v=0.8, B=1e2, maxIter, cond.tol=1e-10){
   # Out = Pmat = B x p(p-1)/2 matrix with edge probability for each resample
   # Y = Data$count; X = matrix(1, n, 1); O = matrix(0, n, p)
   n = nrow(Y); p = ncol(Y); P = p*(p-1)/2; V = round(v*n); Pmat = matrix(0, B, P); 
-  alpha = rep(0, B)
-  for (b in 1:B){
-    cat('\n', b, '')
-     set.seed(b)
-    sample = sample(1:n, V, replace=F)
-    Y.sample = Y[sample, ]; X.sample = X[sample, ]; O.sample = O[sample, ]
-    # if(ncol(Y)>1){Y.sample = Y[sample, ]}else{Y.sample = matrix(Y[sample], V, 1)}; 
-    # if(ncol(X)>1){X.sample = X[sample, ]}else{X.sample = matrix(X[sample], V, 1)}; 
-    # if(ncol(O)>1){O.sample = O[sample, ]}else{O.sample = matrix(O[sample], V, 1)}; 
+ # time<-rep(0,B)
+  
+  obj<-mclapply(1:B,function(b){
+  #  cat('\n', b, '')
+    set.seed(b)
+    sample = sample(1:n, V, replace = F)
+    Y.sample = Y[sample,]
+    X.sample = X[sample,]
+    O.sample = O[sample,]
+ #   T1<-Sys.time()
     PLN.sample = PLN(Y.sample ~ -1 + X.sample + offset(O.sample))
     Sigma.sample = PLN.sample$model_par$Sigma
-    TGGM = TreeGGM(cov2cor(Sigma.sample), n=length(sample), step='FALSE', maxIter=maxIter, cond.tol=cond.tol)
-    Pmat[b, ] = F_Sym2Vec(TGGM$probaCond)
-    alpha[B] = TGGM$alpha
-  }
-  return(list(Pmat=Pmat, alpha=alpha))
+    inf<-TreeGGM(cov2cor(Sigma.sample), n=n, step='FALSE',
+            maxIter=maxIter, cond.tol=cond.tol)[c("probaCond","alpha")]
+ #   T2<-Sys.time()
+  #  time[b]<<-difftime(T2,T1)
+    return(inf)
+  },mc.cores=3)
+  Pmat<-do.call(rbind,lapply(obj,function(x){F_Sym2Vec(x$probaCond)}))
+ # ListAlpha = do.call(c,lapply(obj,function(x){x$alpha}))
+  
+  return(Pmat)
 }
+
+
+
+
+
+
+
 

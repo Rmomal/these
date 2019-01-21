@@ -47,9 +47,11 @@ load(paste0(data.dir, data.name, '-EMtree.Rdata'))
 par(mfrow=c(M, 1)); sapply(1:M, function(m){plot(EMtree[[m]]$L)})
 
 # Compare edge probabilities
-invisible(sapply(1:M, function(m){cat(VEM[[m]]$loglik, EMtree[[m]]$log.pY[length(EMtree[[m]]$log.pY)], '\n')}))
+invisible(sapply(1:M, function(m){
+  cat(VEM[[m]]$loglik, EMtree[[m]]$log.pY[length(EMtree[[m]]$log.pY)], '\n')}))
 Pedge = cbind(F_Sym2Vec(EMtree[[1]]$probaCond), F_Sym2Vec(EMtree[[2]]$probaCond), 
-              F_Sym2Vec(EMtree[[3]]$probaCond), F_Sym2Vec(EMtree[[4]]$probaCond), F_Sym2Vec(EMtree[[5]]$probaCond))
+              F_Sym2Vec(EMtree[[3]]$probaCond), F_Sym2Vec(EMtree[[4]]$probaCond),
+              F_Sym2Vec(EMtree[[5]]$probaCond))
 colnames(Pedge) = c('M.null', 'M.date', 'M.site', 'M.both', 'M.inter')
 par(mfrow=c(3, 2))
 for (m1 in (1:(M-1))){for (m2 in ((m1+1):M)){plot(qlogis(Pedge[, m1]),qlogis(Pedge[, m2]))}}
@@ -60,7 +62,7 @@ cor(Pedge)
 
 # Resampling
 if(Tree.res){
-   Stab.sel = list()
+   Stab.sel1 = list()
    X = list(); 
    X[[1]] = matrix(1, n, 1); 
    X[[2]] = as.matrix(lm(Data$count ~ Data$covariates$date, x=T)$x)
@@ -68,9 +70,10 @@ if(Tree.res){
    X[[4]] = as.matrix(lm(Data$count ~ Data$covariates$date+Data$covariates$site, x=T)$x)
    X[[5]] = as.matrix(lm(Data$count ~ Data$covariates$date*Data$covariates$site, x=T)$x)
    invisible(sapply(1:M, function(m){
-      Stab.sel[[m]] <<- F_ResampleTreePLN(Data$count, X[[m]], matrix(0, n, p), B=B.resample, maxIter=300, cond.tol=1e-8)
+      Stab.sel1[[m]] <<- F_ResampleTreePLN(Data$count, X[[m]], matrix(0, n, p), B=B.resample, maxIter=1,
+                                          cond.tol=1e-8)
    }))
-   save(Stab.sel, file=paste0(data.dir, data.name, '-StabSel.Rdata'))
+   save(Stab.sel1, file=paste0(data.dir, data.name, '-StabSel1.Rdata'))
 }
 load(paste0(data.dir, data.name, '-StabSel.Rdata'))
 
