@@ -1,0 +1,76 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts, dsfont}
+\usepackage{amssymb}
+\usepackage{xcolor}
+\usepackage[margin=3.5cm]{geometry}
+\author{Raphaelle Momal}
+\title{PLN spatial}
+
+
+\newcommand{\esp}{\mathds{E}}
+\newcommand{\var}{\mathds{V}}
+\newcommand{\RM}[1]{\textcolor{purple}{[#1]}}
+\begin{document}
+\maketitle
+A variogram in geostatistics is defined for an intrinsically stationary spatial process Z as follows, for sites $s$ and $t$ separated by a distance $d$:
+\begin{align*}
+ \gamma (d) &=  \frac{1}{2} \esp[(Z(s) - Z(t) )^2]\\
+ &=\frac{1}{2} \left(\var(Z(s)) + \esp[Z(s))^2 + \var(Z(t)) + \esp[Z(t))^2 \right) - \esp(Z(s)Z(t))
+\end{align*}
+
+We wish to write the theoretical variogram formula for the PLN model.
+\section{Variogram for  Y}
+We recall the PLN model :
+\begin{align*}
+Z_s &\sim \mathcal{N}(0,\Sigma)\\
+Y_{sj}|Z_{sj} &\sim \mathcal{P}(e^{x_s \beta_j + Z_{sj}}) 
+\end{align*}
+
+In what follows we want to account for a spatial structure of tha data. This means we will need to differentiate between two sites and two species at the same time. Therefore we write $Cov(Z) = [\Gamma]_{stjk}$ where $s$ and $t$ are sites and $j$ and $k$ are species. Two models are under consideration here:
+\begin{enumerate}
+\item $\Gamma_{stjk} = \delta_{st} \sigma_{jk}$
+\item $\Gamma_{stjk} = \delta_{st} + \mathds{1}_{s=t}\sigma_{jk}$
+\end{enumerate}
+Where $\delta$ and $\sigma$ represent respectively the spatial and inter-species dependence.  We  assume (a) a stationarity in spatial variance, that is that $\delta_{uu} = cst$: a behavior can be spatially translated. The inter-species dependence only  intervenes  on a same site, so furthermore there is an assumption (b) that two species in two different sites will behave independently.  For clarity sake, we write $\Gamma_{ssjj}$ as $\Gamma_{j}$, according to the assumption of spatial variance stationarity. 
+
+\RM{Est-ce que (b) implique que $\Gamma_{stj} = \Gamma_{st}$ ? À clarifier dans le modèle 1 }
+\subsection{Y characteristics}
+We know the expectation, variance and covariance expressions for the PLN model. When only one species is considered, we have:
+\begin{align*}
+\esp[Y_{sj}] &= e^{x_s\beta _j- \Gamma_{j}^2/2} = \mu_{sj}\\
+\var(Y_{sj}) &= \mu_{sj}+\mu_{sj}^2(e^{\Gamma_{j}^2} - 1)\\
+\esp[Y_{sj}Y_{tj}]&= \mu_{sj}\mu_{tj} e^{\Gamma_{stj}}
+\end{align*}
+
+\subsection{Same species in two sites}
+For sites $s$ and $t$ at a distance $d$:
+
+\begin{align*}
+\gamma_Y(d) &= \frac{1}{2} \left[ \mu_s + \mu_s^2(e^{\Gamma^2_j}-1) + \mu_s^2 + \mu_t+\mu_t^2(e^{\Gamma^2_j}-1) +\mu_t\right] - \mu_s\mu_te^{\Gamma_{stj}}\\
+&= \frac{1}{2} \left[ ( \mu_s^2+\mu_t^2)e^{\Gamma^2_j}+ \mu_s+ \mu_t\right] - \mu_s\mu_te^{\Gamma_{stj}}\\
+\end{align*}
+We then define $\tilde{Y_{sj}} = Y_{sj}/\mu_{sj}$.
+It  comes that 
+\begin{align*}
+ \hat{\gamma}_{\tilde{Y}}(d) &= \frac{1}{2} \esp \left[(\tilde{Y_{sj}}-\tilde{Y_{sj}})^2 - (\frac{1}{\mu_s}+\frac{1}{\mu_t})\right]\\
+ &=e^{\Gamma_j^2} - e^{\Gamma_{st}}
+\end{align*}
+$ \hat{\gamma}_{\tilde{Y}}$ is a resembles the classical semi-variogram for a stationary spatial process except it is a difference of exponentials rather than a difference of direct variance and covariance. 
+\RM{indice en s ou en sj, il faut choisir}
+\subsection{Two species in two sites}
+We recall that
+$$\esp[Y_{sj}Y_{tk}]= \mu_{sj}\mu_{tk} e^{\Gamma_{stjk}}.$$
+
+
+Similarly to the above paragraph, we get:
+$$ \esp[(Y_{sj} - Y_{tk})^2] = \left[ \mu_{sj}+\mu_{tk} + \mu_{sj}^2 e^{\Gamma_{sj}^2} + \mu_{tk}^2 e^{\Gamma_{tk}^2}\right] - \mu_{sj}\mu_{tk}e^{\Gamma_{stjk}}$$
+Then, $$\hat{\gamma}_{\tilde{Y}_{jk}}(d) = \frac{1}{2} \left(e^{\Gamma_{sj}^2}+ e^{\Gamma_{tk}^2}\right) - e^{\Gamma_{stjk}}$$
+
+\section{Perspectives}
+\begin{itemize}
+\item Culture sur INLA, approximation de Laplace et courbure Gaussienne
+\item Vraisemblance composite, éventuellement utilisée sur les arbres, pour approcher $p(Z|Y)$.
+\end{itemize}
+\end{document}

@@ -16,7 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 rm(list = ls())
 
-setwd(WorkDir <- "/home/momal/Git/these/Data/REMMOA")
+setwd(WorkDir <- "/Users/raphaellemomal/these/Data/REMMOA")
 DataDir <- paste(WorkDir, "output", sep = "/")
 
 load(paste(DataDir, "20180620_PLN_REMMOANC.RData", sep = "/"))
@@ -43,7 +43,7 @@ str(X)
 
 ## Detection matrix
 
-**A lot of zeros **.
+**A lot of zeros : 1510 empty rows**.
 
 ```{r}
 N<-as_tibble(N)
@@ -99,7 +99,7 @@ Birds:
 
 # Graphical visualizations
 
-Global co-occurances per date (not transect) : 1 if detected on a day. (in $N$, possibility of several detections per transect).
+Global occurances per date (not transect) : 1 if detected on a day. (in $N$, possibility of several detections per transect).
 ```{r,echo=FALSE, fig.width=10}
 Nlong<- N %>% 
   cbind(X$date,X$Transect.Label) %>% 
@@ -131,7 +131,7 @@ Nlong$n<-ifelse(Nlong$n!=0,1,0)
 
 ggplot(Nlong,aes(transect,n,fill=species))+
   geom_bar(stat = "identity")+
-  theme_bw()+
+  theme_minimal()+
   theme(axis.text.x = element_blank())+
   labs(y="# species")
 
@@ -141,23 +141,25 @@ ggplot(Nlong,aes(transect,n,fill=species))+
 
 
 
-Percentages of nul counts accross species :
+Percentages of non-nul counts accross species :
 ```{r,echo=FALSE, fig.width=10}
 v<-colSums(spread(Nlong,species,n)[,-c(1,2)])*100/nrow(N)
 data<-data.frame(v,species=names(v))
 
 ggplot(data, aes(x = reorder(data$species, -v), y = v)) + 
   geom_bar(stat = "identity",fill="dodgerblue4")+
-   geom_text(aes(label=round(v,1)), position=position_dodge(width=0.9), vjust=-0.25)+
+   geom_text(aes(label=round(v,1)), position=position_dodge(width=0.9), vjust=-0.25)+theme_minimal()+
   theme(axis.text.x = element_text(angle =45, hjust = 1))+
   labs(x = "",y="non nul counts (%)")
 
 order<-reorder(data$species, -v)
+
+
 ```
 
   
 
-Non nul counts vary largely between species.
+Counts vary largely between species.
 
 ```{r,echo=FALSE, fig.width=10}
 Ylong<-Y %>% 
