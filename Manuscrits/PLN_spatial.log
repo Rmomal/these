@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.19 (TeX Live 2018) (preloaded format=pdflatex 2019.1.10)  29 MAY 2019 17:02
+This is pdfTeX, Version 3.14159265-2.6-1.40.19 (TeX Live 2018) (preloaded format=pdflatex 2019.1.10)  3 JUN 2019 16:09
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -227,18 +227,18 @@ LaTeX Font Info:    Try loading font information for U+dsrom on input line 21.
 
 (/usr/local/texlive/2018/texmf-dist/tex/latex/doublestroke/Udsrom.fd
 File: Udsrom.fd 1995/08/01 v0.1 Double stroke roman font definitions
-) [1
-
-{/usr/local/texlive/2018/texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
-LaTeX Font Info:    Try loading font information for OMS+cmr on input line 73.
+)
+LaTeX Font Info:    Try loading font information for OMS+cmr on input line 46.
 
 (/usr/local/texlive/2018/texmf-dist/tex/latex/base/omscmr.fd
 File: omscmr.fd 2014/09/29 v2.5h Standard LaTeX font definitions
 )
 LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <10> not available
-(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 73.
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 46.
+ [1
 
-Overfull \hbox (3.51271pt too wide) in paragraph at lines 74--75
+{/usr/local/texlive/2018/texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
+Overfull \hbox (3.51271pt too wide) in paragraph at lines 82--83
 []\OT1/cmr/m/n/10 Vraisemblance com-pos-ite, ^^Seventuellement utilis^^See sur 
 les ar-bres, pour ap-procher $\OML/cmm/m/it/10 p\OT1/cmr/m/n/10 (\OML/cmm/m/it/
 10 Z\OMS/cmsy/m/n/10 j\OML/cmm/m/it/10 Y\OT1/cmr/m/n/10 )$. 
@@ -246,13 +246,13 @@ les ar-bres, pour ap-procher $\OML/cmm/m/it/10 p\OT1/cmr/m/n/10 (\OML/cmm/m/it/
 
 [2] (./PLN_spatial.aux) ) 
 Here is how much of TeX's memory you used:
- 2649 strings out of 492649
- 33194 string characters out of 6129622
- 109919 words of memory out of 5000000
- 6518 multiletter control sequences out of 15000+600000
+ 2648 strings out of 492649
+ 33186 string characters out of 6129622
+ 108913 words of memory out of 5000000
+ 6517 multiletter control sequences out of 15000+600000
  11483 words of font info for 47 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 27i,11n,35p,532b,197s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 27i,10n,35p,326b,197s stack positions out of 5000i,500n,10000p,200000b,80000s
 </usr/local/texlive/2018/texmf-dist/fonts/type1/public
 /amsfonts/cm/cmbx12.pfb></usr/local/texlive/2018/texmf-dist/fonts/type1/public/
 amsfonts/cm/cmex10.pfb></usr/local/texlive/2018/texmf-dist/fonts/type1/public/a
@@ -267,7 +267,7 @@ cmr5.pfb></usr/local/texlive/2018/texmf-dist/fonts/type1/public/amsfonts/cm/cmr
 .pfb></usr/local/texlive/2018/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.p
 fb></usr/local/texlive/2018/texmf-dist/fonts/type1/public/doublestroke/dsrom10.
 pfb>
-Output written on PLN_spatial.pdf (2 pages, 125193 bytes).
+Output written on PLN_spatial.pdf (2 pages, 126102 bytes).
 PDF statistics:
  63 PDF objects out of 1000 (max. 8388607)
  45 compressed objects within 1 object stream

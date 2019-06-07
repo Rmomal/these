@@ -1,0 +1,124 @@
+---
+title: "Demo of latent Tree Aggregation Surrogate Variable Analysis"
+author: "Christophe Ambroise"
+date: "24/11/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(LITree)
+```
+
+
+# Data Simulation
+
+To simulate Gaussian data with given covariance structure and missing variables:
+
+- chose a graph type (erdös, tree, star) 
+- deduce a covariance matrix via the construction  of a GGM.model object
+- draw a random sample from the GGM.model object via the `randomSample()` method
+```{r graph-model}
+erdos.graph <- graphModel$new(type = "erdos",size=30, p.or.m = 0.2)
+plot(erdos.graph,edge.arrow.size=0, vertex.color="gold", 
+     vertex.size=15, vertex.frame.color="gray", 
+     vertex.label.color="black", 
+     vertex.label.cex=0.8,
+     vertex.label.dist=0)
+star.graph <- graphModel$new(type = "starerdos",size=30, p.or.m = 0.05)
+plot(star.graph,edge.arrow.size=0, vertex.color="gold", 
+     vertex.size=15, vertex.frame.color="gray", 
+     vertex.label.color="black", 
+     vertex.label.cex=0.8,
+     vertex.label.dist=0)
+```
+
+
+
+
+
+```{r GGM-simul}
+star.model <- GGMmodel$new(graph=star.graph) 
+plot(star.model)
+star.model$randomSample(n=50)  # create a random sample asscesible as public variable X in the star.model
+```
+
+
+# Graph inference
+
+
+To infer the graphical model the class GGM.fit uses a simple data table (assumed to be scaled).
+If the ground truth is know (for example when simulated data is available), precision recall and roc curve
+can be computed using the GGM.evaluation class.
+
+## Testing Glasso with no missing variable
+
+```{r GGM.fit}
+star.model.fit <-GGMfit$new(star.model$getX(),method="glasso")
+str(star.model.fit)
+testingGlasso<-GGMexperiment$new(X.list = list(star.model$getX()), adjmat = star.model$getAdjmat())
+testingGlasso$run()
+print(glasso.auc<-testingGlasso$auc())
+testingGlasso$roc.plot()
+```
+
+## Comparing Chow-Liu and Glasso with no missing variable
+
+```{r }
+testingGlasso<-GGMexperiment$new(X.list = list(star.model$getX()), adjmat = star.model$getAdjmat(),methods=c("glasso","chow.liu"))
+testingGlasso$run()
+testingGlasso$roc.plot()
+print(auc<-testingGlasso$auc())
+```
+## Comparing Chow-Liu and Glasso with no missing variable using 10 samples of size 30
+
+```{r }
+X.list<- lapply(vector(mode = "list", length = 10), function(x) {star.model$randomSample(30)
+                                                                 star.model$getX()  } )
+testingGlasso<-GGMexperiment$new(X.list = X.list, adjmat = star.model$getAdjmat(),methods=c("glasso","chow.liu"))
+testingGlasso$run()
+testingGlasso$roc.plot()
+print(auc<-testingGlasso$auc())
+```
+
+## Comparing Chow-Liu and Glasso with no missing variable using bagging
+
+```{r }
+testingGlasso<-GGMexperiment$new(X.list = list(star.model$getX()), adjmat = star.model$getAdjmat(),methods=c("glasso","chow.liu"))
+testingGlasso$run(bagging=TRUE)
+testingGlasso$roc.plot()
+print(auc<-testingGlasso$auc())
+```
+
+
+# Introduction missing variable 
+The GGM.model class allows to specify a number of missing variables, which are chosen among the nodes of highest degree.
+If there are some missing variable two matrices of adjacency are available:
+
+- the full adjacency matrix
+- the conditional adjacency matrix (relative to the observed variables)
+
+And after the simulation of a random sample to data matrices are available: 
+
+- The full data matrix $X$, with observed and latent variables
+- The observed data  matrix $X_{obs}$ 
+
+When the model is fitted with observed data, two evaluation can be performed, if the algorithm takes 
+into account missing data
+
+- the evaluation on the conditional graph, 
+- the evaluation on the full graph.
+
+# Testing Glasso with one missing variable
+```{r GGM.model.with.missing.var}
+star.model.missing <- GGMmodel$new(graph=star.graph,nb.missing.var= 1) 
+dim(star.model.missing$getAdjmat())
+dim(star.model.missing$getAdjmatCond())
+star.model.missing$randomSample(n=60)
+dim(star.model.missing$getX())
+dim(star.model.missing$getXobs())
+star.model.missing.fit <-GGMfit$new(star.model.missing$getXobs(),fit.number = 20,method="glasso")
+star.model.missing.fit$run()
+star.model.missing.fit2 <-GGMfit$new(star.model.missing$getXobs(),nb.missing.var= 1,fit.number = 20,method="em.latent.trees")
+star.model.missing.fit2$run()
+```

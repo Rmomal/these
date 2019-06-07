@@ -1,0 +1,57 @@
+---
+title: "AUC"
+output:
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_float: yes
+  html_notebook:
+    toc: yes
+    toc_float: yes
+---
+
+```{r include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, cache=TRUE)
+```
+
+
+
+
+# AUC
+## Erdös
+### edge probabilty
+![bla](../Simu/PLNcov/images/erdos_prob.pdf)
+
+
+### d
+![](/Users/raphaellemomal/simulations/Simu/PLNcov/images/erdos_d.pdf)
+
+
+### n
+![](/Users/raphaellemomal/simulations/Simu/PLNcov/images/erdos_n.pdf)
+
+
+## Cluster
+### density
+
+### r
+
+### d
+
+
+### n
+
+## Tree
+### d
+
+
+###n
+
+
+## Scale-free
+### d
+
+### n
+
+# Precision Recall
+## Table

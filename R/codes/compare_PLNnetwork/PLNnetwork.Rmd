@@ -1,0 +1,17 @@
+---
+title: "PLNnetwork"
+output: html_notebook
+---
+ 
+ 
+```{r}
+library(PLNmodels)
+
+data(trichoptera)
+fits <- PLNnetwork(Abundance ~ 1, data = trichoptera)
+fits$coefficient_path() %>% filter(Coeff!=0)
+fits$penalties
+pred=fits$predict()
+str(pred)
+```
+

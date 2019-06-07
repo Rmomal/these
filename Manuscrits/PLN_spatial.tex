@@ -11,7 +11,7 @@
 
 \newcommand{\esp}{\mathds{E}}
 \newcommand{\var}{\mathds{V}}
-\newcommand{\RM}[1]{\textcolor{purple}{[#1]}}
+\newcommand{\RM}{\textcolor{purple}}
 \begin{document}
 \maketitle
 A variogram in geostatistics is defined for an intrinsically stationary spatial process Z as follows, for sites $s$ and $t$ separated by a distance $d$:
@@ -33,9 +33,17 @@ In what follows we want to account for a spatial structure of tha data. This mea
 \item $\Gamma_{stjk} = \delta_{st} \sigma_{jk}$
 \item $\Gamma_{stjk} = \delta_{st} + \mathds{1}_{s=t}\sigma_{jk}$
 \end{enumerate}
-Where $\delta$ and $\sigma$ represent respectively the spatial and inter-species dependence.  We  assume (a) a stationarity in spatial variance, that is that $\delta_{uu} = cst$: a behavior can be spatially translated. The inter-species dependence only  intervenes  on a same site, so furthermore there is an assumption (b) that two species in two different sites will behave independently.  For clarity sake, we write $\Gamma_{ssjj}$ as $\Gamma_{j}$, according to the assumption of spatial variance stationarity. 
+Where $\delta$ and $\sigma$ represent respectively the spatial and inter-species dependence.  We  assume 
+\begin{itemize}
+\item [(a)] a stationarity in spatial variance, that is that $\delta_{uu} = cst$ for any site $u$. This means that  a behavior can be spatially translated. 
+\item [(b)] The inter-species dependence only  intervenes  on a same site, so furthermore two species in two different sites will behave independently.  
 
-\RM{Est-ce que (b) implique que $\Gamma_{stj} = \Gamma_{st}$ ? À clarifier dans le modèle 1 }
+\end{itemize}For clarity sake, we write $\Gamma_{ssjj}$ as $\Gamma_{j}$, according to the assumption of spatial variance stationarity. 
+
+\RM{\begin{itemize}
+\item Est-ce que (b) implique que $\Gamma_{stj} = \Gamma_{st}$ ? \item En suivant (b), devrait-on écrire le modèle 1 comme 
+$$ \Gamma_{stjk} =   \mathds{1}_{s\neq t} \delta_{st} + \mathds{1}_{s=t} \delta_{st} \sigma_{jk}$$  
+\end{itemize} }
 \subsection{Y characteristics}
 We know the expectation, variance and covariance expressions for the PLN model. When only one species is considered, we have:
 \begin{align*}
@@ -51,13 +59,13 @@ For sites $s$ and $t$ at a distance $d$:
 \gamma_Y(d) &= \frac{1}{2} \left[ \mu_s + \mu_s^2(e^{\Gamma^2_j}-1) + \mu_s^2 + \mu_t+\mu_t^2(e^{\Gamma^2_j}-1) +\mu_t\right] - \mu_s\mu_te^{\Gamma_{stj}}\\
 &= \frac{1}{2} \left[ ( \mu_s^2+\mu_t^2)e^{\Gamma^2_j}+ \mu_s+ \mu_t\right] - \mu_s\mu_te^{\Gamma_{stj}}\\
 \end{align*}
-We then define $\tilde{Y_{sj}} = Y_{sj}/\mu_{sj}$.
+We then define $\tilde{Y}_{sj}= Y_{sj}/\mu_{sj}$.
 It  comes that 
 \begin{align*}
- \hat{\gamma}_{\tilde{Y}}(d) &= \frac{1}{2} \esp \left[(\tilde{Y_{sj}}-\tilde{Y_{sj}})^2 - (\frac{1}{\mu_s}+\frac{1}{\mu_t})\right]\\
+ \hat{\gamma}_{\tilde{Y}}(d) &= \frac{1}{2} \esp \left[(\tilde{Y}_{sj}-\tilde{Y}_{sj})^2 - (\frac{1}{\mu_s}+\frac{1}{\mu_t})\right]\\
  &=e^{\Gamma_j^2} - e^{\Gamma_{st}}
 \end{align*}
-$ \hat{\gamma}_{\tilde{Y}}$ is a resembles the classical semi-variogram for a stationary spatial process except it is a difference of exponentials rather than a difference of direct variance and covariance. 
+$ \hat{\gamma}_{\tilde{Y}}$ resembles the classical expression for the semi-variogram of a stationary spatial process, except it is a difference of exponentials rather than a difference of direct variance and covariance. 
 \RM{indice en s ou en sj, il faut choisir}
 \subsection{Two species in two sites}
 We recall that

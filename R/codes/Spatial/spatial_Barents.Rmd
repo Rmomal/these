@@ -1,0 +1,104 @@
+---
+title: "Barents Fish data"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r, echo=TRUE, message=FALSE}
+library(sp)
+library(gstat)
+library(tidyverse)
+library(gridExtra)
+```
+
+```{r, echo=FALSE}
+defaultggplot<-function(vgm,color="#00A1D5FF"){
+  g=ggplot(vgm, aes(x=dist,y=gamma))+geom_point(col="#00A1D5FF")+
+    geom_line(col="#00A1D5FF")+theme_minimal()
+}
+
+```
+
+# Les données
+
+Les données Barents contiennent 89 observations de 30 espèces de poissons (Y). Une matrice d'offsets est disponible, ainsi qu'une matrice de covariables contenant les positions de chaque relevé.
+```{r}
+load("BarentsFish.Rdata")
+Y=Data$count
+O=Data$offset
+X=Data$covariates
+colnames(X)
+station= Data$station
+```
+
+# Étude spatiale
+
+La fonction getData permet de construire un objet `SpatialPointsDataFrame`, où les coordonnées contenues dans X sont utilisées. spInd est l'indice de l'espèce à l'étude.
+```{r}
+getData<-function(spInd){
+  spatialData=data.frame(cbind(Y[,spInd],O[,spInd],X))
+  colnames(spatialData)=c("count","offset",colnames(X))
+  #méthode propre avec CRS pour coordonnées en longlat
+  xy=spatialData[,grep("tud",colnames(spatialData))]
+  spatialData= SpatialPointsDataFrame(coords = xy, 
+                                      data =spatialData[,-grep("tud",colnames(spatialData))], proj4string = CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"))
+  return(spatialData)
+}
+```
+
+La fonction comparVgm_plot renvoie le graphique supperposant les variogrammes residuels par rapport à une tendence linéaire, *avec l'estimateur robuste de Cressie* . Les effets ajustés sont la température et la profondeur (contenues dans les covariables), seules ou ensemble.
+```{r}
+comparVgm_plot<-function(spInd,line=TRUE, cress){
+  spatialData=getData(spInd)
+  #no trend :
+  v1=variogram(count~1, spatialData, cressie=cress)
+  # residual variogram w.r.t. a linear trend:
+  v2=variogram(count~Temperature+Depth, spatialData, cressie=cress)
+  v3=variogram(count~Temperature+Depth+Latitude+Longitude, spatialData, cressie=cress)
+  v4=variogram(count~Temperature, spatialData, cressie=cress)
+  v5=variogram(count~Latitude+Longitude, spatialData, cressie=cress)
+  browser()
+  v1=cbind(v1[,c(2,3)],trend="none")
+  v2=cbind(v2[,c(2,3)],trend="temp+depth")
+  v3=cbind(v3[,c(2,3)],trend="complet")
+  v4=cbind(v4[,c(2,3)],trend="temp")
+  v5=cbind(v5[,c(2,3)],trend="coord")
+  Vtot=rbind(v1,v2,v3,v4,v5)
+  
+  g=ggplot(Vtot, aes(x=dist,y=gamma,color=trend))+geom_point()+
+    theme_minimal()+scale_color_manual(values=c("#00A1D5FF","chartreuse3","indianred2","orange2","gray40"))+labs(title=spInd)
+  if(line) g=g+geom_line()
+  print(g)
+}
+```
+On regarde les variogrammes résiduels pour les 5 espèces les plus observées dans les données
+```{r}
+collec=which(colSums(Y)%in%sort(colSums(Y),decreasing = TRUE)[1:5] )
+sapply(collec, function(x) comparVgm_plot(x, line=TRUE,cress=TRUE))
+```
+
+Estimateur classique du variogramme :
+```{r}
+collec=which(colSums(Y)%in%sort(colSums(Y),decreasing = TRUE)[1:5] )
+sapply(collec, function(x) comparVgm_plot(x, line=TRUE,cress=FALSE))
+```
+
+```{r}
+# spData=getData(collec[2])
+# v4=variogram(count~Temperature, spData)
+# plot(v4)
+# v4fit =fit.variogram(v4, model=vgm(psill=3e4,'Exp',nugget=3e3,range=200))
+# kriging=krige()
+# levelplot()
+
+```
+
+
+
+
+
+
+
+
+
