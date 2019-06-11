@@ -1,7 +1,7 @@
 # nettoyer l'environnement de travail
 rm(list = ls())
 
-setwd(WorkDir <- "/home/momal/Git/these/Data/REMMOA")
+setwd(WorkDir <- "/Users/raphaellemomal/these/Data_Oak_remmoa/REMMOA")
 DataDir <- paste(WorkDir, "output", sep = "/")
 
 load(paste(DataDir, "20180620_PLN_REMMOANC.RData", sep = "/"))
