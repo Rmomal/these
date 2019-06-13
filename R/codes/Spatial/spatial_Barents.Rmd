@@ -23,6 +23,7 @@ defaultggplot<-function(vgm,color="#00A1D5FF"){
 # Les données
 
 Les données Barents contiennent 89 observations de 30 espèces de poissons (Y). Une matrice d'offsets est disponible, ainsi qu'une matrice de covariables contenant les positions de chaque relevé.
+
 ```{r}
 load("BarentsFish.Rdata")
 Y=Data$count
@@ -58,7 +59,7 @@ comparVgm_plot<-function(spInd,line=TRUE, cress){
   v3=variogram(count~Temperature+Depth+Latitude+Longitude, spatialData, cressie=cress)
   v4=variogram(count~Temperature, spatialData, cressie=cress)
   v5=variogram(count~Latitude+Longitude, spatialData, cressie=cress)
-  browser()
+ # browser()
   v1=cbind(v1[,c(2,3)],trend="none")
   v2=cbind(v2[,c(2,3)],trend="temp+depth")
   v3=cbind(v3[,c(2,3)],trend="complet")

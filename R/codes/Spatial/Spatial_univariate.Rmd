@@ -1,0 +1,184 @@
+---
+title: "Univariate spatial exploratory tools"
+author: "Raphaelle Momal"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r, echo=FALSE, message=FALSE, results=FALSE}
+loadData<-function(data){
+  if(data=="REMMOA"){
+   load(file="/Users/raphaellemomal/these/Data_Oak_remmoa/REMMOA/output/20180620_PLN_REMMOANC.RData")
+
+    colnames(X)[7:8]<-c("Xcart","Ycart")
+    null_index=which(rowSums(Y)==0)
+    Y=as.matrix(Y[-null_index,])
+    X=data.frame(X[-null_index,])
+    N=as.matrix(N[-null_index,])
+    Y_corr=as.matrix(Y/N)
+    Y_corr[!is.finite(Y_corr)]<-0
+    mat_effort=outer(X$Effort,rep(1,32))
+    
+    X[,c(6:10,14:20)]<-apply(X[,c(6:10,14:20)], 2, function(x) as.numeric(x))
+    
+  }else{
+    load("/Users/raphaellemomal/these/R/codes/Spatial/BarentsFish.Rdata")
+    Y=Data$count
+    O=Data$offset
+    X=Data$covariates
+    colnames(X)
+    station= Data$station
+  }
+}
+library(tidyverse)
+lapply(c("rgdal","maptools", "dplyr", "reshape", "ggplot2", "ggthemes",
+         "broom", "rgdal", "readxl", "lubridate"), library, character.only=TRUE)
+
+```
+
+```{r, echo=FALSE}
+
+distance <- function(pt1, vec, radius=6378) {# pt1: !!(une latitude, une longitude)!!, vec peut être un point ou un vecteur de points
+  # les sinus des longitudes sont multipliées par les cosinus des latitudes
+  # !! pt1[1] est une latitude et pt1[2] une longitude
+  if(is.null(dim(vec))) vec = matrix(vec,ncol=2)
+  #if(nrow(vec)==2) browser()
+  (2 * asin(sqrt((sin((pt1[1] - vec[, 1]) / 2
+  )) ^ 2 +
+    cos(pt1[1]) * cos(vec[, 1]) * (sin((pt1[2] - vec[, 2]) / 2
+    )) ^ 2))) *radius # approximate radius of the earth near the equator
+}
+
+diffsq<-function(a,vec) (a-vec)^2
+
+# Row 1 corresponds to the dstance between child 1 and all other children
+
+compute_distance<-function(distdata){# Defining a matrix with distances between each individual
+  end=nrow(distdata)
+  listdist<-lapply(seq_along(distdata[,1]), function(x){
+    #    if(x==(end)) browser()
+    indexes=x:end
+    res= distance(unlist(distdata[x,]),distdata[indexes,])
+    return(res)
+  })
+  return( unlist(listdist))
+}
+
+compute_diffs<-function(spInd,counts){
+  end=nrow(counts)
+  listdiffs<-lapply(1:end, function(x){
+    indexes=x:end
+    diffsq(counts[x,spInd],counts[indexes,spInd])
+  })
+  # browser()
+  return(unlist(listdiffs))
+}
+
+scatter_vgm<-function( vecDist, diffs, title){#plot des différences au carrés en fonction de la distance
+  
+  dat=data.frame(dist=vecDist, diff=diffs)
+  dat%>% filter(dist!=0) %>% 
+    ggplot(aes(dist, diff))+
+    geom_point()+labs(title=title, y="Squared differences", x="Distances")
+  
+}
+gamma_hat=function(cross=FALSE,dist){
+  
+}
+
+
+#########################
+theme_set(theme_light())
+```
+
+# Graph différences au carré / distance
+
+* suppression des observations nulles
+* calcul de la distance par la formule de Haversine
+
+```{r, echo=FALSE}
+ load(file="/Users/raphaellemomal/these/Data_Oak_remmoa/REMMOA/output/20180620_PLN_REMMOANC.RData")
+
+    colnames(X)[7:8]<-c("Xcart","Ycart")
+    null_index=which(rowSums(Y)==0)
+    Y=as.matrix(Y[-null_index,])
+    X=data.frame(X[-null_index,])
+    N=as.matrix(N[-null_index,])
+    Y_corr=as.matrix(Y/N)
+    Y_corr[!is.finite(Y_corr)]<-0
+    mat_effort=outer(X$Effort,rep(1,32))
+    
+    X[,c(6:10,14:20)]<-apply(X[,c(6:10,14:20)], 2, function(x) as.numeric(x))
+
+```
+
+
+```{r}
+
+x=4
+indexes=which(Y[,x]!=0)
+distdata=X[indexes,c("latitude","longitude")] # ! lati puis longi
+
+dists<-compute_distance(distdata)
+
+diffs<-compute_diffs(spInd=x,(Y-mat_effort)[indexes,]) #bropet 26 pour remmoa
+scatter_vgm(dists, diffs, colnames(Y)[x])
+
+```
+
+# Carte
+
+
+```{r, echo=FALSE}
+loadData("REMMOA")
+### polygone de la zone d'etude
+WorkDir <- "/Users/raphaellemomal/these/Data_Oak_remmoa/REMMOA"
+ShapeDir <- paste(WorkDir, "shape", sep = "/")
+poly_NC <- readOGR(dsn = paste(ShapeDir, "SecteurNC_UTM58.shp", sep = "/"), layer = "SecteurNC_UTM58") 
+
+### representation de l'effort d'echantillonnage
+theme_set(theme_bw(base_size = 12))
+effort_plot <- ggplot(data = X, 
+                      aes(x = Xcart, y = Ycart, group = Transect.Label)
+) + 
+  geom_polygon(data = tidy(poly_NC), 
+               aes(x = long, y = lat, group = group), 
+               fill = grey(1.0), color = "darkblue", size = 0.5
+  ) +
+  coord_equal() + 
+  geom_line(color="gray70") + 
+  xlab("Eastings") + ylab("Northings") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        legend.position = "right"
+  )
+#effort_plot
+### visualiser les detections (N) de petits delphinin?s
+map_species<-function(species,mat, count=FALSE){ #SMADEL
+  legend=ifelse(!count, "Nb Detections", "Obs count")
+  species=enquo(species)
+  data=cbind(X, mat) %>% filter(!!species!=0)
+  effort_plot +
+    geom_point(data = data,
+               aes(x = Xcart, y = Ycart, size = !!species, color = !!species)
+    ) +
+    scale_size(name = legend) + 
+    scale_colour_gradient(name = legend,low="blue",high="firebrick1")+#,low="firebrick1",high="darkorchid4")+
+    guides(size=FALSE)+
+    ggtitle(species)
+}
+# g1<-map_species(BROTER,Y, count=TRUE)
+# g2<-map_species(BROTER,N)
+# grid.arrange(g1,g2,nrow=1, ncol=2)
+```
+```{r}
+
+map_species(BIGGLO,N)
+map_species(BIGGLO,Y, count=TRUE)
+
+
+```
+

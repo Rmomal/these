@@ -164,7 +164,7 @@ colnames(X)</code></pre>
   v3=variogram(count~Temperature+Depth+Latitude+Longitude, spatialData, cressie=cress)
   v4=variogram(count~Temperature, spatialData, cressie=cress)
   v5=variogram(count~Latitude+Longitude, spatialData, cressie=cress)
-  
+ # browser()
   v1=cbind(v1[,c(2,3)],trend=&quot;none&quot;)
   v2=cbind(v2[,c(2,3)],trend=&quot;temp+depth&quot;)
   v3=cbind(v3[,c(2,3)],trend=&quot;complet&quot;)

@@ -1,0 +1,147 @@
+---
+title: "PLN et EMtree pour REMMOA, sans spatial"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r, results=FALSE, message=FALSE}
+library(EMtree)
+library(tidyverse)
+library(grid)
+library(gridExtra)
+library(tidygraph)
+library(ggraph)
+```
+
+# Chargement et mise en forme des données
+
+* Lignes nulles
+* Format des covariables
+* Y_corr = comptages moyens par détection 
+
+```{r}
+setwd(WorkDir <- "/Users/raphaellemomal/these/Data_Oak_remmoa/REMMOA")
+ShapeDir <- paste(WorkDir, "shape", sep = "/")
+OutDir <- paste(WorkDir, "output", sep = "/")
+
+load(paste(OutDir, "20180620_PLN_REMMOANC.RData", sep = "/"))
+colnames(X)[7:8]<-c("Xcart","Ycart")
+null_index=which(rowSums(Y)==0)
+Y=as.matrix(Y[-null_index,])
+X=as.matrix(X[-null_index,])
+N=as.matrix(N[-null_index,])
+
+# covariables numériques
+X=data.frame(X)
+X[,c(6:10,14:20)]<-apply(X[,c(6:10,14:20)], 2, function(x) as.numeric(x))
+
+# correction des comptages par le nombre de détection
+Y_corr=as.matrix(Y/N)
+Y_corr[!is.finite(Y_corr)]<-0
+```
+
+
+Fonctions utiles :
+
+* Ajuster PLN avec des covariables de vec
+* afficher le réseau après rééchantillonnage
+
+```{r}
+get_model<-function(data, vec){
+  t1<-Sys.time()
+  string<-paste(deparse(substitute(data)), paste(vec, collapse=" + "), sep=" ~ ")
+  formula<-as.formula(string)
+  mat = as.matrix(lm(formula, x=T)$x)
+  model<-PLN(data ~ -1+mat)
+  t2<-Sys.time()
+  print(difftime(t2,t1))
+  return(model)
+}
+get_network<-function(resample_output,title, data=Y, f=0.8){
+  df<-freq_selec(resample_output$Pmat,p=ncol(data),f=f)
+  graph<-draw_network(df,title, pal="dodgerblue3", 
+                              names=colnames(data), layout="nicely", size=3, curv=0.1)
+  return(graph)
+}
+```
+
+# Modèles PLN
+
+Plusieurs modèles PLN ont été ajustés et stockés dans models.RData.
+
+* m0 : ~ 1
+* m1 : ~ 1 + SEA_STATE
+* m2 : ~ 1 + Depth
+* m3 : ~ 1 + SUBJECTIVE
+* m4 : ~ 1 + Depth + SUBJECTIVE
+* m5 : ~ 1 + SEA_STATE + SUBJECTIVE
+* m6 : ~ 1 + SEA_STATE + Depth
+* m7 : ~ 1 + SEA_STATE + Depth + SUBJECTIVE
+* m8 : ~ 1 + longitude + latitude
+* m9 : ~ 1 + longitude + latitude + Depth
+* m10 : ~ 1 + longitude + latitude + SEA_STATE + Depth + SUBJECTIVE
+
+Les modèles sont ajustés pour les données brutes Y (pas Y_corr). Le temps d'ajustement varie entre environ 30s et plus de deux minutes pour m8 et m9.
+
+```{r, eval=FALSE, echo=FALSE}
+m0<-get_model(Y,"1") #22s
+m1<-get_model(Y, "SEA_STATE") #30s
+m2<-get_model(Y, "Depth") #26s, glm.fit: fitted rates numerically 0 occurred 
+m3<-get_model(Y, "SUBJECTIVE") #28s
+m4<-get_model(Y, vec1[-1])# 28s, In doTryCatch(return(expr), name, parentenv, handler) :display list redraw           incomplete
+m5<-get_model(Y, vec1[-2]) #56s, glm.fit: fitted rates numerically 0 occurred 
+m6<-get_model(Y, vec1[-3]) #33s, glm.fit: fitted rates numerically 0 occurred 
+m7<-get_model(Y, vec1) # 57s, glm.fit: fitted rates numerically 0 occurred 
+m8<-get_model(Y, vec2) # 2.6min
+m9<-get_model(Y, c(vec2,"Depth")) # 2.6min, glm.fit: fitted rates numerically 0 occurred 
+m10<-get_model(Y, c(vec1,vec2)) # 56s, glm.fit: fitted rates numerically 0 occurred
+save(m0,m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,file="models.RData")
+```
+
+
+```{r, echo=FALSE}
+load("models.RData")
+Lmodels<-list(m0,m1,m2,m3,m4,m5,m6,m7,m8,m9,m10)
+names(Lmodels)=0:10
+criteria<-lapply(seq_along(Lmodels),function(x){
+  c(Lmodels[[x]]$criteria,model=names(Lmodels)[x])
+})
+criteria=data.frame(apply(do.call(rbind,criteria),2,  as.numeric))
+criteria %>% gather(crit,value,-model) %>% 
+  ggplot(aes(reorder(as.factor(model),-value), value, color=crit))+
+  geom_point()+facet_grid(crit~., scales = "free")+theme_light()+guides(color=FALSE)+
+  labs(x="model",y="criteria value")
+```
+
+* Dans PLN on veut des grandes valeurs pour BIC, ICL et loglik
+* les modèles 2, 4, et 6 comprennent "depth", qui semble essentielle
+* les coordonnées spatiales seules (modèle 8) montrent de belles performances
+* cependant le temps d'ajustement est très conséquent (2.6min contre 28 à 56s pour les autres)
+* le gain en ICL de 10 par rapport à 7 est négligeable 
+* depth+sea_state est meilleur que depth+spatial
+
+Comparons les réseaux obtenus avec m0, m2 et m7 (pas d'ajustement spatial donc).
+
+# Les réseaux 
+
+Les espèces surlignées en jaune dans les réseaux sont celles avec un score de betweenness important. La matrice d'offsets est construite à partir de la covariable "Effort". Offset sample-specific.
+
+* R0 : m0 et sans matrice d'effort. 5min, alpha mean = 0.6959584
+* R_effort : m0 avec matrice d'efforts.  5.3min alpha mean =  0.710248
+* R_depth : m2 et effort. 5.9min alpha mean = 0.7966224
+* R_full : m7 et effort. 15.3min alpha mean = 0.9731524
+
+```{r, fig.width=14, fig.height=5}
+
+load("Reseaux.RData")
+graph0<-get_network(R0,"Naif")
+graph_effort<-get_network(R_effort,"Effort")
+graph_depth<-get_network(R_depth,"~ Depth")
+graph_full<-get_network(R_full,"~ Depth+sea_state+subjective")
+
+grid.arrange(graph0,graph_effort,graph_depth,graph_full,nrow=1, ncol=4)
+
+```
+
