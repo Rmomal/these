@@ -28,7 +28,7 @@ cov_matern <- function(distance, range = 10, sill = 5) {
 # Simulation de Gamma
 n=30 # n sites
 p=15
-Sigma<-matrix(1,ncol=p, nrow=p)
+Sigma<-matrix(1,ncol=p, nrow=p) # simple
 grid <- data.frame(lon =seq(0, 1, length.out = n), 
                    lat =seq(0, 1, length.out = n)   )
 Delta <- as.matrix(cov_exp(distance = dist(grid, method = "euclidean")))
@@ -90,7 +90,7 @@ compute_diffs<-function(spInd,counts,M,S, obs=FALSE){
 
 scatter_vgm<-function( vecDist, diffs, title){#plot des différences au carrés en fonction de la distance
   
-  dat=data.frame(dist=vecDist, diff=diffs)[30:57,]
+  dat=data.frame(dist=vecDist, diff=diffs)
   dat%>% filter(dist!=0) %>% 
     ggplot(aes(dist, diff))+
     geom_point()+labs(title=title, y="Squared differences", x="Distances")
