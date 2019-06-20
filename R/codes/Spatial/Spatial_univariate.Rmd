@@ -10,18 +10,18 @@ output:
 ```{r, echo=FALSE, message=FALSE, results=FALSE}
 loadData<-function(data){
   if(data=="REMMOA"){
-   load(file="/Users/raphaellemomal/these/Data_Oak_remmoa/REMMOA/output/20180620_PLN_REMMOANC.RData")
-
+    #browser()
+    load(file="/Users/raphaellemomal/these/Data_Oak_remmoa/REMMOA/output/20180620_PLN_REMMOANC.RData")
+    
     colnames(X)[7:8]<-c("Xcart","Ycart")
-    null_index=which(rowSums(Y)==0)
+   X[,c(6:10,14:20)]<-apply(X[,c(6:10,14:20)], 2, function(x) as.numeric(x))
+     null_index=which(rowSums(Y)==0)
     Y=as.matrix(Y[-null_index,])
     X=data.frame(X[-null_index,])
     N=as.matrix(N[-null_index,])
     Y_corr=as.matrix(Y/N)
     Y_corr[!is.finite(Y_corr)]<-0
     mat_effort=outer(X$Effort,rep(1,32))
-    
-    X[,c(6:10,14:20)]<-apply(X[,c(6:10,14:20)], 2, function(x) as.numeric(x))
     
   }else{
     load("/Users/raphaellemomal/these/R/codes/Spatial/BarentsFish.Rdata")
@@ -53,9 +53,17 @@ distance <- function(pt1, vec, radius=6378) {# pt1: !!(une latitude, une longitu
 
 diffsq<-function(a,vec) (a-vec)^2
 
+latent_approxdiffsp<-function(M,S, spInd,x,indexes){
+  EZ1<-M[x,spInd]
+  vecEZ2<-M[indexes,spInd]
+  VZ1<-S[x,spInd]^2
+  vecVZ2<-S[indexes,spInd]^2
+  
+  approx=0.5*(VZ1+vecVZ2+EZ1^2+vecEZ2^2)-EZ1*vecEZ2
+}
 # Row 1 corresponds to the dstance between child 1 and all other children
-
-compute_distance<-function(distdata){# Defining a matrix with distances between each individual
+# Defining a matrix with distances between each individual
+compute_distance<-function(distdata){
   end=nrow(distdata)
   listdist<-lapply(seq_along(distdata[,1]), function(x){
     #    if(x==(end)) browser()
@@ -63,16 +71,18 @@ compute_distance<-function(distdata){# Defining a matrix with distances between 
     res= distance(unlist(distdata[x,]),distdata[indexes,])
     return(res)
   })
+
   return( unlist(listdist))
 }
 
-compute_diffs<-function(spInd,counts){
+compute_diffs<-function(spInd,counts,M,S){
   end=nrow(counts)
   listdiffs<-lapply(1:end, function(x){
     indexes=x:end
-    diffsq(counts[x,spInd],counts[indexes,spInd])
+    #diffsq(counts[x,spInd],counts[indexes,spInd])
+    latent_approxdiffsp(M,S, spInd,x,indexes)
   })
-  # browser()
+ # browser()
   return(unlist(listdiffs))
 }
 
@@ -93,38 +103,91 @@ gamma_hat=function(cross=FALSE,dist){
 theme_set(theme_light())
 ```
 
-# Graph différences au carré / distance
 
-* suppression des observations nulles
-* calcul de la distance par la formule de Haversine
+# Données 
 
-```{r, echo=FALSE}
- load(file="/Users/raphaellemomal/these/Data_Oak_remmoa/REMMOA/output/20180620_PLN_REMMOANC.RData")
+```{r}
+load(file="/Users/raphaellemomal/these/Data_Oak_remmoa/REMMOA/output/20180620_PLN_REMMOANC.RData")
 
-    colnames(X)[7:8]<-c("Xcart","Ycart")
-    null_index=which(rowSums(Y)==0)
-    Y=as.matrix(Y[-null_index,])
-    X=data.frame(X[-null_index,])
-    N=as.matrix(N[-null_index,])
-    Y_corr=as.matrix(Y/N)
-    Y_corr[!is.finite(Y_corr)]<-0
-    mat_effort=outer(X$Effort,rep(1,32))
+colnames(X)[7:8]<-c("Xcart","Ycart")
+null_index=which(rowSums(Y)==0)
+Y=as.matrix(Y[-null_index,])
+X=data.frame(X[-null_index,])
+N=as.matrix(N[-null_index,])
+Y_corr=as.matrix(Y/N)
+Y_corr[!is.finite(Y_corr)]<-0
+mat_effort=outer(X$Effort,rep(1,32))
+
+X[,c(6:10,14:20)]<-apply(X[,c(6:10,14:20)], 2, function(x) as.numeric(x))
+
+```
+
+# Graphes en distance
+## Abondance par rapport à la côte/au canyon
+
+```{r}
+
+repart_species<-function(species){
+  
+  species=enquo(species)
+ 
+  as_tibble(Y/mat_effort) %>% 
+    dplyr::select(!!species) %>% cbind(Canyon=X$DistCanyon, Cote=X$DistCot) %>% 
+    filter(!!species!=0) %>% 
+    gather(dist, value, -!!species) %>% 
+    ggplot(aes(value,!!species , color=dist))+labs(x="Distance")+
+    geom_point()+facet_grid(.~dist, scales = "free")+scale_color_brewer(palette="Set1")+guides(color=FALSE)
+  
+}
+repart_species(SMADEL)
+```
+```{r,fig.height=25}
+
+
+
+
+  as_tibble(Y/mat_effort)  %>%   cbind(Canyon=X$DistCanyon, Cote=X$DistCot) %>% 
+    gather(key, value,-Canyon,-Cote) %>% 
+      filter(value!=0) %>% gather(type,dist, -key, -value ) %>% 
+        ggplot(aes(dist,value , color=type))+labs(x="Distance")+
+        geom_point()+facet_grid(key~type, scales = "free")+scale_color_brewer(palette="Set1")+guides(color=FALSE)
+      
     
-    X[,c(6:10,14:20)]<-apply(X[,c(6:10,14:20)], 2, function(x) as.numeric(x))
+  
+
 
 ```
 
 
-```{r}
+## différences au carré / distance
 
-x=4
+* suppression des observations nulles
+* calcul de la distance par la formule de Haversine
+* matrice d'offsets sample_specific à partir de la covariable "Effort"
+
+
+
+* GRETER, BROTER, BROPET, ANOSPP en palliers
+
+```{r}
+library(PLNmodels)
+# à faire sur les résiuds de PLN dans l'epace latent
+model=PLN(Y~X$Depth+offset(log(mat_effort)))
+M=model$var_par$M
+S=model$var_par$S # variance ou sd ?
+
+x=15
 indexes=which(Y[,x]!=0)
 distdata=X[indexes,c("latitude","longitude")] # ! lati puis longi
-
+Mfiltre<-M[indexes,]
+Sfiltre<-M[indexes,]
 dists<-compute_distance(distdata)
 
-diffs<-compute_diffs(spInd=x,(Y-mat_effort)[indexes,]) #bropet 26 pour remmoa
+#Zi=mvrnorm(n=1,mu=Mfiltre[1,],Sigma=diag(c(Sfiltre[1,]%*%Sfiltre[1,]), 10, 10))
+# diffs<-compute_diffs(spInd=x,(N)[indexes,]) #bropet 26 pour remmoa
+diffs<-compute_diffs(spInd=x,Y[indexes,],Mfiltre,Sfiltre)
 scatter_vgm(dists, diffs, colnames(Y)[x])
+x=x+1
 
 ```
 
@@ -157,16 +220,17 @@ effort_plot <- ggplot(data = X,
   )
 #effort_plot
 ### visualiser les detections (N) de petits delphinin?s
-map_species<-function(species,mat, count=FALSE){ #SMADEL
+map_species<-function(species,mat, count=FALSE, low="blue", high="firebrick1", filter=0.5){ #SMADEL
+#  browser()
   legend=ifelse(!count, "Nb Detections", "Obs count")
   species=enquo(species)
-  data=cbind(X, mat) %>% filter(!!species!=0)
+  data=cbind(X, mat) %>% filter(!!species>filter)
   effort_plot +
     geom_point(data = data,
                aes(x = Xcart, y = Ycart, size = !!species, color = !!species)
     ) +
     scale_size(name = legend) + 
-    scale_colour_gradient(name = legend,low="blue",high="firebrick1")+#,low="firebrick1",high="darkorchid4")+
+    scale_colour_gradient(name = legend,low=low,high=high)+#,low="firebrick1",high="darkorchid4")+
     guides(size=FALSE)+
     ggtitle(species)
 }
@@ -176,9 +240,20 @@ map_species<-function(species,mat, count=FALSE){ #SMADEL
 ```
 ```{r}
 
-map_species(BIGGLO,N)
-map_species(BIGGLO,Y, count=TRUE)
+map_species(DASSPP,N)
+map_species(DASSPP,Y, count=TRUE)
+
+map_species(DASSPP,M, count=TRUE)
+colnames(S) = colnames(Y)
+map_species(DASSPP,S, count=TRUE)
 
 
+# détection simulatnée d'espèces
+N=as_tibble(N) %>% mutate(sum=rowSums(.))
+W=ifelse(N>0,1,0)
+W=as_tibble(W) %>%  mutate(sum=rowSums(.))
+map_species(sum,N )
+map_species(sum,Y, count=TRUE)
+map_species(sum,W,low="steelblue1",high="royalblue4", filter=4)
 ```
 

@@ -1,0 +1,116 @@
+---
+title: "Simu_PLN_spatial"
+output: html_document
+---
+
+Plan de simulation d'un modèle PLN spatial:
+
+* produit de kronecker
+* Simuler des vecZ
+* attention à l'ordre des paramètres dans le vecteur
+*
+
+# Petit, sans covariables
+
+## Simulations 
+
+```{r}
+cov_exp <- function(distance, range = 0.5, sill = 1) {
+  sill * sill * exp(- distance / range)
+}
+cov_matern <- function(distance, range = 10, sill = 5) {
+  sill * sill * (1 + distance * sqrt(3) / range) * exp(-distance * sqrt(3) / range)
+}
+
+```
+
+```{r}
+# Simulation de Gamma
+n=30 # n sites
+p=15
+Sigma<-matrix(1,ncol=p, nrow=p)
+grid <- data.frame(lon =seq(0, 1, length.out = n), 
+                   lat =seq(0, 1, length.out = n)   )
+Delta <- as.matrix(cov_exp(distance = dist(grid, method = "euclidean")))
+diag(Delta) <- 1
+Gamma<-kronecker(Delta, Sigma)
+
+# Simulation de Z
+vecZ=mvrnorm(n=1, mu=rep(0, n*p), Sigma=Gamma)
+matZ=matrix(vecZ,n, p, byrow = TRUE)
+# Simulation de Y
+Y = matrix(rpois(n*p, exp(matZ)), n, p)
+ 
+```
+
+## Visualisations
+
+Ou est-ce possible de voir la structure spatiale à partir des sorties de PLN ?
+
+```{r}
+library(PLNmodels)
+model=PLN(Y~1)
+
+diffsq<-function(a,vec) (a-vec)^2
+
+latent_approxdiffsp<-function(M,S, spInd,x,indexes){
+  EZ1<-M[x,spInd]
+  vecEZ2<-M[indexes,spInd]
+  VZ1<-S[x,spInd]^2
+  vecVZ2<-S[indexes,spInd]^2
+  
+  approx=0.5*(VZ1+vecVZ2+EZ1^2+vecEZ2^2)-EZ1*vecEZ2
+}
+# Row 1 corresponds to the dstance between child 1 and all other children
+# Defining a matrix with distances between each individual
+compute_distance<-function(distdata){
+  end=nrow(distdata)
+  listdist<-lapply(seq_along(distdata[,1]), function(x){
+    indexes=x:end
+    res= distance(unlist(distdata[x,]),distdata[indexes,])
+    return(res)
+  })
+
+  return( unlist(listdist))
+}
+
+compute_diffs<-function(spInd,counts,M,S, obs=FALSE){
+  end=nrow(counts)
+  listdiffs<-lapply(1:(end-1), function(x){
+    indexes=(x+1):end
+    if (obs){
+      diffsq(counts[x,spInd],counts[indexes,spInd])
+   }else{
+     latent_approxdiffsp(M,S, spInd,x,indexes)
+   } 
+  })
+ 
+  return(unlist(listdiffs))
+}
+
+scatter_vgm<-function( vecDist, diffs, title){#plot des différences au carrés en fonction de la distance
+  
+  dat=data.frame(dist=vecDist, diff=diffs)[30:57,]
+  dat%>% filter(dist!=0) %>% 
+    ggplot(aes(dist, diff))+
+    geom_point()+labs(title=title, y="Squared differences", x="Distances")
+  
+}
+
+M=model$var_par$M
+S=model$var_par$S # variance ou sd ?
+SigmaHat=model$model_par$Sigma
+
+dists=c(dist(grid, method = "euclidean") )
+
+x=1
+#Zi=mvrnorm(n=1,mu=Mfiltre[1,],Sigma=diag(c(Sfiltre[1,]%*%Sfiltre[1,]), 10, 10))
+# diffs<-compute_diffs(spInd=x,(N)[indexes,]) #bropet 26 pour remmoa
+diffsY<-compute_diffs(spInd=x,Y,M,S, obs=TRUE)
+diffsZ<-compute_diffs(spInd=x,Y,M,S, obs=FALSE)
+g1<-scatter_vgm(dists, diffsY, x)
+g2<-scatter_vgm(dists, diffsZ, x)
+grid.arrange(g1,g2,ncol=2,nrow=1)
+x=x+1
+```
+
