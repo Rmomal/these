@@ -40,6 +40,22 @@ Gathers information about the time( date, campaign), the transect (transect.labe
 str(X)
 ```
 
+```{r}
+X$P_O=ifelse(X$Region.Label%in%c("N_C_O1","N_C_O2","N_C_O3"),"O","P")
+ggplot(data = X, aes(x = reorder(SUBJECTIVE, -SEA_STATE), fill = factor(SEA_STATE))) +
+    geom_bar(aes(y = prop.table(..count..) * 100),
+             position = "dodge") + 
+    geom_text(aes(y = prop.table(..count..) * 100 + 0.5, 
+                  label = paste0(round(prop.table(..count..) * 100,2), '%')), 
+              stat = 'count', 
+              position = position_dodge(.9), 
+              size = 3) 
+
+
+X %>% ggplot(aes(DistCot,Depth, color=Region.Label))+geom_point()+scale_colour_brewer(palette="Dark2")
+
+
+```
 
 ## Detection matrix
 

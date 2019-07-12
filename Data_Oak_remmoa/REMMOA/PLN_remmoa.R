@@ -120,7 +120,7 @@ timeR_full=difftime(t5,t4) # 15.3min alpha mean = 0.9731524
 get_network<-function(resample_output,title, data=Y){
   df<-freq_selec(resample_output$Pmat,p=ncol(data),f=f)
   graph<-draw_network(df,title, pal="dodgerblue3", 
-                              names=colnames(data), layout="nicely", size=3, curv=0.1)
+                      names=colnames(data), layout="nicely", size=3, curv=0.1)
   return(graph)
 }
 #load("Reseaux.RData")
@@ -134,3 +134,157 @@ grid.arrange(graph0,graph_effort,graph_depth,graph_full,nrow=1, ncol=4)
 # avec Xcart et Ycart error: inv_sympd(): matrix is singular or not positive definite
 # Error in optimizer(unlist(par0), Y, X, O, w, ctrl) : nlopt failure
 # refaire test avec Xcart et Ycart seuls
+
+
+## nouvel offset : détectabilité
+detec=data.frame(matrix(c(250,	"SMADEL",
+                          285,	"BIGDEL",
+                          340,	"SMAGLO",
+                          300,	"BIGGLO",
+                          310,	"BALSPP",
+                          470,	"PHYMAC",
+                          270,	"KOGIA",
+                          310,	"ZIPHIUS",
+                          260,	"DUGONG",
+                          170,	"CHESPP",
+                          430,	"RHITYP",
+                          215,	"MARTEAU",
+                          210,	"SHARKS",
+                          170,	"DAURADE",
+                          340,	"THON",
+                          230,	"BILLFISH",
+                          240,	"MANBIR",
+                          210,	"MOBSPP",
+                          145,	"DASSPP",
+                          165,	"AETNAR",
+                          160,	"RAIESP",
+                          200,	"PHAETON",
+                          200,	"GRETER",
+                          200,	"BROTER",
+                          200,	"GREPET",
+                          200,	"BROPET",
+                          200,	"LARNOV",
+                          200,	"ANOSPP",
+                          200,	"GYGALB",
+                          200,	"FREGATE",
+                          200,	"OCEANITE",
+                          200,	"FOUS"), ncol=2, byrow=TRUE))
+colnames(detec)=c("detec", "species" )
+mat_detec=outer(rep(1,nrow(Y)), as.numeric(as.character(detec$detec)))
+mat_offset=outer(X$Effort, 2*mat_detec[1,]/100)
+
+## Réseaux totaux
+t0<-Sys.time()
+R_brut<-ResampleEMtree(Y,vec_covar = "1",S=20, maxIter=15,
+                       cond.tol=1e-8, cores=1) 
+t1<-Sys.time()
+R_offset<-ResampleEMtree(Y,vec_covar = "1",O1=mat_offset,S=20, maxIter=15,
+                         cond.tol=1e-8, cores=1) 
+t2<-Sys.time() # 5.6 mins
+
+R_depth<-ResampleEMtree(Y,vec_covar = "Depth",O1=mat_offset,S=20, maxIter=15,
+                        cond.tol=1e-8, cores=1) 
+t3<-Sys.time() # 6.4 mins
+R_seastate<-ResampleEMtree(Y,vec_covar = "SEA_STATE",O1=mat_offset,S=20, maxIter=15,
+                           cond.tol=1e-8, cores=1) 
+t4<-Sys.time()#  10mins
+R_depth_seastate<-ResampleEMtree(Y,vec_covar = c("Depth","SEA_STATE"),O1=mat_offset,S=20, maxIter=15,
+                                 cond.tol=1e-8, cores=1) 
+t5<-Sys.time()# 10mins
+R_regions<-ResampleEMtree(Y,vec_covar = c("Region.Label"),O1=mat_offset,S=20, maxIter=15,
+                          cond.tol=1e-8, cores=1) 
+t6<-Sys.time()
+save(R_brut,R_offset,R_depth,R_seastate,R_depth_seastate,R_regions, file="results/ReseauxEntiers.RData")
+
+
+## Comparaisons
+### Deux endroits de l'île
+####  North
+indicesNorth=which(X$Ycart > 7.76e6 & X$Xcart > 2e5 & X$Xcart<6e5)
+
+Xfiltre=X[indicesNorth,]
+YNorth=Y[indicesNorth,]
+null_colnorth=which(colSums(YNorth)==0)
+YNorth=Y[indicesNorth,-null_colnorth]
+mat_offsetnorth=mat_offset[indicesNorth,-null_colnorth]
+attach(Xfiltre)
+t1<-Sys.time()
+R_North<-ResampleEMtree(YNorth,vec_covar = "1",O1=mat_offsetnorth,S=20, maxIter=15,
+                        cond.tol=1e-8, cores=1) 
+t2<-Sys.time() # 1.9mins
+t3<-Sys.time()
+R_north_depth<-ResampleEMtree(YNorth,vec_covar = "Depth",O1=mat_offsetnorth,S=20, maxIter=15,
+                              cond.tol=1e-8, cores=1) 
+t4<-Sys.time() # 2.9mins
+R_north_full<-ResampleEMtree(YNorth,vec_covar = c("SEA_STATE","Depth"),O1=mat_offsetnorth,S=20, maxIter=15,
+                             cond.tol=1e-8, cores=1) 
+t5<-Sys.time() # 2.8 mins
+
+save(R_North,R_north_depth,R_north_full, file="ReseauxNorth.RData")
+
+####  South
+indicesSouth=which(X$Ycart < 7.55e6 & X$Ycart > 7.4e6 & X$Xcart > 5.5e5 & X$Xcart<9.5e5)
+Xfiltre=X[indicesSouth,]
+YSouth=Y[indicesSouth,]
+null_colsouth=which(colSums(YSouth)==0)
+YSouth=Y[indicesSouth,-null_colsouth]
+mat_offsetsouth=mat_offset[indicesSouth,-null_colsouth]
+attach(Xfiltre)
+t6<-Sys.time()
+R_South<-ResampleEMtree(YSouth,vec_covar = "1",O1=mat_offsetsouth,S=20, maxIter=15,
+                        cond.tol=1e-8, cores=1) 
+t7<-Sys.time() # 41 s
+R_south_depth<-ResampleEMtree(YSouth,vec_covar = "Depth",O1=mat_offsetsouth,S=20, maxIter=15,
+                              cond.tol=1e-8, cores=1) 
+t8<-Sys.time() # 46 s
+R_south_full<-ResampleEMtree(YSouth,vec_covar = c("SEA_STATE","Depth"),O1=mat_offsetsouth,S=20, maxIter=15,
+                             cond.tol=1e-8, cores=1) 
+t9<-Sys.time() # 57s
+
+save(R_South,R_south_depth,R_south_full, file="ReseauxSouth.RData")
+
+################################
+# Comparaison par Region.Label #
+################################
+
+region_data<-function(region, vec="1", S=20){
+  #data : filtrer pour la région et supression des colonnes vides
+
+  Yregion=Y %>% as_tibble() %>% mutate(reg=X$Region.Label) %>% 
+    filter(reg==region) %>% dplyr::select(-reg)
+  offset=mat_offset %>% as_tibble() %>% mutate(reg=X$Region.Label) %>% 
+    filter(reg==region) %>% dplyr::select(-reg)
+  cols=which(colSums(Yregion)==0)
+  if(length(cols)!=0){
+    Yregion=Yregion %>% dplyr::select(-cols)
+    offset=offset%>% dplyr::select(-cols)
+  }
+  offset=as.matrix(offset)
+  dim(Yregion)
+  return(list(Y=Yregion, O=offset))
+}
+
+region_network<-function(region, vec="1", S=20, data){
+  #data : filtrer pour la région et supression des colonnes vides
+
+  data=data[[region]]
+  Yregion=data$Y
+
+  offset=data$O
+  Xfiltre=X %>% as_tibble() %>% filter(Region.Label==region)
+  attach(Xfiltre)
+  t1<-Sys.time()
+  R<-ResampleEMtree(Yregion,vec_covar = vec,O1=offset,S=S, maxIter=30,
+                    cond.tol=1e-8, cores=1)
+  t2<-Sys.time()
+  cat("\n",region, difftime(t2,t1),"\n")
+  return(R)
+}
+DataRegion<-lapply(unique(X$Region.Label), function(x) region_data(x))
+names(DataRegion)=unique(X$Region.Label)
+save(DataRegion, file="results/DataRegion.RData")
+
+ReseauxRegion<-lapply(unique(X$Region.Label), function(x) region_network(region=x, data=DataRegion))
+names(ReseauxRegion)=unique(X$Region.Label)
+save(ReseauxRegion,file="results/ReseauxRegion.RData")
+

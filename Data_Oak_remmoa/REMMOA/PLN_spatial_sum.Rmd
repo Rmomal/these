@@ -1,0 +1,143 @@
+---
+title: "PLN_spatial_sum"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+
+```{r, message=FALSE, results=FALSE}
+setwd(WorkDir <- "/Users/raphaellemomal/these copy/Data_Oak_remmoa/REMMOA")
+ShapeDir <- paste(WorkDir, "shape", sep = "/")
+OutDir <- paste(WorkDir, "output", sep = "/")
+load(paste(OutDir, "20180620_PLN_REMMOANC.RData", sep = "/"))
+colnames(X)[7:8]<-c("Xcart","Ycart")
+X=data.frame(X)
+X[,c(6:10,14:20)]<-apply(X[,c(6:10,14:20)], 2, function(x) as.numeric(x))
+library(tidyverse) ; library(PLNmodels)
+lapply(c("rgdal","maptools", "dplyr", "reshape", "ggplot2", "ggthemes",
+         "broom", "rgdal", "readxl", "lubridate"), library, character.only=TRUE)
+
+```
+
+# Cartes
+
+```{r, message=FALSE, echo=FALSE}
+poly_NC <- readOGR(dsn = paste(ShapeDir, "SecteurNC_UTM58.shp", sep = "/"), layer = "SecteurNC_UTM58") 
+
+### representation de l'effort d'echantillonnage
+theme_set(theme_bw(base_size = 12))
+effort_plot <- ggplot(data = X, aes(x = Xcart, y = Ycart, group = Transect.Label)) + 
+  geom_polygon(data = tidy(poly_NC), 
+               aes(x = long, y = lat, group = group), 
+               fill = grey(1.0), color = "darkblue", size = 0.5) +
+  coord_equal() +   geom_line(color="gray70") + xlab("Eastings") + ylab("Northings") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        legend.position = "right")
+
+map_species<-function(species,mat,titre = "Obs count", low="blue", high="firebrick1", filter=0.5, vecBounds=NULL){ 
+  legend=titre ;   species=enquo(species)
+  if(is.null(vecBounds)){
+    data=cbind(X, mat) %>% filter(!!species>filter)
+  }else{
+    Ylow=vecBounds[1] ;  Yhigh=vecBounds[2] ;     Xlow=vecBounds[3];    Xhigh=vecBounds[4];
+    data=cbind(X, mat) %>% filter(!!species>filter, Ycart>Ylow, Ycart < Yhigh,
+                                  Xcart>Xlow, Xcart<Xhigh)
+  }
+  effort_plot + geom_point(data = data, aes(x = Xcart, y = Ycart, size = !!species, color = !!species))+   scale_size(name = legend)+scale_colour_gradient(name =legend,low=low,high=high)+
+    guides(size=FALSE)+ ggtitle(species)
+}
+```
+
+
+```{r}
+W=ifelse(N>0,1,0)
+commonEffect=data.frame(sumY = rowSums(Y), sumN=rowSums(N), diversity=rowSums(W) ) 
+map_species(diversity,commonEffect, filter=1)
+map_species(sumN,commonEffect, filter=0)
+map_species(sumY,commonEffect, filter=0)
+commonEffect %>% ggplot(aes(sumN))+geom_histogram()
+summary(commonEffect$sumN)
+chisq.test(commonEffect$sumN, )
+n=length(commonEffect$sumN)
+prob=1:n/(n+1)
+overdisp=var(commonEffect$sumN)/mean(commonEffect$sumN)
+mu=mean(commonEffect$sumN)
+sigma2=var(commonEffect$sumN)
+size=mu^2/(sigma2-mu)
+
+qqplot(commonEffect$sumN, qnbinom(p=prob,size =size, mu = mu))
+abline(0,1)
+
+
+qqline(commonEffect$sumN, distribution = function(p) qchisq(p, df = 3),
+       prob = c(0.1, 0.6), col = 2)
+
+```
+
+# Vario
+
+## De la diversité
+
+Regarder la covariance du nombre d'espèces présentes entre les sites. Largeur effective de détection : moyenne des moyennes des largeurs effectives des espèces observées conjointement, ou 1 ?
+
+```{r}
+source("/Users/raphaellemomal/these copy/R/codes/Spatial/krigeage.R")
+esw=c(250,285,340,300,310,470,270,310,260,170,430,215,210,170,340,230,240,210,145,165,160,200,200,200,200,200,200,200,200,200,200,200)
+
+meanEsw=mean(rowSums(t((esw/1e3)*t(W[,-ncol(W)])))/W[,ncol(W)])
+vec_reg<-unique(X$Region.Label)
+divers_vario_reg<-lapply(vec_reg,function(reg){
+  print(reg)
+  emp_vario_intra(commonEffect[,"diversity"],esw=meanEsw,l=X$Effort,X[,c(7,8)],projected = TRUE,id_transect = X$Region.Label,
+                plot = TRUE,pairs.min = 20,n_sim = 500,distmat = NULL, coupes = c(-0.01, 0.01,1:4,seq(5,100,5)),esp="community",
+                 region=reg, region.label=X$Region.Label)$g
+})
+sumN_vario_reg<-lapply(vec_reg,function(reg){
+  print(reg)
+  emp_vario_intra(commonEffect[,"sumN"],esw=meanEsw,l=X$Effort,X[,c(7,8)],projected = TRUE,id_transect = X$Region.Label,
+                plot = TRUE,pairs.min = 20,n_sim = 500,distmat = NULL, coupes = c(-0.01, 0.01,1:4,seq(5,100,5)),esp="sumN",
+                 region=reg, region.label=X$Region.Label)$g
+})
+sumY_vario_reg<-lapply(vec_reg,function(reg){
+  print(reg)
+  emp_vario_intra(commonEffect[,"sumY"],esw=meanEsw,l=X$Effort,X[,c(7,8)],projected = TRUE,id_transect = X$Region.Label,
+                plot = TRUE,pairs.min = 20,n_sim = 500,distmat = NULL, breaks = c(-0.01, 0.01,1:4,seq(5,100,5)),esp="sumY",
+                 region=reg, region.label=X$Region.Label)$g
+})
+n <- length(divers_vario_reg)
+nCol <- floor(sqrt(n))
+do.call("grid.arrange", c(divers_vario_reg, ncol=nCol))
+do.call("grid.arrange", c(sumN_vario_reg, ncol=nCol))
+do.call("grid.arrange", c(sumY_vario_reg, ncol=nCol))
+
+
+```
+
+
+## Des comptages post-PLN
+
+L'idée est de regarder les covariances entre les comptages des différents sites, corrigés de l'effet moyenne de chaque espèce et des covariables environnementales éventuelles prises en compte par PLN. Il faudrait observer le variogramme des Z, nous avons accès à leur moyenne estimée : M.
+
+```{r}
+library(PLNmodels)
+ model<-PLN(Y ~ X$Region.Label) # un Z par région ?
+ commonZ<-rowMeans(model$var_par$M)
+vec_reg<-unique(X$Region.Label)
+# variogram gaussien ! plus de correction Poisson
+#mais quand même par transect
+plots_vario<-lapply(vec_reg,function(reg){
+  print(reg)
+  emp_vario_intra(commonEffect[,"diversity"],detec$esw[which(species==x)],l=X$Effort,X[,c(7,8)],projected = TRUE,id_transect = X$Region.Label,
+                plot = TRUE,pairs.min = 20,n_sim = 500,distmat = NULL, breaks = c(-0.01, 0.01,1:4,seq(5,100,5)),esp=x,
+                 region=reg, region.label=X$Region.Label)$g
+})
+n <- length(plots_vario)
+nCol <- floor(sqrt(n))
+do.call("grid.arrange", c(plots_vario, ncol=nCol))
+
+
+```

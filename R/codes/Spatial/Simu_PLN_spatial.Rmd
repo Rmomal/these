@@ -1,77 +1,35 @@
 ---
 title: "Simu_PLN_spatial"
-output: html_document
+output: 
+  html_document:
+    toc: true
+    toc_float: true
 ---
 
-Plan de simulation d'un modèle PLN spatial:
 
-* produit de kronecker
-* Simuler des vecZ
-* attention à l'ordre des paramètres dans le vecteur
-*
+# Fonctions
 
-# Petit, sans covariables
-
-## Simulations 
-
-```{r}
-cov_exp <- function(distance, range = 0.5, sill = 1) {
-  sill * sill * exp(- distance / range)
-}
-cov_matern <- function(distance, range = 10, sill = 5) {
-  sill * sill * (1 + distance * sqrt(3) / range) * exp(-distance * sqrt(3) / range)
-}
-
-```
-
-```{r}
-# Simulation de Gamma
-n=30 # n sites
-p=15
-Sigma<-matrix(1,ncol=p, nrow=p) # simple
-grid <- data.frame(lon =seq(0, 1, length.out = n), 
-                   lat =seq(0, 1, length.out = n)   )
-Delta <- as.matrix(cov_exp(distance = dist(grid, method = "euclidean")))
-diag(Delta) <- 1
-Gamma<-kronecker(Delta, Sigma)
-
-# Simulation de Z
-vecZ=mvrnorm(n=1, mu=rep(0, n*p), Sigma=Gamma)
-matZ=matrix(vecZ,n, p, byrow = TRUE)
-# Simulation de Y
-Y = matrix(rpois(n*p, exp(matZ)), n, p)
- 
-```
-
-## Visualisations
-
-Ou est-ce possible de voir la structure spatiale à partir des sorties de PLN ?
-
-```{r}
+```{r, echo=FALSE, message=FALSE}
 library(PLNmodels)
-model=PLN(Y~1)
+library(tidyverse)
+library(MASS)
+library(gridExtra)
+theme_set(theme_light())
+```
 
+Avec `latent_approxdiffsp` on essai d'approcher l'espérance des différences de carrés sur Z à partir des sorties PLN (M et S).
+
+```{r}
+# two empirical approaches to semivariance
 diffsq<-function(a,vec) (a-vec)^2
 
-latent_approxdiffsp<-function(M,S, spInd,x,indexes){
+latent_approxdiffsp<-function(M,S, spInd,x,indexes){ 
   EZ1<-M[x,spInd]
   vecEZ2<-M[indexes,spInd]
   VZ1<-S[x,spInd]^2
   vecVZ2<-S[indexes,spInd]^2
   
-  approx=0.5*(VZ1+vecVZ2+EZ1^2+vecEZ2^2)-EZ1*vecEZ2
-}
-# Row 1 corresponds to the dstance between child 1 and all other children
-# Defining a matrix with distances between each individual
-compute_distance<-function(distdata){
-  end=nrow(distdata)
-  listdist<-lapply(seq_along(distdata[,1]), function(x){
-    indexes=x:end
-    res= distance(unlist(distdata[x,]),distdata[indexes,])
-    return(res)
-  })
-
-  return( unlist(listdist))
+  approx=0.5*(VZ1+vecVZ2+EZ1^2+vecEZ2^2)-EZ1*vecEZ2 # covariance pas accessible...
 }
 
 compute_diffs<-function(spInd,counts,M,S, obs=FALSE){
@@ -80,16 +38,16 @@ compute_diffs<-function(spInd,counts,M,S, obs=FALSE){
     indexes=(x+1):end
     if (obs){
       diffsq(counts[x,spInd],counts[indexes,spInd])
-   }else{
-     latent_approxdiffsp(M,S, spInd,x,indexes)
-   } 
+    }else{
+      latent_approxdiffsp(M,S, spInd,x,indexes)
+      
+    } 
   })
- 
+  
   return(unlist(listdiffs))
 }
 
 scatter_vgm<-function( vecDist, diffs, title){#plot des différences au carrés en fonction de la distance
-  
   dat=data.frame(dist=vecDist, diff=diffs)
   dat%>% filter(dist!=0) %>% 
     ggplot(aes(dist, diff))+
@@ -97,20 +55,170 @@ scatter_vgm<-function( vecDist, diffs, title){#plot des différences au carrés 
   
 }
 
+```
+
+
+# Fonctions de covariances
+
+```{r}
+cov_exp <- function(distance, range = 1, sill = 1) {
+  sill * sill * exp(- distance / range)
+}
+cov_matern <- function(distance, range = 1, sill = 1) {
+  sill * sill * (1 + distance * sqrt(3) / range) * exp(-distance * sqrt(3) / range)
+}
+
+
+### effective range
+n_pts <- 1e3
+upper <- 1
+range=0.1
+sill=1
+data.frame(distance = rep(seq(0, upper, length.out = n_pts), 2),
+           autocorrelation = c(cov_exp(distance = seq(0, upper, length.out = n_pts), range=range, sill=sill),
+                               cov_matern(distance = seq(0, upper, length.out = n_pts), range=range,sill=sill)
+           ),
+           covariance = rep(c("Exponential", "Matern"), each = n_pts)
+) %>% 
+  ggplot(aes(x = distance, y = autocorrelation)) +
+  geom_line() +
+  geom_hline(yintercept = 0.05, linetype = "dotted", color = "red") +
+  geom_vline(xintercept = c(exp(1)*range, 3*range), linetype = "dotted", color = "red") +
+  scale_x_continuous(breaks = seq(0,upper, by=upper/10)) +
+  facet_wrap(~covariance, ncol = 1) + labs(title=paste0("Range = ",range))
+
+
+
+```
+
+# Simulation des données
+
+```{r}
+# Simulation de Gamma
+n=30 # n sites
+p=14
+Graph1_14 <- readRDS("/Users/raphaellemomal/simulations/Simu/PLN.2.0/cluster/d/Sets_param/Graph1_14.rds")
+Sigma<-Graph1_14$sigma
+grid <- data.frame(lon =seq(0, 1, length.out = n), 
+                   lat =seq(0, 1, length.out = n)   )
+Delta <- as.matrix(cov_exp(distance = dist(grid, method = "euclidean"), range=0.1))
+image(Delta)
+diag(Delta) <- 1
+Gamma<-kronecker(Delta, Sigma)
+
+
+#verif  ordre de simu Z
+N=100
+vecZ=mvrnorm(n=N, mu=rep(0, n*p), Sigma=Gamma)
+
+indicesDelta<-lapply(1:n, function(x) x+p*(0:(n-1)))
+indicesSigma<-lapply(1:n, function(x) (((x-1)*p+1):(x*p)))
+site=1
+espece=1
+Zdelta<-vecZ[,indicesDelta[[espece]]]
+Zsigma<-vecZ[,indicesSigma[[site]]]
+image(cov(Zsigma))
+image(Sigma) # yeay
+image(cov(Zdelta))
+image(Delta) #yeay !
+
+
+
+# simu Z
+matZ<-do.call(rbind,lapply(1:n, function(x){
+  vecZ=mvrnorm(n=1, mu=rep(0, n*p), Sigma=Gamma)
+  matZtmp=matrix(vecZ,n, p, byrow = TRUE)
+  matZtmp[x,]
+}))
+# Simulation de Y
+Y = matrix(rpois(n*p, exp(matZ)), n, p)
+
+#tests variogram
+dists=c(dist(grid, method = "euclidean") )
+
+sapply(sample(1:p,4), function(x){
+  diffsZ<-compute_diffs(spInd=x,matZ,M,S, obs=TRUE) # obs TRUE signifie simple différence de carrés
+  diffsY<-compute_diffs(spInd=x,Y,M,S, obs=TRUE)
+  g1<-scatter_vgm(dists, diffsZ, paste0(x," Z"))
+  g2<-scatter_vgm(dists, diffsY, paste0(x," Y"))
+  grid.arrange(g1, g2, ncol=2, nrow=1)
+})
+
+```
+
+## tests sur Delta
+
+On simule N fois un processus spatial gaussien (covariance Delta) d'une espèce  puis on visualise le variogramme empirique correspondant en fonction de N.
+
+```{r}
+N = list(10, 100, 1000)
+
+L=lapply(N, function(N){
+  testZ_n=t(mvrnorm(n=N, mu=rep(0, n), Sigma=Delta))
+  diffstest=apply(testZ_n, 2 ,function(col){
+    unlist(lapply(1:(n-1), function(x){diffsq(col[x],col[(x+1):n])}))
+  })
+  meandiff=rowMeans(diffstest)
+  dat=data.frame(dist=dists, mean=meandiff)
+  g=dat%>% 
+    ggplot(aes(dist, mean))+
+    geom_point()+labs(title=paste0(N," échantillons"), y="Squared differences", x="Distances")
+  
+  return(g)
+})
+n=1000
+testZ_1=mvrnorm(1, mu=rep(0, n), Sigma=Delta)
+diffstest=unlist(lapply(1:(n-1), function(x){diffsq(testZ_1[x],testZ_1[(x+1):n])}))
+dat=data.frame(dist=dists, testdiff=diffstest)
+g1=dat%>% 
+  ggplot(aes(dist, diffstest))+
+  geom_point()+labs(title="1 échantillon", y="Squared differences", x="Distances")
+
+grid.arrange(g1,L[[1]],L[[2]],L[[3]], ncol=2, nrow=2)
+```
+
+Un seul vecteur d'observation pour une espèce remet en cause l'observation d'un variogramme.
+
+
+# Variogrammes de Z 
+## Approximation à partir des sorties PLN
+
+```{r}
+model=PLN(Y~1)
+sigmaHat=model$model_par$Sigma
+image(sigmaHat)
+image(Gamma)
 M=model$var_par$M
 S=model$var_par$S # variance ou sd ?
-SigmaHat=model$model_par$Sigma
+
 
 dists=c(dist(grid, method = "euclidean") )
 
-x=1
-#Zi=mvrnorm(n=1,mu=Mfiltre[1,],Sigma=diag(c(Sfiltre[1,]%*%Sfiltre[1,]), 10, 10))
-# diffs<-compute_diffs(spInd=x,(N)[indexes,]) #bropet 26 pour remmoa
+x=10
 diffsY<-compute_diffs(spInd=x,Y,M,S, obs=TRUE)
 diffsZ<-compute_diffs(spInd=x,Y,M,S, obs=FALSE)
-g1<-scatter_vgm(dists, diffsY, x)
-g2<-scatter_vgm(dists, diffsZ, x)
+g1<-scatter_vgm(dists, diffsZ, paste0(x," Z"))
+g2<-scatter_vgm(dists, diffsY, paste0(x," Y"))
 grid.arrange(g1,g2,ncol=2,nrow=1)
-x=x+1
+
+```
+
+## Directement par simulation des Z
+
+Le but est de visualiser la structure spatiale exponentielle de Z en les resimulant à partir de M et S.
+
+```{r}
+spInd=10
+N=1000
+testZ_n=t(mvrnorm(n=N, mu=M[,spInd], Sigma=diag(S[,spInd]^2)))
+diffstest=apply(testZ_n, 2 ,function(col){
+  unlist(lapply(1:(n-1), function(x){diffsq(col[x],col[(x+1):n])}))
+})
+meandiff=rowMeans(diffstest)
+dat=data.frame(dist=dists, mean=meandiff)
+dat%>% 
+  ggplot(aes(dist, mean))+
+  geom_point()+labs(title=paste0(N," échantillons"), y="Squared differences", x="Distances")
+
 ```
 

@@ -14,8 +14,8 @@ loadData<-function(data){
     load(file="/Users/raphaellemomal/these/Data_Oak_remmoa/REMMOA/output/20180620_PLN_REMMOANC.RData")
     
     colnames(X)[7:8]<-c("Xcart","Ycart")
-   X[,c(6:10,14:20)]<-apply(X[,c(6:10,14:20)], 2, function(x) as.numeric(x))
-     null_index=which(rowSums(Y)==0)
+    X[,c(6:10,14:20)]<-apply(X[,c(6:10,14:20)], 2, function(x) as.numeric(x))
+    null_index=which(rowSums(Y)==0)
     Y=as.matrix(Y[-null_index,])
     X=data.frame(X[-null_index,])
     N=as.matrix(N[-null_index,])
@@ -71,7 +71,7 @@ compute_distance<-function(distdata){
     res= distance(unlist(distdata[x,]),distdata[indexes,])
     return(res)
   })
-
+  
   return( unlist(listdist))
 }
 
@@ -82,7 +82,7 @@ compute_diffs<-function(spInd,counts,M,S){
     #diffsq(counts[x,spInd],counts[indexes,spInd])
     latent_approxdiffsp(M,S, spInd,x,indexes)
   })
- # browser()
+  # browser()
   return(unlist(listdiffs))
 }
 
@@ -130,7 +130,7 @@ X[,c(6:10,14:20)]<-apply(X[,c(6:10,14:20)], 2, function(x) as.numeric(x))
 repart_species<-function(species){
   
   species=enquo(species)
- 
+  
   as_tibble(Y/mat_effort) %>% 
     dplyr::select(!!species) %>% cbind(Canyon=X$DistCanyon, Cote=X$DistCot) %>% 
     filter(!!species!=0) %>% 
@@ -146,14 +146,14 @@ repart_species(SMADEL)
 
 
 
-  as_tibble(Y/mat_effort)  %>%   cbind(Canyon=X$DistCanyon, Cote=X$DistCot) %>% 
-    gather(key, value,-Canyon,-Cote) %>% 
-      filter(value!=0) %>% gather(type,dist, -key, -value ) %>% 
-        ggplot(aes(dist,value , color=type))+labs(x="Distance")+
-        geom_point()+facet_grid(key~type, scales = "free")+scale_color_brewer(palette="Set1")+guides(color=FALSE)
-      
-    
-  
+as_tibble(Y/mat_effort)  %>%   cbind(Canyon=X$DistCanyon, Cote=X$DistCot) %>% 
+  gather(key, value,-Canyon,-Cote) %>% 
+  filter(value!=0) %>% gather(type,dist, -key, -value ) %>% 
+  ggplot(aes(dist,value , color=type))+labs(x="Distance")+
+  geom_point()+facet_grid(key~type, scales = "free")+scale_color_brewer(palette="Set1")+guides(color=FALSE)
+
+
+
 
 
 ```
@@ -218,19 +218,29 @@ effort_plot <- ggplot(data = X,
         panel.background = element_blank(),
         legend.position = "right"
   )
+effort_plot
+ggsave("carte_vierge2.png")
 #effort_plot
 ### visualiser les detections (N) de petits delphinin?s
-map_species<-function(species,mat, count=FALSE, low="blue", high="firebrick1", filter=0.5){ #SMADEL
-#  browser()
-  legend=ifelse(!count, "Nb Detections", "Obs count")
+map_species<-function(species,mat,titre = "Obs count", low="blue", high="firebrick1", filter=0.5, vecBounds=NULL){ #SMADEL
+  #  browser()  
   species=enquo(species)
-  data=cbind(X, mat) %>% filter(!!species>filter)
+  if(is.null(vecBounds)){
+    data=cbind(X, mat) %>% filter(!!species>filter)
+  }else{
+    Ylow=vecBounds[1] ;  Yhigh=vecBounds[2] ;     Xlow=vecBounds[3];    Xhigh=vecBounds[4];
+    data=cbind(X, mat) %>% filter(!!species>filter, Ycart>Ylow, Ycart < Yhigh,
+                                  Xcart>Xlow, Xcart<Xhigh)
+  }
+  
+  legend=titre
   effort_plot +
     geom_point(data = data,
                aes(x = Xcart, y = Ycart, size = !!species, color = !!species)
     ) +
     scale_size(name = legend) + 
-    scale_colour_gradient(name = legend,low=low,high=high)+#,low="firebrick1",high="darkorchid4")+
+   scale_colour_gradient(name =legend,low=low,high=high)+#,low="firebrick1",high="darkorchid4")+
+ #   scale_color_brewer(palette = "YlOrRd")
     guides(size=FALSE)+
     ggtitle(species)
 }
@@ -240,20 +250,30 @@ map_species<-function(species,mat, count=FALSE, low="blue", high="firebrick1", f
 ```
 ```{r}
 
-map_species(DASSPP,N)
-map_species(DASSPP,Y, count=TRUE)
+map_species(GRETER,N)
+map_species(FREGATE,Y)
+map_species(BROPET,N)
+map_species(FOUS,Y, count=TRUE, vecBounds=c(7.76e6,max(X$Ycart),2e5, 6e5))
+map_species(BROPET,N, count=TRUE, vecBounds=c(7.4e6,7.55e6,5.5e5, 9.5e5))
 
-map_species(DASSPP,M, count=TRUE)
+map_species(DASSPP,M)
 colnames(S) = colnames(Y)
 map_species(DASSPP,S, count=TRUE)
 
-
-# détection simulatnée d'espèces
-N=as_tibble(N) %>% mutate(sum=rowSums(.))
-W=ifelse(N>0,1,0)
-W=as_tibble(W) %>%  mutate(sum=rowSums(.))
-map_species(sum,N )
-map_species(sum,Y, count=TRUE)
-map_species(sum,W,low="steelblue1",high="royalblue4", filter=4)
 ```
+
+## Détection simulatnée d'espèces
+
+```{r}
+
+N=as_tibble(N) %>% mutate(sum=rowSums(.))
+W=ifelse(N[,-33]>0,1,0)
+W=as_tibble(W) %>%  mutate(sum=rowSums(.))
+# map_species(sum,N )
+# map_species(sum,Y, count=TRUE)
+map_species(sum,W,low="lightskyblue",high="blue4", filter=1, titre="Biodiversité")
+
+```
+
+
 
