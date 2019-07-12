@@ -1,0 +1,74 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[margin=3cm]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+
+%\author{Raphaelle Momal}
+\title{Idée de modèle pour un PLN spatial}
+
+\newcommand{\pois}{\mathcal{P}}
+\newcommand{\e}{\mathcal{E}}
+\newcommand{\norm}{\mathcal{N}}
+\newcommand{\E}{\mathrm{E}}
+\newcommand{\Var}{\mathrm{Var}}
+\newcommand{\Cov}{\mathrm{Cov}}
+
+
+\newcommand\independent{\protect\mathpalette{\protect\independenT}{\perp}}
+\def\independenT#1#2{\mathrel{\rlap{$#1#2$}\mkern2mu{#1#2}}}
+
+
+\begin{document}
+\maketitle
+
+\section{Modèle}
+Par rapport au modèle PLN précédent, on  introduit un effet spatial commun à la communauté d'espèce qu'on observe. Cet effet spatial est un processus Gaussien :
+\begin{align*}
+Y_{sj} &\sim \pois(\lambda_{sj})\\
+\log(\lambda_{sj}) &= X_s\theta_j + \log(O_{sj}) + Z_j + \e_s \\
+\end{align*}
+
+Avec les distributions 
+\begin{align*}
+T &\sim \prod_{ij} \beta_{ij} /B\\
+Z_j|T &\sim \norm(0,\Sigma_T)\\
+\e_s &\sim \norm(0,\Delta(\sigma,\rho))\\
+\Delta(\sigma,\rho)&\triangleq  \Cov(\e_s,\e_{s'}) = \mathcal{C}_{3/2}(\lVert s-s' \rVert , \sigma, \rho)
+\end{align*}
+Fonciton de covariance de Matérn : 
+$$C_\nu(d) = \sigma^2 \frac{2^{1-\nu}}{\Gamma(\nu)}\left(\sqrt{2\nu}\frac{d}{\rho}\right)^\nu K_\nu \left(\sqrt{2\nu}\frac{d}{\rho}\right)$$
+
+$\Gamma$ la fonction gamma, $K_\nu$ la fonction de Bessel modifiée de seconde espèce, $\rho$ et $\nu$ des paramètres strictement positifs. C'est la fonction de covariance exponentielle pour $ \nu=1/2$.
+Simplification pour $\nu = 3/2$ :
+$$ C_{3/2}(d) = \sigma^2\left (1+\sqrt{3}\frac{d}{\rho}\right )\exp\left(-\sqrt{3} \frac{d}{\rho}\right)$$
+\subsection{Interprétation}
+Le modèle proposé sépare bien les dépendances entre espèces et les dépendances spatiales.\\
+
+Ce modèle est une approche simplifiée du modèle utilisé dans \cite{Zhang}. Un \textit{linear model of coregionalizationl} (LMC) est proposé pour $\e$, où la variance du processus spatial est une somme de $K$ fonctions de covariance, ce qui permet de modéliser des variations spatiales d'amplitude différentes. Dans un premier temps ici on considère une seule composante pour cette variance, qui est une fonction de Matérn courante en geostatistiques (stationnaire et isotropique).\\
+
+
+
+L'article "Joint species distribution modeling" \cite{vanhatalo}  mélange les deux types de dépendance. Bayésien.
+
+
+\section{Estimation}
+\begin{itemize}
+\item$\psi = (\sigma, \rho)$
+\item$\e \independent Z $  : séparation des dépendances
+\end{itemize}
+
+$$p_{\beta, \Sigma,\theta,\psi}(T,Z,Y,\e) = p_\beta(T) \times p_\Sigma(Z|T) \times p_\psi(\e) \times p_\theta(Y|Z,\e)$$
+\begin{align*}
+E\left [\log(p(T,Z,\e,Y))|Y\right ] = &E\left [\log(p(T))|Y\right ] +E\left [\log(p(\e))|Y\right ] \\
+&+E\left [\log(p(Z|T))|Y\right ] +E\left [\log(p(Y|Z,\e))\right ] 
+\end{align*}
+
+\begin{itemize}
+\item $\log(p(\e))= -\frac{1}{2} \log(|\Delta(\psi)|) -\frac{1}{2}\e^T\Delta(\psi)^{-1}\e $  
+\item  $E\left [\log(p(\e))|Y\right ] $ par Monte-Carlo ? EM de \cite{Zhang} ?
+\end{itemize}
+\bibliographystyle{apalike}
+\bibliography{bib.bib}
+\end{document}
