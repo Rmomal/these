@@ -81,10 +81,10 @@ for(type in c("erdos","tree","scale-free","cluster")){
         path2<-paste0(path,type,"/",variable)
         df$spiecResid[which(df$var==x & df$param==nbgraph)]<<-build_auc(path2,nbgraph,x,variable)
       }, mc.cores=1)
-
+      
     })
     #save df in previous auc file
-   
+    
     auc <- readRDS(paste0(path,type,"/",variable,"/auc.rds"))
     auc<-auc[,-ncol(auc)]
     auc<-left_join(auc,df,by=c("var","param"))
@@ -135,23 +135,23 @@ diagnostics<-function(file){
   type<-elmts[length(elmts)-2]
   variable<-substr(variable,1,nchar(variable)-4)
   variable<-switch(variable,"auc"="AUC","sens"="Sensitivity","spec"="Specificity")
-
+  
   tab$var<-as.numeric(as.character(tab$var))
   p<-ggplot(tab, aes(y=mns,x=as.numeric(as.character(var)),shape=method,color=method))+
     geom_errorbar(aes(ymin=inf, ymax=sup), width=0,position=position_dodge((max(tab$var)-min(tab$var))/100))+
     geom_point(size=2.5)+
     geom_line(size=0.2)+
-   labs(y=variable,x=param)+
+    labs(y=variable,x=param)+
     scale_shape_manual(values=c(15,8,9,17,16)
                        # ,
                        # breaks=c("treeggm","ggm1step", "spiecEasi","spiecResid" ,"oracle"),
                        # labels=c("EM ","1 step","SpiecEasi","spiecResid", "oracle" ) 
-                       )+
-     scale_color_manual(values=c("#076443","#fc5f94", "#8037c9","#56B4E9" ,"#E69F00")
-                      #   ,
-                      # breaks=c("treeggm","ggm1step", "spiecEasi","spiecResid" ,"oracle"),
-                      #  labels=c("EM ","1 step","SpiecEasi","spiecResid", "oracle" ) 
-                      )+
+    )+
+    scale_color_manual(values=c("#076443","#fc5f94", "#8037c9","#56B4E9" ,"#E69F00")
+                       #   ,
+                       # breaks=c("treeggm","ggm1step", "spiecEasi","spiecResid" ,"oracle"),
+                       #  labels=c("EM ","1 step","SpiecEasi","spiecResid", "oracle" ) 
+    )+
     scale_y_continuous(limits = c(0.5,1))+
     theme_bw()+
     theme(plot.title = element_text(hjust = 0.5),legend.title=element_blank())
@@ -180,7 +180,7 @@ vec_obs_pred<-function(obs, pred){
   vec_pred<-as.vector(pred[upper.tri(pred)])
   vec_obs<-as.vector(label[upper.tri(label)])
   
- return(list(vec_pred,vec_obs))
+  return(list(vec_pred,vec_obs))
 }
 build_vec<-function(path2, nbgraph,x,variable,method){
   if(variable=="n"){
@@ -244,9 +244,9 @@ ggplot(precrec,aes(rec,prec,colour=method,shape=method))+
                      breaks=c("treeggm","one_step", "glasso","spiecResid" ,"oracle"),
                      labels=c("EM ","1 step","SpiecEasi","spiecResid", "oracle" ) )+
   scale_color_manual(values=c("#E69F00","#076443", "#8037c9","#fc5f94" ,"#56B4E9"),
-                      breaks=c("treeggm","one_step", "glasso","spiecResid" ,"oracle"),
-                      labels=c("EM ","1 step","SpiecEasi","spiecResid", "oracle" ) 
-                     )+
+                     breaks=c("treeggm","one_step", "glasso","spiecResid" ,"oracle"),
+                     labels=c("EM ","1 step","SpiecEasi","spiecResid", "oracle" ) 
+  )+
   guides(shape = guide_legend(override.aes = list(size = 3)))+
   labs(title="")+
   scale_y_continuous(limits = c(0,1))+
@@ -258,7 +258,7 @@ ggplot(precrec,aes(rec,prec,colour=method,linetype=method))+
   #                    breaks=c("treeggm","one_step", "glasso","spiecResid" ,"oracle"),
   #                    labels=c("EM ","1 step","SpiecEasi","spiecResid", "oracle" ) )+
   scale_linetype_manual(values=c("twodash", "solid", "dashed", "dotted", "dotdash" ),breaks=c("treeggm","one_step", "glasso","spiecResid" ,"oracle"),
-                   labels=c("EM ","1 step","SpiecEasi","SpiecResid", "Oracle" ) )+
+                        labels=c("EM ","1 step","SpiecEasi","SpiecResid", "Oracle" ) )+
   scale_color_manual(values=c("#E69F00","#076443", "#8037c9","#fc5f94" ,"#56B4E9"),
                      breaks=c("treeggm","one_step", "glasso","spiecResid" ,"oracle"),
                      labels=c("EM ","1 step","SpiecEasi","SpiecResid", "Oracle" ) 

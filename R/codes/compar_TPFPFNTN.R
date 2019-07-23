@@ -64,11 +64,12 @@ for( difficulty in diff){
 }
 ##########
 times<-c()
-cores=3; B=100;
-method=c("EMtree")
+cores=3; B=c(2,5,10,50);
+method=c("SpiecEasi")
 types<-c("erdos")
-diff=c("easy","hard")
+diff=c("easy")
 
+### disag rate
 res<-do.call(rbind, lapply(diff, function(difficulty){
   obj<- lapply(c(2,10,20,50,100,150), function(B){
     EMconverged<-readRDS(paste0("/Users/raphaellemomal/simulations/Simu/PLN.2.0/TPFN/Results/GhatEMtree_erdos_TFPN_",difficulty,"150.rds"))
@@ -95,7 +96,7 @@ res<-do.call(rbind, lapply(diff, function(difficulty){
 }))
 saveRDS(res,paste0(path,"/TPFN/results/",method,"_",type,"_TFPN_disagreementRate.rds"))
 
-
+### plot disag rate
 p1<-res %>% filter(difficulty=="easy") %>% 
   ggplot(aes( y=FDR, x=as.factor(S), color=as.factor(S)))+geom_quasirandom()+theme_minimal()+
   scale_color_manual(values=c(brewer.pal(n = 9, name = "YlOrRd")[-c(1:3)],"black"))+labs(x="")+
@@ -123,92 +124,97 @@ ggsave(paste0(path,"/TPFN/DisagRateErdos.png"),plot=p,height=5,width=7)
 ################
 #for(seuil in seqF){
 S=150  
-method="EMtree";types="erdos";diff=c("easy","hard")
+method="SpiecEasi";types="erdos";diff=c("easy")
 cores=3
+B=c(2,10,20,50,100,150)
 for(method in method){
   for( difficulty in diff){
-    n<-switch(difficulty,"easy"=100,"hard"=50)
-    cond.tol<-switch(difficulty,"easy"=1e-12,"hard"=1e-6)
-    nbspiecies<-switch(difficulty,"easy"=20,"hard"=30)
-    for(type in types){
-      T1<-Sys.time()
-      cat(type,difficulty," case : ")
-      obj<-mclapply(1:100,function(nbgraph){
-        dat<-readRDS(paste0(path,"TPFN/Data/dataTPFN_",type,"_",difficulty,nbgraph,".rds"))
-        Y<-dat[[1]]
-        edgesOrigin<-ifelse(abs(F_Sym2Vec(dat[[2]]))<1e-16,0,1)
-        covar <- readRDS(paste0(path,"TPFN/Data/covar_",difficulty,".rds"))
-        m<- model.matrix(~X1+X2+X3,covar)# on choisi de mettre la constante dans PLN
-        p=ncol(Y)
-        if(method=="MInt"){
-          
-          T1<-Sys.time()
-          inf <- F_Sym2Vec(eval_store_mint(Y,covar,path)>1e-16)*1
-          T2<-Sys.time()
-          time<-difftime(T2,T1)
-        }
-        if(method=="EMtree"){
-          T1<-Sys.time()
-          resample<-ResampleEMtree(Y, X=m, S=S, maxIter=200,  cond.tol=cond.tol,cores=3)
-          if(length(resample)!=3) browser()
-          pmat<-resample$Pmat
-          # inf<- 1*(ifelse(colSums(ifelse(pmat<2/p,0,1))/B >0.8,1,0))
-          T2<-Sys.time()
-          time<-difftime(T2,T1)
-        }
-        
-        if(method=="gCoda"){
-          
-          T1<-Sys.time()
-          inf <- F_Sym2Vec(gcoda(Y, counts=T, covar=covar)$opt.icov>1e-16)*1
-          T2<-Sys.time()
-          time<-difftime(T2,T1)
-          
-        }
-        if(method=="SpiecEasi"){
-          U<-t(clr.matrix(Y,mar=1))
-          model<-lm(U~m)
-          T1<-Sys.time()
-          inf<-spiec.easi(model$residuals, method='mb', lambda.min.ratio=1e-2, nlambda=30,icov.select.params=list(rep.num=B ))
-          inf<-F_Sym2Vec(as.matrix(inf$refit[[1]]))
-          T2<-Sys.time()
-          time<-difftime(T2,T1)
-        }
+    for(B in B){
+      n<-switch(difficulty,"easy"=100,"hard"=50)
+      cond.tol<-switch(difficulty,"easy"=1e-12,"hard"=1e-6)
+      nbspiecies<-switch(difficulty,"easy"=20,"hard"=30)
+      for(type in types){
+        T1<-Sys.time()
+        cat(type,difficulty," case : ")
         
         
-        # tpfn<-c(table(inf,edgesOrigin))
-        # if (length(tpfn) !=4) browser()
-        # res<-data.frame("TN"=tpfn[1],"FP"=tpfn[2],"FN"=tpfn[3],"TP"=tpfn[4] ,method=method,times=time,unit=attr(time, "units"),
-        #                 type=type,difficulty=difficulty,graph=nbgraph)
+        obj<-mclapply(1:30,function(nbgraph){
+          dat<-readRDS(paste0(path,"TPFN/Data/dataTPFN_",type,"_",difficulty,nbgraph,".rds"))
+          Y<-dat[[1]]
+          edgesOrigin<-ifelse(abs(F_Sym2Vec(dat[[2]]))<1e-16,0,1)
+          covar <- readRDS(paste0(path,"TPFN/Data/covar_",difficulty,".rds"))
+          m<- model.matrix(~X1+X2+X3,covar)# on choisi de mettre la constante dans PLN
+          p=ncol(Y)
+          if(method=="MInt"){
+            
+            T1<-Sys.time()
+            inf <- F_Sym2Vec(eval_store_mint(Y,covar,path)>1e-16)*1
+            T2<-Sys.time()
+            time<-difftime(T2,T1)
+          }
+          if(method=="EMtree"){
+            T1<-Sys.time()
+            resample<-ResampleEMtree(Y, X=m, S=S, maxIter=200,  cond.tol=cond.tol,cores=3)
+            if(length(resample)!=3) browser()
+            pmat<-resample$Pmat
+            # inf<- 1*(ifelse(colSums(ifelse(pmat<2/p,0,1))/B >0.8,1,0))
+            T2<-Sys.time()
+            time<-difftime(T2,T1)
+          }
+          
+          if(method=="gCoda"){
+            
+            T1<-Sys.time()
+            inf <- F_Sym2Vec(gcoda(Y, counts=T, covar=covar)$opt.icov>1e-16)*1
+            T2<-Sys.time()
+            time<-difftime(T2,T1)
+            
+          }
+          if(method=="SpiecEasi"){
+            U<-t(clr.matrix(Y,mar=1))
+            model<-lm(U~m)
+            T1<-Sys.time()
+            inf<-spiec.easi(model$residuals, method='mb', lambda.min.ratio=1e-2, nlambda=30,icov.select.params=list(rep.num=B ))
+            inf<-F_Sym2Vec(as.matrix(inf$refit[[1]]))
+            T2<-Sys.time()
+            time<-difftime(T2,T1)
+          }
+          
+          
+           tpfn<-c(table(inf,edgesOrigin))
+          # if (length(tpfn) !=4) browser()
+           res<-data.frame("TN"=tpfn[1],"FP"=tpfn[2],"FN"=tpfn[3],"TP"=tpfn[4] ,method=method,times=time,unit=attr(time, "units"),
+                           type=type,difficulty=difficulty,graph=nbgraph)
+          # if(method=="EMtree"){
+          #   res=cbind(res, medIter=median(resample$maxIter),
+          #             thirdQuartile=quantile(resample$maxIter,0.75),maxIter=max(resample$maxIter),B=B)
+          # }
+          return(res)
+        },mc.cores=cores)
+       
+        res<-as_tibble(do.call(rbind,obj))%>%
+          mutate(TN=as.numeric(as.character(TN)),
+                 FN=as.numeric(as.character(FN)),
+                 TP=as.numeric(as.character(TP)),
+                 FP=as.numeric(as.character(FP)),
+                 times=ifelse(unit=="mins",60*as.numeric(as.character(times)),as.numeric(as.character(times))),
+                 sum=TN+TP+FP+FN,FDR=FP/(TP+FP))
+
+        res<-res%>% mutate(FN=ifelse(is.na(sum),FP,FN),FP=ifelse(is.na(sum),0,FP),
+                           TP=ifelse(is.na(sum),0,TP))
+
         # if(method=="EMtree"){
-        #   res=cbind(res, medIter=median(resample$maxIter),
-        #             thirdQuartile=quantile(resample$maxIter,0.75),maxIter=max(resample$maxIter),B=B)
+        #   saveRDS(res,paste0(path,"/TPFN/results/",method,"_",type,"_TFPN_",difficulty,B,".rds"))
+        #   saveRDS(lapply(obj, function(x){x[[2]]}), paste0(path,"/TPFN/results/Ghat",method,"_",type,"_TFPN_",difficulty,B,".rds"))
+        # }else{
+        #   saveRDS(res,paste0(path,"/TPFN/results/",method,"_",type,"_TFPN_",difficulty,".rds"))
+        #   saveRDS(lapply(obj, function(x){x[[2]]}), paste0(path,"/TPFN/results/Ghat",method,"_",type,"_TFPN_",difficulty,".rds"))
         # }
-        return(list(pmat,edgesOrigin))
-      },mc.cores=cores)
-      
-      # res<-as_tibble(do.call(rbind,lapply(obj, function(x){x[[1]]})))%>%
-      #   mutate(TN=as.numeric(as.character(TN)),
-      #          FN=as.numeric(as.character(FN)),
-      #          TP=as.numeric(as.character(TP)),
-      #          FP=as.numeric(as.character(FP)),
-      #          times=ifelse(unit=="mins",60*as.numeric(as.character(times)),as.numeric(as.character(times))),
-      #          sum=TN+TP+FP+FN,FDR=FP/(TP+FP))
-      # 
-      # res<-res%>% mutate(FN=ifelse(is.na(sum),FP,FN),FP=ifelse(is.na(sum),0,FP),
-      #                    TP=ifelse(is.na(sum),0,TP))
-      # 
-      # if(method=="EMtree"){
-      #   saveRDS(res,paste0(path,"/TPFN/results/",method,"_",type,"_TFPN_",difficulty,B,".rds"))
-      #   saveRDS(lapply(obj, function(x){x[[2]]}), paste0(path,"/TPFN/results/Ghat",method,"_",type,"_TFPN_",difficulty,B,".rds"))
-      # }else{
-      #   saveRDS(res,paste0(path,"/TPFN/results/",method,"_",type,"_TFPN_",difficulty,".rds"))
-      #   saveRDS(lapply(obj, function(x){x[[2]]}), paste0(path,"/TPFN/results/Ghat",method,"_",type,"_TFPN_",difficulty,".rds"))
-      # }
-      saveRDS(obj, paste0(path,"/TPFN/results/Pmat",method,"_",type,"_TFPN_",difficulty,".rds"))
-      T2<-Sys.time()
-      cat(difftime(T2,T1),attr(difftime(T2,T1), "units"),"\n")
-      times<-c(times,difftime(T2,T1))
+        saveRDS(res, paste0(path,"/TPFN/results/Pmat",method,"_",type,"_TFPN_",difficulty,B,".rds"))
+        T2<-Sys.time()
+        cat(difftime(T2,T1),attr(difftime(T2,T1), "units"),"\n")
+       # times<-c(times,difftime(T2,T1))
+      }
     }
   }
 }
@@ -217,13 +223,15 @@ for(method in method){
 ########################
 # Post tretment
 ######################
+# iter in stars effect on spieceasi performance
+res=readRDS(paste0(path,"/TPFN/results/Pmat",method,"_",type,"_TFPN_",difficulty,"2.rds"))
 # S effect
 type<-"erdos"
 difficulty<-"easy"
 method<-"EMtree"
-B=c(1,2,10,20,50, 150)
+B=c(2,10,20,50, 150)
 reseasy<-do.call(rbind, lapply(B,function(x){
-  readRDS(paste0(path,"TPFN/results/",method,"_",type,"_TFPN_easy",x,".rds"))
+  cbind(readRDS(paste0(path,"/TPFN/results/Pmat",method,"_",type,"_TFPN_",difficulty,x,".rds")), B=x)
 }))
 reshard<-do.call(rbind, lapply(B,function(x){
   readRDS(paste0(path,"TPFN/results/",method,"_",type,"_TFPN_hard",x,".rds"))
@@ -239,8 +247,8 @@ plotFDRratio<-function(res,diff){
   p1<-p+geom_quasirandom(aes(y=FDR))+stat_summary(aes(y=FDR),fun.ymin = function(z) { quantile(z,0.25) },
                                                   fun.ymax = function(z) { quantile(z,0.75) },
                                                   fun.y = median,
-                                                  fill="white",color="black",pch=22)+ labs(y="FDR %",x="S")+
-    coord_cartesian(ylim=c(0,0.8))
+                                                  fill="white",color="black",pch=22)+ labs(y="FDR %",x="S")
+  #  coord_cartesian(ylim=c(0,0.8))
   
   p2<-p+geom_quasirandom(aes(y=log(densPred+0.01)))+stat_summary(aes(y=log(densPred+0.01)),fun.ymin = function(z) { quantile(z,0.25) },
                                                                  fun.ymax = function(z) { quantile(z,0.75) },
@@ -249,8 +257,8 @@ plotFDRratio<-function(res,diff){
     labs(y="log(ratio + c)", x="S")+
     scale_y_continuous(breaks = c(log(0.01),log(0.1),log(0.5),log(1), log(2), log(4)),
                        labels=c("log(c)","log(1e-1)","log(5e-1)","log(1)", "log(2)","log(4)"))+
-    geom_hline(yintercept = 0 ,linetype="dashed")+
-    coord_cartesian(ylim=c(log(3e-1),log(3)))
+    geom_hline(yintercept = 0 ,linetype="dashed")
+  #  coord_cartesian(ylim=c(log(3e-1),log(3)))
   
   grid.arrange(p1,p2,nrow=2,ncol=1, top=diff)
 }
@@ -360,14 +368,14 @@ plotFDRratio<-function(res,diff){
     guides(color=FALSE)+ theme_minimal()+ labs(x="Threshold")+theme(axis.text.x = element_text( hjust = 1))
   
   p1<-p+geom_quasirandom(aes(y=FDR), color="deepskyblue3")+stat_summary(aes(y=FDR),fun.ymin = function(z) { quantile(z,0.25) },
-                                                  fun.ymax = function(z) { quantile(z,0.75) },
-                                                  fun.y = median,
-                                                  fill="white",color="black",pch=22)+ labs(y="FDR %")#+ coord_cartesian(ylim=c(0,0.8))
+                                                                        fun.ymax = function(z) { quantile(z,0.75) },
+                                                                        fun.y = median,
+                                                                        fill="white",color="black",pch=22)+ labs(y="FDR %")#+ coord_cartesian(ylim=c(0,0.8))
   
   p2<-p+geom_quasirandom(aes(y=log(densPred+0.01)), color="deepskyblue3")+stat_summary(aes(y=log(densPred+0.01)),fun.ymin = function(z) { quantile(z,0.25) },
-                                                                 fun.ymax = function(z) { quantile(z,0.75) },
-                                                                 fun.y = median,
-                                                                 fill="white",color="black",pch=22)+
+                                                                                       fun.ymax = function(z) { quantile(z,0.75) },
+                                                                                       fun.y = median,
+                                                                                       fill="white",color="black",pch=22)+
     labs(y="log(ratio + c)")+
     scale_y_continuous(breaks = c(log(0.01),log(0.1),log(0.5),log(1), log(2), log(4)),
                        labels=c("log(c)","log(1e-1)","log(5e-1)","log(1)", "log(2)","log(4)"))+
