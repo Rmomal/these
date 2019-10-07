@@ -38,8 +38,8 @@ effort_plot <- ggplot(data = X, aes(x = Xcart, y = Ycart, group = Transect.Label
         panel.background = element_blank(),
         legend.position = "right")
 
-map_species<-function(species,mat,titre = "Obs count", low="blue", high="firebrick1", filter=0.5, vecBounds=NULL){ 
-  legend=titre ;   species=enquo(species)
+map_species<-function(species,mat,legend = "Obs count", title="",low="blue", high="firebrick1", filter=0.5, vecBounds=NULL,alpha=1){ 
+  species=enquo(species)
   if(is.null(vecBounds)){
     data=cbind(X, mat) %>% filter(!!species>filter)
   }else{
@@ -47,8 +47,9 @@ map_species<-function(species,mat,titre = "Obs count", low="blue", high="firebri
     data=cbind(X, mat) %>% filter(!!species>filter, Ycart>Ylow, Ycart < Yhigh,
                                   Xcart>Xlow, Xcart<Xhigh)
   }
-  effort_plot + geom_point(data = data, aes(x = Xcart, y = Ycart, size = !!species, color = !!species))+   scale_size(name = legend)+scale_colour_gradient(name =legend,low=low,high=high)+
-    guides(size=FALSE)+ ggtitle(species)
+  finaltitle=ifelse(is.null(title),species,title)
+  effort_plot + geom_point(data = data, aes(x = Xcart, y = Ycart, size = !!species, color = !!species), alpha=alpha)+   scale_size(name = legend)+scale_colour_gradient(name =legend,low=low,high=high)+
+    guides(size=FALSE)+ ggtitle(finaltitle)
 }
 ```
 
@@ -57,8 +58,11 @@ map_species<-function(species,mat,titre = "Obs count", low="blue", high="firebri
 W=ifelse(N>0,1,0)
 commonEffect=data.frame(sumY = rowSums(Y), sumN=rowSums(N), diversity=rowSums(W) ) 
 map_species(diversity,commonEffect, filter=1)
-map_species(sumN,commonEffect, filter=0)
 map_species(sumY,commonEffect, filter=0)
+
+
+
+
 commonEffect %>% ggplot(aes(sumN))+geom_histogram()
 summary(commonEffect$sumN)
 chisq.test(commonEffect$sumN, )
@@ -75,6 +79,10 @@ abline(0,1)
 
 qqline(commonEffect$sumN, distribution = function(p) qchisq(p, df = 3),
        prob = c(0.1, 0.6), col = 2)
+
+
+map_species(species=sumN,mat=commonEffect,title="",legend="Detect.",filter=0, low="steelblue1",high="red",alpha=0.5)
+
 
 ```
 

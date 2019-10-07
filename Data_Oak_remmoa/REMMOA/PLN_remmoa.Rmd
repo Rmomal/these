@@ -69,11 +69,11 @@ get_model<-function(data, vec){
   print(difftime(t2,t1))
   return(model)
 }
-get_network<-function(resample_output,title, data=Y, f=0.8){
-  df<-freq_selec(resample_output$Pmat,p=ncol(data),f=f)
+get_network<-function(resample_output,Pt,title, data=Y, f=0.8){
+  df<-freq_selec(resample_output$Pmat,Pt)
   graph<-draw_network(df,title, pal="dodgerblue3", 
-                              names=colnames(data), layout="nicely", curv=0.1,
-                      filterDeg=TRUE)
+                              nodes_label=colnames(data), layout="nicely", curv=0.05,
+                      filter_deg=TRUE)
   return(graph)
 }
 ```
@@ -147,10 +147,10 @@ Les espèces surlignées en jaune dans les réseaux sont celles avec un score de
 ```{r,  fig.height=5, fig.width=10}
 
 load("results/ReseauxEntiers.RData")
-naif=get_network(R_brut,"naif")
-offset=get_network(R_offset,"Offset")
-depth<-get_network(R_depth,"~ Depth")
-depth_seastate<-get_network(R_depth_seastate,"~ Depth+sea_state")
+naif=get_network(R_brut,"naif",Pt=NULL)
+offset=get_network(R_offset,"Offset",Pt=NULL)
+depth<-get_network(R_depth,"~ Depth",Pt=NULL)
+depth_seastate<-get_network(R_depth_seastate,"~ Depth+sea_state",Pt=NULL)
 
 
 grid.arrange(naif,offset,nrow=1, ncol=2)
@@ -173,9 +173,9 @@ null_colsouth=which(colSums(YSouth)==0)
 YSouth=Y[indicesSouth,-null_colsouth]
 
 load("results/ReseauxNorth.RData")
-graph0<-get_network(R_North,"Offset", data=YNorth)
-graph_effort<-get_network(R_north_depth,"~ Depth", data=YNorth)
-graph_depth<-get_network(R_north_full,"~ Depth+sea_state", data=YNorth)
+graph0<-get_network(R_North,"Offset", data=YNorth,Pt=NULL)
+graph_effort<-get_network(R_north_depth,"~ Depth", data=YNorth,Pt=NULL)
+graph_depth<-get_network(R_north_full,"~ Depth+sea_state", data=YNorth,Pt=NULL)
 
 grid.arrange(graph0,graph_effort,graph_depth,nrow=1, ncol=3, top="Détections au Nord")
 
@@ -186,9 +186,9 @@ grid.arrange(graph0,graph_effort,graph_depth,nrow=1, ncol=3, top="Détections au
 ```{r, fig.height=5, fig.width=10}
 
 load("results/ReseauxSouth.RData")
-graph0<-get_network(R_South,"Offset",data=YSouth)
-graph_effort<-get_network(R_south_depth,"~ Depth",data=YSouth)
-graph_depth<-get_network(R_south_full,"~ Depth+sea_state",data=YSouth)
+graph0<-get_network(R_South,"Offset",data=YSouth,Pt=NULL)
+graph_effort<-get_network(R_south_depth,"~ Depth",data=YSouth,Pt=NULL)
+graph_depth<-get_network(R_south_full,"~ Depth+sea_state",data=YSouth,Pt=NULL)
 
 grid.arrange(graph0,graph_effort,graph_depth,nrow=1, ncol=3, top="Détections au Sud")
 
@@ -207,7 +207,7 @@ load("results/ReseauxRegion.RData")
 load("results/DataRegion.RData")
 Graphs=lapply(seq_along(ReseauxRegion), function(x){
   data=DataRegion[[x]]$Y
-  get_network(ReseauxRegion[[x]], strsplit(names(ReseauxRegion)[x], split="_")[[1]][3], data=data)
+  get_network(ReseauxRegion[[x]], title=strsplit(names(ReseauxRegion)[x], split="_")[[1]][3], data=data,Pt=NULL)
 })
 grid.arrange(Graphs[[1]],Graphs[[2]],Graphs[[3]],ncol=3, nrow=1)
 grid.arrange(Graphs[[4]],Graphs[[5]],Graphs[[6]],ncol=3, nrow=1)

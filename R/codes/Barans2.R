@@ -62,7 +62,15 @@ lapply(seq_along(Faatfreq), function(x){
 ####################################
 Faatfreq<-readRDS("/Users/raphaellemomal/simulations/Simu/PLN.2.0/Faatfreq2.rds")
 
-Stabdata=Faatfreq[[1]]$`100`
+Stabdata=Faatfreq[[1]]$`150`
+library(ade4)
+data(baran95)
+namescounts = colnames(baran95$fau)
+pmat=Stabdata[[4]]$Pmat
+adj=1*(freq_selec(pmat,Pt=2/33)>0.9)
+
+draw_network(adj, nodes_label = namescounts, curv=0.3)
+
 f=0.9
 x=ncol(Stabdata[[1]]$Pmat)
 p=(1+sqrt(8*x+1))/2
