@@ -32,19 +32,29 @@ S = cov(Y); # S = cor(Y)
 library(PLNmodels)
 load('../Data_SR/BarentsFish.Rdata')
 p = ncol(Data$count)
-PLN = PLN(Data$count ~ Data$covariates)
-S = PLN$model_par$Sigma * nrow(Data$count)
+PLNall = PLN(Data$count ~ scale(Data$covariates))
+Sall = PLNall$model_par$Sigma * nrow(Data$count)
+PLNnone = PLN(Data$count ~ 1)
+Snone = PLNnone$model_par$Sigma * nrow(Data$count)
+S = Sall
 
 # Variable clustering
 vcPCA = F_VarClustPCA(S)
 
 # Results
-plot(sum(diag(S)) - vcPCA$clustPath$height, type='b', ylim=c(0, sum(diag(S))), ylab='', xlab='')
-abline(h = vcPCA$lastCost)
-
-# Clustering matrix
+par(mfrow=c(3, 2), pch=20)
+step = 24
+plot(vcPCA$clustPath$cost, type='b', ylab='', xlab=''); 
+abline(v=step, col=2)
+plot(sum(diag(S)) - vcPCA$clustPath$height, type='b', ylim=c(0, sum(diag(S))), ylab='', xlab=''); 
+abline(h = vcPCA$lastCost, col=2)
 plot(vcPCA$clustPath$height, vcPCA$clustMat[1, ], ylim=c(0, 2*p), type='s', col=1)
 sapply(2:p, function(j){lines(vcPCA$clustPath$height, vcPCA$clustMat[j, ], type='s', col=j)})
+abline(v=vcPCA$clustPath$height[step], col=2)
+rbind(colnames(Data$count), vcPCA$clustMatrix[, 24])
+image(t(PLNall$model_par$Theta[order(vcPCA$clustMatrix[, 24]), -1]), main='beta')
+image(PLNnone$model_par$Sigma[order(vcPCA$clustMatrix[, 24]), order(vcPCA$clustMatrix[, 24])], main='Sigma none')
+image(PLNall$model_par$Sigma[order(vcPCA$clustMatrix[, 24]), order(vcPCA$clustMatrix[, 24])], main='Sigma all')
 
 # # Comparison with ClustOfVar
 # library(ClustOfVar)
