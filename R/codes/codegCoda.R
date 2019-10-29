@@ -35,7 +35,7 @@ require(huge);
 #          opt.icov ------ inverse covariance matrix with best EBIC score
 #        opt.lambda ------ lambda with best EBIC score
 #-------------------------------------------------------------------------------
-gcoda <- function(x, counts = F, pseudo = 0.5, lambda.min.ratio = 1e-2,
+gcoda <- function(x, counts = F, pseudo = 0.5, lambda.min.ratio = 1e-1,
                   nlambda = 30, ebic.gamma = 0.5, covar=NULL,shuffleRes=FALSE, shufflevar) {
 
   # Counts or fractions?
@@ -171,17 +171,16 @@ obj_gcoda <- function(iSig, A, lambda) {
 # Modified huge::huge.glasso for quick preparation
 # Input S must be covariance matrix
 require(huge);
+sourceCpp("/Users/raphaellemomal/these/R/codes/hugeglasso.cpp")
 huge_glasso_mod <- function(S, lambda) {
   icov <- diag(1/(diag(S) + lambda));
-
   z <- which(rowSums(abs(S) > lambda) > 1);
   q <- length(z);
   if (q > 0) {
-    out.glasso = .C("hugeglasso", S = as.double(S[z, z]),
-                    W = as.double(S[z, z]), T = as.double(diag(q)),
-                    dd = as.integer(q), lambda = as.double(lambda),
-                    df = as.integer(0), PACKAGE = "huge");
-    icov[z, z] = matrix(out.glasso$T, ncol = q);
+    out.glasso= hugeglasso_sub(S = as.matrix((S[z, z])), W = as.matrix((S[z, z])), T = as.matrix(diag(as.double(q))),
+                               d= as.integer(q), ilambda = as.double(lambda), df = as.integer(0), 
+                               scr=TRUE)
+    icov[z, z] = matrix(out.glasso, ncol = q);
   }
 
   return(icov);
