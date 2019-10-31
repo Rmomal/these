@@ -69,7 +69,7 @@ namescounts = colnames(baran95$fau)
 pmat=Stabdata[[4]]$Pmat
 adj=1*(freq_selec(pmat,Pt=2/33)>0.9)
 
-draw_network(adj, nodes_label = namescounts, curv=0.3)
+EMtree::draw_network(adj, nodes_label = namescounts, curv=0, layout="fr", filter_deg = TRUE)
 
 f=0.9
 x=ncol(Stabdata[[1]]$Pmat)
