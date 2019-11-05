@@ -20,7 +20,7 @@ F_VarClustPCA <- function(S){
    sapply(1:(p-1), function(j){sapply((j+1):p, function(k){
       C[j, k] <<- eigen(S[c(j, k), c(j, k)])$values[2]
    })})
-   image(1:p, 1:p, C)
+   # image(1:p, 1:p, C)
    
    # Hierarchical clustering
    if(traceS){listS = list()}
@@ -55,7 +55,7 @@ F_VarClustPCA <- function(S){
       Ctmp = as.matrix(Ctmp)[-jkmin[1], ]; Ctmp = as.matrix(Ctmp)[, -jkmin[1]]; 
       varNum = varNum[-jkmin]; varNum[p-step] = p+step
       cat(step, ':', clustPath[step, ], '\n')
-      image(Ctmp, main=paste(step, dim(Ctmp)[1]), xlab='', ylab='')
+      # image(Ctmp, main=paste(step, dim(Ctmp)[1]), xlab='', ylab='')
    }
    # Last step
    eigenSjk = eigen(Stmp); 
@@ -70,5 +70,14 @@ F_VarClustPCA <- function(S){
       clustMatrix[clustContent[[p+h]], h] <<- p+h
    })
    
-   return(list(clustPath=clustPath, clustContent=clustContent, clustMatrix=clustMatrix, lastCost=eigenSjk$values[1]))
+   # Merging path 
+   clustMerge = clustPath[, 1:2]
+   sapply(1:2, function(c){
+      clustMerge[which(clustMerge[, c] <= p), c] <<- -clustMerge[which(clustMerge[, c] <= p), c]
+      clustMerge[which(clustMerge[, c] > p), c] <<- clustMerge[which(clustMerge[, c] > p), c] - p
+   })
+   
+   
+   return(list(clustPath=clustPath, clustContent=clustContent, clustMatrix=clustMatrix, 
+               lastCost=eigenSjk$values[1], clustMerge=clustMerge))
 }
