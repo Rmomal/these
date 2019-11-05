@@ -1,0 +1,118 @@
+\headcommand {\slideentry {0}{0}{1}{1/1}{}{0}}
+\headcommand {\beamer@framepages {1}{1}}
+\headcommand {\beamer@sectionpages {1}{1}}
+\headcommand {\beamer@subsectionpages {1}{1}}
+\headcommand {\sectionentry {1}{Motivation}{2}{Motivation}{0}}
+\headcommand {\slideentry {1}{0}{1}{2/2}{}{0}}
+\headcommand {\beamer@framepages {2}{2}}
+\headcommand {\slideentry {1}{0}{2}{3/3}{}{0}}
+\headcommand {\beamer@framepages {3}{3}}
+\headcommand {\slideentry {1}{0}{3}{4/4}{}{0}}
+\headcommand {\beamer@framepages {4}{4}}
+\headcommand {\beamer@sectionpages {2}{4}}
+\headcommand {\beamer@subsectionpages {2}{4}}
+\headcommand {\sectionentry {2}{Network inference}{5}{Network inference}{0}}
+\headcommand {\slideentry {2}{0}{1}{5/5}{}{0}}
+\headcommand {\beamer@framepages {5}{5}}
+\headcommand {\beamer@subsectionpages {5}{5}}
+\headcommand {\beamer@subsectionentry {0}{2}{1}{6}{General Framework}}
+\headcommand {\slideentry {2}{1}{1}{6/6}{General Framework}{0}}
+\headcommand {\beamer@framepages {6}{6}}
+\headcommand {\beamer@sectionpages {5}{6}}
+\headcommand {\beamer@subsectionpages {6}{6}}
+\headcommand {\sectionentry {3}{With count data}{7}{With count data}{0}}
+\headcommand {\beamer@subsectionpages {7}{6}}
+\headcommand {\beamer@subsectionentry {0}{3}{1}{7}{Model}}
+\headcommand {\slideentry {3}{1}{1}{7/9}{Model}{0}}
+\headcommand {\beamer@framepages {7}{9}}
+\headcommand {\beamer@sectionpages {7}{9}}
+\headcommand {\beamer@subsectionpages {7}{9}}
+\headcommand {\sectionentry {4}{Proposed methodology}{10}{Proposed methodology}{0}}
+\headcommand {\beamer@subsectionpages {10}{9}}
+\headcommand {\beamer@subsectionentry {0}{4}{1}{10}{Using trees}}
+\headcommand {\slideentry {4}{1}{1}{10/10}{Using trees}{0}}
+\headcommand {\beamer@framepages {10}{10}}
+\headcommand {\slideentry {4}{1}{2}{11/11}{Using trees}{0}}
+\headcommand {\beamer@framepages {11}{11}}
+\headcommand {\slideentry {4}{1}{3}{12/12}{Using trees}{0}}
+\headcommand {\beamer@framepages {12}{12}}
+\headcommand {\slideentry {4}{1}{4}{13/13}{Using trees}{0}}
+\headcommand {\beamer@framepages {13}{13}}
+\headcommand {\beamer@sectionpages {10}{13}}
+\headcommand {\beamer@subsectionpages {10}{13}}
+\headcommand {\sectionentry {5}{Inference}{14}{Inference}{0}}
+\headcommand {\slideentry {5}{0}{1}{14/14}{}{0}}
+\headcommand {\beamer@framepages {14}{14}}
+\headcommand {\beamer@subsectionpages {14}{14}}
+\headcommand {\beamer@subsectionentry {0}{5}{1}{15}{E step}}
+\headcommand {\slideentry {5}{1}{1}{15/16}{E step}{0}}
+\headcommand {\beamer@framepages {15}{16}}
+\headcommand {\slideentry {5}{1}{2}{17/17}{E step}{0}}
+\headcommand {\beamer@framepages {17}{17}}
+\headcommand {\slideentry {5}{1}{3}{18/18}{E step}{0}}
+\headcommand {\beamer@framepages {18}{18}}
+\headcommand {\beamer@subsectionpages {15}{18}}
+\headcommand {\beamer@subsectionentry {0}{5}{2}{19}{M step}}
+\headcommand {\slideentry {5}{2}{1}{19/19}{M step}{0}}
+\headcommand {\beamer@framepages {19}{19}}
+\headcommand {\beamer@sectionpages {14}{19}}
+\headcommand {\beamer@subsectionpages {19}{19}}
+\headcommand {\sectionentry {6}{EMtree}{20}{EMtree}{0}}
+\headcommand {\beamer@subsectionpages {20}{19}}
+\headcommand {\slideentry {6}{1}{1}{20/20}{}{0}}
+\headcommand {\beamer@framepages {20}{20}}
+\headcommand {\slideentry {6}{1}{2}{21/21}{}{0}}
+\headcommand {\beamer@framepages {21}{21}}
+\headcommand {\beamer@subsectionpages {20}{21}}
+\headcommand {\beamer@subsectionentry {0}{6}{2}{22}{Performance}}
+\headcommand {\slideentry {6}{2}{1}{22/23}{Performance}{0}}
+\headcommand {\beamer@framepages {22}{23}}
+\headcommand {\beamer@subsectionpages {22}{23}}
+\headcommand {\beamer@subsectionentry {0}{6}{3}{24}{Results}}
+\headcommand {\slideentry {6}{3}{1}{24/24}{Results}{0}}
+\headcommand {\beamer@framepages {24}{24}}
+\headcommand {\slideentry {6}{3}{2}{25/25}{Results}{0}}
+\headcommand {\beamer@framepages {25}{25}}
+\headcommand {\slideentry {6}{3}{3}{26/26}{Results}{0}}
+\headcommand {\beamer@framepages {26}{26}}
+\headcommand {\slideentry {6}{3}{4}{27/27}{Results}{0}}
+\headcommand {\beamer@framepages {27}{27}}
+\headcommand {\slideentry {6}{3}{5}{28/28}{Results}{0}}
+\headcommand {\beamer@framepages {28}{28}}
+\headcommand {\slideentry {6}{3}{6}{29/29}{Results}{0}}
+\headcommand {\beamer@framepages {29}{29}}
+\headcommand {\slideentry {6}{3}{7}{30/30}{Results}{0}}
+\headcommand {\beamer@framepages {30}{30}}
+\headcommand {\beamer@sectionpages {20}{30}}
+\headcommand {\beamer@subsectionpages {24}{30}}
+\headcommand {\sectionentry {7}{Application}{31}{Application}{0}}
+\headcommand {\beamer@subsectionpages {31}{30}}
+\headcommand {\beamer@subsectionentry {0}{7}{1}{31}{Oak data}}
+\headcommand {\slideentry {7}{1}{1}{31/31}{Oak data}{0}}
+\headcommand {\beamer@framepages {31}{31}}
+\headcommand {\slideentry {7}{1}{2}{32/32}{Oak data}{0}}
+\headcommand {\beamer@framepages {32}{32}}
+\headcommand {\slideentry {7}{1}{3}{33/33}{Oak data}{0}}
+\headcommand {\beamer@framepages {33}{33}}
+\headcommand {\slideentry {7}{1}{4}{34/34}{Oak data}{0}}
+\headcommand {\beamer@framepages {34}{34}}
+\headcommand {\slideentry {7}{1}{5}{35/35}{Oak data}{0}}
+\headcommand {\beamer@framepages {35}{35}}
+\headcommand {\slideentry {7}{1}{6}{36/36}{Oak data}{0}}
+\headcommand {\beamer@framepages {36}{36}}
+\headcommand {\gdef \insertmainframenumber {32}}
+\headcommand {\partentry {\translate {Appendix}}{1}}
+\headcommand {\beamer@partpages {1}{36}}
+\headcommand {\beamer@sectionpages {31}{36}}
+\headcommand {\beamer@subsectionpages {31}{36}}
+\headcommand {\beamer@appendixpages {37}}
+\headcommand {\beamer@sectionpages {37}{36}}
+\headcommand {\beamer@subsectionpages {37}{36}}
+\headcommand {\sectionentry {8}{\translate {References}}{37}{\translate {References}}{1}}
+\headcommand {\slideentry {8}{0}{0}{37/37}{}{1}}
+\headcommand {\beamer@framepages {37}{37}}
+\headcommand {\beamer@partpages {37}{37}}
+\headcommand {\beamer@subsectionpages {37}{37}}
+\headcommand {\beamer@sectionpages {37}{37}}
+\headcommand {\beamer@documentpages {37}}
+\headcommand {\gdef \inserttotalframenumber {32}}

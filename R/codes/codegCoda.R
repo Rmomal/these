@@ -114,8 +114,8 @@ gcoda <- function(x, counts = F, pseudo = 0.5, lambda.min.ratio = 1e-1,
 }
 #-------------------------------------------------------------------------------
 # Optimization for gcoda with given lambda
-gcoda_sub <- function(A, iSig = NULL, lambda = 0.1, tol_err = 1e-4,
-                      k_max = 500) {
+gcoda_sub <- function(A, iSig = NULL, lambda = 0.1, tol_err = 3e-4,
+                      k_max = 700) {
   p <- ncol(A);
   if(is.null(iSig)) {
     iSig <- diag(p);
@@ -190,21 +190,21 @@ huge_glasso_mod <- function(S, lambda) {
 #-------------------------------------------------------------------------------
 # 1 Basic example (no edges in the conditional dependence network)
 # 1.1 Generate logistic normal variables
-# n <- 100;
-# p <- 20;
-# x <- matrix(rnorm(n * p), nrow = n);
-# x.frac <- exp(x) / rowSums(exp((x)));
-# totCount <- round(runif(n = n,  min = 1000, max = 2000));
-# x.count <- x.frac * totCount;
-# # 1.2 Run gCoda
-# # using fraction
-# res_gcoda_frac <- gcoda(x = x.frac, counts = F);
-# # using counts
-# res_gcoda_count <- gcoda(x = x.count, counts = T);
-# # 1.3 Get the estimation of the inverse covariance matrix
-# {
-#   cat("gCoda using fraction data:\n");
-#   print(round(res_gcoda_frac$opt.icov, 2));
-#   cat("gCoda using count data:\n");
-#   print(round(res_gcoda_count$opt.icov, 2));
-# }
+n <- 100;
+p <- 20;
+x <- matrix(rnorm(n * p), nrow = n);
+x.frac <- exp(x) / rowSums(exp((x)));
+totCount <- round(runif(n = n,  min = 1000, max = 2000));
+x.count <- x.frac * totCount;
+# 1.2 Run gCoda
+# using fraction
+res_gcoda_frac <- gcoda(x = x.frac, counts = F);
+# using counts
+res_gcoda_count <- gcoda(x = x.count, counts = T);
+# 1.3 Get the estimation of the inverse covariance matrix
+{
+  cat("gCoda using fraction data:\n");
+  print(round(res_gcoda_frac$opt.icov, 2));
+  cat("gCoda using count data:\n");
+  print(round(res_gcoda_count$opt.icov, 2));
+}

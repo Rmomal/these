@@ -3,10 +3,10 @@
 #############
 library(PLNmodels)
 library(mvtnorm)
-source('/Users/raphaellemomal/simulations/codes/FunctionsMatVec.R')
-source('/Users/raphaellemomal/simulations/codes/FunctionsTree.R')
-source('/Users/raphaellemomal/simulations/codes/FunctionsInference.R')
-source('/Users/raphaellemomal/simulations/codes/fonctions.R')
+# source('/Users/raphaellemomal/simulations/codes/FunctionsMatVec.R')
+# source('/Users/raphaellemomal/simulations/codes/FunctionsTree.R')
+# source('/Users/raphaellemomal/simulations/codes/FunctionsInference.R')
+# source('/Users/raphaellemomal/simulations/codes/fonctions.R')
 path<-"/Users/raphaellemomal/simulations/Simu/PLN.2.0/"
 library(EMtree)
 # n=100
@@ -61,23 +61,23 @@ data_from_stored_graphs<-function(type, variable, nbgraph, valeur, covar,path, f
   return(gener)
 }
 
-generator_param<-function(G,signed=FALSE){
+generator_param<-function(G,signed=FALSE,v){
   lambda = 1
   p=ncol(G)
   
   if(signed){
     Gsign = F_Vec2Sym(F_Sym2Vec(G * matrix(2*rbinom(p^2, 1, .3)-1, p, p)))
-    omega = lambda*diag(rowSums(G)+1) + Gsign
+    omega = lambda*diag(rowSums(G)+v) + Gsign
     while(min(eigen(omega)$values) < 1e-10 & lambda<1e3){
       lambda = 1.1*lambda
-      omega = lambda*diag(rowSums(G)+1) + Gsign
+      omega = lambda*diag(rowSums(G)+v) + Gsign
     }
     print(lambda)
   }else{
-    omega = lambda*diag(rowSums(G)) + G
+    omega = lambda*diag(rowSums(G)+v) + G
     while (min(eigen(omega)$values) < 1e-6){
       lambda = 1.1*lambda
-      omega =lambda*diag(rowSums(G)) + G
+      omega =lambda*diag(rowSums(G)+v) + G
     }
   }
   sigma = cov2cor(solve(omega))
@@ -105,14 +105,14 @@ data_from_scratch<-function(type, p=20, r=10, covar=NULL,prob=log(p)/p,dens=log(
   #
   return(list(data=data,omega= param$omega))
 }
-data_for_MInt<-function(Y,covar,path){ # à voir si on construit Y avant ou appel à data_from_stored_graphs
+data_for_MInt<-function(Y,covar,path){ 
   Y <-cbind(1:nrow(Y),Y)
   Y<-rbind(c("Observations",1:(ncol(Y)-1)),Y)
   
   covariates <-cbind(1:nrow(covar),covar)
   #  browser()
   # covariates<-rbind(c("Observations","feature1","feature2","feature3"),covariates)
-  covariates<-rbind(c("Observations","feature1","feature2"),covariates)
+  covariates<-rbind(c("Observations","feature1","feature2","feature3"),covariates)
   
   pathY<-paste0(path,"mint_data/y.txt")
   pathX<-paste0(path,"mint_data/x.txt")

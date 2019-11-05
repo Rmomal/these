@@ -24,7 +24,7 @@ eval_store_mint<-function(Y,covar,path){
   x <- data[["x"]]
   y <- data[["y"]]
   T1<-Sys.time()
-  m <- mint(y,x,fmla = ~feature1 + feature2)
+  m <- mint(y,x,fmla = ~feature1 + feature2+feature3)
   m <- estimate(m)
   T2<-Sys.time()
   temps<-difftime(T2,T1)
@@ -47,7 +47,7 @@ types<-c("erdos","cluster","scale-free")
 diff=c("easy","hard")
 for( difficulty in diff){
   # n<-switch(difficulty,"easy"=100,"hard"=50)
-  # nbspecies<-switch(difficulty,"easy"=20,"hard"=30)
+  nbspecies<-switch(difficulty,"easy"=20,"hard"=30)
   # covar<-data.frame(X1=round(runif(n)*5),X2=rnorm(n,0,2),  X3=(runif(n)))
   # saveRDS(covar,paste0(path,"TPFN/Data/covar_",difficulty,".rds"))
   # 
@@ -55,12 +55,13 @@ for( difficulty in diff){
     cat(type,difficulty,"\n")
     obj<-mclapply(1:100,function(nbgraph){
       cat("\n",nbgraph,":")
+      covar <- readRDS(paste0(path,"TPFN/Data/covar_",difficulty,".rds"))
       # omegaOriginal <- readRDS(paste0("/Users/raphaellemomal/simulations/Simu/PLN.2.0/",type,
       #                                 "/d/Sets_param/Graph",nbgraph,"_",nbspiecies,".rds"))$omega
       # edgesOrigin<-ifelse(abs(F_Sym2Vec(omegaOriginal))<1e-16,0,1)
       # Y<-data_from_stored_graphs(type, variable, nbgraph, nbspecies, covar=covar,path,fixe=FALSE)
-      dat <- data_from_scratch(type, p=nbspecies, r=10, covar=covar, signed=TRUE)
-      saveRDS(dat,paste0(path,"TPFN/Data/Signed.Data_",type,"_",difficulty,nbgraph,".rds"))
+      dat <- data_from_scratch(type, p=nbspecies, r=10, covar=covar, signed=FALSE)
+      saveRDS(dat,paste0(path,"TPFN/Data/dataTPFN_",type,"_",difficulty,nbgraph,".rds"))
       
     }, mc.cores=1)
   }
@@ -127,16 +128,18 @@ ggsave(paste0(path,"/TPFN/DisagRateErdos.png"),plot=p,height=5,width=7)
 TPFN_compute<-function(methods,diffs,types, cores=3,B=100,S=10){
   for(method in methods){
     for( difficulty in diffs){#c(1e-3,1e-2,1e-1,1,10
-      #   for(landrat in c(1e-4,1e-3,1e-2,1e-1)){
+      # for(th in c(0.005,0.05,0.1,0.5)){
       #  for(S in c(2,5,10,20)){
+      path<-"/Users/raphaellemomal/simulations/Simu/PLN.2.0/"
       
       cond.tol<-switch(difficulty,"easy"=1e-12,"hard"=1e-6)
       for(type in types){
         T1<-Sys.time()
-        cat(method,", ",difficulty,type,": ")
+        cat(method,", ",difficulty,type,":")
         
         
         obj<-mclapply(1:B,function(nbgraph){# attention signed data !! Signed.Data_
+          cat("\ngraph ",nbgraph)
           ########################
           # récupérer les données et covariables associées générées précédemment, possibilités graphs signés
           dat<-readRDS(paste0(path,"TPFN/Data/Signed.Data_",type,"_",difficulty,nbgraph,".rds"))
@@ -167,13 +170,13 @@ TPFN_compute<-function(methods,diffs,types, cores=3,B=100,S=10){
             if(length(resample)!=3) browser()
             pmat<-resample$Pmat
             # inf<- 1*(ifelse(colSums(ifelse(pmat<2/p,0,1))/B >0.8,1,0))
-            inf<-F_Sym2Vec(1*(freq_selec(pmat, Pt=0.5)>0.5))
+            inf<-F_Sym2Vec(1*(freq_selec(pmat, Pt=2/p)>0.8))
             T2<-Sys.time()
             time<-difftime(T2,T1)
           }
           if(method=="gCoda"){
             T1<-Sys.time()
-            inf <- F_Sym2Vec(gcoda(Y, counts=T, covar=covar, nlambda=30, lambda.min.ratio =1)$opt.icov>1e-16)*1
+            inf <- F_Sym2Vec(abs(gcoda(Y, counts=T, covar=covar, nlambda=100, lambda.min.ratio =1e-3)$opt.icov)>1e-16)*1
             T2<-Sys.time()
             time<-difftime(T2,T1)
           }
@@ -182,7 +185,7 @@ TPFN_compute<-function(methods,diffs,types, cores=3,B=100,S=10){
             model<-lm(U~m)
             T1<-Sys.time()
             inf<-spiec.easi(model$residuals, method='mb', lambda.min.ratio=1e-3, nlambda=100,
-                            icov.select.params=list(rep.num=2 ))
+                            pulsar.params=list(rep.num=20, thresh=0.1))
             inf<-F_Sym2Vec(as.matrix(inf$refit[[1]]))
             T2<-Sys.time()
             time<-difftime(T2,T1)
@@ -190,7 +193,7 @@ TPFN_compute<-function(methods,diffs,types, cores=3,B=100,S=10){
           if(method=="ecoCopula"){
             T1<-Sys.time()
             my_mod=manyglm(Y~m, family="negativ.binomial")
-            inf = F_Sym2Vec(cgr(my_mod)$best_graph$graph)
+            inf = F_Sym2Vec(cgr(my_mod, method="AIC")$best_graph$graph)
             T2<-Sys.time()
             time<-difftime(T2,T1)
           }
@@ -223,9 +226,9 @@ TPFN_compute<-function(methods,diffs,types, cores=3,B=100,S=10){
         cat(difftime(T2,T1),attr(difftime(T2,T1), "units"),"\n")
         # times<-c(times,difftime(T2,T1))
       }
+      
     }
-    #  }
-    #    }
+    #   }
   }
 }
 
@@ -233,7 +236,6 @@ TPFN_compute<-function(methods,diffs,types, cores=3,B=100,S=10){
 #########--------------     S EFFECT ON EMTREE/SPIECEASI PERF     --------------############                  
 #######@#####################################@@@@@@@@@@#####################################
 
-res=readRDS(paste0(path,"/TPFN/results/Pmat",method,"_",type,"_TFPN_",difficulty,"2.rds"))
 # S effect
 type<-"erdos"
 difficulty<-"easy"
@@ -241,28 +243,26 @@ method<-"SpiecEasi"
 files=c()
 
 
-for(landrat in c(1e-4,1e-3,1e-2,1e-1)){
-  files=c(files,paste0(path,"/TPFN/Results/",method,"_",type,"_TFPN_",difficulty,"_",landrat,".rds"))
+for(th in c(0.005,0.05,0.1,0.5)){
+  files=c(files,paste0(path,"/TPFN/Results/",method,"_",type,"_TFPN_",difficulty,"_th_",th,".rds"))
 }
 
 
 reseasy<-do.call(rbind, lapply(files,function(x){
   split=strsplit(x ,split="_")[[1]]
   
-  landrat=substr(split[5],1,nchar(split[5])-4)
+  th=substr(split[6],1,nchar(split[6])-4)
   cbind(readRDS(x), iterStars=S,
-        landrat=landrat)
+        th=th)
   
 }))
 
-reshard<-do.call(rbind, lapply(B,function(x){
-  readRDS(paste0(path,"TPFN/results/",method,"_",type,"_TFPN_hard",x,".rds"))
-}))
+
 plotFDRratio<-function(res,diff){
   
   res<- res %>% mutate( FDR=FP/(TP+FP) ,densPred=(TP+FP)/(TP+FN))
-  ncolors=length(unique(res$landrat))
-  p <-   ggplot(res,aes( x=as.factor(landrat), color=as.factor(landrat)))+
+  ncolors=length(unique(res$th))
+  p <-   ggplot(res,aes( x=as.factor(th), color=as.factor(th)))+
     scale_color_manual(values=c(brewer.pal(n = ncolors+2, name = "YlOrRd")[-c(1,2)],"black"))+labs(x="")+
     guides(color=FALSE)+
     theme_minimal()+
@@ -441,10 +441,17 @@ build_TFPN_plots<-function(type,difficulty,method,factors=methods,colors,FDR=FAL
                    fun.y = median,
                    fill="white",color="black",pch=22)+
       scale_y_continuous(breaks = c(log(0.01),log(0.1),log(0.5),log(1), log(2), log(4)),
-                         labels=c("c",".1",".5","1", "2","4"))+
+                         labels=c("0",".1",".5","1", "2","4"))+
       labs(y="Density ratio")+geom_hline(yintercept = 0 ,linetype="dashed")
   }
-  
+  # p <-ggplot(res,aes( x=FDR,y=densPred, color=method))+
+  #   scale_color_manual(values=colors)+labs(x="")+
+  #   guides(color=FALSE)+ theme_minimal()+ 
+  #   geom_point()+ 
+  #   scale_y_continuous(breaks = c(log(0.01),log(0.1),log(0.5),log(1), log(2), log(4)),
+  #                      labels=c("0",".1",".5","1", "2","4"))+
+  #   theme(axis.text.x = element_text(angle = 25, hjust = 1))
+  # 
   # if(TPFN){
   #   p1=p+geom_quasirandom(aes(y=FP))+
   #     stat_summary(aes(y=FP),fun.ymin = function(z) { quantile(z,0.25) },
@@ -502,7 +509,7 @@ gridLine<-function(type,method,factors,colors,top=TRUE){
   }
   p1<-build_TFPN_plots(type = type,difficulty ="easy",method=method,factors=factors,colors=colors,
                        FDR = TRUE)
-
+  
   p2<-build_TFPN_plots(type = type,difficulty ="easy",method=method,factors=factors,colors=colors,
                        FDR = FALSE)
   g1<-grid.arrange(p1,p2, ncol=2, nrow=1,top=top1,right="\n")
@@ -519,10 +526,13 @@ gridLine<-function(type,method,factors,colors,top=TRUE){
 #################################        EASY RUN       ########################################
 ################################################################################################
 
-TPFN_compute(methods = c("SpiecEasi","gCoda"),
-             diffs=c("easy","hard"),
+TPFN_compute(methods = c("EMtree"),
+             diffs=c("hard","easy"),
              types=c("erdos","cluster","scale-free"),
-             B=100, cores=3)
+             B=100, S=20,cores=3)
+# tous les hard à faire
+#et EMtree avec S=20 n'est-ce pas
+
 
 #methods:
 # c("EMtree","MInt","gCoda","SpiecEasi")
@@ -534,19 +544,19 @@ TPFN_compute(methods = c("SpiecEasi","gCoda"),
 #c("indianred2","orange2","#6abd35","steelblue4")
 #c("#24babf","#aa2061","#e67caf","#6abd35","steelblue4")
 #c("deepskyblue1","deepskyblue2","olivedrab2","olivedrab3","orangered","orangered3","steelblue4")
-type=c("erdos","cluster","scale-free")
-method=c("SpiecEasi","gCoda")
+type=c("erdos","cluster", "scale-free")
+method=c("SpiecEasi","gCoda","ecoCopula","MRFcov","MInt","EMtree")
 factors=method
-colors=c("indianred2","orange2")
-p1=build_TFPN_plots(type = type,difficulty =c("easy","hard"),method=method,factors=factors,colors=colors,FDR = TRUE)
-p2=build_TFPN_plots(type =type ,difficulty = c("easy","hard"),FDR = FALSE)
-grid.arrange(p1,p2, nrow=1, ncol=2)
+colors=c("indianred2","orange2","#AAB318","#4C8925","turquoise3","steelblue4")
+# p1=build_TFPN_plots(type = type,difficulty =c("easy","hard"),method=method,factors=factors,colors=colors,FDR = TRUE)
+# p2=build_TFPN_plots(type =type ,difficulty = c("easy","hard"),FDR = FALSE)
+# grid.arrange(p1,p2, nrow=1, ncol=2)
 
 E<-gridLine("erdos",method,factors,colors,TRUE)
 C<-gridLine("cluster",method,factors,colors,FALSE)
 SF<-gridLine("scale-free",method,factors,colors,FALSE)
 grid.arrange(E,C,SF,nrow=3,ncol=1)
 p<-arrangeGrob(E,C,SF,nrow=3,ncol=1)
-ggsave("panel_TPFN-ecocopula.png", plot=p, width=10, height=9)
+ggsave("panel_TPFN_signed.png", plot=p, width=12, height=11,path= "/Users/raphaellemomal/these/R/images")
 
 

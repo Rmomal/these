@@ -1,0 +1,130 @@
+---
+title: "tests Litree"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache = TRUE)
+```
+
+# Données avec structure de corrélation par bloc
+
+
+```{r, message=FALSE, fig.height=14, fig.width=10}
+
+library(saturnin)
+library(reshape2)
+library(patchwork)
+library(Matrix)
+library(EMtree)
+library(MASS)
+library(mvtnorm)
+library(tidyverse)
+
+source("/Users/raphaellemomal/these/R/codes/missingActor/LiTree/functions-estimation.R")
+source("/Users/raphaellemomal/these/R/codes/simCluster2.R")
+p=40
+k=3
+dens=15/p
+r=50
+set.seed(1)
+
+gr<-SimCluster2(p,k,dens,r)
+omega=Laplacian(gr$G)+diag(0.01,ncol(gr$G))
+sigma=solve(omega)
+ordre=order(gr$groupes)
+p1<-omega[ordre,ordre] %>% melt() %>% ggplot(aes(Var1,Var2,fill=value))+geom_tile()+
+  labs(title="Omega",x="",y="")
+p2<-sigma[ordre,ordre] %>% melt() %>% ggplot(aes(Var1,Var2,fill=value))+geom_tile()+
+  labs(title="Sigma",x="",y="")
+p3<-draw_network(gr$G,pal="black", layout="fr", groupes=gr$groupes, curv=0.1)$G+
+  labs(title=paste0("p=",p,", density=",dens))
+p3/(p1+p2)+plot_layout(ncol=1)
+```
+
+
+
+# test findCliques
+
+```{r}
+cliques=findCliques(sigma,3)
+#verif trouve les groupes
+
+groupestrouves=lapply(seq_along(cliques),function(x){
+ L= length(cliques[[x]])
+ rep(x,L)
+})
+
+found=data.frame(noeuds=unlist(cliques),find=unlist(groupestrouves))
+init=data.frame(initgroupes=gr$groupes,noeuds=1:p)
+
+found=left_join(found,init,by="noeuds")
+
+table(found$find, found$initgroupes)
+
+p1<-sigma[found$noeuds,found$noeuds] %>% melt() %>% ggplot(aes(Var1,Var2,fill=value))+geom_tile()+
+  labs(title="cliques found",x="",y="")
+p2<-sigma[ordre,ordre] %>% melt() %>% ggplot(aes(Var1,Var2,fill=value))+geom_tile()+
+  labs(title="original cliques",x="",y="")
+p1+p2+plot_layout(ncol=2)
+
+
+```
+
+On est heureux.
+
+# test initEM
+
+initEM créer autant de variables que de cliques trouvées. Ces nouvelles variables sont construites par ACP (à tester avec moyenne, c'est peut-être aussi bien), on vérifie qu'elles sont corrélées aux cliques données à l'initialisation.
+
+
+```{r}
+
+
+initial.param<-initEM(sigma,cliquelist = cliques) 
+str(initial.param)
+
+sigma0=initial.param$Sigma0
+K0=initial.param$K0
+data.frame((sigma0)[41:43,-c(41,42,43)],missingvar=41:43) %>% 
+  gather(key=noeuds,value,-missingvar) %>% 
+  mutate(noeuds=as.numeric(substr(noeuds,2,3))) %>% 
+  left_join(.,found,by="noeuds") %>% 
+  ggplot(aes(y=abs(value),x=as.factor(find),color=as.factor(missingvar)))+
+  geom_boxplot()+theme_light()+
+  labs(x="Cliques",y="Absolute correlation")+
+  scale_color_brewer("covariate",palette="Dark2")
+# ordre=rank(cov2cor(sigma0)[41,-c(41,42,43)])
+# which(ordre%in%sort(ordre,decreasing=TRUE)[1:length(cliques$`1`)])
+# cliques$`1`
+```
+
+Chacune des variables ajoutées est préférentiellement corrélée avec une des cliques. 
+Cependant le niveau de corrélation moyen diffère pour chaque variable, et elles sont relativement plus corrélées à une autre clique que la variable créée pour cette dernière.
+
+Si on considère le rang des corrélation par variable créée, ils sont globalement respectés.
+
+
+
+# treeAgr
+
+```{r,message=FALSE}
+res<-treeAgr.EM(S = sigma,k=3, K0 = initial.param$K0,
+                Sigma0 = initial.param$Sigma0,
+                pii=0.5, n=500, max.iter = 100)
+```
+```{r,cache=FALSE}
+data.frame(res$alpha[41:43,-c(41,42,43)],missingvar=41:43) %>% 
+  gather(key=noeuds,value,-missingvar) %>% 
+  mutate(noeuds=as.numeric(substr(noeuds,2,3))) %>% filter(value>0.4) %>% 
+  left_join(.,found,by="noeuds") %>% 
+  ggplot(aes(y=abs(value),x=as.factor(find),color=as.factor(missingvar)))+
+  geom_boxplot()+theme_light()+
+  labs(x="Cliques",y="Edge probability", title="alpha > 0.4")+
+  scale_color_brewer("covariate",palette="Dark2")
+
+
+```
