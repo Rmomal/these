@@ -55,11 +55,18 @@ p(Z_H|Y_O)&=\int p(Z_H|Z_O) p(Z_O|Y_O) dZ_O\\
 
 $Z_O$ decouples $Z_H$ and $Y_O$, we will never need $Z_H|Y_O$. Here we consider $f(Z) = Z^T\Omega Z$.
 \begin{align*}
-\widehat{\Esp}[f(Z)] &= \tilde{\Esp}(Z_O^T\Omega_{OO}Z_O)\\
-& +\tilde{\Esp}\left[(\Sigma_{HO}\Sigma_{OO}^{-1} Z_O)^T \Omega_{HO}Z_O)\right]+ \text{idem}^T \\
-&+ \tilde{\Esp}\left[\Esp_{Z_H|Z_O}Z_H\Omega_{HH}Z_H\right]
+\widehat{\Esp}[f(Z)|Z_O] &= \tilde{\Esp}(Z_O^T\Omega_{OO}Z_O)\\
+& +\tilde{\Esp}\left[(\Sigma_{HO}\Sigma_{OO}^{-1} Z_O)^T \Omega_{HO}Z_O)\right] +\tilde{\Esp}\left[(Z_O)^T \Omega_{OH} (\Sigma_{HO}\Sigma_{OO}^{-1} Z_O)\right]\\
+&+ \tilde{\Esp}\left[\Esp_{Z_H|Z_O} [Z_H\Omega_{HH}Z_H]\right]
 \end{align*}
 
-Remind that if $x\sim\mathcal{N}(m, \Sigma)$, then
-$$\Esp[x^TAx] = Tr(A\Sigma) + m^TAm$$
+
+\vspace{2cm}
+Remind that:
+\begin{itemize}
+\item if $x\sim\mathcal{N}(m, \Sigma)$, then
+$\Esp[x^TAx] = Tr(A\Sigma) + m^TAm$
+\item if Y and X are Gaussian, $Y|X \sim \mathcal{N}(\mu_Y+\Sigma_{YX}\Sigma_{XX}^{-1}(x-\mu_X) , \Sigma_{YY} - \Sigma_{YX}\Sigma_{XX}^{-1}\Sigma_{XY})$\\
+If Y and X are also centered then $\mu_{Y|X} = \Sigma_{YX}\Sigma_{XX}^{-1} X$
+\end{itemize}
 \end{document}
