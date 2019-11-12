@@ -1,0 +1,65 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts, dsfont}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage[left=2cm,right=2cm,top=2cm,bottom=2cm]{geometry}
+\author{Raphaelle Momal}
+\title{PLN with missing actor}
+
+
+\newcommand{\Esp}{\mathds{E}}
+\begin{document}
+\maketitle
+
+\section{Model}
+\subsection{Framework}
+When $Y$ is tree-structured:
+$$ p(Y|T) = \prod_i  p(Y_i|T) \prod_{jk\in T} \underbrace{\psi_{jk}(Y_j,Y_k)}_{\text{emp. mutual  information}}$$
+
+If $Y|T$ is also Gaussian:
+
+$$\log(p(Y|T)) = -\frac{n}{2}\log(|\Sigma_T|) - \frac{1}{2} \sum_i\sum_{jk\in T} Y_{ij} \Omega_{jk} Y_{ik}$$
+
+During the E step of the EM we need to compute $\Esp[Y^T\Omega Y|Y_O]$
+\subsection{General considerations toward computation}
+\begin{align*}
+ \Esp[Y^T\Omega Y|Y_O] &=\Esp\left[\sum_{jk\in T } Y_j\Omega_{jk}Y_k|Y_O\right]&\\
+& = \sum_{jk\in O^2} Y_i\Omega_{jk} Y_k & \text{[OO]}\\
+&+\sum_{jk \in H^2} \Esp[Y_j\Omega_{jj}Y_j|Y_O] & \text{[HH]} \\
+&+2 \sum_{j\O, k \in H} \Esp(Y_j\Omega_{jk} Y_k |Y_O) & \text{[OH]}\\
+\end{align*}
+
+\paragraph{[OO]} We know everyone
+\paragraph{[HH]} There are still the quadratic terms to compute. 
+$$ \Omega_{kk} \Esp[Y_k^2|Y_O] = \Omega_{kk} \left( \Esp [Y_k|Y_O]^2 + \mathds{V}(Y_k|Y_O)\right)$$
+
+\paragraph{[OH]}$$ Y_j\Omega_{jk}\Esp[Y_k|Y_O]$$
+\subsection{PLN peculiarities}
+\paragraph{Distributions}
+\begin{itemize}
+\item VEM: $Z_O|Y_O \approx \mathcal{N}(m_O,S_{OO})$
+
+\item $Z_H|Z_O \sim \mathcal{N}(\mu_H(Z_O), \Omega_{HH}^{-1})$, with Schur complement: $\Omega_{HH}^{-1} = \Sigma_{HH} -\Sigma_{HO}\Sigma_{OO}^{-1}\Sigma_{OH}$
+\end{itemize}
+
+\begin{align*}
+p(Z_H|Y_O)&=\int p(Z_H|Z_O) p(Z_O|Y_O) dZ_O\\
+\Esp(f(z)|Y_O) &=\int f(Z) p(Z|Y_O) dZ\\
+&=\int f(Z) p(Z_H|Z_O) p(Z_O|Y_O) dZ_H dZ_O\\
+&\approx \int f(Z) p(Z_H|Z_O)\tilde{p}(Z_O) dZ_H dZ_O
+\end{align*}
+
+
+
+$Z_O$ decouples $Z_H$ and $Y_O$, we will never need $Z_H|Y_O$. Here we consider $f(Z) = Z^T\Omega Z$.
+\begin{align*}
+\widehat{\Esp}[f(Z)] &= \tilde{\Esp}(Z_O^T\Omega_{OO}Z_O)\\
+& +\tilde{\Esp}\left[(\Sigma_{HO}\Sigma_{OO}^{-1} Z_O)^T \Omega_{HO}Z_O)\right]+ \text{idem}^T \\
+&+ \tilde{\Esp}\left[\Esp_{Z_H|Z_O}Z_H\Omega_{HH}Z_H\right]
+\end{align*}
+
+Remind that if $x\sim\mathcal{N}(m, \Sigma)$, then
+$$\Esp[x^TAx] = Tr(A\Sigma) + m^TAm$$
+\end{document}

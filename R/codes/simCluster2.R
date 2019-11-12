@@ -14,7 +14,7 @@ SimCluster2<-function(p, k, dens, r){
   print(paste0("beta =",beta))
   print(paste0("dens =",dens))
   print(paste0("r =",r))
-  
+
   Z = t(rmultinom(p, 1, rep(1 / k, k)))
  groupe=Z%*%1:3
   Z = Z %*% t(Z)
@@ -23,14 +23,14 @@ SimCluster2<-function(p, k, dens, r){
   G = F_Vec2Sym(rbinom(p * (p - 1) / 2, 1, alpha * ZZ + beta * (1 - ZZ)))
   return(list(G=G, groupes=groupe))
 }
-# p=30
-# k=3
-# dens=15/p
-# r=50
-# 
-# gr<-SimCluster2(p,k,dens,r)
-# draw_network(gr$G,pal="black", layout="fr", groupes=gr$groupes, curv=0.1)
-# 
+p=30
+k=3
+dens=15/p
+r=20
+
+gr<-SimCluster2(p,k,dens,r)
+draw_network(gr$G,pal="black", layout="fr", curv=0.1)
+
 F_Vec2Sym <- function(A.vec){
   # Makes a symmetric matrix from the vector made of its lower tirangular part
   n = (1+sqrt(1+8*length(A.vec)))/2

@@ -17,10 +17,25 @@ source('~/simulations/codes/fonctions.R')
 source('~/simulations/codes/FunctionsInference.R')
 source('~/simulations/codes/Kit_pour_VEM_EM.R')
 ##########
-
+data_for_MInt<-function(Y,covar,path){ 
+  Y <-cbind(1:nrow(Y),Y)
+  Y<-rbind(c("Observations",1:(ncol(Y)-1)),Y)
+  
+  covariates <-cbind(1:nrow(covar),covar)
+  #  browser()
+  # covariates<-rbind(c("Observations","feature1","feature2","feature3"),covariates)
+  covariates<-rbind(c("Observations","feature1","feature2","feature3"),covariates)
+  
+  pathY<-paste0(path,"mint_data/y.txt")
+  pathX<-paste0(path,"mint_data/x.txt")
+  write.table(Y, file = pathY, sep = " ", col.names = FALSE, row.names = FALSE)
+  write.table(covariates, file = pathX, sep = " ", col.names = FALSE, row.names = FALSE)
+  
+  invisible(list(y=pathY,x=pathX))
+}
 eval_store_mint<-function(Y,covar,path){
   #  browser()
-  data<-data_for_MInt(Y,covar,path)
+  data<-data_for_MInt(Y,covar,path) # in Kit
   x <- data[["x"]]
   y <- data[["y"]]
   T1<-Sys.time()
@@ -43,7 +58,7 @@ path<-"/Users/raphaellemomal/simulations/Simu/PLN.2.0/"
 # covar<-data.frame(X1=round(runif(n)*5),X2=rnorm(n,0,2),
 #                   X3=(runif(n)))
 # saveRDS(covar,paste0(path,"mint_covarn50.rds"))
-types<-c("erdos","cluster","scale-free")
+types<-c("cluster","scale-free")
 diff=c("easy","hard")
 for( difficulty in diff){
   # n<-switch(difficulty,"easy"=100,"hard"=50)
@@ -60,8 +75,8 @@ for( difficulty in diff){
       #                                 "/d/Sets_param/Graph",nbgraph,"_",nbspiecies,".rds"))$omega
       # edgesOrigin<-ifelse(abs(F_Sym2Vec(omegaOriginal))<1e-16,0,1)
       # Y<-data_from_stored_graphs(type, variable, nbgraph, nbspecies, covar=covar,path,fixe=FALSE)
-      dat <- data_from_scratch(type, p=nbspecies, r=10, covar=covar, signed=FALSE)
-      saveRDS(dat,paste0(path,"TPFN/Data/dataTPFN_",type,"_",difficulty,nbgraph,".rds"))
+      dat <- data_from_scratch(type, p=nbspecies, r=10, covar=covar, signed=TRUE)
+      saveRDS(dat,paste0(path,"TPFN/correct_Data/Signed.Data_",type,"_",difficulty,nbgraph,".rds"))
       
     }, mc.cores=1)
   }
@@ -142,10 +157,10 @@ TPFN_compute<-function(methods,diffs,types, cores=3,B=100,S=10){
           cat("\ngraph ",nbgraph)
           ########################
           # récupérer les données et covariables associées générées précédemment, possibilités graphs signés
-          dat<-readRDS(paste0(path,"TPFN/Data/Signed.Data_",type,"_",difficulty,nbgraph,".rds"))
+          dat<-readRDS(paste0(path,"TPFN/correct_Data/Signed.Data_",type,"_",difficulty,nbgraph,".rds"))
           Y<-dat[[1]]
           edgesOrigin<-ifelse(abs(F_Sym2Vec(dat[[2]]))<1e-16,0,1)
-          covar <- readRDS(paste0(path,"TPFN/Data/covar_",difficulty,".rds"))
+          covar <- readRDS(paste0(path,"TPFN/correct_Data/covar_",difficulty,".rds"))
           m<- model.matrix(~X1+X2+X3,covar)# l'intercept est enlevé dans le PLN de resample
           p=ncol(Y)
           ########################
@@ -526,10 +541,10 @@ gridLine<-function(type,method,factors,colors,top=TRUE){
 #################################        EASY RUN       ########################################
 ################################################################################################
 
-TPFN_compute(methods = c("EMtree"),
-             diffs=c("hard","easy"),
-             types=c("erdos","cluster","scale-free"),
-             B=100, S=20,cores=3)
+TPFN_compute(methods = c("ecoCopula"),
+             diffs=c("easy","hard"),
+             types=c("scale-free"),
+             B=100, S=20,cores=1)#refaire gcoda hard sf
 # tous les hard à faire
 #et EMtree avec S=20 n'est-ce pas
 

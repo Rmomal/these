@@ -63,7 +63,7 @@ erdos<-function(d,prob){
 }
 
 SimCluster <- function(p, k, dens, r){
- # browser()
+  # browser()
   # k = nb clusters, d = graph density, r = within/between ratio connection probability
   beta = dens / (r / k + (k - 1) / k)
   alpha = r * beta
@@ -79,7 +79,7 @@ SimCluster <- function(p, k, dens, r){
   G = F_Vec2Sym(rbinom(p * (p - 1) / 2, 1, alpha * ZZ + beta * (1 - ZZ)))
   #gplot(G, gmode='graph', label=1:p, vertex.col=Z%*%(1:k),
   #     main=paste0(round(r,2),"// alpha ",round(alpha,2),"// beta ",round(beta,2)))
-
+  
   return(G)
 }
 SimCluster2<-function(p, k, dens, r){
@@ -126,12 +126,12 @@ generator_graph<-function(d = 20, graph = "tree", g = NULL, prob = NULL, dens=0.
     }
   theta = matrix(0, d, d)
   if (graph == "cluster") {
-
+    
     theta<-SimCluster(d,3,dens,r) #prob=5/d ?
-
+    
   }
   if (graph == "scale-free") {
-
+    
     out = .C("SFGen", dd0 = as.integer(2), dd = as.integer(d),
              G = as.integer(theta), PACKAGE = "huge")
     theta = matrix(as.numeric(out$G), d, d)
@@ -147,7 +147,7 @@ generator_graph<-function(d = 20, graph = "tree", g = NULL, prob = NULL, dens=0.
       }
     }
   }
-
+  
   #browser()
   if (verbose)
     cat("done.\n")
@@ -261,61 +261,55 @@ roc<-function(mat_rho,omega){
   labels[indices_nuls]<-0
   pred<-prediction(as.vector(mat_rho),as.vector(labels))
   perf <- performance(pred,"tpr","fpr")
-  invisible(perf)
+  return(perf)
 }
-fun.auc.ggplot <- function(pred, obs, title,points){
-  nvar<-ncol(obs)
-  obs[which(abs(obs)<1e-16)]<-0
+fun.auc.ggplot <- function(Listpred, obs, title){
+  
+  
   indices_nuls<-which(obs==0)
   label<-matrix(1,nrow=nrow(obs),ncol=ncol(obs))
   label[indices_nuls]<-0
-  prediction<-prediction(as.vector(pred[upper.tri(pred)]),as.vector(label[upper.tri(label)]))
-  obs<-as.vector(label[upper.tri(label)])
-  # Run the AUC calculations
-  ROC_perf <- performance(prediction,"tpr","fpr")
-  ROC_sens <- performance(prediction,"sens","spec")
-  ROC_auc <- performance(prediction,"auc")
-
-  # Make plot data
-  plotdat <- data.frame(FP=ROC_perf@x.values[[1]],TP=ROC_perf@y.values[[1]],CUT=ROC_perf@alpha.values[[1]],POINT=NA)
-
-  if(max(points)<max(plotdat$CUT[is.finite(plotdat$CUT)])){
-    points<-points[-which(points>max(plotdat$CUT[is.finite(plotdat$CUT)]))]
-  }
-
-  #plotdat[unlist(lapply(points,function(x){which.min(abs(plotdat$CUT-x))})),"POINT"]<- points
-
+  ROC_auc=c()
+  plotdat=lapply(seq_along(Listpred),function(x){
+    pred=Listpred[[x]]
+    prediction<-prediction(as.vector(pred[upper.tri(pred)]),as.vector(label[upper.tri(label)]))
+    obs<-as.vector(label[upper.tri(label)])
+    # Run the AUC calculations
+    ROC_perf <- performance(prediction,"tpr","fpr")
+    #ROC_sens <- performance(prediction,"sens","spec")
+    ROC_auc <<-c(ROC_auc, round(performance(prediction,"auc")@y.values[[1]],digits=2))
+    
+    # Make plot data
+    res <- data.frame(FP=ROC_perf@x.values[[1]],TP=ROC_perf@y.values[[1]], method=names(Listpred)[x] )
+    
+  })
+  plotdat=do.call(rbind, plotdat)
   # Plot the curve
-  rows<-which(!is.na(plotdat$POINT))
-  while(length(rows)>20){
-    rows<-rows[seq(1,length(rows),2)]
-  }
 
   ggplot(plotdat, aes(x=FP,y=TP)) +
     geom_abline(intercept=0,slope=1,linetype="dashed",color="grey") +
-    geom_line() +
-    geom_point(data=plotdat[rows,], aes(fill=POINT),color="royalblue3", pch=20, size=3) +
-    geom_text(data=plotdat[rows,],  label=round(plotdat$POINT[rows],5), hjust=-0.2, vjust=1.5) +
-    scale_fill_gradientn("Threhsold Cutoff",colours=brewer.pal(5,"RdPu"),guide=FALSE) +
+    geom_line(aes(color=method)) +
     scale_x_continuous("False Positive Rate", limits=c(0,1)) +
     scale_y_continuous("True Positive Rate", limits=c(0,1)) +
-    geom_polygon(aes(x=X,y=Y), data=data.frame(X=c(0.77,1,1,0.77),Y=c(0,0,0.33,0.33)), fill="white") +
-    annotate("text",x=0.97,y=0.30,label=paste0("Nnods = ",nvar),hjust=1) +
-    annotate("text",x=0.97,y=0.25,label=paste0("Nedges = ",sum(obs==1)),hjust=1) +
-    annotate("text",x=0.97,y=0.20,label=paste0("Nvoids = ",sum(obs==0)),hjust=1) +
-    annotate("text",x=0.97,y=0.15,label=paste0("AUC = ",round(ROC_auc@y.values[[1]],digits=2)),hjust=1) +
-    annotate("text",x=0.97,y=0.10,label=paste0("Sens = ",round(mean(as.data.frame(ROC_sens@y.values)[,1]),digits=2)),hjust=1) +
-    annotate("text",x=0.97,y=0.05,label=paste0("Spec = ",round(mean(as.data.frame(ROC_sens@x.values)[,1]),digits=2)),hjust=1) +
-    theme(legend.position="none", plot.title=element_text(vjust=2)) +
+    geom_polygon(aes(x=X,y=Y), data=data.frame(X=c(0.75,1,1,0.75),Y=c(0,0,0.2,0.2)), fill="white") +
+    # annotate("text",x=0.97,y=0.30,label=paste0("Nnods = ",nvar),hjust=1) +
+    # annotate("text",x=0.97,y=0.25,label=paste0("Nedges = ",sum(obs==1)),hjust=1) +
+    # annotate("text",x=0.97,y=0.20,label=paste0("Nvoids = ",sum(obs==0)),hjust=1) +
+   annotate("text",x=0.97,y=0.2,label=paste0("AUC: "),hjust=1) +
+    annotate("text",x=0.97,y=0.15,label=paste0(names(Listpred)[1],": ",ROC_auc[1]),hjust=1) +
+    annotate("text",x=0.97,y=0.1,label=paste0(names(Listpred)[2],": ",ROC_auc[2]),hjust=1) +
+    annotate("text",x=0.97,y=0.05,label=paste0(names(Listpred)[3],": ",ROC_auc[3]),hjust=1) +
+    # annotate("text",x=0.97,y=0.10,label=paste0("Sens = ",round(mean(as.data.frame(ROC_sens@y.values)[,1]),digits=2)),hjust=1) +
+    #  annotate("text",x=0.97,y=0.05,label=paste0("Spec = ",round(mean(as.data.frame(ROC_sens@x.values)[,1]),digits=2)),hjust=1) +
+    theme(legend.position="none", plot.title=element_text(vjust=2,hjust = 0.5)) +
     labs(title=title)+
-    theme_bw()+
-    theme(plot.title = element_text(hjust = 0.5))
+    theme_bw()
 }
 
 diagnostic.auc.sens.spe <- function(pred, obs,stat="auc",method){
   nvar<-ncol(obs)
   obs[which(abs(obs)<1e-16)]<-0
-
+  
   indices_nuls<-which(obs==0)
   label<-matrix(1,nrow=nrow(obs),ncol=ncol(obs))
   label[indices_nuls]<-0
@@ -346,11 +340,11 @@ build_crit<-function(path, nbgraph,x,variable,method, crit="auc"){ #method="_spi
   #   pred<- readRDS(paste0(path,"/Scores/Graph",nbgraph,method,x,".rds"))[[colonne]]
   # }else{
   #   pred<- readRDS(paste0(path,"/Scores/Graph",nbgraph,method,x,".rds"))}
-
-    pred<- readRDS(paste0(path,"/Scores/",method,"_graph",nbgraph,"_",x,".rds"))
-#mehtod: EMmarg, EMCond, OneMarg, OneCond
-    res<-switch(crit,"auc"=diagnost_auc(obs,pred), "precrec"=diagnost_precrec(obs,pred),
-                "precrecPool"=vec_obs_pred(obs,pred))
+  
+  pred<- readRDS(paste0(path,"/Scores/",method,"_graph",nbgraph,"_",x,".rds"))
+  #mehtod: EMmarg, EMCond, OneMarg, OneCond
+  res<-switch(crit,"auc"=diagnost_auc(obs,pred), "precrec"=diagnost_precrec(obs,pred),
+              "precrecPool"=vec_obs_pred(obs,pred))
   return(res)
 }
 
@@ -360,10 +354,10 @@ vec_obs_pred<-function(obs, pred){
   indices_nuls<-which(obs==0)
   label<-matrix(1,nrow=nrow(obs),ncol=ncol(obs))
   label[indices_nuls]<-0
-
+  
   vec_pred<-as.vector(pred[upper.tri(pred)])
   vec_obs<-as.vector(label[upper.tri(label)])
-
+  
   return(list(vec_pred,vec_obs))
 }
 diagnost_precrec<-function(obs, pred){
@@ -401,7 +395,7 @@ tableau3D<-function(samples,seq_rho){
   tab <- array( dim=c(n,n,length(seq_rho)))
   #nb_nuls<-data.frame(matrix(ncol=2,nrow=length(seq_rho)))
   for(rho in seq_rho){
-
+    
     omega_hat<-glasso(var(samples),rho=rho,penalize.diagonal = FALSE)$wi
     tab[,,which(seq_rho==rho)]<-omega_hat
     #nb_nuls[which(seq_rho==rho),"nuls"]<-length(which(omega_hat==0))*100/length(omega_hat)
@@ -447,7 +441,7 @@ mat_rho<-function(tab,seq_rho,minmax){
       indices_remplis<-which(!is.na(results))
       if(length(indices_remplis)!=0){
         indices_a_remplir<-setdiff(indices_nuls,indices_remplis) #indices nuls - les indices remplis
-
+        
       }else{
         indices_a_remplir<-indices_nuls
       }
@@ -498,7 +492,7 @@ inf_glasso_MB<-function(X){
 #library(SpiecEasi)
 inf_spieceasi<-function(Y){
   inf<-spiec.easi(Y, icov.select = FALSE, nlambda = 50, verbose = FALSE)
-
+  
   #browser()
   adjmat.array <- simplify2array(Map("*",
                                      inf$lambda,
@@ -581,7 +575,7 @@ grid_arrange_shared_legend <- function(..., ncol = length(list(...)), nrow = 1, 
                                            legend,
                                            ncol = 2,
                                            widths = unit.c(unit(1, "npc") - lwidth, lwidth)))
-
+  
   grid.newpage()
   grid.draw(combined)
   # return gtable invisibly

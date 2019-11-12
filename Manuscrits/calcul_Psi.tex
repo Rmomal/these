@@ -1,0 +1,26 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage[left=2cm,right=2cm,top=2cm,bottom=2cm]{geometry}
+\author{Raphaelle Momal}
+\title{Détail du calcul de $\Psi$ }
+\begin{document}
+\maketitle
+
+$Y$ est gaussienne de dimension $p$ et structurée par l'arbre $T$. On peut donc écrire:
+$$ p(Y|T) = \prod_i p(Y_i|T) \prod_{k,l \in T} \frac{p(Y_k,Y_l|T)}{p(Y_k|T) \times p(Y_l|T)}$$
+où $Y_i$ désigne la colonne $i$ de $Y$. La log-vraisemblance de $n$ échantillons iid :
+\begin{align*}
+\log(p(Y|T)) & =  \sum_i \log(p(Y_i|T)) + \sum_{k,l\in T} \left[\log (p(Y_k,Y_l|T) - \log(p(Y_k|T) - \log(p(Y_l|T)\right]\\
+&= \sum_i \log(p(Y_i|T)) + \sum_{k,l\in T} -\frac{n}{2}(2 \log(2\pi)+\log(|\Sigma_{kl}|) +\underbrace{ tr(\Sigma_{kl}^{-1}Y_{kl}^TY_{kl}) }_{=2}- \log(2\pi\sigma_k^2) - \log(2\pi\sigma_l^2)\\
+&+ \sum_{k,l\in T}\underbrace{\left(\frac{\sum_i y_{ik}^2}{2\sigma_k^2}+\frac{\sum_iy_{il}^2}{2\sigma_l^2}\right)}_{=\frac{n}{2}(\frac{\hat{\sigma}_k^2}{\sigma_k^2}+\frac{\hat{\sigma}_l^2}{\sigma_l^2}) = n}
+\end{align*}
+En se plaçant au maximum de vraisemblance:
+\begin{align*}
+\log(p(Y|T)) & =\sum_i \log(p(Y_i|T)) + \sum_{k,l\in T}\log(2\pi)(-n+n) - n + n - \frac{n}{2}\left(\log(|\hat{\Sigma}_{kl}| )- \log(\hat{\sigma}_k^2)  - \log(\hat{\sigma}_l^2)\right)\\
+&=\sum_i \log(p(Y_i|T)) + \sum_{k,l\in T} \underbrace{ -\frac{n}{2}\left(\log(1-\hat{\sigma}_{kl}^2)\right)}_{\Psi_{kl}}
+\end{align*}
+\end{document}
