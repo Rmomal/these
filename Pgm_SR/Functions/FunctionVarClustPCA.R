@@ -12,7 +12,7 @@ WhichMinMat <- function(A){
 MinMat <- function(A){ijmin = WhichMinMat(A); return(A[ijmin[1], ijmin[2]])}
 
 ###############################################################################
-F_VarClustPCA <- function(S){
+F_VarClustPCA <- function(S,traceS=FALSE){
    p = ncol(S)
    
    # Cost matrix

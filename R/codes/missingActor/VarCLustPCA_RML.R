@@ -65,5 +65,6 @@ image(PLNall$model_par$Sigma[order(vcPCA$clustMatrix[, step]), order(vcPCA$clust
 
 # # Comparison with ClustOfVar
 library(ClustOfVar)
-plot(hclustvar(Y)$height, type='b'); points(clustPath[, 8], col=2, type='b')
+par(mfrow=c(1,1))
+points(hclustvar(Y)$height, type='b'); plot(vcPCA$clustPath[, 8], col=2, type='b')
 

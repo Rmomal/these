@@ -265,7 +265,7 @@ roc<-function(mat_rho,omega){
 }
 fun.auc.ggplot <- function(Listpred, obs, title){
   
-  
+  #require(ROCR)
   indices_nuls<-which(obs==0)
   label<-matrix(1,nrow=nrow(obs),ncol=ncol(obs))
   label[indices_nuls]<-0
