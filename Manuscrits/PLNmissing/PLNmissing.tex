@@ -1,0 +1,138 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts, dsfont}
+\usepackage{amssymb}
+\usepackage{graphicx}
+
+%\usepackage[mathcal]{eucal}
+\usepackage[left=2cm,right=2cm,top=2cm,bottom=2cm]{geometry}
+\author{Raphaelle Momal}
+\title{PLN with missing actor}
+
+
+\newcommand{\Esp}{\mathds{E}}
+\begin{document}
+\maketitle
+
+\section*{Generalities}
+
+\subsection{Gaussian tree-structured variable}
+When $Y$ is tree-structured:
+$$ p(Y|T) = \prod_i  p(Y_i|T) \prod_{jk\in T} \underbrace{\psi_{jk}(Y_j,Y_k)}_{\text{emp. mutual  information}}$$
+
+If $Y|T$ is also Gaussian:
+
+$$\log(p(Y|T)) = -\frac{n}{2}\log(|\Sigma_T|) - \frac{1}{2} \sum_i\sum_{jk\in T} Y_{ij} \Omega_{jk} Y_{ik}$$
+
+During the E step of the EM we need to compute $\Esp[Y^T\Omega Y|Y_O]$
+\subsection{General considerations toward computation}
+\begin{align*}
+ \Esp[Y^T\Omega Y|Y_O] &=\Esp\left[\sum_{jk\in T } Y_j\Omega_{jk}Y_k|Y_O\right]&\\
+& = \sum_{jk\in O^2} Y_i\Omega_{jk} Y_k & \text{[OO]}\\
+&+\sum_{jk \in H^2} \Esp[Y_j\Omega_{jj}Y_j|Y_O] & \text{[HH]} \\
+&+2 \sum_{j\in O, k \in H} \Esp(Y_j\Omega_{jk} Y_k |Y_O) & \text{[OH]}\\
+\end{align*}
+
+\paragraph{[OO]} We know everyone
+\paragraph{[HH]} There are still the quadratic terms to compute. 
+$$ \Omega_{kk} \Esp[Y_k^2|Y_O] = \Omega_{kk} \left( \Esp [Y_k|Y_O]^2 + \mathds{V}(Y_k|Y_O)\right)$$
+
+\paragraph{[OH]}$$ Y_j\Omega_{jk}\Esp[Y_k|Y_O]$$
+\section{PLN peculiarities}
+We had: 
+$$ p(Y,Z,T) = p(T)p(Z|T)p(Y|Z)$$
+$$ \Esp(\log p(Y,Z,T)|Y) \approx \sum_{1 \leq j < k \leq p} P_{jk} \log\left(\beta_{jk} \hat{\psi}_{jk}\right) - \log B + cst$$
+
+We want to add a hidden layer of unobserved data, indexed by H.
+
+$$ p(Y,Z_O,Z_H,T)$$
+\subsection{Model and distributions}
+$$\left\{\begin{array}{rl}
+T & \sim\prod_{jk \in T} \beta_{jk}/B \\\\
+
+Z|T& \sim\mathcal{N}(0,\Sigma_T)\\\\
+
+Y|Z&\sim\mathcal{P}( \exp( Z+...) )
+\end{array} \right.$$
+
+\paragraph{Marginals}
+\begin{align*}
+(Z_O,Z_H) &\sim \sum_{T \in \mathcal{T}} p(T) \mathcal{N}(0,\Sigma_T) \\
+\end{align*}
+
+\paragraph{Conditional on T:}
+\begin{align*}
+(Z_O,Z_H)|T & \sim\mathcal{N}(0,\Sigma_T)\\
+Z_O|T & \sim\mathcal{N}(0,\Omega_{Tm}^{-1})\\
+Z_H|T & \sim\mathcal{N}(0,\Omega_{TH}^{-1})
+\end{align*}
+With $ \Omega_{Tm} =\Sigma_{TO}^{-1} =  \Omega_{TO} - \Omega_{TOH}\Omega_{TH}^{-1}\Omega_{THO}$
+
+
+\paragraph{Conditional on observed data:\\}
+
+
+$Z_O$ decouples $Z_H$ and $Y_O$, we will never need $Z_H|Y_O$.
+$$ p(Z|Y_O) = p(Z_O,Z_H | Y_O) = p(Z_H|Z_O) \: p(Z_O|Y_O) $$
+
+
+VEM on observed data: $$Z_O|Y_O \approx \widetilde{Z}_O \sim \mathcal{N}(m,S)$$
+
+Model for the hidden part: $$Z_H|Z_O,T \sim \mathcal{N}(\mu_{H|O,T}, \Omega_{TH}^{-1})$$ 
+
+\begin{itemize}
+\item $\Omega_{TH}^{-1} = \Sigma_{TH} -\Sigma_{THO}\Sigma_{TO}^{-1}\Sigma_{TOH}$, 
+
+\item $\mu_{H|O,T} = \Sigma_{THO}\Sigma_{TO}^{-1}((Z_O|T)-\underbrace{\mu_{Z_O|T}}_{0})$ \\
+ 
+\end{itemize}
+
+\paragraph{Joint:}
+\begin{align*}
+p(Y,Z,T)& = p(T) \: p(Z|T) \: p(Y|Z) \\
+&= p(T)\: p(Z_O,Z_H|T) \: p(Y_O,Y_H|Z_O,Z_H) \\
+&= p(T) \: p(Z_O|T) \: p(Z_H | Z_O,T)  \: \underbrace{p(Y_O|Z_O) \: p(Y_H|Y_O,Z_H)}_{\text{do not depend on T}}
+\end{align*} 
+\subsection{Computations}
+
+ Here we consider $f(Z) = Z^T\Omega Z$.
+\begin{align*}
+\Esp(f(Z)|Y_O) &=\int f(Z) p(Z|Y_O) dZ\\
+&=\int f(Z) p(Z_H|Z_O) p(Z_O|Y_O) dZ_H dZ_O\\
+&\approx \int f(Z) p(Z_H|Z_O)\tilde{p}(Z_O) dZ_H dZ_O
+\end{align*}
+
+\begin{align*}
+\widehat{\Esp}[f(Z)|Z_O] &= \tilde{\Esp}(Z_O^T\Omega_{OO}Z_O)\\
+& +\tilde{\Esp}\left[(\Sigma_{HO}\Sigma_{OO}^{-1} Z_O)^T \Omega_{HO}Z_O)\right] +\tilde{\Esp}\left[(Z_O)^T \Omega_{OH} (\Sigma_{HO}\Sigma_{OO}^{-1} Z_O)\right]\\
+&+ \tilde{\Esp}\left[\Esp_{Z_H|Z_O} [Z_H\Omega_{HH}Z_H]\right]
+\end{align*}
+
+
+\vspace{2cm}
+Remind that:
+\begin{itemize}
+\item if $x\sim\mathcal{N}(m, \Sigma)$, then
+$\Esp[x^TAx] = Tr(A\Sigma) + m^TAm$
+\item if Y and X are Gaussian, $Y|X \sim \mathcal{N}(\mu_Y+\Sigma_{YX}\Sigma_{XX}^{-1}(x-\mu_X) , \Sigma_{YY} - \Sigma_{YX}\Sigma_{XX}^{-1}\Sigma_{XY})$\\
+If Y and X are also centered then $\mu_{Y|X} = \Sigma_{YX}\Sigma_{XX}^{-1} X$
+\end{itemize}
+
+
+\section{Inference}
+\subsection{Observed count data Y}
+This part aims at maximizing the likelihood of count data under the PLN model, when some covariates are missing. 
+$$p(Y_O,Y_H|Z_O,Z_H) = p(Y_O|Z_O) \: p(Y_H|Y_O,Z_H)$$
+\subsection{Latent Gaussian layer Z}
+This part aims at maximizing the underlying random tree of the Gaussian latent layer.
+$$p(Z_O,Z_H,T) = p(T) \: p(Z_O|T) \: p(Z_H | Z_O,T)$$
+\subsubsection{E step}
+\begin{align*}
+ \Esp[\log p(Z_O,Z_H,T) | Y_O ] &=  \underbrace{\Esp[\log p(T)|Y_O] +  \Esp[\log p(Z_O|T)|Y_O] }+  \Esp[\log p(Z_H|Z_O,T)|Y_O]\\
+ &= \sum_{jk}\mathds{P}\{jk \in T | Y_O\} \log(\beta_{jk} \: \psi_{jk}) - \log(B) \\
+ &\;\;\; +
+\end{align*} 
+\subsubsection{M step}
+
+\end{document}
