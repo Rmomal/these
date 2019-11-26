@@ -92,8 +92,34 @@ Model for the hidden part: $$Z_H|Z_O,T \sim \mathcal{N}(\mu_{H|O,T}, \Omega_{TH}
 \begin{align*}
 p(Y,Z,T)& = p(T) \: p(Z|T) \: p(Y|Z) \\
 &= p(T)\: p(Z_O,Z_H|T) \: p(Y_O,Y_H|Z_O,Z_H) \\
-&= p(T) \: p(Z_O|T) \: p(Z_H | Z_O,T)  \: \underbrace{p(Y_O|Z_O) \: p(Y_H|Y_O,Z_H)}_{\text{do not depend on T}}
+&= p(T) \: p(Z_O|T) \: p(Z_H | Z_O,T)  \: p(Y_O|Z_O) \: p(Y_H|Y_O,Z_H)
 \end{align*} 
+
+\section{Inference}
+$$p(Y,Z,T)= p(T) \: p(Z_O|T) \: p(Z_H | Z_O,T)  \: \underbrace{p(Y_O|Z_O) \: p(Y_H|Y_O,Z_H)}_{\text{do not depend on T}}$$
+\subsection{Observed count data Y}
+This part aims at maximizing the likelihood of count data under the PLN model, when some covariates are missing. 
+$$p(Y_O,Y_H|Z_O,Z_H) = p(Y_O|Z_O) \: p(Y_H|Y_O,Z_H)$$
+\subsection{Latent Gaussian layer Z}
+This part aims at maximizing the underlying random tree of the Gaussian latent layer.
+$$p(Z_O,Z_H,T) = p(T) \: p(Z_O|T) \: p(Z_H | Z_O,T)$$
+\subsubsection{E step}
+\begin{align*}
+ \Esp[\log p(Z_O,Z_H,T) | Y_O ] &=  \underbrace{\Esp[\log p(T)|Y_O] +  \Esp[\log p(Z_O|T)|Y_O] }+  \Esp[\log p(Z_H|Z_O,T)|Y_O]\\
+ &= \sum_{jk}\mathds{P}\{jk \in T | Y_O\} \log(\beta_{jk} \: \psi_{jk}) - \log(B) \\
+ &\;\;\; + \Esp[\log p(Z_H|Z_O,T)|Y_O]
+\end{align*} 
+Or we do not separate the Z vector:
+$$p(Z_O,Z_H,T) = p(T) \: p(Z_O,Z_H|T)$$
+
+\begin{align*}
+ \Esp[\log p(Z_O,Z_H,T) | Y_O ] &=  \Esp[\log p(T)|Y_O] +  \Esp[\log p(Z_O,Z_H|T)|Y_O] \\
+  \Esp[\log p(Z_O,Z_H|T)|Y_O] &=
+\end{align*} 
+
+\subsubsection{M step}
+
+\section{Appendix}
 \subsection{Computations}
 
  Here we consider $f(Z) = Z^T\Omega Z$.
@@ -119,20 +145,5 @@ $\Esp[x^TAx] = Tr(A\Sigma) + m^TAm$
 If Y and X are also centered then $\mu_{Y|X} = \Sigma_{YX}\Sigma_{XX}^{-1} X$
 \end{itemize}
 
-
-\section{Inference}
-\subsection{Observed count data Y}
-This part aims at maximizing the likelihood of count data under the PLN model, when some covariates are missing. 
-$$p(Y_O,Y_H|Z_O,Z_H) = p(Y_O|Z_O) \: p(Y_H|Y_O,Z_H)$$
-\subsection{Latent Gaussian layer Z}
-This part aims at maximizing the underlying random tree of the Gaussian latent layer.
-$$p(Z_O,Z_H,T) = p(T) \: p(Z_O|T) \: p(Z_H | Z_O,T)$$
-\subsubsection{E step}
-\begin{align*}
- \Esp[\log p(Z_O,Z_H,T) | Y_O ] &=  \underbrace{\Esp[\log p(T)|Y_O] +  \Esp[\log p(Z_O|T)|Y_O] }+  \Esp[\log p(Z_H|Z_O,T)|Y_O]\\
- &= \sum_{jk}\mathds{P}\{jk \in T | Y_O\} \log(\beta_{jk} \: \psi_{jk}) - \log(B) \\
- &\;\;\; +
-\end{align*} 
-\subsubsection{M step}
 
 \end{document}

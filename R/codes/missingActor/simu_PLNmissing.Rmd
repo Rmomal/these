@@ -266,6 +266,10 @@ compute_SNR(omega,Data$hidden)
 min(eigen(omega)$values)
 ```
 
+```{r}
+FitBetaStatic()
+```
+
 
 
 # Initialization
