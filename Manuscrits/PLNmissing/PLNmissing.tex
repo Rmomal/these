@@ -4,9 +4,12 @@
 \usepackage{amsfonts, dsfont}
 \usepackage{amssymb}
 \usepackage{graphicx}
-
+\providecommand\given{} % is redefined in \Set
+\newcommand\SetSymbol[1][]{\nonscript\:#1\vert\nonscript\:}
 %\usepackage[mathcal]{eucal}
 \usepackage[left=2cm,right=2cm,top=2cm,bottom=2cm]{geometry}
+
+\setlength\parindent{0pt}
 \author{Raphaelle Momal}
 \title{PLN with missing actor}
 
@@ -79,10 +82,10 @@ $$ p(Z|Y_O) = p(Z_O,Z_H | Y_O) = p(Z_H|Z_O) \: p(Z_O|Y_O) $$
 
 VEM on observed data: $$Z_O|Y_O \approx \widetilde{Z}_O \sim \mathcal{N}(m,S)$$
 
-Model for the hidden part: $$Z_H|Z_O,T \sim \mathcal{N}(\mu_{H|O,T}, \Omega_{TH}^{-1})$$ 
+Model for the hidden part: $$Z_H|Z_O,T \sim \mathcal{N}(\mu_{H|O,T}, \Omega_{TH|O}^{-1})$$ 
 
 \begin{itemize}
-\item $\Omega_{TH}^{-1} = \Sigma_{TH} -\Sigma_{THO}\Sigma_{TO}^{-1}\Sigma_{TOH}$, 
+\item $\Omega_{TH|O}^{-1} = \Sigma_{TH} -\Sigma_{THO}\Sigma_{TO}^{-1}\Sigma_{TOH}$, 
 
 \item $\mu_{H|O,T} = \Sigma_{THO}\Sigma_{TO}^{-1}((Z_O|T)-\underbrace{\mu_{Z_O|T}}_{0})$ \\
  
@@ -91,44 +94,100 @@ Model for the hidden part: $$Z_H|Z_O,T \sim \mathcal{N}(\mu_{H|O,T}, \Omega_{TH}
 \paragraph{Joint:}
 \begin{align*}
 p(Y,Z,T)& = p(T) \: p(Z|T) \: p(Y|Z) \\
-&= p(T)\: p(Z_O,Z_H|T) \: p(Y_O,Y_H|Z_O,Z_H) \\
-&= p(T) \: p(Z_O|T) \: p(Z_H | Z_O,T)  \: p(Y_O|Z_O) \: p(Y_H|Y_O,Z_H)
+&= p(T)\: p(Z_O,Z_H|T) \: p(Y_O|Z_O,Z_H) \\
+&= p(T) \: p(Z_O|T) \: p(Z_H | Z_O,T)  \: p(Y_O|Z_O)
 \end{align*} 
 
 \section{Inference}
-$$p(Y,Z,T)= p(T) \: p(Z_O|T) \: p(Z_H | Z_O,T)  \: \underbrace{p(Y_O|Z_O) \: p(Y_H|Y_O,Z_H)}_{\text{do not depend on T}}$$
+$$p(Y,Z,T)= p(T) \: p(Z_O|T) \: p(Z_H | Z_O,T)  \: \underbrace{p(Y_O|Z_O)}_{\text{do not depend on T}}$$
 \subsection{Observed count data Y}
-This part aims at maximizing the likelihood of count data under the PLN model, when some covariates are missing. 
-$$p(Y_O,Y_H|Z_O,Z_H) = p(Y_O|Z_O) \: p(Y_H|Y_O,Z_H)$$
+This part aims at maximizing the likelihood of count data under the PLN model. 
+$$p(Y_O|Z_O,Z_H) = p(Y_O|Z_O)$$
 \subsection{Latent Gaussian layer Z}
 This part aims at maximizing the underlying random tree of the Gaussian latent layer.
 $$p(Z_O,Z_H,T) = p(T) \: p(Z_O|T) \: p(Z_H | Z_O,T)$$
 \subsubsection{E step}
-\begin{align*}
- \Esp[\log p(Z_O,Z_H,T) | Y_O ] &=  \underbrace{\Esp[\log p(T)|Y_O] +  \Esp[\log p(Z_O|T)|Y_O] }+  \Esp[\log p(Z_H|Z_O,T)|Y_O]\\
- &= \sum_{jk}\mathds{P}\{jk \in T | Y_O\} \log(\beta_{jk} \: \psi_{jk}) - \log(B) \\
- &\;\;\; + \Esp[\log p(Z_H|Z_O,T)|Y_O]
-\end{align*} 
-Or we do not separate the Z vector:
+
+Remarks:
+\begin{itemize}
+\item When all is observed we do MLE with EMtree, and in formulas $\psi$ contained maximized expression for $p(Z \mid Y)$. Here with missing data MLE is not possible but we might end up with a $\Psi$ gathering information about $ p(Z_O,Z_H|T,Y_O)$
+\item The PLN gives us sufficient statistic for the Gaussian latent layer.There should be no problem using Genevieve's formulas until the very end where they should be conditioned on $Y_O$.
+\item There exist no $Y_H$ variable. This is because In the latent variable paradigm, observed vraiables are modelled thanks to latent unobserved ones. Hence observed count data $Y$ is only $Y_O$, modelled thanks to $Z$ which structure includes a  missing part.
+\item how many times to count an edge/vertices in sums 
+\item do not forget the sum on all samples
+\end{itemize}
+
+
+
+We do not separate the Z vector:
 $$p(Z_O,Z_H,T) = p(T) \: p(Z_O,Z_H|T)$$
 
+For one sample:
 \begin{align*}
- \Esp[\log p(Z_O,Z_H,T) | Y_O ] &=  \Esp[\log p(T)|Y_O] +  \Esp[\log p(Z_O,Z_H|T)|Y_O] \\
-  \Esp[\log p(Z_O,Z_H|T)|Y_O] &=
+ \Esp[\log p(Z_O,Z_H,T) | Y_O ] &=  \Esp[\log p(T)+\log p(Z_O,Z_H|T)|Y_O] \\
+  &=\Esp\left[\sum_{jk \in T} \log \beta_{jk} - \log B + \frac{1}{2} \log(|\Omega_T|) - \frac{1}{2} Z^T \Omega_T Z\,\middle\vert\,  Y_O\right]
 \end{align*} 
+\begin{align*}
+Z^T \Omega_T Z &= 2 \sum_{jk \in T} w_{jk} Z_j Z_k + \sum_j w_{jj}Z^2_j \\
+\Esp[Z^T \Omega_T Z \mid Y_O, OO] & \approx 2\sum_{jk \in T} w_{jk} \tilde{\Esp}[z_jz_k] + \sum_j w_{jj}\tilde{\Esp}[z_j^2]\\
+\Esp[Z^T \Omega_T Z \mid Y_O, OH] & = 2\sum_{jk \in T} w_{jh} \Esp[z_jz_h \mid Y_O] \\
+\Esp[Z^T \Omega_T Z \mid Y_O, HO] &=  2\sum_{hk \in T} w_{hk}  \Esp[z_hz_k \mid Y_O]\\
+\Esp[Z^T \Omega_T Z \mid Y_O, HH] &= \sum_h w_{hh} \Esp[z_h^2 \mid Y_O]\\
+\end{align*} 
+\[
+ \Sigma=
+  \left( {\begin{array}{cc}
+  K_O &  K_{HO}\\\\
+  K_{OH} & K_H
+  \end{array} } \right)^{-1} =
+  \left( {\begin{array}{cc}
+  \Sigma_O =( K_O - K_{HO}K_H^{-1}K_{OH})^{-1} &  - \Sigma_O K_{HO}K_H^{-1}\\\\
+ -K_H^{-1}K_{OH}\Sigma_O & K_H^{-1}+K_H^{-1}K_{HO}\Sigma_OK_{HO}K_H^{-1}
+  \end{array} } \right)
+  \]
+  
+ Whatsmore let's not forget that
+ $$ p(Z_O,Z_H \mid Y_O) = p(Z_H\mid Z_O) p(Z_O\mid Y_O)$$
+ Which leads to 
+ \begin{align*}
+ \Esp(z_jz_h \mid Y_O)& = \int z_jz_hp(Z_H\mid Z_O)p(Z_O\mid Y_O) dZ_HdZ_O\\
+ &=\int z_j\left(\int z_h p(Z_H\mid Z_O) dZ_H\right) p(Z_O\mid Y_O) dZ_O \\
+ &=\Esp_{Z_O\mid Y_O}\left[z_j \Esp_{Z_H\mid Z_O}[z_h]\right]
+ \end{align*}
+  \begin{align*}
+\Esp[Z^T \Omega_T Z \mid Y_O, OO] & \approx 2\sum_{jk \in T} w_{jk} S_{jk} + \sum_j w_{jj}S_{jj}\\
+\Esp[Z^T \Omega_T Z \mid Y_O, OH] & = -2\sum_{jk \in T} w_{jh}  \\
+\Esp[Z^T \Omega_T Z \mid Y_O, HO] &=  2\sum_{hk \in T} w_{hk}  \Esp[z_hz_k \mid Y_O]\\
+\Esp[Z^T \Omega_T Z \mid Y_O, HH] &= \sum_h w_{hh} \Esp[z_h^2 \mid Y_O]\\
+\end{align*} 
+$\Omega_T$ is decomposable along the tree structure. Denoting $c\in\mathcal{C}$ the cliques, $s\in \mathcal{S}$ the separator with multiplicity $\nu(s)$ and $[.]^\Gamma$ the O-completed matrix of size $(p+r)\times(p+r)$:
+\begin{align*}
+\Omega_T &= \sum_{c\in \mathcal{C}} [\Omega_{Tc}]^\Gamma - \sum_{s \in\mathcal{S}} \nu(s)[\Omega_{Ts}]^\Gamma\\
+&= \sum_{jk \in T} [\Omega_{Tjk}]^\Gamma - \sum_j (deg(j)-1)[\Omega_{Tjj}]^\Gamma
+\end{align*}
 
+Hence, following Lauritzen p145, for all $(j,k) \in \{1,...,p+r\}^2$:
+\begin{align*}
+|\Omega_T| &= \dfrac{\prod_{jk \in T} |\Omega_T[jk,jk]|}{\prod_j (\Omega_{Tjj})^{deg(j)}} \times \prod_j \Omega_{Tjj}\\
+&=\prod_j \Omega_{Tjj} \times \prod_{jk \in T} \dfrac{\Omega_{Tjj}\Omega_{Tkk}-(\Omega_{Tjk})^2}{\Omega_{Tjj}\Omega_{Tkk}}
+\end{align*}
 \subsubsection{M step}
 
 \section{Appendix}
 \subsection{Computations}
 
- Here we consider $f(Z) = Z^T\Omega Z$.
+For any function $f$ we have using the VEM for PLN:
+$$\Esp(f(Z)|Y_O)  \approx \int f(Z) p(Z_H|Z_O)\tilde{p}(Z_O) dZ_H dZ_O$$
+$$\Esp(f(Z|T)|Y_O)  \approx \int f(Z|T) p(T|Z_O,Z_H) p(Z_H|Z_O)\tilde{p}(Z_O) dT dZ_H dZ_O$$
+\subsubsection{ function of Z}
 \begin{align*}
 \Esp(f(Z)|Y_O) &=\int f(Z) p(Z|Y_O) dZ\\
 &=\int f(Z) p(Z_H|Z_O) p(Z_O|Y_O) dZ_H dZ_O\\
 &\approx \int f(Z) p(Z_H|Z_O)\tilde{p}(Z_O) dZ_H dZ_O
 \end{align*}
 
+
+ Here we consider $f(Z) = Z^T\Omega Z$.
 \begin{align*}
 \widehat{\Esp}[f(Z)|Z_O] &= \tilde{\Esp}(Z_O^T\Omega_{OO}Z_O)\\
 & +\tilde{\Esp}\left[(\Sigma_{HO}\Sigma_{OO}^{-1} Z_O)^T \Omega_{HO}Z_O)\right] +\tilde{\Esp}\left[(Z_O)^T \Omega_{OH} (\Sigma_{HO}\Sigma_{OO}^{-1} Z_O)\right]\\
@@ -136,7 +195,20 @@ $$p(Z_O,Z_H,T) = p(T) \: p(Z_O,Z_H|T)$$
 \end{align*}
 
 
-\vspace{2cm}
+\subsubsection{A function of $Z|T$}
+\begin{align*}
+ p(Z|T,Y_O) &= \frac{p(Z,T|Y_O)}{p(T|Y_O)}\\
+ &= \frac{p(T|Z,Y_O) p(Z|Y_O)}{p(T|Y_O)}\\
+ & \propto p(T|Z_O,Z_H) p(Z_H|Z_O) p(Z_O|Y_O)\\
+ &\approx  p(T|Z_O,Z_H) p(Z_H|Z_O)  \tilde{p}(Z_O) 
+\end{align*}
+\begin{align*}
+\Esp(f(Z|T)|Y_O) &=\int f(Z) p(Z|T,Y_O) dZ\\
+&\approx \int f(Z) p(T|Z_O,Z_H)p(Z_H|Z_O)\tilde{p}(Z_O) dT dZ_H dZ_O
+\end{align*}
+
+
+\subsubsection{Reminder}
 Remind that:
 \begin{itemize}
 \item if $x\sim\mathcal{N}(m, \Sigma)$, then
