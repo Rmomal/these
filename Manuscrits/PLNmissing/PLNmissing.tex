@@ -1,9 +1,13 @@
 \documentclass[11pt,a4paper]{article}
 \usepackage[utf8]{inputenc}
-\usepackage{amsmath}
+\usepackage{amsmath, mathtools}
 \usepackage{amsfonts, dsfont}
 \usepackage{amssymb}
 \usepackage{graphicx}
+\usepackage{empheq}
+
+\newcommand*\widefbox[1]{\fbox{\hspace{2em}#1\hspace{2em}}}
+
 \providecommand\given{} % is redefined in \Set
 \newcommand\SetSymbol[1][]{\nonscript\:#1\vert\nonscript\:}
 %\usepackage[mathcal]{eucal}
@@ -18,31 +22,7 @@
 \begin{document}
 \maketitle
 
-\section*{Generalities}
 
-\subsection{Gaussian tree-structured variable}
-When $Y$ is tree-structured:
-$$ p(Y|T) = \prod_i  p(Y_i|T) \prod_{jk\in T} \underbrace{\psi_{jk}(Y_j,Y_k)}_{\text{emp. mutual  information}}$$
-
-If $Y|T$ is also Gaussian:
-
-$$\log(p(Y|T)) = -\frac{n}{2}\log(|\Sigma_T|) - \frac{1}{2} \sum_i\sum_{jk\in T} Y_{ij} \Omega_{jk} Y_{ik}$$
-
-During the E step of the EM we need to compute $\Esp[Y^T\Omega Y|Y_O]$
-\subsection{General considerations toward computation}
-\begin{align*}
- \Esp[Y^T\Omega Y|Y_O] &=\Esp\left[\sum_{jk\in T } Y_j\Omega_{jk}Y_k|Y_O\right]&\\
-& = \sum_{jk\in O^2} Y_i\Omega_{jk} Y_k & \text{[OO]}\\
-&+\sum_{jk \in H^2} \Esp[Y_j\Omega_{jj}Y_j|Y_O] & \text{[HH]} \\
-&+2 \sum_{j\in O, k \in H} \Esp(Y_j\Omega_{jk} Y_k |Y_O) & \text{[OH]}\\
-\end{align*}
-
-\paragraph{[OO]} We know everyone
-\paragraph{[HH]} There are still the quadratic terms to compute. 
-$$ \Omega_{kk} \Esp[Y_k^2|Y_O] = \Omega_{kk} \left( \Esp [Y_k|Y_O]^2 + \mathds{V}(Y_k|Y_O)\right)$$
-
-\paragraph{[OH]}$$ Y_j\Omega_{jk}\Esp[Y_k|Y_O]$$
-\section{PLN peculiarities}
 We had: 
 $$ p(Y,Z,T) = p(T)p(Z|T)p(Y|Z)$$
 $$ \Esp(\log p(Y,Z,T)|Y) \approx \sum_{1 \leq j < k \leq p} P_{jk} \log\left(\beta_{jk} \hat{\psi}_{jk}\right) - \log B + cst$$
@@ -50,7 +30,7 @@ $$ \Esp(\log p(Y,Z,T)|Y) \approx \sum_{1 \leq j < k \leq p} P_{jk} \log\left(\be
 We want to add a hidden layer of unobserved data, indexed by H.
 
 $$ p(Y,Z_O,Z_H,T)$$
-\subsection{Model and distributions}
+\section{PLNmissing peculiarities: Model and distributions}
 $$\left\{\begin{array}{rl}
 T & \sim\prod_{jk \in T} \beta_{jk}/B \\\\
 
@@ -87,26 +67,30 @@ Model for the hidden part: $$Z_H|Z_O,T \sim \mathcal{N}(\mu_{H|O,T}, \Omega_{TH|
 \begin{itemize}
 \item $\Omega_{TH|O}^{-1} = \Sigma_{TH} -\Sigma_{THO}\Sigma_{TO}^{-1}\Sigma_{TOH}$, 
 
-\item $\mu_{H|O,T} = \Sigma_{THO}\Sigma_{TO}^{-1}((Z_O|T)-\underbrace{\mu_{Z_O|T}}_{0})$ \\
+\item$ \displaystyle\begin{aligned}[t]
+\mu_{H|O,T} &= \Sigma_{THO}\Sigma_{TO}^{-1}((Z_O|T)-\underbrace{\mu_{Z_O|T}}_{0}) \\
+ &= -\Omega_{TH}^{-1}\Omega_{TOH}((Z_O|T))
+\end{aligned}$
+
  
 \end{itemize}
 
 \paragraph{Joint:}
 \begin{align*}
 p(Y,Z,T)& = p(T) \: p(Z|T) \: p(Y|Z) \\
-&= p(T)\: p(Z_O,Z_H|T) \: p(Y_O|Z_O,Z_H) \\
-&= p(T) \: p(Z_O|T) \: p(Z_H | Z_O,T)  \: p(Y_O|Z_O)
+&= p(T)\: p(Z_O,Z_H|T) \: p(Y|Z_O,Z_H) \\
+&= p(T) \: p(Z_O|T) \: p(Z_H | Z_O,T)  \: p(Y|Z_O)
 \end{align*} 
 
-\section{Inference}
-$$p(Y,Z,T)= p(T) \: p(Z_O|T) \: p(Z_H | Z_O,T)  \: \underbrace{p(Y_O|Z_O)}_{\text{do not depend on T}}$$
+\section{Inference strategy}
+$$p(Y,Z,T)= p(T) \: p(Z_O|T) \: p(Z_H | Z_O,T)  \: \underbrace{p(Y|Z_O)}_{\text{do not depend on T}}$$
 \subsection{Observed count data Y}
 This part aims at maximizing the likelihood of count data under the PLN model. 
-$$p(Y_O|Z_O,Z_H) = p(Y_O|Z_O)$$
+$$p(Y|Z_O,Z_H) = p(Y|Z_O)$$
 \subsection{Latent Gaussian layer Z}
 This part aims at maximizing the underlying random tree of the Gaussian latent layer.
 $$p(Z_O,Z_H,T) = p(T) \: p(Z_O|T) \: p(Z_H | Z_O,T)$$
-\subsubsection{E step}
+\section{EM algorithm: E step}
 
 Remarks:
 \begin{itemize}
@@ -124,42 +108,12 @@ $$p(Z_O,Z_H,T) = p(T) \: p(Z_O,Z_H|T)$$
 
 For one sample:
 \begin{align*}
- \Esp[\log p(Z_O,Z_H,T) | Y_O ] &=  \Esp[\log p(T)+\log p(Z_O,Z_H|T)|Y_O] \\
-  &=\Esp\left[\sum_{jk \in T} \log \beta_{jk} - \log B + \frac{1}{2} \log(|\Omega_T|) - \frac{1}{2} Z^T \Omega_T Z\,\middle\vert\,  Y_O\right]
+ \Esp[\log p(Z_O,Z_H,T) | Y ] &=  \Esp[\log p(T)+\log p(Z_O,Z_H|T)|Y] \\
+  &=\Esp\left[\sum_{jk \in T} \log \beta_{jk} - \log B + \frac{1}{2} \log(|\Omega_T|) - \frac{1}{2} Z^T \Omega_T Z\,\middle\vert\,  Y\right]
 \end{align*} 
-\begin{align*}
-Z^T \Omega_T Z &= 2 \sum_{jk \in T} w_{jk} Z_j Z_k + \sum_j w_{jj}Z^2_j \\
-\Esp[Z^T \Omega_T Z \mid Y_O, OO] & \approx 2\sum_{jk \in T} w_{jk} \tilde{\Esp}[z_jz_k] + \sum_j w_{jj}\tilde{\Esp}[z_j^2]\\
-\Esp[Z^T \Omega_T Z \mid Y_O, OH] & = 2\sum_{jk \in T} w_{jh} \Esp[z_jz_h \mid Y_O] \\
-\Esp[Z^T \Omega_T Z \mid Y_O, HO] &=  2\sum_{hk \in T} w_{hk}  \Esp[z_hz_k \mid Y_O]\\
-\Esp[Z^T \Omega_T Z \mid Y_O, HH] &= \sum_h w_{hh} \Esp[z_h^2 \mid Y_O]\\
-\end{align*} 
-\[
- \Sigma=
-  \left( {\begin{array}{cc}
-  K_O &  K_{HO}\\\\
-  K_{OH} & K_H
-  \end{array} } \right)^{-1} =
-  \left( {\begin{array}{cc}
-  \Sigma_O =( K_O - K_{HO}K_H^{-1}K_{OH})^{-1} &  - \Sigma_O K_{HO}K_H^{-1}\\\\
- -K_H^{-1}K_{OH}\Sigma_O & K_H^{-1}+K_H^{-1}K_{HO}\Sigma_OK_{HO}K_H^{-1}
-  \end{array} } \right)
-  \]
-  
- Whatsmore let's not forget that
- $$ p(Z_O,Z_H \mid Y_O) = p(Z_H\mid Z_O) p(Z_O\mid Y_O)$$
- Which leads to 
- \begin{align*}
- \Esp(z_jz_h \mid Y_O)& = \int z_jz_hp(Z_H\mid Z_O)p(Z_O\mid Y_O) dZ_HdZ_O\\
- &=\int z_j\left(\int z_h p(Z_H\mid Z_O) dZ_H\right) p(Z_O\mid Y_O) dZ_O \\
- &=\Esp_{Z_O\mid Y_O}\left[z_j \Esp_{Z_H\mid Z_O}[z_h]\right]
- \end{align*}
-  \begin{align*}
-\Esp[Z^T \Omega_T Z \mid Y_O, OO] & \approx 2\sum_{jk \in T} w_{jk} S_{jk} + \sum_j w_{jj}S_{jj}\\
-\Esp[Z^T \Omega_T Z \mid Y_O, OH] & = -2\sum_{jk \in T} w_{jh}  \\
-\Esp[Z^T \Omega_T Z \mid Y_O, HO] &=  2\sum_{hk \in T} w_{hk}  \Esp[z_hz_k \mid Y_O]\\
-\Esp[Z^T \Omega_T Z \mid Y_O, HH] &= \sum_h w_{hh} \Esp[z_h^2 \mid Y_O]\\
-\end{align*} 
+
+
+\subsection{Determinent of $\Omega_T$:\\}
 $\Omega_T$ is decomposable along the tree structure. Denoting $c\in\mathcal{C}$ the cliques, $s\in \mathcal{S}$ the separator with multiplicity $\nu(s)$ and $[.]^\Gamma$ the O-completed matrix of size $(p+r)\times(p+r)$:
 \begin{align*}
 \Omega_T &= \sum_{c\in \mathcal{C}} [\Omega_{Tc}]^\Gamma - \sum_{s \in\mathcal{S}} \nu(s)[\Omega_{Ts}]^\Gamma\\
@@ -168,12 +122,140 @@ $\Omega_T$ is decomposable along the tree structure. Denoting $c\in\mathcal{C}$ 
 
 Hence, following Lauritzen p145, for all $(j,k) \in \{1,...,p+r\}^2$:
 \begin{align*}
-|\Omega_T| &= \dfrac{\prod_{jk \in T} |\Omega_T[jk,jk]|}{\prod_j (\Omega_{Tjj})^{deg(j)}} \times \prod_j \Omega_{Tjj}\\
-&=\prod_j \Omega_{Tjj} \times \prod_{jk \in T} \dfrac{\Omega_{Tjj}\Omega_{Tkk}-(\Omega_{Tjk})^2}{\Omega_{Tjj}\Omega_{Tkk}}
+|\Omega_T| &= \dfrac{\prod_{jk \in T} |\Omega_T[jk,jk]|}{\prod_j (\omega_{Tjj})^{deg(j)}} \times \prod_j \omega_{Tjj}\\
+&=\prod_j \omega_{Tjj} \times \prod_{jk \in T} \dfrac{\omega_{Tjj}\omega_{Tkk}-(\omega_{Tjk})^2}{\omega_{Tjj}\omega_{Tkk}}
 \end{align*}
-\subsubsection{M step}
 
+
+\begin{empheq}[box=\widefbox]{align*}
+\log|\Omega_T|  &= \sum_i \omega_{Tjj} + \sum_{jk \in T}\left( 1- \frac{\omega_{Tjk} ^2}{\omega_{Tjj}\omega_{Tkk}}\right)
+\end{empheq}
+\subsection{Squared form terms:\\}
+\begin{align*}
+\Esp\left[-\frac{1}{2}\sum_i Z^T \Omega_T Z\,\middle\vert\,  Y,T\right]& =  \sum_i \Esp\left[-\sum_{jk \in T} \omega_{Tjk} Z_{ij} Z_{ik} - \frac{1}{2} \sum_j \omega_{Tjj}Z^2_{ij} \,\middle\vert\,  Y,T\right]\\
+&=-\sum_i \underbrace{ \left(\sum_{jk \in T}\omega_{Tjk} \Esp\left[ Z_{ij} Z_{ik} \,\middle\vert\,  Y,T \right] \right)}_{\text{Off-diagonal}}-  \frac{1}{2} \sum_i \underbrace{\left( \sum_j\omega_{Tjj}\Esp\left[Z^2_{ij} \,\middle\vert\,  Y,T\right]\right)}_{\text{Diagonal}}
+\end{align*}
+Let's not forget that
+ $$ p(Z_O,Z_H \mid Y_O) = p(Z_H\mid Z_O) p(Z_O\mid Y_O)$$
+ Which leads to 
+ \begin{align*}
+ \Esp(Z_jZ_h \mid Y)& = \int Z_jZ_hp(Z_H\mid Z_O)p(Z_O\mid Y) dZ_HdZ_O\\
+ &=\int Z_j\left(\int Z_h p(Z_H\mid Z_O) dZ_H\right) p(Z_O\mid Y) dZ_O \\
+ &=\Esp_{Z_O\mid Y}\left[Z_j \Esp_{Z_H\mid Z_O}[Z_h]\right]
+ \end{align*}
+
+\paragraph{Off-diagonal terms when $j\in O, h\in H$:}
+\begin{align*}
+\Esp\left[ Z_{ij} Z_{ih} \,\middle\vert\,  Y_i,T \right] &=\Esp_{Z_{ij}\mid Y_i}\left[Z_{ij} \Esp_{Z_{ih}\mid  Z_{ij},T}[Z_{ih}]\right]
+\end{align*}
+With $$\Esp_{Z_{ih}\mid Z_{ij},T}[Z_{ih}] = -\omega_{Th}^{-1}\omega_{Tjh} Z_{ij}$$
+We get
+\begin{align*}
+\Esp\left[ Z_{ij} Z_{ih} \,\middle\vert\,  Y_i,T \right] &= -\omega_{Th}^{-1}\omega_{Tjh} \Esp_{Z_{ij}\mid Y_i}\left[Z_{ij}^2  \right]\\
+&\approx \omega_{Th}^{-1}\omega_{Tjh} (m_{ij}^2 + S_{ij})\\
+&\approx \omega_{Th}^{-1}\omega_{Tjh} \tilde{\Sigma}_{jj}
+\end{align*}
+
+\paragraph{Off-diagonal terms  when $(j,k)\in O\times O$:}
+\begin{align*}
+\Esp\left[ Z_{ij} Z_{ik} \,\middle\vert\,  Y_i,T \right] & \approx\Esp\left[Z_{ij} Z_{ik}  \,\middle\vert\,  Y_i\right]\\
+&\approx  m_{ij}m_{ik}
+\end{align*}
+\paragraph{Diagonal observed terms:}
+\begin{align*}
+\Esp\left[ Z_{ij}^2 \,\middle\vert\,  Y_i,T \right] & \approx S_{jj}
+\end{align*}
+\paragraph{Diagonal hidden terms:\\}
+We condition on any (or all ?) observed Z:
+ \begin{align*}
+\Esp\left[ Z_{ih}^2 \,\middle\vert\,  Y_i,T \right] & = \Esp_{Z_{iO}\mid Y_i}\left[ \Esp_{Z_{ih}\mid  Z_{iO},T}[Z_{ih}^2]\right]\\
+&= \Esp_{Z_{iO}\mid Y_i}\left[ \Esp_{Z_{ih}\mid  Z_{iO},T}[Z_{ih}]^2 + Var(Z_{ih} \mid Z_{iO}, T)\right]\\
+&= \Esp_{Z_{iO}\mid Y_i}\left[ \omega_{Th}^{-2}(\Omega_{TOh}Z_{O\mid T})^2 + \omega_{Th}^{-1}\right]\\
+& \approx \omega_{Th}^{-1}+\omega_{Th}^{-2}[\Omega_{TOh}^T\underbrace{(m_im_i^T+S_i)}_{\tilde{\Sigma}_O}\Omega_{TOh}]
+\end{align*}
+
+Compute the bilinear form:
+\begin{align*}
+\Omega_{TOh}^T \tilde{\Sigma}_O\Omega_{TOh} &= \sum_{jk} \tilde{\Sigma}_{jk} \omega_{Tjh}\omega_{Tkh}\\
+&= \sum_j \tilde{\Sigma}_{jj} \omega_{Tjh}^2 +2\sum_{j < k} \tilde{\Sigma}_{jk} \: \omega_{Tjh} \: \omega_{Tkh}
+\end{align*}
+ Finally 
+ \begin{align*}
+ \Esp\left[ Z_{ih}^2 \,\middle\vert\,  Y_i,T \right] &\approx \omega_{Th}^{-1}+\omega_{Th}^{-2} \left( \sum_j \tilde{\Sigma}_{jj} \omega_{Tjh}^2 +2\sum_{j < k} \tilde{\Sigma}_{jk} \: \omega_{Tjh} \: \omega_{Tkh}\right)
+ \end{align*}
+ 
+ \paragraph{Final form of square form terms:}
+ \begin{align*}
+\Esp\left[-\frac{1}{2}\sum_i Z^T \Omega_T Z\,\middle\vert\,  Y,T\right]& \approx -\sum_i ( \sum_{jk \in T} \omega_{Tjk}m_{ij}m_{ik} + \sum_{jh\in T} \omega_{Tjh}^2 \omega_{Th}^{-1}\tilde{\Sigma}_{jj})\\
+& \;\;\;\; -\frac{1}{2} \sum_i \left(\sum_j \omega_{Tjj}S_{jj} + \sum_h\omega_{Th}\left( \omega_{Th}^{-1} + \omega_{Th}^{-2}\Omega_{TOh}^T\tilde{\Sigma}_O\Omega_{TOh}\right)\right)\\
+\end{align*}
+
+
+\begin{empheq}[box=\widefbox]{align*}
+ \Esp\left[-\frac{1}{2}\sum_i Z^T \Omega_T Z\,\middle\vert\,  Y,T\right] &\approx - \sum_{jk \in T} \omega_{Tjk} M^TM - n\sum_{jh\in T} \omega_{Tjh}^2 \omega_{Th}^{-1}\tilde{\Sigma}_{jj}-\frac{n}{2}\sum_j \omega_{Tjj}S_{jj} \\
+& \;\;\;\; -\frac{n}{2}  \sum_h (1 )-\frac{n}{2}\sum_h  \omega_{Th}^{-1} \left(\sum_j \tilde{\Sigma}_{jj} \omega_{Tjh}^2 +2\sum_{j < k} \tilde{\Sigma}_{jk} \: \omega_{Tjh} \: \omega_{Tkh}\right)
+\end{empheq}
+
+
+\section{EM algorithm: M step}
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%ùù
+\newpage
 \section{Appendix}
+
+\subsection{Generalities}
+
+
+\subsubsection{Reminder}
+Remind that:
+\begin{itemize}
+\item if $x\sim\mathcal{N}(m, \Sigma)$, then
+$\Esp[x^TAx] = Tr(A\Sigma) + m^TAm$
+\item if Y and X are Gaussian, $Y|X \sim \mathcal{N}(\mu_Y+\Sigma_{YX}\Sigma_{XX}^{-1}(x-\mu_X) , \Sigma_{YY} - \Sigma_{YX}\Sigma_{XX}^{-1}\Sigma_{XY})$\\
+If Y and X are also centered then $\mu_{Y|X} = \Sigma_{YX}\Sigma_{XX}^{-1} X$
+\end{itemize}
+
+
+\subsubsection{Gaussian tree-structured variable}
+When $Y$ is tree-structured:
+$$ p(Y|T) = \prod_i  p(Y_i|T) \prod_{jk\in T} \underbrace{\psi_{jk}(Y_j,Y_k)}_{\text{emp. mutual  information}}$$
+
+If $Y|T$ is also Gaussian:
+
+$$\log(p(Y|T)) = -\frac{n}{2}\log(|\Sigma_T|) - \frac{1}{2} \sum_i\sum_{jk\in T} Y_{ij} \Omega_{jk} Y_{ik}$$
+
+During the E step of the EM we need to compute $\Esp[Y^T\Omega Y|Y_O]$
+\subsubsection{General considerations toward computation}
+\begin{align*}
+ \Esp[Y^T\Omega Y|Y_O] &=\Esp\left[\sum_{jk\in T } Y_j\Omega_{jk}Y_k|Y_O\right]&\\
+& = \sum_{jk\in O^2} Y_i\Omega_{jk} Y_k & \text{[OO]}\\
+&+\sum_{jk \in H^2} \Esp[Y_j\Omega_{jj}Y_j|Y_O] & \text{[HH]} \\
+&+2 \sum_{j\in O, k \in H} \Esp(Y_j\Omega_{jk} Y_k |Y_O) & \text{[OH]}\\
+\end{align*}
+
+\paragraph{[OO]} We know everyone
+\paragraph{[HH]} There are still the quadratic terms to compute. 
+$$ \Omega_{kk} \Esp[Y_k^2|Y_O] = \Omega_{kk} \left( \Esp [Y_k|Y_O]^2 + \mathds{V}(Y_k|Y_O)\right)$$
+
+\paragraph{[OH]}$$ Y_j\Omega_{jk}\Esp[Y_k|Y_O]$$
+
+\subsubsection{Schur's complement}
+
+\[
+ \Sigma=
+  \left( {\begin{array}{cc}
+  K_O &  K_{OH}\\\\
+  K_{HO} & K_H
+  \end{array} } \right)^{-1} =
+  \left( {\begin{array}{cc}
+  \Sigma_O =( K_O - K_{HO}K_H^{-1}K_{OH})^{-1} &  - \Sigma_O K_{OH}K_H^{-1}\\\\
+ -K_H^{-1}K_{HO}\Sigma_O & K_H^{-1}+K_H^{-1}K_{OH}\Sigma_OK_{HO}K_H^{-1}
+  \end{array} } \right)
+  \]
 \subsection{Computations}
 
 For any function $f$ we have using the VEM for PLN:
@@ -206,16 +288,5 @@ $$\Esp(f(Z|T)|Y_O)  \approx \int f(Z|T) p(T|Z_O,Z_H) p(Z_H|Z_O)\tilde{p}(Z_O) dT
 \Esp(f(Z|T)|Y_O) &=\int f(Z) p(Z|T,Y_O) dZ\\
 &\approx \int f(Z) p(T|Z_O,Z_H)p(Z_H|Z_O)\tilde{p}(Z_O) dT dZ_H dZ_O
 \end{align*}
-
-
-\subsubsection{Reminder}
-Remind that:
-\begin{itemize}
-\item if $x\sim\mathcal{N}(m, \Sigma)$, then
-$\Esp[x^TAx] = Tr(A\Sigma) + m^TAm$
-\item if Y and X are Gaussian, $Y|X \sim \mathcal{N}(\mu_Y+\Sigma_{YX}\Sigma_{XX}^{-1}(x-\mu_X) , \Sigma_{YY} - \Sigma_{YX}\Sigma_{XX}^{-1}\Sigma_{XY})$\\
-If Y and X are also centered then $\mu_{Y|X} = \Sigma_{YX}\Sigma_{XX}^{-1} X$
-\end{itemize}
-
 
 \end{document}
