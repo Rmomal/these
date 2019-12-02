@@ -108,8 +108,8 @@ $$p(Z_O,Z_H,T) = p(T) \: p(Z_O,Z_H|T)$$
 
 For one sample:
 \begin{align*}
- \Esp[\log p(Z_O,Z_H,T) | Y ] &=  \Esp[\log p(T)+\log p(Z_O,Z_H|T)|Y] \\
-  &=\Esp\left[\sum_{jk \in T} \log \beta_{jk} - \log B + \frac{1}{2} \log(|\Omega_T|) - \frac{1}{2} Z^T \Omega_T Z\,\middle\vert\,  Y\right]
+Q= \Esp[\log p(Z_O,Z_H,T) | Y ] &=  \Esp[\log p(T)+\log p(Z_O,Z_H|T)|Y] \\
+  &=\Esp\left[\sum_{jk \in T} \log \beta_{jk} - \log B + \frac{1}{2} \log(|\Omega_T|) - \frac{1}{2} Z^T \Omega_T Z\,\middle\vert\,  Y\right]\\
 \end{align*} 
 
 
@@ -198,12 +198,37 @@ Compute the bilinear form:
 
 
 \section{EM algorithm: M step}
+\subsection{Off-diagonal terms}
+\underline{$(j,k)\in O\times O$:}
+\begin{align*}
+\frac{\partial Q}{\partial \omega_{jk}} &= \frac{1}{2}\times 2\times 2\times\omega_{jk} \frac{-1}{\omega_{Tj}\omega_{Tk}} -  2 \times M^TM\\
+&= -2 \: \omega_{jk} \frac{1}{\omega_{Tj}\omega_{Tk}} - 2 M^TM
+\end{align*}
+\vspace{1cm}
+
+\underline{$(j,h)\in O\times H$:}
+\begin{align*}
+\frac{\partial Q}{\partial \omega_{jh}}  &=\frac{1}{2}\times 2\times 2\times\omega_{Tjh} \frac{-1}{\omega_{Tj}\omega_{Th}} +\left( -2\times 2n\omega_{Tjh}\omega_{Th}^{-1} \tilde{\Sigma}_{jj} - 2\times \frac{n}{2}2\omega_{Tjh} \omega_{Th}^{-1}\tilde{\Sigma}_{jj} -n\omega_{Th}^{-1}\sum_{j < k} \tilde{\Sigma}_{jk}\omega_{Tkh} \right)\\
+&=\omega_{Tjh}\left(\frac{-2}{\omega_{j}\omega_{h}} + 6n \omega_{Th}^{-1} \tilde{\Sigma}_{jj} \right) -n\omega_{Th}^{-1}\sum_{j < k} \tilde{\Sigma}_{jk}\omega_{Tkh} 
+\end{align*}
+
+\subsection{Diagonal terms}
+\underline{$j\in O $:}
+\begin{align*}
+\frac{\partial Q}{\partial \omega_{Tj}}  &= \frac{1}{2}\left(1+2\times \frac{1}{\omega_{Tj}^2}\sum_{jh\in T} \frac{\omega_{Tjh}^2}{w_{Th}}\right) -\frac{n}{2}S_{jj}\\
+&=\frac{1}{2} - \frac{n}{2} S_{jj} + \frac{1}{\omega_{Tj}^2}
+\end{align*}
+\vspace{1cm}
 
 
+\underline{$h\in H$:}
+\begin{align*}
+\frac{\partial Q}{\partial \omega_{Th}}  &= \frac{1}{2}\left(1+2\times \frac{1}{\omega_{Th}^2}\sum_{jh\in T} \frac{\omega_{Tjh}^2}{w_{Tj}}\right) + \frac{n}{2\omega_{Th}^2} \left( \sum_j \tilde{\Sigma}_{jj} \omega_{Tjh}^2 +2\sum_{j < k} \tilde{\Sigma}_{jk} \: \omega_{Tjh} \: \omega_{Tkh}\right)\\
+&= \frac{1}{2} + \frac{1}{\omega_{Th}^2}\left(\sum_{jh\in T}\omega_{Tjh}^2 \left(\frac{1}{\omega_{Tj}} + \frac{n}{2}\tilde{\Sigma}_{jj}\right)+2\sum_{j < k} \tilde{\Sigma}_{jk} \: \omega_{Tjh} \: \omega_{Tkh}\right)
+\end{align*}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%ùù
 \newpage
 \section{Appendix}
 
