@@ -130,6 +130,16 @@ Hence, following Lauritzen p145, for all $(j,k) \in \{1,...,p+r\}^2$:
 \begin{empheq}[box=\widefbox]{align*}
 \log|\Omega_T|  &= \sum_i \omega_{Tjj} + \sum_{jk \in T}\left( 1- \frac{\omega_{Tjk} ^2}{\omega_{Tjj}\omega_{Tkk}}\right)
 \end{empheq}
+
+\begin{itemize}
+\item \textbf{manque les log dans le determinant}
+
+
+\item \textbf{vérifier les correspondances avec $\tilde{\Sigma}$ cf sa définition en fin de doc}
+\item \textbf{compter une seule fois deux fois les arêtes, sauf pour le déterminant qui est défini par lauritzen}
+\item \textbf{dérivée cookbook $\Omega$ matriciel pour vérifier}
+\end{itemize}
+
 \subsection{Squared form terms:\\}
 \begin{align*}
 \Esp\left[-\frac{1}{2}\sum_i Z^T \Omega_T Z\,\middle\vert\,  Y,T\right]& =  \sum_i \Esp\left[-\sum_{jk \in T} \omega_{Tjk} Z_{ij} Z_{ik} - \frac{1}{2} \sum_j \omega_{Tjj}Z^2_{ij} \,\middle\vert\,  Y,T\right]\\
@@ -314,4 +324,5 @@ $$\Esp(f(Z|T)|Y_O)  \approx \int f(Z|T) p(T|Z_O,Z_H) p(Z_H|Z_O)\tilde{p}(Z_O) dT
 &\approx \int f(Z) p(T|Z_O,Z_H)p(Z_H|Z_O)\tilde{p}(Z_O) dT dZ_H dZ_O
 \end{align*}
 
+$$\tilde{\Sigma]_jj} = \frac{1}{n}(M^TM + \sum_i diag(S_i)) $$
 \end{document}
