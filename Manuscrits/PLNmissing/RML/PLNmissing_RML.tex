@@ -110,10 +110,10 @@ Remarks:
 We do not separate the Z vector:
 $$p(Z_O,Z_H,T) = p(T) \: p(Z_O,Z_H|T)$$
 
-For one sample:
+For $n$ samples:
 \begin{align*}
-Q= \Esp[\log p(Z_O,Z_H,T) | Y ] &=  \Esp[\log p(T)+\log p(Z_O,Z_H|T)|Y] \\
-  &=\Esp\left[\sum_{jk \in T} \log \beta_{jk} - \log B + \frac{1}{2} \log(|\Omega_T|) - \frac{1}{2} Z^T \Omega_T Z\,\middle\vert\,  Y\right]\\
+Q= \sum_{i=1}^{n} \Esp[\log p(Z_O,Z_H,T) | Y ] &= \sum_i  \Esp[\log p(T)+\log p(Z_O,Z_H|T)|Y] \\
+  &=\sum_i \Esp\left[\sum_{jk \in T} \log \beta_{jk} - \log B + \frac{1}{2} \log(|\Omega_T|) - \frac{1}{2} Z^T \Omega_T Z\,\middle\vert\,  Y\right]\\
 \end{align*} 
 
 
@@ -132,14 +132,10 @@ Hence, following Lauritzen p145, for all $(j,k) \in \{1,...,p+r\}^2$:
 
 
 \begin{empheq}[box=\widefbox]{align*}
-\log|\Omega_T|  &= \sum_i \log(\omega_{Tjj}) + \sum_{jk \in T}\log\left( 1- \frac{\omega_{Tjk} ^2}{\omega_{Tjj}\omega_{Tkk}}\right)
+\log|\Omega_T|  &= \sum_j \log(\omega_{Tjj}) + \sum_{jk \in T}\log\left( 1- \frac{\omega_{Tjk} ^2}{\omega_{Tjj}\omega_{Tkk}}\right)
 \end{empheq}
 
-\begin{itemize}
-\item \textbf{vérifier les correspondances avec $\tilde{\Sigma}$ cf sa définition en fin de doc}
-\item \textbf{compter une seule fois deux fois les arêtes, sauf pour le déterminant qui est défini par lauritzen}
-\item \textbf{dérivée cookbook $\Omega$ matriciel pour vérifier}
-\end{itemize}
+ 
 
 \subsection{Squared form terms:\\}
 \begin{align*}
@@ -180,9 +176,9 @@ We condition on any (or all ?) observed Z:
  \begin{align*}
 \Esp\left[ Z_{ih}^2 \,\middle\vert\,  Y_i,T \right] & = \Esp_{Z_{iO}\mid Y_i}\left[ \Esp_{Z_{ih}\mid  Z_{iO},T}[Z_{ih}^2]\right]\\
 &= \Esp_{Z_{iO}\mid Y_i}\left[ \Esp_{Z_{ih}\mid  Z_{iO},T}[Z_{ih}]^2 + Var(Z_{ih} \mid Z_{iO}, T)\right]\\
-&= \Esp_{Z_{iO}\mid Y_i}\left[ \omega_{Th}^{-2}(\Omega_{TOh}Z_{O\mid T})^2 + \omega_{Th}^{-1}\right]\\
-&= \omega_{Th}^{-1}+\omega_{Th}^{-2}\Esp_{Z_{iO}\mid Y_i}\left[ \Omega_{TOh}^TZ_{O\mid T}Z_{O\mid T}^T\Omega_{TOh} \right]\\
-&= \omega_{Th}^{-1}+\omega_{Th}^{-2}\left(\Omega_{TOh}^T(m_{Ti}^Tm_{Ti}+S_{Ti})\Omega_{TOh}\right)
+&= \Esp_{Z_{iO}\mid Y_i}\left[ \omega_{Th}^{-2}(\Omega_{TOh}Z_{O})^2 + \omega_{Th}^{-1}\right]\\
+&= \omega_{Th}^{-1}+\omega_{Th}^{-2}\Esp_{Z_{iO}\mid Y_i}\left[ \Omega_{TOh}^TZ_{O}Z_{O}^T\Omega_{TOh} \right]\\
+&= \omega_{Th}^{-1}+\omega_{Th}^{-2} \times\Omega_{TOh}^T(m_{Ti}m_{Ti}^T+S_{Ti})\Omega_{TOh}
 \end{align*}
 
 Compute the bilinear form:\\
@@ -197,55 +193,72 @@ With $M_TM_T^T+ \sum_i(S_{Ti}) = n\Sigma_T$
  \end{align*}
  
  \paragraph{Final form of square form terms:}
-\begin{empheq}[box=\widefbox]{align*} 
+\begin{align*} 
 \Esp\left[-\frac{1}{2}\sum_i Z^T \Omega_T Z\,\middle\vert\,  Y,T\right]&=-\sum_{jk\in T}\omega_{Tjk}\left(\sum_i\Esp[Z_{ij}Z_{ik}\mid Y_i,T]\right) + \sum_{jh\in T} \omega_{Tjh}\left(\sum_i\Esp[Z_{ij}^2\mid Y_i,T]\right) -\frac{n}{2} \sum_h 1 \\
 & \;\;\;\;  -\frac{1}{2} \sum_j \omega_{Tj}\left(\sum_i\Esp[Z_{ij}^2\mid Y_i,T]\right)-\frac{1}{2} \sum_h \omega_{Th}^{-1} \times\Omega_{TOh}^T\left(\sum_i\Esp[Z_OZ_O^T\mid Y_i,T]\right)\Omega_{TOh}\\
-\end{empheq}
-\begin{align*}
-\Esp\left[-\frac{1}{2}\sum_i Z^T \Omega_T Z\,\middle\vert\,  Y,T\right]&= -\sum_i \left( \sum_{jk \in T} \omega_{Tjk}m_{Tij}m_{Tik} + \sum_{jh\in T} \omega_{Tjh}^2 \omega_{Th}^{-1}(m_{Tij}^2 + S_{Tij})\right)\\
-& \;\;\;\; -\frac{1}{2} \sum_i \left(\sum_j \omega_{Tjj}S_{Tjj} + \sum_h\omega_{Th}\left( \omega_{Th}^{-1} + \omega_{Th}^{-2}\Omega_{TOh}^T\tilde{\Sigma}_O\Omega_{TOh}\right)\right)\\
 \end{align*}
 
-
-First solution: use the estimate of Z's covariance matrix given by PLNmodels:
-$$\tilde{\Sigma}_{jj} = \frac{1}{n}(M^TM + \sum_i diag(S_i)) $$
-
-\begin{empheq}{align*}
- \Esp\left[-\frac{1}{2}\sum_i Z^T \Omega_T Z\,\middle\vert\,  Y,T\right] &\approx - \sum_{jk \in T} \omega_{Tjk} M^TM - n\sum_{jh\in T} \omega_{Tjh}^2 \omega_{Th}^{-1}\tilde{\Sigma}_{jj}-\frac{n}{2}\sum_j \omega_{Tjj}S_{jj} \\
-& \;\;\;\; -\frac{n}{2}  \sum_h (1 )-\frac{n}{2}\sum_h  \omega_{Th}^{-1} \left(\sum_j \tilde{\Sigma}_{jj} \omega_{Tjh}^2 +2\sum_{j < k} \tilde{\Sigma}_{jk} \: \omega_{Tjh} \: \omega_{Tkh}\right)
+\begin{empheq}[box=\lesswidefbox]{align*} 
+\Esp\left[-\frac{1}{2}\sum_i Z^T \Omega_T Z\,\middle\vert\,  Y,T\right]&=-n\sum_{j < k}\omega_{Tjk}\Sigma_{Tjk}+n \sum_{j < h} \omega_{Tjh}\Sigma_{Tjj} -\frac{n}{2} \sum_h 1 \\
+& \;\;\;\;  -\frac{n}{2} \sum_j \omega_{Tj}\Sigma_{Tjj}-\frac{n}{2} \sum_h \omega_{Th}^{-1} \left( \sum_j \Sigma_{Tjj} \; \omega_{Tjh}^2 +2\sum_{j < k} \Sigma_{Tjk} \; \omega_{Tjh} \: \omega_{Tkh}\right)\\
 \end{empheq}
+ 
+ 
 
 \section{EM algorithm: M step}
 \subsection{Off-diagonal terms}
-\underline{$(j,k)\in O\times O$:}
 \begin{align*}
-\frac{\partial \log(|\Omega_T|)}{\partial \omega_{jk}} &= \frac{-2 \: \omega_{jk}}{\omega_j \omega_k -\omega_{jk}^2}
-\end{align*}
-\begin{align*}
-\frac{\partial Q}{\partial \omega_{jk}} &= \frac{1}{2}\times 2\times 2\times\omega_{jk} \frac{-1}{\omega_{Tj}\omega_{Tk}} -  2 \times M^TM\\
-&= -2 \: \omega_{jk} \frac{1}{\omega_{Tj}\omega_{Tk}} - 2 M^TM
-\end{align*}
-\vspace{1cm}
-
-\underline{$(j,h)\in O\times H$:}
-\begin{align*}
-\frac{\partial Q}{\partial \omega_{jh}}  &=\frac{1}{2}\times 2\times 2\times\omega_{Tjh} \frac{-1}{\omega_{Tj}\omega_{Th}} +\left( -2\times 2n\omega_{Tjh}\omega_{Th}^{-1} \tilde{\Sigma}_{jj} - 2\times \frac{n}{2}2\omega_{Tjh} \omega_{Th}^{-1}\tilde{\Sigma}_{jj} -n\omega_{Th}^{-1}\sum_{j < k} \tilde{\Sigma}_{jk}\omega_{Tkh} \right)\\
-&=\omega_{Tjh}\left(\frac{-2}{\omega_{j}\omega_{h}} + 6n \omega_{Th}^{-1} \tilde{\Sigma}_{jj} \right) -n\omega_{Th}^{-1}\sum_{j < k} \tilde{\Sigma}_{jk}\omega_{Tkh} 
+\frac{\partial \log(|\Omega_T|)}{\partial \omega_{jk}} &= \frac{-2 \: \omega_{jk}}{\omega_j \omega_k -\omega_{jk}^2};
 \end{align*}
 
+\subsubsection{OO block: $(j,k)\in O\times O$}
+
+\begin{align*}
+\frac{\partial Q}{\partial \omega_{jk}} &= \frac{n}{2}\times \frac{-2 \: \omega_{jk}}{\omega_j \omega_k -\omega_{jk}^2}-n\Sigma_{Tjk}
+\end{align*}
+Setting the derivate to 0 to find a maximum :
+\begin{align*}
+& \omega_{Tjk}^2 = \omega_{Tj}\omega_{Tk} +\frac{\omega_{Tjk}}{\Sigma_{Tjk}}\\
+\iff&\Sigma_{Tjk} \omega_{Tjk}^2 -\omega_{Tjk}-\Sigma_{Tjk}\omega_{Tj}\omega_{Tk} =0\\
+\iff &\hat{\omega}_{Tjk} = \frac{1}{2\Sigma_{Tjk}}\pm \sqrt{\frac{1}{4\Sigma_{jk}^2} + \omega_{Tj}\omega_{Tk}}
+\end{align*}
+
+We have the second order derivative:
+$$\partial^2_{\omega_{Tjk}^2}Q = -n\left(\frac{2\omega_{Tj}\omega_{Tk} + \omega_{Tjk}/\Sigma_{Tjk}}{\omega_{Tjk}^2/\Sigma_{Tjk}^2}\right) <0 \iff \frac{\omega_{Tjk}}{\Sigma_{kj}}>0$$
+Which imposes $$\hat{\omega}_{Tjk} = \frac{1}{2\Sigma_{Tjk}}+ \sqrt{\frac{1}{4\Sigma_{jk}^2} + \omega_{Tj}\omega_{Tk}}$$
+
+
+\subsubsection{OH block: $(j,h)\in O\times H$}
+
+\begin{align*}
+\frac{\partial Q}{\partial \omega_{jh}}  &= -n\left( \frac{\omega_{Tjh}}{\omega_{Tj}\omega_{Th}-\omega_{Tjh}^2}+(\omega_{Th}^{-1}\Sigma_{Tjj})\;\omega_{Tjh} + \omega_{Th}^{-1}\underbrace{\sum_{j<k}(\Sigma_{Tjk}\;\omega_{Tkh})}_{\text{\large{$\varphi$}}}-\Sigma_{Tjj}\right)
+\end{align*}
+
+The quantity $\varphi$ accounts for all other neighbors except node $j$ of a hidden node. 
+Setting the derivative to 0 to find a maximum:
+\begin{align*}
+&\omega_{Tjh} + \omega_{Tjh}(\omega_{Tj}\omega_{Th} - \omega_{Tjh}^2)\omega_{Th}^{-1}\Sigma_{jj} = (\Sigma_{Tjj} - \omega_{Th}^{-1} \varphi)(\omega_{Tj}\omega_{Th} - \omega_{Tjh}^2)\\
+\iff & -(\omega_{Th}^{-1} \Sigma_{jj})\omega_{Tjh}^3 - (\omega_{Th}^{-1}\varphi - \Sigma_{Tjj})\omega_{Tjh}^2 + (1+\omega_{Tj}\omega_{Th}\omega_{Th  }^{-1}\Sigma_{Tjj})\omega_{Tjh} + \omega_{Tj}\omega_{Th}(\omega_{Th}^{-1}\varphi - \Sigma_{Tjj}) = 0
+\end{align*}
 \subsection{Diagonal terms}
-\underline{$j\in O $:}
 \begin{align*}
-\frac{\partial Q}{\partial \omega_{Tj}}  &= \frac{1}{2}\left(1+2\times \frac{1}{\omega_{Tj}^2}\sum_{jh\in T} \frac{\omega_{Tjh}^2}{w_{Th}}\right) -\frac{n}{2}S_{jj}\\
-&=\frac{1}{2} - \frac{n}{2} S_{jj} + \frac{1}{\omega_{Tj}^2}
+\frac{\partial \log(|\Omega_T|)}{\partial \omega_{Tj}} &= \frac{1}{\omega_{Tj}} - \sum_{j<k} \frac{1}{\omega_{Tj} - \omega_{Tj}^2 \frac{\omega_{Tk}}{\omega_{Tjk}^2}}\\
+&= \frac{1}{\omega_{Tj}}\left( 1 + \sum_{k>j} \frac{1}{\dfrac{\omega_{Tj}\omega_{Tk}}{\omega_{Tjk} ^2} - 1}  \right);
 \end{align*}
-\vspace{1cm}
+
+\subsubsection{Observed ones: $j\in O $}
 
 
-\underline{$h\in H$:}
 \begin{align*}
-\frac{\partial Q}{\partial \omega_{Th}}  &= \frac{1}{2}\left(1+2\times \frac{1}{\omega_{Th}^2}\sum_{jh\in T} \frac{\omega_{Tjh}^2}{w_{Tj}}\right) + \frac{n}{2\omega_{Th}^2} \left( \sum_j \tilde{\Sigma}_{jj} \omega_{Tjh}^2 +2\sum_{j < k} \tilde{\Sigma}_{jk} \: \omega_{Tjh} \: \omega_{Tkh}\right)\\
-&= \frac{1}{2} + \frac{1}{\omega_{Th}^2}\left(\sum_{jh\in T}\omega_{Tjh}^2 \left(\frac{1}{\omega_{Tj}} + \frac{n}{2}\tilde{\Sigma}_{jj}\right)+2\sum_{j < k} \tilde{\Sigma}_{jk} \: \omega_{Tjh} \: \omega_{Tkh}\right)
+\frac{\partial Q}{\partial \omega_{Tj}}  &= \frac{n}{2}\times \frac{1}{\omega_{Tj}}\left( 1 + \sum_{k>j} \frac{1}{\dfrac{\omega_{Tj}\omega_{Tk}}{\omega_{Tjk} ^2} - 1}  \right) -\frac{n}{2} \Sigma_{Tjj}
+\end{align*}
+
+
+
+
+\subsubsection{Hidden ones: $h\in H$}
+\begin{align*}
+\frac{\partial Q}{\partial \omega_{Th}}  &= \frac{n}{2}\times \frac{1}{\omega_{Th}}\left(1 + \sum_{h<k} \frac{1}{\frac{\omega_{Th}\omega_{Tk}}{\omega_{Thk}^2}-1} + \frac{1}{\omega_{Th}} \left(\sum_{j \in O} \Sigma_{Tjj}\omega_{Tjh}^2 + 2\sum_{j<k \in O^2} \Sigma_{Tjk} \omega_{Tjh}\omega_{Tkh}\right) \right) 
 \end{align*}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
