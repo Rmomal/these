@@ -151,7 +151,13 @@ Q&= \sum_{i=1}^{n} \Esp[\log p(Z_O,Z_H,T) | Y ] \\
 \end{align*} 
 
 \section{EM algorithm: M step}
-
+\[
+ \partial_{\Omega_T}\Esp[Z^TZ \mid Z_O,T]=
+  \left( {\begin{array}{cc}
+  Z_O^TZ_O & -\Omega_{H}^{-1}\Omega_{HO}Z_O^TZ_O\\\\
+  -Z_O^TZ_O\Omega_{OH}\Omega_{H}^{-1} & \Omega_{H}^{-1}\Omega_{OH}Z_O^TZ_O\Omega_{OHH}\Omega_{H}^{-1} + \Omega_{H}^{-1}
+  \end{array} } \right) 
+  \]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
