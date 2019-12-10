@@ -220,12 +220,15 @@ Setting the derivate to 0 to find a maximum :
 \begin{align*}
 & \omega_{Tjk}^2 = \omega_{Tj}\omega_{Tk} +\frac{\omega_{Tjk}}{\Sigma_{Tjk}}\\
 \iff&\Sigma_{Tjk} \omega_{Tjk}^2 -\omega_{Tjk}-\Sigma_{Tjk}\omega_{Tj}\omega_{Tk} =0\\
-\iff &\hat{\omega}_{Tjk} = \frac{1}{2\Sigma_{Tjk}}\pm \sqrt{\frac{1}{4\Sigma_{jk}^2} + \omega_{Tj}\omega_{Tk}}
+\iff &\hat{\omega}_{Tjk} =\left(1 \pm \sqrt{1+4\Sigma_{Tjk}^2\omega_{Tj}\omega_{Tk}}\right) / 2\Sigma_{Tjk}
 \end{align*}
 
 We have the second order derivative:
-$$\partial^2_{\omega_{Tjk}^2}Q = -n\left(\frac{2\omega_{Tj}\omega_{Tk} + \omega_{Tjk}/\Sigma_{Tjk}}{\omega_{Tjk}^2/\Sigma_{Tjk}^2}\right) <0 \iff \frac{\omega_{Tjk}}{\Sigma_{kj}}>0$$
-Which imposes $$\hat{\omega}_{Tjk} = \frac{1}{2\Sigma_{Tjk}}+ \sqrt{\frac{1}{4\Sigma_{jk}^2} + \omega_{Tj}\omega_{Tk}}$$
+\begin{align*}
+\partial^2_{\omega_{Tjk}^2}Q = -n\left(\frac{2\omega_{Tj}\omega_{Tk} + \omega_{Tjk}/\Sigma_{Tjk}}{\omega_{Tjk}^2/\Sigma_{Tjk}^2}\right) <0 &\iff \frac{\omega_{Tjk}}{\Sigma_{kj}}>0\\
+& \iff 1 \pm \sqrt{1+4\Sigma_{Tjk}^2\omega_{Tj}\omega_{Tk}} >0\\
+&\iff \hat{\omega}_{Tjk} = \left(1 + \sqrt{1+4\Sigma_{Tjk}^2\omega_{Tj}\omega_{Tk}}\right) / 2\Sigma_{Tjk}
+\end{align*}
 
 
 \subsubsection{OH block: $(j,h)\in O\times H$}
@@ -238,12 +241,13 @@ The quantity $\varphi$ accounts for all other neighbors except node $j$ of a hid
 Setting the derivative to 0 to find a maximum:
 \begin{align*}
 &\omega_{Tjh} + \omega_{Tjh}(\omega_{Tj}\omega_{Th} - \omega_{Tjh}^2)\omega_{Th}^{-1}\Sigma_{jj} = (\Sigma_{Tjj} - \omega_{Th}^{-1} \varphi)(\omega_{Tj}\omega_{Th} - \omega_{Tjh}^2)\\
-\iff & -(\omega_{Th}^{-1} \Sigma_{jj})\omega_{Tjh}^3 - (\omega_{Th}^{-1}\varphi - \Sigma_{Tjj})\omega_{Tjh}^2 + (1+\omega_{Tj}\omega_{Th}\omega_{Th  }^{-1}\Sigma_{Tjj})\omega_{Tjh} + \omega_{Tj}\omega_{Th}(\omega_{Th}^{-1}\varphi - \Sigma_{Tjj}) = 0
+\iff & -(\omega_{Th}^{-1} \Sigma_{jj})\omega_{Tjh}^3 - (\omega_{Th}^{-1}\varphi - \Sigma_{Tjj})\omega_{Tjh}^2 + (1+\omega_{Tj}\omega_{Th}\omega_{Th  }^{-1}\Sigma_{Tjj})\omega_{Tjh} + \omega_{Tj}\omega_{Th}(\omega_{Th}^{-1}\varphi - \Sigma_{Tjj}) = 0\\
+\iff  & -(\omega_{Th}^{-1} \Sigma_{jj}) \;\omega_{Tjh}^3 + ( \Sigma_{Tjj} - \omega_{Th}^{-1}\varphi)\;\omega_{Tjh}^2 + (1+\omega_{Tj} \Sigma_{Tjj})\;\omega_{Tjh} + \omega_{Tj}(\varphi - \omega_{Th}\Sigma_{Tjj}) = 0
 \end{align*}
 \subsection{Diagonal terms}
 \begin{align*}
-\frac{\partial \log(|\Omega_T|)}{\partial \omega_{Tj}} &= \frac{1}{\omega_{Tj}} - \sum_{j<k} \frac{1}{\omega_{Tj} - \omega_{Tj}^2 \frac{\omega_{Tk}}{\omega_{Tjk}^2}}\\
-&= \frac{1}{\omega_{Tj}}\left( 1 + \sum_{k>j} \frac{1}{\dfrac{\omega_{Tj}\omega_{Tk}}{\omega_{Tjk} ^2} - 1}  \right);
+\frac{\partial \log(|\Omega_T|)}{\partial \omega_{Tj}} &= \frac{1}{\omega_{Tj}} - \sum_{k} \frac{1}{\omega_{Tj} - \omega_{Tj}^2 \frac{\omega_{Tk}}{\omega_{Tjk}^2}}\\
+&= \frac{1}{\omega_{Tj}}\left( 1 + \sum_{k} \frac{\omega_{Tjk} ^2}{\omega_{Tj}\omega_{Tk} - \omega_{Tjk} ^2}  \right);
 \end{align*}
 
 \subsubsection{Observed ones: $j\in O $}
