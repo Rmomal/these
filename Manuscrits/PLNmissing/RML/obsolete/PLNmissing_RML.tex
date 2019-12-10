@@ -73,8 +73,8 @@ Model for the hidden part: $$Z_H|Z_O,T \sim \mathcal{N}(\mu_{H|O,T}, \Omega_{TH|
 \item $\Omega_{TH|O}^{-1} = \Sigma_{TH} -\Sigma_{THO}\Sigma_{TO}^{-1}\Sigma_{TOH}$, 
 
 \item$ \displaystyle\begin{aligned}[t]
-\mu_{H|O,T} &= \Sigma_{THO}\Sigma_{TO}^{-1}((Z_O|T)-\underbrace{\mu_{Z_O|T}}_{0}) \\
- &= -\Omega_{TH}^{-1}\Omega_{TOH}((Z_O|T))
+\mu_{H|O,T} &= \Sigma_{THO}\Sigma_{TO}^{-1}((Z_O)-\underbrace{\mu_{Z_O|T}}_{0}) \\
+ &= -\Omega_{TH}^{-1}\Omega_{TOH}((Z_O))
 \end{aligned}$\\
 \end{itemize}
 
@@ -113,7 +113,7 @@ $$p(Z_O,Z_H,T) = p(T) \: p(Z_O,Z_H|T)$$
 For $n$ samples:
 \begin{align*}
 Q= \sum_{i=1}^{n} \Esp[\log p(Z_O,Z_H,T) | Y ] &= \sum_i  \Esp[\log p(T)+\log p(Z_O,Z_H|T)|Y] \\
-  &=\sum_i \Esp\left[\sum_{jk \in T} \log \beta_{jk} - \log B + \frac{1}{2} \log(|\Omega_T|) - \frac{1}{2} Z^T \Omega_T Z\,\middle\vert\,  Y\right]\\
+  &=\sum_i \Esp\left[\sum_{jk \in T} \log \beta_{jk} - \log B + \frac{1}{2} \log(|\Omega_T|) - \frac{1}{2} Z_i^T \Omega_T Z_i\,\middle\vert\,  Y\right]\\
 \end{align*} 
 
 
