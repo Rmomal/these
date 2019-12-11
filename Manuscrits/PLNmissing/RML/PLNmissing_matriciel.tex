@@ -145,19 +145,84 @@ For $n$ samples:
 Q&= \sum_{i=1}^{n} \Esp[\log p(Z_O,Z_H,T) | Y ] \\
 &= \sum_i  \Esp[\log p(T)+\log p(Z_O,Z_H|T)|Y] \\
   &=\sum_i \Esp\left[\sum_{jk \in T} \log \beta_{jk} - \log B + \frac{1}{2} \log|\Omega_T| - \frac{1}{2} Z_i^T \Omega_T Z_i\,\middle\vert\,  Y\right]\\
-  &=n \;\sum_{j<k} \Esp\left[\mathds{1}\{jk\in T\} \log \beta_{jk}  \,\middle\vert\,  Y\right]- \log B +\frac{n}{2}  \Esp\left[\log|\Omega_T| \,\middle\vert\,  Y\right] - \frac{n}{2} \Esp\left[ Z^T \Omega_T Z \,\middle\vert\,  Y\right]\\
-  &=  \sum_{j<k} \mathds{P}\{jk\in T \mid Y\}\left( n \log \beta_{jk} + \frac{n}{2}\log\left( 1- \frac{\omega_{Tjk} ^2}{\omega_{Tjj}\omega_{Tkk}}\right)\right) -\log B \\
-  & \;\;\;\; +\frac{n}{2}\sum_j \log(\omega_{Tjj}) - \frac{n}{2}\Esp\left[\Esp\left[ Tr(Z^T Z\Omega_T ) \,\middle\vert\,  Z_O,T\right] \,\middle\vert\,  Y\right]
+  &=n \;\sum_{j<k} \Esp\left[\mathds{1}\{jk\in T\} \log \beta_{jk}  \,\middle\vert\,  Y\right]- \log B +\frac{n}{2}  \Esp\left[\log|\Omega_T| \,\middle\vert\,  Y\right] - \frac{n}{2} \Esp\left[ Z^T \Omega_T Z \,\middle\vert\,  Y\right]
 \end{align*} 
 
+Denoting $\mathds{P}\{jk\in T \mid Y\}=P_{jk}$ we obtain:
+\begin{empheq}[box=\lesswidefbox]{align*} 
+  Q  &=  \sum_{j<k} P_{jk}\left( n \log \beta_{jk} + \frac{n}{2}\log\left( 1- \frac{\omega_{Tjk} ^2}{\omega_{Tjj}\omega_{Tkk}}\right)\right) -\log B  +\frac{n}{2}\sum_j \log(\omega_{Tjj})\\
+  & \;\;\;\; - \frac{n}{2}\Esp\left[\Esp\left[ Tr(Z^T Z\Omega_T ) \,\middle\vert\,  Z_O,T\right] \,\middle\vert\,  Y\right]
+\end{empheq}
+
 \section{EM algorithm: M step}
+$$  \partial_{\Omega_T}Q = \frac{n}{2}\sum_{j<k}P_{jk}\; \partial_{\Omega_T}\left[\log\left(1-\frac{\omega_{Tjk}^2}{\omega_{Tj}\omega_{Tk}}\right)\right]+\frac{n}{2}\sum_j \partial_{\Omega_T} \left[\log(\omega_{Tj})\right] -\frac{n}{2}\Esp\left[\Esp\left[\partial_{\Omega_T} Tr(Z^TZ\Omega_T) \,\middle\vert\, Z_O,T\right] \,\middle\vert\, Y\right]$$ \\
+
+The trace is a linear form, derivating with respect to $\Omega_T$ do not depend on the latter. Derivation per block of square form terms:\\
 \[
- \partial_{\Omega_T}\Esp[Z^TZ \mid Z_O,T]=
-  \left( {\begin{array}{cc}
-  Z_O^TZ_O & -\Omega_{H}^{-1}\Omega_{HO}Z_O^TZ_O\\\\
-  -Z_O^TZ_O\Omega_{OH}\Omega_{H}^{-1} & \Omega_{H}^{-1}\Omega_{OH}Z_O^TZ_O\Omega_{OHH}\Omega_{H}^{-1} + \Omega_{H}^{-1}
+\Esp[ \partial_{\Omega_T}Tr(Z^TZ\Omega_T) \mid Z_O,T] = \Esp[Z^TZ\mid Z_O,T]=
+  \left( {\begin{array}{ccc}
+  Z_O^TZ_O && -\Omega_{H}^{-1}\Omega_{HO}Z_O^TZ_O\\\\
+  -Z_O^TZ_O\Omega_{OH}\Omega_{H}^{-1} && \Omega_{H}^{-1}\Omega_{OH}Z_O^TZ_O\Omega_{OH}\Omega_{H}^{-1} + \Omega_{H}^{-1}
+  \end{array} } \right) 
+  \]\\
+  
+  Denoting $ \Esp\left[Z_O^TZ_O\mid Y\right] = \widehat{\Sigma}_O$, we obtain: \\
+  
+  \[
+ \Esp\left[\Esp[Z^TZ \mid Z_O,T]\mid Y\right]=
+  \left( {\begin{array}{ccc}
+  \widehat{\Sigma}_O && -\Omega_{H}^{-1}\Omega_{HO}\widehat{\Sigma}_O\\\\
+  -\widehat{\Sigma}_O\Omega_{OH}\Omega_{H}^{-1} && \Omega_{H}^{-1}\Omega_{OH}\widehat{\Sigma}_O\Omega_{OH}\Omega_{H}^{-1} + \Omega_{H}^{-1}
   \end{array} } \right) 
   \]
+\subsection{Off-Diagonal}
+$ \forall (j,k) \in (O+H)^2$:
+\begin{align*}
+\partial_{\omega_{jk}}\log\left(1-\frac{\omega_{Tjk}^2}{\omega_{Tj}\omega_{Tk}}\right) &= \frac{-2 \: \omega_{jk}}{\omega_j \omega_k -\omega_{jk}^2};
+\end{align*}
+\subsubsection{OO block}
+\begin{align*}
+\partial_{\Omega_{TOO
+}}Q &= \frac{n}{2}\left( \frac{-2P_{jk} \:\omega_{Tjk}}{\omega_{Tj}\omega_{Tk}-\omega_{Tjk}^2} -  \widehat{\Sigma}_O \times 2\right)
+\end{align*}
+
+Setting the derivative to zero, we obtain:
+
+\begin{align*}
+& \widehat{\Sigma}_O \:\omega_{Tjk}^2 - P_{jk} \omega_{Tjk} -  \widehat{\Sigma}_O \: \omega_{Tj}\omega_{Tk} =0\\
+\iff & \hat{\omega}_{Tjk} = \left(P_{jk} \pm \sqrt{P_{jk}^2 - 4\widehat{\Sigma}_O^2 \omega_{Tj}\omega_{Tk}}\right) /2 \widehat{\Sigma}_O
+\end{align*}
+
+\subsubsection{OH block}
+\begin{align*}
+\partial_{\Omega_{TOH}}Q &= \frac{n}{2}P_{jk}\times \frac{-2\omega_{Tjk}}{\omega_{Tj}\omega_{Tk}-\omega_{Tjk}^2} - \frac{n}{2} (-\Omega_H^{-1} \Omega_{HO} \widehat{\Sigma}_O) \times 2\\
+&=n\left(\frac{-P_{jk} \omega_{Tjk}}{\omega_{Tj}\omega_{Tk}-\omega_{Tjk}^2} + \Omega_H^{-1} \Omega_{HO} \widehat{\Sigma}_O \right)
+\end{align*}
+In the following, $W_{HO} =\Omega_H^{-1} \Omega_{HO} \widehat{\Sigma}_O $. Setting the derivative to zero we obtain:
+\begin{align*}
+&W_{HO} \; \omega_{Tjk}^2 + P_{jk} \; \omega_{Tjk} - W_{HO} \:\omega_{Tj}\omega_{Tk} = 0\\
+\iff& \hat{\omega}_{Tjk} = \left( -P_{jk} \pm \sqrt{P_{jk}^2 + 4W_{HO}^2\:\omega_{Tj}\omega_{Tk}}\right) / \: 2W_{HO}
+\end{align*}
+
+\subsection{Diagonal}
+$\forall j \in (O+H)$:
+\begin{align*}
+\partial_{\omega_{j}}\log\left(1-\frac{\omega_{Tjk}^2}{\omega_{Tj}\omega_{Tk}}\right) &= \frac{1}{\omega_{Tj}}\left( \sum_{k} \frac{\omega_{Tjk} ^2}{\omega_{Tj}\omega_{Tk} - \omega_{Tjk} ^2}  \right);
+\end{align*}
+\subsubsection{Observed}
+\begin{align*}
+\partial_{DiagO}Q &= \frac{n}{2}\left( \frac{1}{\omega_{Tj}}\left( 1 + \sum_{k} P_{jk} \frac{\omega_{Tjk} ^2}{\omega_{Tj}\omega_{Tk} - \omega_{Tjk} ^2}  \right) - \widehat{\Sigma}_{Ojj}\right)
+\end{align*}
+Setting the derivative to zero we obtain:
+$$ \frac{1}{\omega_{Tj}}\left( 1 + \sum_{k} P_{jk} \frac{\omega_{Tjk} ^2}{\omega_{Tj}\omega_{Tk} - \omega_{Tjk} ^2}  \right) =\widehat{\Sigma}_{Ojj}$$
+
+\subsubsection{Hidden}
+Denoting $\Omega_{H}^{-1}\Omega_{OH}\widehat{\Sigma}_O\Omega_{OH}\Omega_{H}^{-1} + \Omega_{H}^{-1} = B_H $, we obtain:
+\begin{align*}
+\partial_{DiagH}Q &= \frac{n}{2}\left( \frac{1}{\omega_{Th}}\left( 1 + \sum_{k} P_{hk} \frac{\omega_{Thk} ^2}{\omega_{Th}\omega_{Tk} - \omega_{Thk} ^2}  \right) -B_{Hhh}\right)
+\end{align*}
+Setting the derivative to zero we obtain:
+$$ \frac{1}{\omega_{Th}}\left( 1 + \sum_{k} P_{hk} \frac{\omega_{Thk} ^2}{\omega_{Th}\omega_{Tk} - \omega_{Thk} ^2}  \right) =B_{Hhh}  $$
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
