@@ -1,0 +1,127 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath, mathtools}
+\usepackage{amsfonts, dsfont}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{empheq}
+
+\newcommand*\widefbox[1]{\fbox{\hspace{3em}#1\hspace{3em}}}
+
+\newcommand*\lesswidefbox[1]{\fbox{\hspace{2em}#1\hspace{2em}}}
+
+\providecommand\given{} % is redefined in \Set
+\newcommand\SetSymbol[1][]{\nonscript\:#1\vert\nonscript\:}
+%\usepackage[mathcal]{eucal}
+\usepackage[left=2cm,right=2cm,top=2cm,bottom=2cm]{geometry}
+
+\setlength\parindent{0pt}
+\author{Raphaelle Momal}
+\title{PLN with missing actor}
+
+
+\newcommand{\Esp}{\mathds{E}}
+\newcommand{\entr}{\mathcal{H}}
+\begin{document}
+\maketitle
+
+
+We had: 
+$$ p(Y,Z,T) = p(T)p(Z|T)p(Y|Z)$$
+$$ \Esp(\log p(Y,Z,T)|Y) \approx \sum_{1 \leq j < k \leq p} P_{jk} \log\left(\beta_{jk} \hat{\psi}_{jk}\right) - \log B + cst$$
+
+We want to add a hidden layer of unobserved data, indexed by H.
+
+$$ p(Y,Z_O,Z_H,T)$$
+\section{PLNmissing peculiarities: Model and distributions}
+$$\left\{\begin{array}{rl}
+T & \sim\prod_{jk \in T} \beta_{jk}/B \\\\
+
+Z|T& \sim\mathcal{N}(0,\Sigma_T)\\\\
+
+Y|Z&\sim\mathcal{P}( \exp( Z+...) )
+\end{array} \right.$$
+
+\paragraph{Marginals}
+\begin{align*}
+(Z_O,Z_H) &\sim \sum_{T \in \mathcal{T}} p(T) \mathcal{N}(0,\Sigma_T) \\
+\end{align*}
+
+\paragraph{Conditional on T:}
+\begin{align*}
+(Z_O,Z_H)|T & \sim\mathcal{N}(0,\Sigma_T)\\
+Z_O|T & \sim\mathcal{N}(0,\Omega_{Tm}^{-1})\\
+Z_H|T & \sim\mathcal{N}(0,\Omega_{TH}^{-1})
+\end{align*}
+With $ \Omega_{Tm} =\Sigma_{TO}^{-1} =  \Omega_{TO} - \Omega_{TOH}\Omega_{TH}^{-1}\Omega_{THO}$
+
+
+\paragraph{Conditional on observed data:\\}
+
+
+$Z_O$ decouples $Z_H$ and $Y_O$, we will never need $Z_H|Y_O$.
+$$ p(Z|Y_O) = p(Z_O,Z_H | Y_O) = p(Z_H|Z_O) \: p(Z_O|Y_O) $$
+
+
+VEM on observed data: $$Z_O|Y_O \approx \widetilde{Z}_O \sim \mathcal{N}(m,S)$$
+
+\underline{ Hypothesis:}
+$$ Z_O|Y,T \sim \mathcal{N}(m_T,S_T)$$
+
+Model for the hidden part: $$Z_H|Z_O,T \sim \mathcal{N}(\mu_{H|O,T}, \Omega_{TH|O}^{-1})$$ 
+
+\begin{itemize}
+\item $\Omega_{TH|O}^{-1} = \Sigma_{TH} -\Sigma_{THO}\Sigma_{TO}^{-1}\Sigma_{TOH} = \Omega_{TH}^{-1}$, 
+
+\item$ \displaystyle\begin{aligned}[t]
+\mu_{H|O,T} &= \Sigma_{THO}\Sigma_{TO}^{-1}((Z_O)-\underbrace{\mu_{Z_O|T}}_{0}) \\
+ &= -\Omega_{TH}^{-1}\Omega_{TOH}((Z_O))
+\end{aligned}$\\
+\end{itemize}
+
+
+\paragraph{Joint:}
+\begin{align*}
+p(Y,Z,T)& = p(T) \: p(Z|T) \: p(Y|Z) \\
+&= p(T)\: p(Z_O,Z_H|T) \: p(Y|Z_O,Z_H) \\
+&= p(T) \: p(Z_O|T) \: p(Z_H | Z_O,T)  \: p(Y|Z_O)
+\end{align*} 
+\section{Variational EM inference}
+
+This variational EM approximates $p(T,Z | Y)$ by independent distributions between the tree $T$ and the latent variables $Z$.
+
+$$p(T,Z | Y) \approx q(T,Z) = g(T)h(Z)$$
+$$ h(Z) = \prod_i h(Z_i)$$
+$$ h(Z_i) =  \mathcal{N}(m,S) $$
+$$Z_i|T \sim \mathcal{N}(0,\Omega_T^{-1})$$
+\subsection{Lower bound:}
+\begin{align*}
+\mathcal{J}(Y; g,h)&=\log p(Y) - KL\left[g(T) h(Z) \middle\vert\middle\vert\ p(T,Z | Y)\right]&\\
+&= \log p(Y) - \Esp_{gh}[\log g(T) + \log h(Z) - \log p(Y,Z,T) + \log p(Y) ]&\\
+&= - \Esp_{gh}[\log g(T) + \log h(Z) - \log p(Y,Z,T) ]&\\
+&= \Esp_{gh} [\log p(Y,Z,T)] + \entr[g(T)] + \entr[h(Z)]& \\
+&= \Esp_{gh}[\log p(T) + \log p(Z_H| Z_O,T)  + \log p(Z_O|T) + \log p(Y|Z_O)] + \entr[g(T)] +\entr[h(Z_H,Z_O)]&\\
+&= \Esp_g[\log p(T)] + \Esp_{gh}[\log p(Z_H | Z_O,T) ] + \Esp_{gh}[\log p(Z_O | T)] + \Esp_h[\log p(Y|Z_O)]&\\
+& \;\; + \entr[g(T)] +\entr[h(Z_O)]+ \entr[h(Z_H|Z_O)]
+\end{align*}
+
+%Property of Shannon entropy : $\entr(X,Y) = \entr(X) + \entr(Y|X)$
+
+Finally we obtain:
+\begin{align*}
+\mathcal{J}(Y; g,h)&= \Esp_h[\log p(Y|Z_O)] +\entr[h(Z_O)]& \} \text{PLN VEM}\\
+& \;\; +\Esp_g[\log p(T)] + \Esp_{gh}[\log p(Z_H | Z_O,T) ]+ \Esp_{gh}[\log p(Z_O | T)]+\entr[g(T)]+ \entr[h(Z_H|Z_O)] & \}\text{New terms}
+\end{align*}\\
+
+\textit{"Know your ennemy"}:
+\begin{align*}
+\Esp_{gh}[\log p(Z_O | T)] &= \Esp_{gh}\left[\frac{n}{2} \log |\Omega_{TO}| - \frac{1}{2} < \Esp_h vec(Z_OZ_O^T)\: ; \Esp_g vec(\Omega_{TO}) > \right]\\
+&= \frac{n}{2} \Esp_g \log |\Omega_{TO}| - \frac{1}{2} \Esp_{gh}\left[\sum_{jk} Z_jZ_k\omega_{jk} I_{Tjk}\right]
+\end{align*}
+
+$$ \Esp[ZjZk] = -\partial_{\omega_{jk}}( \log |\Omega_{TO}| )$$
+$$ \bar{\Omega_O} = \sum_T g(T)\Omega_{TO}$$
+$$ \log |\bar{\Omega_O}| \neq \sum_T g(T) \log |\Omega_{TO}| = \bar{\log |\Omega_{TO}|} $$ 
+
+le log du déterminant est une fonction concave
+\end{document}

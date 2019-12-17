@@ -138,8 +138,11 @@ Careful nesting of conditionnements and trace trick:
 &=\Esp\left[\Esp\left[ Tr(Z^T Z\Omega_T ) \,\middle\vert\,  Z_O,T\right] \,\middle\vert\,  Y\right]\\
 \end{align*}
 
-Rewriting of $\Omega_T$, as a tree-structured filter on the $\Omega$ matrix. Denoting $I_T = [\mathds{1}\{jk \in T\}]_{jk}$:
-$$ \Omega_T = \Omega \odot I_T$$
+Rewriting of $\Omega_T$, as a tree-structured filter on a matrix $\Omega$. Denoting $I_T = [I_{Tjk} = \mathds{1}\{jk \in T\}]_{jk}$:
+$$ \Omega_T \equiv \left\{ \begin{array}{rl}
+\omega_{Tjk} &= \omega_{jk} I_{Tjk}\\
+\omega_{Tjj} &= \omega_{jj}
+\end{array} \right. $$ 
 We also have $ \Esp[I_T \mid Y] = P_T =[P_{Tjk}]_{jk}= [\mathds{P}\{jk \in T \mid Y \}]_{jk}$.\\
 
 So we have $$\Esp\left[ Z^T \Omega_T Z \,\middle\vert\,  Y\right] = \Esp\left[\Esp\left[ Tr(Z^T Z \times(\Omega \odot I_T)) \,\middle\vert\,  Z_O,T\right] \,\middle\vert\,  Y\right]$$
