@@ -88,12 +88,13 @@ p(Y,Z,T)& = p(T) \: p(Z|T) \: p(Y|Z) \\
 \end{align*} 
 \section{Variational EM inference}
 
-This variational EM approximates $p(T,Z | Y)$ by independent distributions between the tree $T$ and the latent variables $Z$.
+This variational EM approximates the conditional distribution $p(T,Z | Y)$ by a product  between the  distributions of tree $T$ and latent variables $Z$.
 
-$$p(T,Z | Y) \approx q(T,Z) = g(T)h(Z)$$
+$$p(T,Z | Y) \approx  g(T)h(Z)$$
 $$ h(Z) = \prod_i h(Z_i)$$
 $$ h(Z_i) =  \mathcal{N}(m,S) $$
 $$Z_i|T \sim \mathcal{N}(0,\Omega_T^{-1})$$
+$$ g(T)=p(T) = \left(\prod_{kl} \beta_{kl} \right) / B$$
 \subsection{Lower bound:}
 \begin{align*}
 \mathcal{J}(Y; g,h)&=\log p(Y) - KL\left[g(T) h(Z) \middle\vert\middle\vert\ p(T,Z | Y)\right]&\\
@@ -107,21 +108,33 @@ $$Z_i|T \sim \mathcal{N}(0,\Omega_T^{-1})$$
 
 %Property of Shannon entropy : $\entr(X,Y) = \entr(X) + \entr(Y|X)$
 
-Finally we obtain:
+We obtain:
 \begin{align*}
 \mathcal{J}(Y; g,h)&= \Esp_h[\log p(Y|Z_O)] +\entr[h(Z_O)]& \} \text{PLN VEM}\\
 & \;\; +\Esp_g[\log p(T)] + \Esp_{gh}[\log p(Z_H | Z_O,T) ]+ \Esp_{gh}[\log p(Z_O | T)]+\entr[g(T)]+ \entr[h(Z_H|Z_O)] & \}\text{New terms}
 \end{align*}\\
+The variational approximation keeps the same law for the tree:
+$$ \Esp_g[\log p(T)] = - \entr[g(T)] $$
+Hence finally:
+\begin{empheq}[box=\widefbox]{align*}
+\mathcal{J}(Y; g,h)&= \Esp_h[\log p(Y|Z_O)] +\entr[h(Z_O)]& \} \text{PLN VEM}\\
+& \;\; + \Esp_{gh}[\log p(Z_H | Z_O,T) ]+ \Esp_{gh}[\log p(Z_O | T)]+ \entr[h(Z_H|Z_O)] & \}\text{New terms}
+\end{empheq}\\
 
-\textit{"Know your ennemy"}:
+
+
+\subsubsection{$\Esp_{gh}[\log p(Z_O | T)] $}
 \begin{align*}
 \Esp_{gh}[\log p(Z_O | T)] &= \Esp_{gh}\left[\frac{n}{2} \log |\Omega_{TO}| - \frac{1}{2} < \Esp_h vec(Z_OZ_O^T)\: ; \Esp_g vec(\Omega_{TO}) > \right]\\
-&= \frac{n}{2} \Esp_g \log |\Omega_{TO}| - \frac{1}{2} \Esp_{gh}\left[\sum_{jk} Z_jZ_k\omega_{jk} I_{Tjk}\right]
+&= \frac{n}{2} \Esp_g \log |\Omega_{TO}| - \frac{1}{2} \sum_{jk} \Esp_h[ Z_jZ_k] \; \underbrace{\Esp_g[\omega_{Tjk} ]}_{\overline{\Omega_O}_{jk}}
 \end{align*}
+$$\Esp_g[\omega_{Tjk} ] = \overline{\Omega_O}_{jk} = \sum_T g(T)\omega_{Tjk}$$
+$$ \Esp[Z_jZ_k] = -\partial_{\omega_{jk}}( \log |\Omega_{TO}| )$$
 
-$$ \Esp[ZjZk] = -\partial_{\omega_{jk}}( \log |\Omega_{TO}| )$$
-$$ \bar{\Omega_O} = \sum_T g(T)\Omega_{TO}$$
-$$ \log |\bar{\Omega_O}| \neq \sum_T g(T) \log |\Omega_{TO}| = \bar{\log |\Omega_{TO}|} $$ 
+$$ \log |\overline{\Omega_O}| \neq \sum_T g(T) \log |\Omega_{TO}| = \overline{\log |\Omega_{TO}|} $$ 
 
 le log du déterminant est une fonction concave
+
+\subsubsection{$\Esp_{gh}[\log p(Z_H | Z_O,T) ]$}
+\subsubsection{$ \entr[h(Z_H|Z_O)]$}
 \end{document}
