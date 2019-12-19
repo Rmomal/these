@@ -133,8 +133,14 @@ $$ \Esp[Z_jZ_k] = -\partial_{\omega_{jk}}( \log |\Omega_{TO}| )$$
 
 $$ \log |\overline{\Omega_O}| \neq \sum_T g(T) \log |\Omega_{TO}| = \overline{\log |\Omega_{TO}|} $$ 
 
-le log du déterminant est une fonction concave
+The log of nthe determinent is a concave function:
+$$\log |\Esp_g[\Omega_{TO}]| \geq \Esp_g [\log |\Omega_{TO}|]$$
 
 \subsubsection{$\Esp_{gh}[\log p(Z_H | Z_O,T) ]$}
 \subsubsection{$ \entr[h(Z_H|Z_O)]$}
+
+\begin{align*}
+\entr[h(Z_H|Z_O)] &=   - \Esp_{Z_O}\left[\Esp_{Z_H|Z_O}[\log p(Z_H| Z_O)]\right]\\
+&= \Esp_{Z_O}\left[\entr[Z_H|Z_O]\right]
+\end{align*}
 \end{document}
