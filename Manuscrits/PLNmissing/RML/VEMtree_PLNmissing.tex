@@ -68,14 +68,14 @@ VEM on observed data: $$Z_O|Y_O \approx \widetilde{Z}_O \sim \mathcal{N}(m,S)$$
 \underline{ Hypothesis:}
 $$ Z_O|Y,T \sim \mathcal{N}(m_T,S_T)$$
 
-Model for the hidden part: $$Z_H|Z_O,T \sim \mathcal{N}(\mu_{H|O,T}, \Omega_{TH|O}^{-1})$$ 
+Model for the hidden part: $$Z_H|Z_O,T \sim \mathcal{N}(\mu_{H|O,T}, \Omega_{H}^{-1})$$ 
 
 \begin{itemize}
-\item $\Omega_{TH|O}^{-1} = \Sigma_{TH} -\Sigma_{THO}\Sigma_{TO}^{-1}\Sigma_{TOH} = \Omega_{TH}^{-1}$, 
+\item $\Omega_{TH|O}^{-1} = \Sigma_{TH} -\Sigma_{THO}\Sigma_{TO}^{-1}\Sigma_{TOH} = \Omega_{TH}^{-1}$, moreover the H block of $\Omega_T$ is diagonal as imposed by identifiability conditions, and diagonal terms do not depend on tree $T$  by construction/hypothesis. Hence $\Omega_{TH|O}^{-1}=\Omega_{H}^{-1}$.
 
 \item$ \displaystyle\begin{aligned}[t]
 \mu_{H|O,T} &= \Sigma_{THO}\Sigma_{TO}^{-1}((Z_O)-\underbrace{\mu_{Z_O|T}}_{0}) \\
- &= -\Omega_{TH}^{-1}\Omega_{TOH}((Z_O))
+ &= -\Omega_{TH}^{-1}\Omega_{TOH} \: Z_O
 \end{aligned}$\\
 \end{itemize}
 
@@ -91,11 +91,15 @@ p(Y,Z,T)& = p(T) \: p(Z|T) \: p(Y|Z) \\
 This variational EM approximates the conditional distribution $p(T,Z | Y)$ by a product  between the  distributions of tree $T$ and latent variables $Z$.
 
 $$p(T,Z | Y) \approx  g(T)h(Z)$$
-$$ h(Z) = \prod_i h(Z_i)$$
-$$ h(Z_i) =  \mathcal{N}(m,S) $$
-$$Z_i|T \sim \mathcal{N}(0,\Omega_T^{-1})$$
-$$ g(T)=p(T) = \left(\prod_{kl} \beta_{kl} \right) / B$$
+\begin{itemize}
+\item $ h(Z_i) =  \mathcal{N}(m_i,S_i)\text{, with marginals conveniently written as } h_O \text{ and } h_H $
+\item $ h(Z) = \prod_i h(Z_i)$ ($\approx$ mean-field approximation ?)
+\item $ g(T) = \left(\prod_{kl} \widetilde{\beta}_{kl} \right) / \widetilde{B}$
+\end{itemize}
+
+
 \subsection{Lower bound:}
+Using the separability of $g$ and $h$:
 \begin{align*}
 \mathcal{J}(Y; g,h)&=\log p(Y) - KL\left[g(T) h(Z) \middle\vert\middle\vert\ p(T,Z | Y)\right]&\\
 &= \log p(Y) - \Esp_{gh}[\log g(T) + \log h(Z) - \log p(Y,Z,T) + \log p(Y) ]&\\
@@ -110,33 +114,38 @@ $$ g(T)=p(T) = \left(\prod_{kl} \beta_{kl} \right) / B$$
 
 We obtain:
 \begin{align*}
-\mathcal{J}(Y; g,h)&= \Esp_h[\log p(Y|Z_O)] +\entr[h(Z_O)]& \} \text{PLN VEM}\\
-& \;\; +\Esp_g[\log p(T)] + \Esp_{gh}[\log p(Z_H | Z_O,T) ]+ \Esp_{gh}[\log p(Z_O | T)]+\entr[g(T)]+ \entr[h(Z_H|Z_O)] & \}\text{New terms}
+\mathcal{J}(Y; g,h)&= \Esp_h[\log p(Y|Z_O)]+ \Esp_{gh}[\log p(Z_O | T)] +\entr[h_O]& \} \text{PLN like}\\
+& \;\; + \Esp_{gh}[\log p(Z_H | Z_O,T) ]+\Esp_g[\log p(T)] +\entr[g]+ \entr[h(Z_H|Z_O)] & \}\text{New terms}
 \end{align*}\\
-The variational approximation keeps the same law for the tree:
-$$ \Esp_g[\log p(T)] = - \entr[g(T)] $$
-Hence finally:
-\begin{empheq}[box=\widefbox]{align*}
-\mathcal{J}(Y; g,h)&= \Esp_h[\log p(Y|Z_O)] +\entr[h(Z_O)]& \} \text{PLN VEM}\\
-& \;\; + \Esp_{gh}[\log p(Z_H | Z_O,T) ]+ \Esp_{gh}[\log p(Z_O | T)]+ \entr[h(Z_H|Z_O)] & \}\text{New terms}
-\end{empheq}\\
 
-
-
-\subsubsection{$\Esp_{gh}[\log p(Z_O | T)] $}
+\subsection{Optimizing in $h_O$: PLNmodels}
+We can make the very terms of PLN VEM appear.
 \begin{align*}
-\Esp_{gh}[\log p(Z_O | T)] &= \Esp_{gh}\left[\frac{n}{2} \log |\Omega_{TO}| - \frac{1}{2} < \Esp_h vec(Z_OZ_O^T)\: ; \Esp_g vec(\Omega_{TO}) > \right]\\
-&= \frac{n}{2} \Esp_g \log |\Omega_{TO}| - \frac{1}{2} \sum_{jk} \Esp_h[ Z_jZ_k] \; \underbrace{\Esp_g[\omega_{Tjk} ]}_{\overline{\Omega_O}_{jk}}
+\Esp_{gh}[\log p(Z_O|T)] &=  \Esp_{gh} \left[\frac{n}{2} \log |\Omega_{TO}| - \frac{1}{2} ||Z_O||_{\Omega_{TO}}^2 \right]\\
+&=\frac{n}{2} \Esp_g [\log |\Omega_{TO}|] - \frac{1}{2}<\Esp_h [Z_OZ_O^T], \underbrace{\Esp_g [\Omega_{TO}]}_{\overline{\Omega_{TO}}}> 
 \end{align*}
-$$\Esp_g[\omega_{Tjk} ] = \overline{\Omega_O}_{jk} = \sum_T g(T)\omega_{Tjk}$$
-$$ \Esp[Z_jZ_k] = -\partial_{\omega_{jk}}( \log |\Omega_{TO}| )$$
+Then,
+\begin{align*}
+&\Esp_{gh}[\log p(Z_O | T)] +\Esp_h[\log p(Y|Z_O)]+ \entr[h_O]\\
+& =\underbrace{\frac{n}{2} \log |\overline{\Omega_{TO}}| - \frac{1}{2}<\Esp_h [Z_OZ_O^T], \overline{\Omega_{TO}}> + \Esp_{h_O}[\log p(Y|Z_O)] + \entr[h_O]}_{\text{VEM of PLN with } \widetilde{\Sigma} = \overline{\Omega_{TO}}} + \frac{n}{2} \Esp_g[\log|\Omega_{TO}|] - \frac{n}{2} \log|\overline{\Omega_{TO}}|
+\end{align*}
 
-$$ \log |\overline{\Omega_O}| \neq \sum_T g(T) \log |\Omega_{TO}| = \overline{\log |\Omega_{TO}|} $$ 
-
-The log of nthe determinent is a concave function:
+Remark: the log of the determinent is a concave function:
 $$\log |\Esp_g[\Omega_{TO}]| \geq \Esp_g [\log |\Omega_{TO}|]$$
+%$$ \Esp[Z_jZ_k] = -\partial_{\omega_{jk}}( \log |\Omega_{TO}| )$$
+So this is an approximation, not a lower bound.\\
 
-\subsubsection{$\Esp_{gh}[\log p(Z_H | Z_O,T) ]$}
+All terms depending on $h_O$ are taken care of in the PLN VEM. After optimizing in $h_O$, this density is constant and we write $h_O^*$. Back to the complete loss, we still need to optimize in other parameters: $g$ and $h_H$.
+
+\subsection{Optimizing in $g$ and $h_H$}
+\begin{align*}
+\mathcal{J}(Y; g,h)&= \Esp_{gh}[\log p(T) + \log p(Z|T) + \log p(Y|Z_O)] + \entr[g ] +\entr[h(Z_H,Z_O)]\\
+&= \Esp_g[\log p(T)] + \Esp_{gh}[\log p(Z|T)] + \Esp_{h_O^*}[\log p(Y|Z_O)] + \entr[g ] +\entr[h(Z_H,Z_O)]
+\end{align*}
+
+
+
+
 \subsubsection{$ \entr[h(Z_H|Z_O)]$}
 
 \begin{align*}
