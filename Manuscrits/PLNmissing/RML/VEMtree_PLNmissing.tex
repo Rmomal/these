@@ -149,7 +149,7 @@ Finally we obtain:
 \end{align}\\
 
 \subsection{Optimizing in $h(Z_O)$: PLNmodels}
-\citet{CMR18} Computes the lower bound of a VEM for the PLN, which we write $\mathcal{J}_{PLN}$. This lower bound appears in our computation as well. Let's first detail the following quantity:
+\citet{CMR18} compute the lower bound of a VEM for the PLN, which we write $\mathcal{J}_{PLN}$. This lower bound appears in our computation as well. Let's first detail the following quantity:
 \begin{align*}
 \Esp_{gh}[\log p(Z_O|T)] &=  \Esp_{gh} \left[\frac{n}{2} \log |\Omega_{Tm}| - \frac{1}{2} \sum_i Z_{Oi}\Omega_{Tm} Z_{Oi}^T \right]\\
 &= \frac{n}{2} \Esp_g [\log |\Omega_{Tm}|] - \frac{1}{2} \Esp_{gh}\left[Tr\left( Z_O^TZ_O \Omega_{Tm}\right)\right].
@@ -162,7 +162,7 @@ The expectation in $gh$ is separable thanks to the independance hypothesis:
 We note $\Esp_g [\Omega_{Tm}] = \overline{\Omega_{Tm}}$, which is a $p\times p$ matrix of expected covariance over the whole spanning-tree space. Introducing the quantity  $\log |\overline{\Omega_{Tm}}| $ in the PLN-like terms of Eq.~(\ref{lowerbound}), the lower bound of the VEM of PLN $\mathcal{J}_{PLN}$ appears:
 \begin{align*}
 &\Esp_{gh}[\log p(Z_O | T)] +\Esp_h[\log p(Y|Z_O)]+ \entr[h(Z_O)]\\
-& =\underbrace{\frac{n}{2} \log |\overline{\Omega_{Tm}}| - \frac{1}{2}<\Esp_h [Z_OZ_O^T], \overline{\Omega_{Tm}}> + \Esp_{h}[\log p(Y|Z_O)] + \entr[h(Z_O)]}_{\mathcal{J}_{PLN}\text{ with } \widetilde{\Sigma} = \overline{\Omega_{Tm}}} + \underbrace{\frac{n}{2} \Esp_g[\log|\Omega_{Tm}|] - \frac{n}{2} \log|\overline{\Omega_{Tm}}|}_{\leq 0}
+& =\underbrace{\frac{n}{2} \log |\overline{\Omega_{Tm}}| - \frac{1}{2}<\Esp_h [Z_OZ_O^T], \overline{\Omega_{Tm}}> + \Esp_{h}[\log p(Y|Z_O)] + \entr[h(Z_O)]}_{\mathcal{J}_{PLN}\text{ with } \widetilde{\Sigma} = \overline{\Omega_{Tm}}} + \underbrace{\frac{n}{2}\left( \Esp_g[\log|\Omega_{Tm}|] - \log|\overline{\Omega_{Tm}}|\right)}_{\leq 0}
 \end{align*}
 
 
@@ -199,7 +199,6 @@ Remarks:
 \end{align*}
 
 \bibliographystyle{apsrev} %tested plainnat
-%\bibliographystyle{apsrev} % tested apsrev
-\bibliography{/home/mmip/Raphaelle/these/Manuscrits/PLNmissing/RML/biblio.bib}
+\bibliography{bibi}
 
 \end{document}
