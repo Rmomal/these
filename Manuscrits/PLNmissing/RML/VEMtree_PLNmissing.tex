@@ -83,8 +83,8 @@ Model for the hidden part: $$Z_H|Z_O,T \sim \mathcal{N}(\mu_{H|O,T}, \Omega_{H}^
 \item $\Omega_{TH|O}^{-1} = \Sigma_{TH} -\Sigma_{THO}\Sigma_{TO}^{-1}\Sigma_{TOH} = \Omega_{TH}^{-1}$, moreover the H block of $\Omega_T$ is diagonal as imposed by identifiability conditions, and diagonal terms do not depend on tree $T$  by construction/hypothesis. Hence $\Omega_{TH|O}^{-1}=\Omega_{H}^{-1}$.
 
 \item$ \displaystyle\begin{aligned}[t]
-\mu_{H|O,T} &= \Sigma_{THO}\Sigma_{TO}^{-1}(Z_O-\underbrace{\mu_{Z_O|T}}_{0}) \\
- &= -\Omega_{TH}^{-1}\Omega_{TOH} \: Z_O
+\mu_{H|O,T} &= \Sigma_{THO}\Sigma_{TO}^{-1}(Z_{Oi}-\underbrace{\mu_{Z_O|T}}_{0}) \\
+ &= -\Omega_{TH}^{-1}\Omega_{THO} \: Z_{Oi}
 \end{aligned}$\\
 \end{itemize}
 
@@ -171,33 +171,51 @@ $$\log |\Esp_g[\Omega_{Tm}]| \geq \Esp_g [\log |\Omega_{Tm}|]$$
 %$$ \Esp[Z_jZ_k] = -\partial_{\omega_{jk}}( \log |\Omega_{TO}| )$$
 Therefore, $$\Esp_{gh}[\log p(Z_O | T)] +\Esp_h[\log p(Y|Z_O)]+ \entr[h(Z_O)] \leq \mathcal{J}_{PLN}$$\\
 
+A consequence is that to optimize in $h(Z_O)$, we can use the "VE" step of PLNmodels algorithm which computes $\mathcal{J}_{PLN}$. We will then have access to variational estimates of $Z_O$ moments of order 1 and 2.\\
 
 Remarks:
 \begin{itemize}
 \item Here it shows that assuming a tree structure for the latent layer of parameters $Z$ reveals an average precision matrix over all the precision matrices of possible trees. Recall that these matrices only differ in the position of their zero entries.
-\item All terms depending on $h_O$ are taken care of in the PLN VEM. After optimizing in $h_O$, this density is constant and written $h_O^*$. The complete loss now still needs to be optimized in the ther parameters: $g$ and $h_H$.
+\item All terms depending on $h(Z_O)$ are taken care of in the PLN VEM. After optimizing in $h_O$, this density is constant and written $h_O^*$. The complete loss now still needs to be optimized in the ther parameters: $g$ and $h(Z_H)$.
 \end{itemize}
 
 
 
 
-\subsection{Optimizing in $g$ and $h_H$}
+\subsection{Optimizing in $g$ and $h(Z_H)$}
 \begin{align*}
-\mathcal{J}(Y; g,h)&= \Esp_{gh}[\log p(T) + \log p(Z|T) + \log p(Y|Z_O)] + \entr[g ] +\entr[h(Z_H,Z_O)]\\
-&= \Esp_g[\log p(T)] + \Esp_{gh}[\log p(Z|T)] + \Esp_{h_O^*}[\log p(Y|Z_O)] + \entr[g ] +\entr[h(Z_H,Z_O)]
+\mathcal{J}_{h_O^*}(Y; g,h)&= \mathcal{J}_{PLN}+\frac{n}{2}\left(\Esp_g[\log|\Omega_{Tm}|] - \log|\overline{\Omega_{Tm}}|\right)\\
+&\;+ \Esp_{gh}[\log p(Z_H | Z_O,T) ]+\Esp_g[\log p(T)] +\entr[g(T)]-\Esp_h[\log h(Z_H\mid Z_O)]
 \end{align*}
 
 
-
-
-\subsubsection{$ \entr[h(Z_H|Z_O)]$}
-
+\subsubsection{Compute  $\Esp_{gh}[\log p(Z_H | Z_O,T) ]$}
+Recalling $\mu_{H|Oi,T} = -\Omega_H^{-1}\Omega_{THO}Z_{Oi} ^T$ and that $\Omega_H$ is constrained to be diagonal and idenpendent of $T$ for identifiability, we have:
 \begin{align*}
-\entr[h(Z_H|Z_O)] &=   - \Esp_{Z_O}\left[\Esp_{Z_H|Z_O}[\log p(Z_H| Z_O)]\right]\\
-&= \Esp_{Z_O}\left[\entr[Z_H|Z_O]\right]\\
-&= 
+\log p(Z_H\mid Z_O,T) &= \frac{n}{2} \log |\Omega_H| -\frac{1}{2} \sum_i (Z_{Hi}-\mu_{H|Oi,T})\Omega_H(Z_{Hi}-\mu_{H|Oi,T})^T\\
+&= \frac{n}{2} \log |\Omega_H| -\frac{1}{2} \sum_i \left(Z_{Hi}\Omega_HZ_{Hi}^T - \mu_{H|Oi,T}\Omega_H\mu_{H|Oi,T}^T \right)\\
+&= \frac{n}{2} \log |\Omega_H| -\frac{1}{2}Tr(Z_H\Omega_HZ_H^T) - \frac{1}{2} Tr(Z_O\Omega_{THO}^T(\Omega_H^{-1})^T\Omega_{HO}Z_O^T)\\
+&=\frac{n}{2} \log |\Omega_H| -\frac{1}{2}Tr(\Omega_HZ_H^TZ_H) - \frac{1}{2} Tr(\Omega_{THO}^T(\Omega_H^{-1})^T\Omega_{HO}Z_O^TZ_O)
 \end{align*}
 
+Now taking the expectation:
+
+\begin{align*}
+\Esp_{gh}[\log p(Z_H | Z_O,T) ] &= \frac{n}{2} \log |\Omega_H|-\frac{1}{2}Tr(\Omega_H \Esp_h[Z_H^TZ_H]) - \frac{1}{2} Tr(\Esp_g[\Omega_{THO}^T(\Omega_H^{-1})^T\Omega_{THO}]\Esp_h[Z_O^TZ_O])\\
+&=\frac{n}{2} \log |\Omega_H| -\frac{1}{2}\left( <\Omega_H,\Esp_h[Z_H^TZ_H]> + <\Omega_H^{-1}\Esp_g[\Omega_{THO}^T\Omega_{THO}],\Esp_{h_O^*}[Z_O^TZ_O]> \right)
+\end{align*}
+
+\subsubsection{Compute $\Esp_g[\log p(T)] + \entr[g(T)]$}
+
+\begin{align*}
+\Esp_g[\log p(T)] + \entr[g(T)]&=\Esp_g[\log p(T)] -\Esp_g[\log g(T)]\\
+&=\Esp_g\left[ \sum_{jk} \mathds{1}\{jk \in T\} \log \beta_{jk} - \log B\right] - \Esp_g\left[\sum_{jk} \mathds{1}\{jk \in T\} \log \widetilde{\beta}_{jk} - \log \widetilde{B}\right]\\
+&= \sum_{jk}\mathds{P}(jk\in T) \left(\log \frac{\beta_{jk}}{\widetilde{\beta}_{jk}}\right) - \log \frac{B}{\widetilde{B}} 
+\end{align*}
+
+
+\subsubsection{Compute $\Esp_h[\log h(Z_H\mid Z_O)]$}
+\newpage
 \bibliographystyle{apsrev} %tested plainnat
 \bibliography{bibi}
 
