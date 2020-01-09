@@ -207,7 +207,7 @@ Finally we obtain:
 & \;\; + \Esp_{gh}[\log p(Z_H | Z_O,T) ]+\Esp_g[\log p(T)] +\entr[g(T)]-\Esp_h[\log h(Z_H\mid Z_O)]&\text{: New}\label{lowerbound}
 \end{align}\\
 
-\subsection{Optimizing in $h(Z_O)$: PLNmodels}
+\subsection{Retrieving PLNmodels lower bound}
 \citet{CMR18} compute the lower bound of a VEM for the PLN, which we write $\mathcal{J}_{PLN}$. This lower bound appears in our computation as well. Let's first detail the following quantity:
 \begin{align*}
 \Esp_{gh}[\log p(Z_O|T)] &=  \Esp_{gh} \left[\frac{n}{2} \log |\Omega_{Tm}| - \frac{1}{2} \sum_i Z_{Oi}\Omega_{Tm} Z_{Oi}^\intercal  \right]\\
@@ -242,7 +242,7 @@ Remarks:
 
 
 
-\subsection{Optimizing in $g$ and $h(Z_H)$}
+\subsection{E step}
 \begin{align*}
 \mathcal{J}_{h_O^*}(Y; g,h)&= \mathcal{J}_{PLN}+\frac{n}{2}\left(\Esp_g[\log|\Omega_{Tm}|] - \log|\overline{\Omega_{Tm}}|\right)\\
 &\;+ \Esp_{gh}[\log p(Z_H | Z_O,T) ]+\Esp_g[\log p(T)] +\entr[g(T)]-\Esp_h[\log h(Z_H\mid Z_O)]
@@ -264,8 +264,22 @@ Now taking the expectation, and by independence of $g$ and $h$:
 \Esp_{gh}[\log p(Z_H | Z_O,T) ] &=\frac{n}{2} \log |\Omega_H| -\frac{1}{2} <\Omega_H,\underbrace{\Esp_h[Z_H^\intercal Z_H]}_{S_H}> +\frac{1}{2} <\Esp_g[\Omega_{THO}^\intercal \Omega_H^{-1}\Omega_{THO}],\underbrace{\Esp_{h}[Z_O^\intercal Z_O]}_{S_O}> \\
 &\;\;\; -<\Esp_g[\Omega_{TOH}],\underbrace{\Esp_h[Z_H^\intercal Z_O]}_{S_{HO} = \text{ \bf{0}}}>\\
 &=\frac{n}{2} \log |\Omega_H| -\frac{1}{2} <\Omega_H, S_H> + \frac{1}{2}<\Esp_g[\Omega_{THO}^\intercal \Omega_H^{-1}\Omega_{THO}], S_O>
+\end{align*}\\
+
+The $p \times p$ expectation matrix:
+\begin{align*}
+\Esp_g[\Omega_{THO}^\intercal \Omega_H^{-1}\Omega_{THO}] &= \sum_{h=1}^r \frac{1}{\omega_{hh}} \Esp_g[\Omega_{TOh} \Omega_{ThO}]\\
+&= \sum_{h=1}^r \frac{1}{\omega_{hh}} \left[ \omega_{hk}\omega_{hl}\Esp_g[\mathds{1}\{(hk,hl)\in T\}]\right]_{1\leq k,l\leq p}\\
+&=\sum_{h=1}^r \frac{1}{\omega_{hh}} \left[ \omega_{hk}\omega_{hl}\mathds{P}_g((hk,hl)\in T)\right]_{1\leq k,l\leq p}
 \end{align*}
 
+Compute the probability for two observed covariates to be linked to a hidden one:
+
+\begin{align*}
+\mathds{P}_g((hk,hl)\in T)&= 1 - \mathds{P}_g(hk \notin T)- \mathds{P}_g(hl \notin T) - \mathds{P}_g( \{hk \notin T\}, \{hl \notin T\})\\
+&= \mathds{P}(hk \in T) + \mathds{P}(hl \in T) -1 -\mathds{P}_g( \{hk \notin T\}, \{hl \notin T\})\\
+&=1-\sum_{\substack{T \in \mathcal{T}\\ hk \notin T}} g(T)-\sum_{\substack{T \in \mathcal{T}\\ hl \notin T}} g(T)-\sum_{\substack{T \in \mathcal{T}\\ hk \notin T, hl \notin T}} g(T)
+\end{align*}
 \subsubsection{Compute $\Esp_g[\log p(T)] + \entr[g(T)]$}
 
 \begin{align*}
@@ -296,8 +310,8 @@ $Z_H \sim \mathcal{N}(m_H,S_H)$, hence
 
 $S_{Hi}$ are diagonal. Hence:
 \begin{align*}
-\frac{1}{2} \sum_i\log |S_{Hi}| &= \frac{1}{2} \sum_i \log \left(\prod_{k=1}^r S_{Hi}[k,k]^2 \right)\\
-&= \sum_{i=1}^n \sum_{k=1}^r \log(S_{Hi}[k,k])
+\frac{1}{2} \sum_i\log |S_{Hi}| &= \frac{1}{2} \sum_i \log \left(\prod_{h=1}^r S_{Hi}[h,h]^2 \right)\\
+&= \sum_{i=1}^n \sum_{h=1}^r \log(S_{Hi}[h,h])
 \end{align*}
 \newpage
 \bibliographystyle{apsrev} %tested plainnat
