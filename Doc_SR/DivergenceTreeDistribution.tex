@@ -1,0 +1,133 @@
+\documentclass[a4paper, 10pt]{article}
+
+%% Language and font encodings
+\usepackage[english]{babel}
+\usepackage[utf8x]{inputenc}
+\usepackage[T1]{fontenc}
+
+%% Sets page size and margins
+\usepackage[a4paper,top=2cm,bottom=2cm,left=2cm,right=2cm,marginparwidth=1.75cm]{geometry}
+
+%% Useful packages
+\usepackage{amsfonts,amssymb,amsmath,amscd,amsthm,latexsym}
+\usepackage{tikz}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage[colorinlistoftodos]{todonotes}
+\usepackage[colorlinks=true, allcolors=blue]{hyperref}
+
+\newcommand{\Tcal}{\mathcal{T}}
+
+\title{Divergence between distributions over spanning trees}
+\author{SR}
+\date{\today}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\maketitle
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Problem} 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Consider two distributions $F$ and $G$ over the set of spanning $\Tcal$ of a complete graph with $p$ nodes. Both $F$ and $G$ are supposed to be factorizable, that is:
+$$
+\forall T \in \Tcal, \qquad
+f(T) = \prod_{j, k \in T} a_{jk} / A, \qquad
+g(T) = \prod_{j, k \in T} b_{jk} / B.
+$$
+
+\paragraph{Some facts.}
+\begin{enumerate}
+ \item The number of spanning trees (i.e. the cardinal of $\Tcal$) is $p^{p-2}$.
+ \item The number of spanning trees containing a given edge is $2p^{p-3}$.
+ \item The normalizing constants $A$ and $B$ can be computed using the Matrix-Tree theorem \cite{Cha82}, which enables to compute efficiently any quantity of the form
+ \begin{equation} \label{eq:MTT}
+ \sum_{T \in \Tcal} \prod_{jk \in T} x_{jk}.
+ \end{equation}
+ \item We denote by $F_{jk}$ (resp. $G_{jk}$) the probability for edge $(j, k)$ to be part of $T$ under $F$ (resp. $G$), that is
+ $$
+ F_{jk} = \sum_{T \ni jk} f(T).
+ $$
+ All $F_{jk}$ and $G_{jk}$ can be computed using an avatar of the Matrix-Tree theorem \cite{Kir07}.
+\end{enumerate}
+
+\paragraph{Problem:} 
+Compute some distance or divergence between $F$ and $G$.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Some computable divergences} 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{$\alpha$-divergences} 
+
+\paragraph{Definition.} \cite{Min05}
+$$
+D_\alpha(F || G) = \frac1{\alpha (1-\alpha)} \left(1 - \sum_{T \in \Tcal} f(T)^\alpha g(T)^{1 - \alpha} \right)
+$$
+
+\paragraph{Property.}  All $\alpha$-divergences are comptable via the Matrix-Tree theorem. Indeed
+$$
+\sum_{T \in \Tcal} f(T)^\alpha g(T)^{1 - \alpha} 
+ = \frac{B}{A} \sum_{T \in \Tcal} \prod_{jk \in T} (a_{jk})^{\alpha} (b_{jk})^{1 - \alpha},
+$$
+which has the form \eqref{eq:MTT}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Bregman divergences} 
+
+\paragraph{Definition.} 
+\url{https://en.wikipedia.org/wiki/Bregman_divergence}
+
+\paragraph{Examples.} 
+
+\paragraph{Property.}  The Küllback-Leibler divergence is comptable via the Matrix-Tree theorem. Indeed
+\begin{align*}
+ KL(F || G) 
+ & = \sum_{T \in \Tcal} f(T) \log \frac{f(T)}{g(T)} 
+ \qquad = \sum_{T \in \Tcal}  f(T) \sum_{jk \in T} \log \frac{a_{jk}}{b_{jk}} + \log \frac{B}{A} \\
+ & = \sum_{jk} \log \frac{a_{jk}}{b_{jk}} \left(\sum_{t \ni jk} f(T) \right) 
+ + \log \frac{B}{A} 
+ \qquad = \sum_{jk} F_{jk} \log \frac{a_{jk}}{b_{jk}} + \log \frac{B}{A}.
+\end{align*}
+
+
+\paragraph{Property.}  The Itakura-Saito divergence is comptable via the Matrix-Tree theorem. Indeed
+$$
+IS(F || G) 
+= \sum_{T \in \Tcal} \left( \frac{f(T)}{g(T)} - \log \frac{f(T)}{g(T)} - 1 \right)
+$$
+where
+$$
+\sum_{T \in \Tcal} \frac{f(T)}{g(T)}
+= \frac{B}{A} \sum_{T \in \Tcal}  \prod_{jk \in T} \frac{a_{jk}}{b_{jk}}
+$$
+and
+\begin{align*}
+ \sum_{T \in \Tcal} \log \frac{f(T)}{g(T)} 
+ & = \sum_{T \in \Tcal} \log \frac{B}{A} + \sum_{T \in \Tcal} \sum_{jk \in T} \log \frac{a_{jk}}{b_{jk}} 
+ \qquad = p^{p-2} \log \frac{B}{A} + \sum_{jk} \#\{T \in T: jk \in T\} \log \frac{a_{jk}}{b_{jk}}  \\
+ & = p^{p-2} \log \frac{B}{A} + 2p^{p-3}\sum_{jk} \log \frac{a_{jk}}{b_{jk}} 
+\end{align*}
+so
+$$
+IS(F || G) 
+= \frac{B}{A} \sum_{T \in \Tcal} \prod_{jk \in T} \frac{a_{jk}}{b_{jk}} 
+- p^{p-2} \log \frac{B}{A} - 2p^{p-3}\sum_{jk} \log \frac{a_{jk}}{b_{jk}}
+- p^{p-2}
+$$
+where the first term has the form \eqref{eq:MTT}.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\bibliography{/home/robin/Biblio/BibGene}
+\bibliographystyle{plain}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\end{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
