@@ -70,6 +70,8 @@ $$
 D_\alpha(F || G) = \frac1{\alpha (1-\alpha)} \left(1 - \sum_{T \in \Tcal} f(T)^\alpha g(T)^{1 - \alpha} \right)
 $$
 
+\paragraph{Examples.} The Hellinger ($\alpha = 1/2$), Chi-square ($\alpha = 2$) and the Küllback-Leibler ($\alpha \rightarrow 0$ or $1$) divergences are $\alpha$-divergences.
+
 \paragraph{Property.}  All $\alpha$-divergences are comptable via the Matrix-Tree theorem. Indeed
 $$
 \sum_{T \in \Tcal} f(T)^\alpha g(T)^{1 - \alpha} 
@@ -80,10 +82,12 @@ which has the form \eqref{eq:MTT}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Bregman divergences} 
 
-\paragraph{Definition.} 
-\url{https://en.wikipedia.org/wiki/Bregman_divergence}
+\paragraph{Definition.} For any convex function $\phi$, a Bregman divergence\footnote{\url{https://en.wikipedia.org/wiki/Bregman_divergence}} can be defined as 
+$$
+D_\phi(F \| G) = \phi(F) - \phi(G) - <\nabla \phi(F), F - G>.
+$$
 
-\paragraph{Examples.} 
+\paragraph{Examples.} The Küllback-Leibler and the Itakura-Saito divergences are Bregman divergences.
 
 \paragraph{Property.}  The Küllback-Leibler divergence is comptable via the Matrix-Tree theorem. Indeed
 \begin{align*}
