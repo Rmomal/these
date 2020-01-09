@@ -8,6 +8,8 @@
 \usepackage[round, sort]{natbib}
 \usepackage{tikz}
 \usetikzlibrary{shapes,backgrounds,arrows,automata,snakes,shadows,positioning, mindmap}
+\newcommand{\argmax}{\arg\!\max}
+\newcommand{\argmin}{\arg\!\min}
 \newcommand*\widefbox[1]{\fbox{\hspace{3em}#1\hspace{3em}}}
 
 \newcommand*\lesswidefbox[1]{\fbox{\hspace{2em}#1\hspace{2em}}}
@@ -242,9 +244,9 @@ Remarks:
 
 
 
-\subsection{E step}
+\subsection{Developped expressions}
 \begin{align*}
-\mathcal{J}_{h_O^*}(Y; g,h)&= \mathcal{J}_{PLN}+\frac{n}{2}\left(\Esp_g[\log|\Omega_{Tm}|] - \log|\overline{\Omega_{Tm}}|\right)\\
+\mathcal{J}_{h}(Y; g,h)&= \mathcal{J}_{PLN}+\frac{n}{2}\left(\Esp_g[\log|\Omega_{Tm}|] - \log|\overline{\Omega_{Tm}}|\right)\\
 &\;+ \Esp_{gh}[\log p(Z_H | Z_O,T) ]+\Esp_g[\log p(T)] +\entr[g(T)]-\Esp_h[\log h(Z_H\mid Z_O)]
 \end{align*}
 
@@ -271,10 +273,9 @@ The $p \times p$ expectation matrix:
 \Esp_g[\Omega_{THO}^\intercal \Omega_H^{-1}\Omega_{THO}] &= \sum_{h=1}^r \frac{1}{\omega_{hh}} \Esp_g[\Omega_{TOh} \Omega_{ThO}]\\
 &= \sum_{h=1}^r \frac{1}{\omega_{hh}} \left[ \omega_{hk}\omega_{hl}\Esp_g[\mathds{1}\{(hk,hl)\in T\}]\right]_{1\leq k,l\leq p}\\
 &=\sum_{h=1}^r \frac{1}{\omega_{hh}} \left[ \omega_{hk}\omega_{hl}\mathds{P}_g((hk,hl)\in T)\right]_{1\leq k,l\leq p}
-\end{align*}
+\end{align*}\\
 
 Compute the probability for two observed covariates to be linked to a hidden one:
-
 \begin{align*}
 \mathds{P}_g((hk,hl)\in T)&= 1 - \mathds{P}_g(hk \notin T)- \mathds{P}_g(hl \notin T) - \mathds{P}_g( \{hk \notin T\}, \{hl \notin T\})\\
 &= \mathds{P}(hk \in T) + \mathds{P}(hl \in T) -1 -\mathds{P}_g( \{hk \notin T\}, \{hl \notin T\})\\
@@ -313,6 +314,25 @@ $S_{Hi}$ are diagonal. Hence:
 \frac{1}{2} \sum_i\log |S_{Hi}| &= \frac{1}{2} \sum_i \log \left(\prod_{h=1}^r S_{Hi}[h,h]^2 \right)\\
 &= \sum_{i=1}^n \sum_{h=1}^r \log(S_{Hi}[h,h])
 \end{align*}
+
+\subsection{E step}
+Minimization of $KL$ with respect to $gh$
+$$  \argmin_{gh}  KL\left[g(T) h(Z) \middle\vert\middle\vert\ p(T,Z | Y)\right]$$
+
+\subsection{M step}
+Maximization of the lower bound with respect to $\theta=(\beta,\Sigma,\theta)$
+$$ \argmax_\theta \Esp_{gh} [\log p_\theta(T)p_\theta(Z\mid T)p_\theta(Y\mid Z)] $$
+
+
+\section*{Remarks}
+\begin{itemize}
+\item How to optimize in $m_H$ ? appears nowhere
+\item $h_O$ is present as $S_O$ in the new terms, not all $h_O$ terms are taken care of by PLNmodels ?
+\item in Genevieve article, formula (2.6) of $f_{ih}$ looks like our double-edge-proba problem
+\item Edge  probabilities that appear are marginal, unlike before where they were conditional to data $Y$.
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \bibliographystyle{apsrev} %tested plainnat
 \bibliography{bibi}
