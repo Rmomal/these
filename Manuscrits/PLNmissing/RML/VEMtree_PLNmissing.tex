@@ -5,6 +5,7 @@
 \usepackage{amssymb}
 \usepackage{graphicx}
 \usepackage{empheq}
+\usepackage{bm}
 \usepackage[round, sort]{natbib}
 \usepackage{tikz}
 \usetikzlibrary{shapes,backgrounds,arrows,automata,snakes,shadows,positioning, mindmap}
@@ -175,7 +176,7 @@ Starting with the two hidden layers of our model, the lower bound writes:
 &= \log p(Y) - \Esp_{gh}[\log( g(T) h(Z)) - \log p(Z,T\mid Y) ]\\
 &= \log p(Y) - \Esp_{gh}[\log g(T) + \log h(Z) ] + \Esp_{gh}[\log p(Y,Z,T)] - \Esp_{gh}[\log p(Y)]\\
 &= \Esp_{gh} [\log p(Y,Z,T)] + \entr[g(T)] + \entr[h(Z)]\\
-&= \Esp_{gh} [\log p(T)p(Z\mid T)p(Y\mid Z)] + \entr[g(T)] + \entr[h(Z)]
+&= \Esp_{gh} [\log p_\beta(T)p_{\Omega_T}(Z\mid T)p_\theta(Y\mid Z)] + \entr[g(T)] + \entr[h(Z)]
 \end{align*}
 
 Adding modelization of unobserved covariates:
@@ -209,7 +210,7 @@ Finally we obtain:
 & \;\; + \Esp_{gh}[\log p(Z_H | Z_O,T) ]+\Esp_g[\log p(T)] +\entr[g(T)]-\Esp_h[\log h(Z_H\mid Z_O)]&\text{: New}\label{lowerbound}
 \end{align}\\
 
-\subsection{Retrieving PLNmodels lower bound}
+\subsection{Optimizing in $\theta$ and $h(Z_O)$:}
 \citet{CMR18} compute the lower bound of a VEM for the PLN, which we write $\mathcal{J}_{PLN}$. This lower bound appears in our computation as well. Let's first detail the following quantity:
 \begin{align*}
 \Esp_{gh}[\log p(Z_O|T)] &=  \Esp_{gh} \left[\frac{n}{2} \log |\Omega_{Tm}| - \frac{1}{2} \sum_i Z_{Oi}\Omega_{Tm} Z_{Oi}^\intercal  \right]\\
@@ -232,26 +233,40 @@ The second brace is a negative quantity, because the log determinent is a concav
 $$\log |\Esp_g[\Omega_{Tm}]| \geq \Esp_g [\log |\Omega_{Tm}|]$$
 %$$ \Esp[Z_jZ_k] = -\partial_{\omega_{jk}}( \log |\Omega_{TO}| )$$
 Therefore, $$\Esp_{gh}[\log p(Z_O | T)] +\Esp_h[\log p(Y|Z_O)]+ \entr[h(Z_O)] \leq \mathcal{J}_{PLN}$$\\
-
-A consequence is that to optimize in $h(Z_O)$, we can use the "VE" step of PLNmodels algorithm which computes $\mathcal{J}_{PLN}$. We will then have access to variational estimates of $Z_O$ moments of order 1 and 2.\\
+\begin{align*}
+\mathcal{J}_{h}(Y; g,h)&= \mathcal{J}_{PLN}+\frac{n}{2}\left(\Esp_g[\log|\Omega_{Tm}|] - \log|\overline{\Omega_{Tm}}|\right)\\
+&\;+ \Esp_{gh}[\log p(Z_H | Z_O,T) ]+\Esp_g[\log p(T)] +\entr[g(T)]-\Esp_h[\log h(Z_H\mid Z_O)]
+\end{align*}
+The "VE" step of PLNmodels algorithm maximizes $\mathcal{J}_{PLN}$ and gives estimates of $Z_O$ moments of order 1 and 2. So we have easy access to $\widetilde{m}_O, \widetilde{S}_O, \widetilde{\overline{\Omega_{Tm}}}$.  \\
 
 Remarks:
 \begin{itemize}
 \item Here it shows that assuming a tree structure for the latent layer of parameters $Z$ reveals an average precision matrix over all the precision matrices of possible trees. Recall that these matrices only differ in the position of their zero entries.
-\item All terms depending on $h(Z_O)$ are taken care of in the PLN VEM. After optimizing in $h_O$, this density is constant and written $h_O^*$. The complete loss now still needs to be optimized in the ther parameters: $g$ and $h(Z_H)$.
+\item Not all terms depending on $h(Z_O)$ are in $\mathcal{J}_{PLN}$, so the proposed solution is sub-optimal. After maximizing $\mathcal{J}_{PLN}$ in $h_O$, this density is considered constant and written $h_O^*$.  
 \end{itemize}
 
 
 
 
-\subsection{Developped expressions}
+\subsection{VE step: optimizing in $g$ and $h(Z_H)$}
+The VE step minimizes the KL divergence:
+
+$$  \argmin_{g,h(Z_H)} KL\left(g(T)h(Z) || p(Z,T|Y)\right)$$
+
+
 \begin{align*}
-\mathcal{J}_{h}(Y; g,h)&= \mathcal{J}_{PLN}+\frac{n}{2}\left(\Esp_g[\log|\Omega_{Tm}|] - \log|\overline{\Omega_{Tm}}|\right)\\
-&\;+ \Esp_{gh}[\log p(Z_H | Z_O,T) ]+\Esp_g[\log p(T)] +\entr[g(T)]-\Esp_h[\log h(Z_H\mid Z_O)]
+KL\left(g(T)h(Z) || p(Z,T|Y)\right) &= \Esp_{gh}\left[\log g(T)h(Z) - (\log p(Y,Z,T) - \log p(Y) ) \right]\\
+&=\Esp_{gh}\left[\log g(T) + \log h(Z_O)+ \log h(Z_H|Z_O) - \log p(T)p(Z_H|Z_O,T)p(Z_O|T)p(Y|Z_O)\right. \\
+& \;\;\;+ \log p(Y) )\left. \right]
 \end{align*}
 
+Under distribution $h$, $Z_H$ and $Z_O$ are independent. The distribution $h_O$ is already computed, therefore we obtain:
+\begin{align*}
+\argmin_{g,h(Z_H)} KL\left(g(T)h(Z) || p(Z,T|Y)\right) &=\argmin_{g,h(Z_H)} \{ \Esp_g[\log g(T)] + \Esp_h[\log h(Z_H)] - \Esp_g[\log p(T)]  \\
+& \text{\hspace{2cm}}   - \Esp_{gh_O^*}[\log p(Z_O|T)] - \Esp_{gh}[ p(Z_H|Z_O,T)]  \}\\
+\end{align*}
 
-\subsubsection{Compute  $\Esp_{gh}[\log p(Z_H | Z_O,T) ]$}
+\subsubsection{Minimize  $\Esp_{gh}[\log p(Z_H | Z_O,T) ]$}
 Recalling $\mu_{H|Oi,T} = -\Omega_H^{-1}\Omega_{THO}Z_{Oi} ^\intercal $ and that $\Omega_H$ is constrained to be diagonal and indenpendent of $T$ for identifiability, we have:
 \begin{align*}
 \log p(Z_H\mid Z_O,T) &= \frac{n}{2} \log |\Omega_H| -\frac{1}{2} \sum_i (Z_{Hi}-\mu_{H|Oi,T}^\intercal )\Omega_H(Z_{Hi}-\mu_{H|Oi,T}^\intercal )^\intercal \\
@@ -263,10 +278,20 @@ Recalling $\mu_{H|Oi,T} = -\Omega_H^{-1}\Omega_{THO}Z_{Oi} ^\intercal $ and that
 
 Now taking the expectation, and by independence of $g$ and $h$:
 \begin{align*}
-\Esp_{gh}[\log p(Z_H | Z_O,T) ] &=\frac{n}{2} \log |\Omega_H| -\frac{1}{2} <\Omega_H,\underbrace{\Esp_h[Z_H^\intercal Z_H]}_{S_H}> +\frac{1}{2} <\Esp_g[\Omega_{THO}^\intercal \Omega_H^{-1}\Omega_{THO}],\underbrace{\Esp_{h}[Z_O^\intercal Z_O]}_{S_O}> \\
-&\;\;\; -<\Esp_g[\Omega_{TOH}],\underbrace{\Esp_h[Z_H^\intercal Z_O]}_{S_{HO} = \text{ \bf{0}}}>\\
-&=\frac{n}{2} \log |\Omega_H| -\frac{1}{2} <\Omega_H, S_H> + \frac{1}{2}<\Esp_g[\Omega_{THO}^\intercal \Omega_H^{-1}\Omega_{THO}], S_O>
+\Esp_{gh}[\log p(Z_H | Z_O,T) ] &=\frac{n}{2} \log |\Omega_H| -\frac{1}{2} <\Omega_H,\Esp_h[Z_H^\intercal Z_H]> +\frac{1}{2} <\Esp_g[\Omega_{THO}^\intercal \Omega_H^{-1}\Omega_{THO}],\Esp_{h_O^*}[Z_O^\intercal Z_O]> \\
+&\;\;\; -<\Esp_g[\Omega_{TOH}],\Esp_h[Z_H^\intercal Z_O]>\\
+&=\frac{n}{2} \log |\Omega_H|-\frac{1}{2} <\Omega_H,M_H^\intercal M_H + S_H> +\frac{1}{2} <\Esp_g[\Omega_{THO}^\intercal \Omega_H^{-1}\Omega_{THO}],\widetilde{M}_O^\intercal \widetilde{M}_O + \widetilde{S}_O>\\
+&\;\;\; -<\Esp_g[\Omega_{TOH}],M_H^\intercal \widetilde{M}_O +  \underbrace{S_{HO}}_{=0}>
 \end{align*}\\
+
+Let's denote $P_g = [\mathds{P}_g(kl \in T)]_{kl}$ the edge probability matrix under the $g$ distribution. We obtain the following derivatives:
+\begin{align*}
+\frac{\partial}{\partial M_H}&= - \Omega_H M_H - \widetilde{M}_O\Esp_g[\Omega_{TOH}]\\
+&=- \Omega_H M_H - \widetilde{M}_O P_{gOH} \odot \Omega_{OH}\\
+\frac{\partial}{\partial S_H}&= -\frac{1}{2} \Omega_H\\
+\frac{\partial}{\partial \widetilde{\beta}} &= \text{ moche ?}
+\end{align*}
+
 
 The $p \times p$ expectation matrix:
 \begin{align*}
@@ -278,20 +303,32 @@ The $p \times p$ expectation matrix:
 Compute the probability for two observed covariates to be linked to a hidden one:
 \begin{align*}
 \mathds{P}_g((hk,hl)\in T)&= 1 - \mathds{P}_g(hk \notin T)- \mathds{P}_g(hl \notin T) - \mathds{P}_g( \{hk \notin T\}, \{hl \notin T\})\\
-&= \mathds{P}(hk \in T) + \mathds{P}(hl \in T) -1 -\mathds{P}_g( \{hk \notin T\}, \{hl \notin T\})\\
-&=1-\sum_{\substack{T \in \mathcal{T}\\ hk \notin T}} g(T)-\sum_{\substack{T \in \mathcal{T}\\ hl \notin T}} g(T)-\sum_{\substack{T \in \mathcal{T}\\ hk \notin T, hl \notin T}} g(T)
+&=1-\sum_{\substack{T \in \mathcal{T}\\ hk \notin T}} g(T)-\sum_{\substack{T \in \mathcal{T}\\ hl \notin T}} g(T)-\sum_{\substack{T \in \mathcal{T}\\ hk \notin T, hl \notin T}} g(T)\\
+&= 1- \frac{1}{\widetilde{B}} \left( \sum_{\substack{T \in \mathcal{T}\\ hl \notin T}} \prod_{uv} \widetilde{\beta}_{uv} +\sum_{\substack{T \in \mathcal{T}\\ hl \notin T}}\prod_{uv} \widetilde{\beta}_{uv} +\sum_{\substack{T \in \mathcal{T}\\ hk \notin T, hl \notin T}}\prod_{uv} \widetilde{\beta}_{uv} \right)
+\end{align*}
+
+Using the Matrix Tree theorem and denoting $\bm{W} = [\widetilde{\beta}_{uv}]_{uv}$:
+\begin{align*}
+\mathds{P}_g((hk,hl)\in T)&= 1-\frac{1}{\widetilde{B}} \left(  |Q_{uv}^*(\bm{W}_{\setminus hk})|+|Q_{uv}^*(\bm{W}_{\setminus hl})|+|Q_{uv}^*(\bm{W}_{\setminus (hk,hl)})| \right) 
 \end{align*}
 \subsubsection{Compute $\Esp_g[\log p(T)] + \entr[g(T)]$}
 
 \begin{align*}
 \Esp_g[\log p(T)] + \entr[g(T)]&=\Esp_g[\log p(T)] -\Esp_g[\log g(T)]\\
 &=\Esp_g\left[ \sum_{jk} \mathds{1}\{jk \in T\} \log \beta_{jk} - \log B\right] - \Esp_g\left[\sum_{jk} \mathds{1}\{jk \in T\} \log \widetilde{\beta}_{jk} - \log \widetilde{B}\right]\\
-&= \sum_{jk}\mathds{P}(jk\in T) \left(\log \frac{\beta_{jk}}{\widetilde{\beta}_{jk}}\right) - \log \frac{B}{\widetilde{B}} 
+&= \sum_{jk}P_{gjk} \left(\log \frac{\beta_{jk}}{\widetilde{\beta}_{jk}}\right) - \log \frac{B}{\widetilde{B}} 
 .\end{align*}
 
 This is also the (opposite of the) Kullback–Leibler divergence of a tree drawn under $p$ from a tree draw under $g$. This will be used in network comparison.
 
+\begin{align*}
+\partial_{\widetilde{\beta}_{jk}} \left(\Esp_g[\log p(T)] + \entr[g(T)]\right) &= \frac{-P_{gjk}}{\widetilde{\beta}_{jk}} + \frac{1}{\widetilde{B}} \times \partial_{\widetilde{\beta}_jk} (\widetilde{B})
+\end{align*}
 
+Applying Lemma from Meila, the derivative of $\widetilde{B}$ with respect to $\widetilde{\beta}_{jk}$ is :
+$$\partial_{\widetilde{\beta}_{jk}} (\widetilde{B}) = [\bm{M}(\bm{W})]_{jk} \times \widetilde{B}  $$
+Hence
+$$ \widetilde{\beta}_{jk} = P_{gjk}/[\bm{M}(\bm{W})]_{jk}$$
 \subsubsection{Compute $\Esp_h[\log h(Z_H\mid Z_O)]$}
 Under $h$, $Z_H$ and $Z_O$ are independent according to our variational approximation. Therefore, $h(Z_H\mid Z_O) = h(Z_H)$ and this terms boils down to the entropy of $h(Z_H)$:
 
@@ -315,6 +352,10 @@ $S_{Hi}$ are diagonal. Hence:
 &= \sum_{i=1}^n \sum_{h=1}^r \log(S_{Hi}[h,h])
 \end{align*}
 
+\begin{align*}
+\partial_{S_H} (\Esp_h[\log h(Z_H\mid Z_O)]) &= \sum_i\partial_{S_{Hi}} (\Esp_h[\log h(Z_H\mid Z_O)])  \\
+&=
+\end{align*}
 \subsection{E step}
 Minimization of $KL$ with respect to $gh$
 $$  \argmin_{gh}  KL\left[g(T) h(Z) \middle\vert\middle\vert\ p(T,Z | Y)\right]$$
@@ -325,14 +366,9 @@ $$ \argmax_\theta \Esp_{gh} [\log p_\theta(T)p_\theta(Z\mid T)p_\theta(Y\mid Z)]
 
 
 \section*{Remarks}
-\begin{itemize}
-\item How to optimize in $m_H$ ? appears nowhere
-\item $h_O$ is present as $S_O$ in the new terms, not all $h_O$ terms are taken care of by PLNmodels ?
-\item in Genevieve article, formula (2.6) of $f_{ih}$ looks like our double-edge-proba problem
-\item Edge  probabilities that appear are marginal, unlike before where they were conditional to data $Y$.
-\end{itemize}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 \newpage
 \bibliographystyle{apsrev} %tested plainnat
 \bibliography{bibi}
