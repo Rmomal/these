@@ -37,14 +37,16 @@
 \newcommand{\Esp}{\mathds{E}}
 \newcommand{\entr}{\mathcal{H}}
 \begin{document}
+
 \maketitle
-
-
-We had: 
+\vspace{3cm}
+\tableofcontents
+\newpage
+Previously:
 $$ p(Y,Z,T) = p(T)p(Z|T)p(Y|Z)$$
 $$ \Esp(\log p(Y,Z,T)|Y) \approx \sum_{1 \leq j < k \leq p} P_{jk} \log\left(\beta_{jk} \hat{\psi}_{jk}\right) - \log B + cst$$
 
-We want to add a hidden layer of unobserved data, indexed by H.
+Now adding a hidden layer of unobserved data, indexed by H:
 
 $$ p(Y,Z_O,Z_H,T)$$
 \section{PLNmissing peculiarities:}
@@ -133,9 +135,7 @@ As $Z_O$ decouples $Z_H$ and $Y$, we will never need $Z_H|Y$:
 $$ p(Z|Y) = p(Z_O,Z_H | Y) = p(Z_H|Z_O) \: p(Z_O|Y) $$
 
 
-VEM on observed data: $$Z_O|Y \approx \widetilde{Z}_O \sim \mathcal{N}(m,S)$$
 
- 
 Model for the hidden part: $$Z_H|Z_O,T \sim \mathcal{N}(\mu_{H|O,T}, \Omega_{H}^{-1})$$ 
 
 \begin{itemize}
@@ -159,8 +159,9 @@ p(Y,Z,T)& = p(T) \: p(Z|T) \: p(Y|Z) \\
 This variational EM approximates the conditional distribution $p(T,Z | Y)$ by a product  between the  distributions of tree $T$ and latent variables $Z$ (mean-field approximation).
 
 $$p(T,Z | Y) \approx  g(T)h(Z)$$
+Variational approximation:
 \begin{itemize}
-\item $ h(Z_i) =  \mathcal{N}(m_i,S_i)$ , where $S_i$ is diagonal with diagonal $(s_{i1}^2, ... , s_{i(p+r)}^2)$, meaning that $Z_H$ and $Z_O$ are independant. Marginals are written $h_O$  and  $h_H$, $S=\sum_i S_i$  (from $\Esp_h[Z^\intercal Z][k,l] = \Esp_h[\sum_i Z_{ik} Z_{il}] = \sum_i \Esp_h[Z_{ik}Z_{il}] = \sum_i S_i[k,l]$). $S$ is also diagonal and its H and O blocs are denoted $S_H$ and $S_O$.
+\item $ h(Z_i) =  \mathcal{N}(m_i,S_i)$ , where $S_i$ is diagonal with diagonal $(s_{i1}^2, ... , s_{i(p+r)}^2)$, meaning that $Z_H$ and $Z_O$ are independant. Marginals are written $h_O$  and  $h_H$. $S=\sum_i S_i$  and $ M =  [m_i]_{1 \leq i \leq (p+r)}$ (so $\Esp_h[Z_{\cdot k}^\intercal Z_{\cdot k}] = \sum_i s_{ik} + m_{\cdot k}^\intercal m_{\cdot k}$). $S$ is also diagonal and its H and O blocs are denoted $S_H$ and $S_O$.
 \item $ h(Z) = \prod_i h(Z_i)$ samples are independent 
 \item $ g(T) = \left(\prod_{kl} \widetilde{\beta}_{kl} \right) / \widetilde{B}$
 \end{itemize}
@@ -264,7 +265,7 @@ Under distribution $h$, $Z_H$ and $Z_O$ are independent. Using the partly optima
 & \text{\hspace{2cm}}   - \Esp_{gh_O^*}[\log p(Z_O|T)] - \Esp_{gh}[ p(Z_H|Z_O,T)]  \}\\
 \end{align*}
 
-\subsubsection{Minimize  $\Esp_{gh}[\log p(Z_H | Z_O,T) ]$}
+\subsubsection{Compute $\Esp_{gh}[\log p(Z_H | Z_O,T) ]$}
 Recalling $\mu_{H|Oi,T} = -\Omega_H^{-1}\Omega_{THO}Z_{Oi} ^\intercal $ and that $\Omega_H$ is constrained to be diagonal and indenpendent of $T$ for identifiability, we have:
 \begin{align*}
 \log p(Z_H\mid Z_O,T) &= \frac{n}{2} \log |\Omega_H| -\frac{1}{2} \sum_i (Z_{Hi}-\mu_{H|Oi,T}^\intercal )\Omega_H(Z_{Hi}-\mu_{H|Oi,T}^\intercal )^\intercal \\
@@ -284,16 +285,18 @@ Now taking the expectation, and by independence of $g$ and $h$:
 
 
 
-The $p \times p$ expectation matrix:
+We note $\mathcal{C}_g$ the following $p \times p$ expectation matrix:
 \begin{align*}
-\Esp_g[\Omega_{THO}^\intercal \Omega_H^{-1}\Omega_{THO}] &= \sum_{h=1}^r \frac{1}{\omega_{hh}} \Esp_g[\Omega_{TOh} \Omega_{ThO}]\\
+\mathcal{C}_g=\Esp_g[\Omega_{THO}^\intercal \Omega_H^{-1}\Omega_{THO}] &= \sum_{h=1}^r \frac{1}{\omega_{hh}} \Esp_g[\Omega_{TOh} \Omega_{ThO}]\\
 &= \sum_{h=1}^r \frac{1}{\omega_{hh}} \left[ \omega_{hk}\omega_{hl}\Esp_g[\mathds{1}\{(hk,hl)\in T\}]\right]_{1\leq k,l\leq p}\\
-&=\sum_{h=1}^r \frac{1}{\omega_{hh}} \left[ \omega_{hk}\omega_{hl}\mathds{P}_g((hk,hl)\in T)\right]_{1\leq k,l\leq p}
+&=\sum_{h=1}^r \frac{1}{\omega_{hh}}[ \omega_{hk}\omega_{hl}\underbrace{\mathds{P}_g((hk,hl)\in T)}_{P_{gkl}\:^h}]_{1\leq k,l\leq p}
 \end{align*}\\
+Therefore $\mathcal{C}_g$ term $kl$ is $\mathcal{C}_g[k,l] = \sum_h \frac{\omega_{hk}\omega_{hl}}{\omega_{hh}} P_{gkl}\:^h$.
+
 
 Compute the probability for two observed covariates to be linked to a hidden one:
 \begin{align*}
-\mathds{P}_g((hk,hl)\in T)&= 1 - \mathds{P}_g(hk \notin T)- \mathds{P}_g(hl \notin T) - \mathds{P}_g( \{hk \notin T\}, \{hl \notin T\})\\
+P_{gkl}\:^h=\mathds{P}_g((hk,hl)\in T)&= 1 - \mathds{P}_g(hk \notin T)- \mathds{P}_g(hl \notin T) - \mathds{P}_g( \{hk \notin T\}, \{hl \notin T\})\\
 &=1-\sum_{\substack{T \in \mathcal{T}\\ hk \notin T}} g(T)-\sum_{\substack{T \in \mathcal{T}\\ hl \notin T}} g(T)-\sum_{\substack{T \in \mathcal{T}\\ hk \notin T, hl \notin T}} g(T)\\
 &= 1- \frac{1}{\widetilde{B}} \left( \sum_{\substack{T \in \mathcal{T}\\ hl \notin T}} \prod_{uv} \widetilde{\beta}_{uv} +\sum_{\substack{T \in \mathcal{T}\\ hl \notin T}}\prod_{uv} \widetilde{\beta}_{uv} +\sum_{\substack{T \in \mathcal{T}\\ hk \notin T, hl \notin T}}\prod_{uv} \widetilde{\beta}_{uv} \right)
 \end{align*}
@@ -303,12 +306,19 @@ Using the Matrix Tree theorem and denoting $\bm{W} = [\widetilde{\beta}_{uv}]_{u
 \mathds{P}_g((hk,hl)\in T)^{t+1}&= 1-\frac{1}{\widetilde{B}} \left(  |Q_{uv}^*(\bm{W}_{\setminus hk}^t)|+|Q_{uv}^*(\bm{W}_{\setminus hl}^t)|+|Q_{uv}^*(\bm{W}_{\setminus (hk,hl)}^t)| \right) 
 \end{align*}
 
-\paragraph{Maximization\\}
-Let's denote $P_g = [\mathds{P}_g(kl \in T)]_{kl}$ the edge probability matrix under the $g$ distribution. We easily obtain the first two derivatives derivatives:
+$\mathcal{C}_g$ is computed with the current $\bm{W}^t$, and is not optimized in $\widetilde{\beta}_{jk}\:^t$.
+\paragraph{Derivatives\\}
+The only term where $S_H$ appears is the following:
+\begin{align*}
+\frac{1}{2}<\Omega_H, S_H> &= \frac{1}{2} \sum_h \omega_{hh}\sum_i s_{ih}^2\\
+\end{align*}
+Let's denote $P_g = [\mathds{P}_g(kl \in T)]_{kl}$ the edge probability matrix under the $g$ distribution. Then:
+$$\Esp_g[\Omega_{TOH}] = P_{gOH} \odot \Omega_{OH}$$
+
+Therefore:
 \begin{empheq}[box=\widefbox]{align*}
-\frac{\partial (-\Esp_{gh}[\log p(Z_H | Z_O,T) ])}{\partial M_H}&=  \Omega_H M_H + \widetilde{M}_O\Esp_g[\Omega_{TOH}]\\
-&=\Omega_H M_H + \widetilde{M}_O P_{gOH} \odot \Omega_{OH}\\
-\frac{\partial (-\Esp_{gh}[\log p(Z_H | Z_O,T) ]) }{\partial S_H}&= \frac{1}{2} \Omega_H
+\frac{\partial (-\Esp_{gh}[\log p(Z_H | Z_O,T) ])}{\partial M_H}&=  \Omega_H M_H + \widetilde{M}_O P_{gOH} \odot \Omega_{OH}\\
+\frac{\partial (-\Esp_{gh}[\log p(Z_H | Z_O,T) ]) }{\partial s_{ih}}&= \omega_{hh}
 \end{empheq}
 
 \subsubsection{Compute $\Esp_g[\log p(T)] + \entr[g(T)]$}
@@ -321,7 +331,7 @@ Let's denote $P_g = [\mathds{P}_g(kl \in T)]_{kl}$ the edge probability matrix u
 
 This is also the (opposite of the) Kullback–Leibler divergence of a tree drawn under $p$ from a tree draw under $g$. This will be used in network comparison.
 
-\paragraph{Maximization\\}
+\paragraph{Derivatives\\}
 \begin{align*}
 \partial_{\widetilde{\beta}_{jk}} \left(\Esp_g[\log p(T)] + \entr[g(T)]\right) &= \frac{-P_{gjk}}{\widetilde{\beta}_{jk}} + \frac{1}{\widetilde{B}} \times \partial_{\widetilde{\beta}_jk} (\widetilde{B})
 \end{align*}
@@ -329,43 +339,37 @@ This is also the (opposite of the) Kullback–Leibler divergence of a tree drawn
 Applying Lemma from Meila, the derivative of $\widetilde{B}$ with respect to $\widetilde{\beta}_{jk}$ is :
 \begin{empheq}[box=\lesswidefbox]{align*}\partial_{\widetilde{\beta}_{jk}} (\widetilde{B})& = [\bm{M}(\bm{W})]_{jk} \times \widetilde{B} 
 \end{empheq}
-Hence
-$$ \widetilde{\beta}_{jk}^{t+1} = P_{gjk}^{t+1}/[\bm{M}(\bm{W^t})]_{jk}$$
+
+
 \subsubsection{Compute $\Esp_h[\log h(Z_H\mid Z_O)]$}
-Under $h$, $Z_H$ and $Z_O$ are independent according to our variational approximation. Therefore, $h(Z_H\mid Z_O) = h(Z_H)$ and this terms boils down to the entropy of $h(Z_H)$:
+Under $h$, $Z_H$ and $Z_O$ are independent according to the variational approximation. Therefore, $h(Z_H\mid Z_O) = h(Z_H)$ and this terms boils down to the entropy of $h(Z_H)$. More precisely:
 
 \begin{align*}
 \Esp_h[\log h(Z_H\mid Z_O)] &= \Esp_{h(Z_O)}\left[\Esp_{h(Z_H\mid Z_O)}[\log h(Z_H\mid Z_O)]\right]\\
 &=\Esp_{h(Z_O)}\left[\Esp_{h(Z_H)}[\log h(Z_H)]\right]\\
 &=\Esp_{h(Z_H)}[\log h(Z_H)] \\
-&=-\entr[h(Z_H)]
+&=-\entr[h(Z_H)].
 \end{align*}
 
 
-$Z_H \sim \mathcal{N}(m_H,S_H)$ and $h$ is a product law on the $Z_{Hi}$. Therefore: 
+$Z_{Hi} \sim \mathcal{N}(m_{Hi},S_{Hi})$ and $h$ is a product law on all $Z_{Hi}$. Therefore: 
 \begin{align*}
 \entr[h(Z_H)] &= \sum_i \entr[h(Z_{Hi})] \\
 &=\frac{1}{2} \sum_i\log |S_{Hi}| +n\times  \frac{r}{2}(1+\log(2\pi))\\
 \end{align*}
-\begin{itemize}
-\item Vérifier $S_H$ ou $M_H^\intercal M_H + S_H$ 
-\end{itemize}
+
+
 $S_{Hi}$ are diagonal. Hence:
 \begin{align*}
 \frac{1}{2} \sum_i\log |S_{Hi}| &= \frac{1}{2} \sum_i \log \left(\prod_{h=1}^r S_{Hi}[h,h] \right)\\
-&= \sum_{i=1}^n \sum_{h=1}^r \log(s_{hi}^2)
+&= \sum_{i=1}^n \sum_{h=1}^r \log(s_{hi})
 \end{align*}
-Finally $$ \Esp_h[\log h(Z_H\mid Z_O)] = \sum_{i=1}^n \sum_{h=1}^r \log(s_{hi}^2) + \frac{rn}{2}(1+\log(2\pi)).$$
+Finally $$ \Esp_h[\log h(Z_H\mid Z_O)] = -\sum_{i=1}^n \sum_{h=1}^r \log(s_{hi}) - \frac{rn}{2}(1+\log(2\pi)).$$
 
-\paragraph{Maximization}
-\begin{align*}
-\partial_{S_H} (\Esp_h[\log h(Z_H\mid Z_O)]) &= \sum_i\partial_{S_{Hi}} (\Esp_h[\log h(Z_{Hi})])  \\
-&=\sum_i \frac{1}{2} \partial_{S_{Hi}} \log |S_{Hi}|\\
-&=\sum_i \frac{1}{2} (S_{Hi}^{-1})
-\end{align*}
+\paragraph{Derivatives}
 
 \begin{empheq}[box=\lesswidefbox]{align*}
-\partial_{S_H} (\Esp_h[\log h(Z_H\mid Z_O)])&=\sum_i \frac{1}{2} (S_{Hi}^{-1})
+\partial_{s_{ih}} (\Esp_h[\log h(Z_H\mid Z_O)])&= \frac{-1}{s_{ih}}
 \end{empheq}
 \subsubsection{Compute $ \Esp_{gh_O^*}[\log p(Z_O|T)]$}
 \begin{align*}
@@ -374,18 +378,24 @@ Finally $$ \Esp_h[\log h(Z_H\mid Z_O)] = \sum_{i=1}^n \sum_{h=1}^r \log(s_{hi}^2
 &= \frac{n}{2} \Esp_g[\log |\Omega_{Tm}|] - \frac{1}{2} < \Esp_g[\Omega_{Tm}], \widetilde{M}_O^T\widetilde{M}_O + \widetilde{S}_O> 
 \end{align*}
 
-
-Because $\Omega_{Tm}$ is tree-structured, its determinent factorizes on the edges of $T$. More precisely we obtain:
+ $\Omega_{Tm}$ is the Schur complement of $\Sigma_{TO}$. Therefore its expectation can be decomposed as such:
+ \begin{align*}
+ \Esp_g[\Omega_{Tm}] &= \Esp_g[\Omega_{TO}] - \Esp_g[\Omega_{TOH}\Omega_{H}^{-1}\Omega_{THO}]\\
+ &=P_g \odot \Omega_O - \mathcal{C}_g.
+ \end{align*}
+Because $\Omega_{Tm}$ is tree-structured, its determinent factorizes on the edges of $T$. More precisely as in \citet{robin2019}:
 \begin{align*}
 |\Omega_{Tm}| &= \prod_{k\in O} \omega_{kk} \prod_{kl \in T} \frac{\omega_{kk}\omega_{ll}-\omega_{kl}^2}{\omega_{kk}\omega_{ll}}\\
-\log |\Omega_{Tm}|&= \sum_{k\in O} \log \omega_{kk} + \sum _{kl} \mathds{1}\{kl \in T\} \left[\log(\omega_{kk}\omega_{ll} - \omega_{kl}^2) - \log (\omega_{kk}\omega_{ll})\right]\\
-\Esp_g[\log |\Omega_{Tm}|]&= \sum _{kl} P_{gkl} \left[ \log(\omega_{kk}\omega_{ll} - \omega_{kl}^2) - \log (\omega_{kk}\omega_{ll})\right]
+\log |\Omega_{Tm}|&= \sum_{k\in O} \log \omega_{kk} + \sum _{kl} \mathds{1}\{kl \in T\} \left[\log\frac{\omega_{kk}\omega_{ll}-\omega_{kl}^2}{\omega_{kk}\omega_{ll}}\right]\\
+\Esp_g[\log |\Omega_{Tm}|]&= \sum _{kl} P_{gkl} \left[ \log\frac{\omega_{kk}\omega_{ll}-\omega_{kl}^2}{\omega_{kk}\omega_{ll}}\right]
 \end{align*}
 
 Finally we obtain:
 \begin{align*}
- \Esp_{gh_O^*}[\log p(Z_O|T)] &= \frac{n}{2} \left(\sum _{kl} P_{gkl} \left[ \log(\omega_{kk}\omega_{ll} - \omega_{kl}^2) - \log (\omega_{kk}\omega_{ll})\right]\right) - \frac{1}{2}< \Esp_g[\Omega_{Tm}], \widetilde{M}_O^T\widetilde{M}_O + \widetilde{S}_O> 
+ \Esp_{gh_O^*}[\log p(Z_O|T)] &= \frac{n}{2} \left(\sum _{kl} P_{gkl} \left[ \log\frac{\omega_{kk}\omega_{ll}-\omega_{kl}^2}{\omega_{kk}\omega_{ll}}\right]\right) - \frac{1}{2}< P_g \odot \Omega_O - \mathcal{C}_g, \widetilde{M}_O^T\widetilde{M}_O + \widetilde{S}_O> 
 \end{align*}
+
+In the end, $\Esp_{gh_O^*}[\log p(Z_O|T)]$ does not need to be optimized.
 
 \subsubsection{Final derivative and optimal estimators}
 \paragraph{$M_H$:}
@@ -395,8 +405,8 @@ Finally we obtain:
 \end{align*}
 \paragraph{$S_H$:}
 \begin{align*}
-\partial_{S_H} KL &=  \frac{1}{2} \left(\Omega_H+ \sum_i S_{Hi}^{-1}\right) = 0\\
-\iff &\sum_i S_{Hi}^{-1} = \Omega_H
+\partial_{s_{ih}} KL &=  \omega_{hh}- \frac{1}{s_{ih}} = 0\\
+\iff & s_{ih} = \frac{1}{\omega_{hh}}
 \end{align*}
 \paragraph{$\widetilde{\beta}$:}
 \begin{align*}
@@ -427,14 +437,32 @@ Finally, denoting $\psi_{kl} = \left(\frac{\omega_{kk}\omega_{ll}-\omega_{kl}^2}
 =0 \iff &\widehat{\beta}_{jk} = P_{gjk} / [M(W)]_{jk}
 \end{align*}
 \paragraph{$\Omega$:}
+
+\[
+ \partial_{\omega_{kl}}(\sum_{kl} P_{gkl} \left(\log  \beta_{kl}\psi_{kl}\right))=\begin{cases}
+               -n\times \frac{P_{gkl} \omega_{kl}}{\omega_{kk}\omega_{ll}-\omega_{kl}^2} \text{\hspace{1cm}if $k\neq l$}\\\\
+              -\frac{n}{2} \sum_l P_{gkl} \frac{\omega_{kl}^2}{\omega_k(\omega_k\omega_l-\omega_{kl}^2)}\text{\hspace{0.5cm}if $k = l$}
+            \end{cases}
+\]
+
 \begin{align*}
-\partial_{\Omega} \Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(Z\mid T) ] &= -\partial_{\Omega}( <P_g \odot \Omega, \widetilde{M}^\intercal \widetilde{M} + \widetilde{S}>)
+ <P_g \odot \Omega, \underbrace{\widetilde{M}^\intercal \widetilde{M} + \widetilde{S}}_{\widetilde{\Sigma}}> &=\sum_{jk}P_{gjk} \omega_{jk} \widetilde{\sigma}_{jk}
+\end{align*}
+Complete derivative:
+\begin{align*}
+ \partial_{\omega_{kl}}\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(Z\mid T) ] &=-n\times \frac{P_{gkl} \omega_{kl}}{\omega_{kk}\omega_{ll}-\omega_{kl}^2}  -  P_{gkl}\widetilde{\sigma}_{kl} =0\\
+ \iff & -\widetilde{\sigma}_{kl} \omega_{kl}^2 + n \omega_{kl} + \widetilde{\sigma}_{kl}\omega_{kk}\omega_{ll}=0
+\end{align*}
+\begin{align*}
+ \partial_{\omega_{kk}}\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(Z\mid T) ] &= -\frac{n}{2} \sum_l P_{gkl} \frac{\omega_{kl}^2}{\omega_{kk}(\omega_{kk}\omega_{ll}-\omega_{kl}^2)} =0\\
+ \iff & \sum_l P_{gkl} \frac{\omega_{kl}^2}{\omega_{kk}(\omega_{kk}\omega_{ll}-\omega_{kl}^2)} =0
 \end{align*}
 
 \section*{Remarks}
 \begin{itemize}
 \item add $\log(2\pi)$ when needed
-\item check 2.3.3 $S_H$, and dimensions if we take all $Z_H$
+\item update formula for $s_{hi}$ do not depend on $i$.
+\item In 2.3.4, using $\widetilde{\overline{\Omega_{Tm}}}$ instead?
 \item end update $\Omega$, per block ?
 \end{itemize}
 
