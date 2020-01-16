@@ -317,8 +317,8 @@ $$\Esp_g[\Omega_{TOH}] = P_{gOH} \odot \Omega_{OH}$$
 
 Therefore:
 \begin{empheq}[box=\widefbox]{align*}
-\frac{\partial (-\Esp_{gh}[\log p(Z_H | Z_O,T) ])}{\partial M_H}&=  \Omega_H M_H + \widetilde{M}_O P_{gOH} \odot \Omega_{OH}\\
-\frac{\partial (-\Esp_{gh}[\log p(Z_H | Z_O,T) ]) }{\partial s_{ih}}&= \omega_{hh}
+\frac{\partial (-\Esp_{gh}[\log p(Z_H | Z_O,T) ])}{\partial M_H}&=  M_H\Omega_H  - \widetilde{M}_O P_{gOH} \odot \Omega_{OH}\\
+\frac{\partial (-\Esp_{gh}[\log p(Z_H | Z_O,T) ]) }{\partial s_{ih}^2}&= \frac{\omega_{hh}}{2}
 \end{empheq}
 
 \subsubsection{Compute $\Esp_g[\log p(T)] + \entr[g(T)]$}
@@ -352,24 +352,24 @@ Under $h$, $Z_H$ and $Z_O$ are independent according to the variational approxim
 \end{align*}
 
 
-$Z_{Hi} \sim \mathcal{N}(m_{Hi},S_{Hi})$ and $h$ is a product law on all $Z_{Hi}$. Therefore: 
+$Z_{Hi} \sim \mathcal{N}(m_{Hi},s_{ih})$ and $h$ is a product law on all $Z_{Hi}$. Therefore: 
 \begin{align*}
 \entr[h(Z_H)] &= \sum_i \entr[h(Z_{Hi})] \\
-&=\frac{1}{2} \sum_i\log |S_{Hi}| +n\times  \frac{r}{2}(1+\log(2\pi))\\
+&=\frac{1}{2} \sum_i\log |s_{ih}| +n\times  \frac{r}{2}(1+\log(2\pi))\\
 \end{align*}
 
 
-$S_{Hi}$ are diagonal. Hence:
+$s_{ih}$ are diagonal. Hence:
 \begin{align*}
-\frac{1}{2} \sum_i\log |S_{Hi}| &= \frac{1}{2} \sum_i \log \left(\prod_{h=1}^r S_{Hi}[h,h] \right)\\
-&= \sum_{i=1}^n \sum_{h=1}^r \log(s_{hi})
+\frac{1}{2} \sum_i\log |s_{ih}| &= \frac{1}{2} \sum_i \log \left(\prod_{h=1}^r s_{ih}[h,h] \right)\\
+&= \frac{1}{2}\sum_{i=1}^n \sum_{h=1}^r \log(s_{ih}^2)
 \end{align*}
-Finally $$ \Esp_h[\log h(Z_H\mid Z_O)] = -\sum_{i=1}^n \sum_{h=1}^r \log(s_{hi}) - \frac{rn}{2}(1+\log(2\pi)).$$
+Finally $$ \Esp_h[\log h(Z_H\mid Z_O)] = -\frac{1}{2}\sum_{i=1}^n \sum_{h=1}^r \log(s_{ih}^2) - \frac{rn}{2}(1+\log(2\pi)).$$
 
 \paragraph{Derivatives}
 
 \begin{empheq}[box=\lesswidefbox]{align*}
-\partial_{s_{ih}} (\Esp_h[\log h(Z_H\mid Z_O)])&= \frac{-1}{s_{ih}}
+\partial_{s_{ih}^2} (\Esp_h[\log h(Z_H\mid Z_O)])&= -\frac{1}{2s_{ih}^2}
 \end{empheq}
 \subsubsection{Compute $ \Esp_{gh_O^*}[\log p(Z_O|T)]$}
 \begin{align*}
@@ -400,13 +400,13 @@ In the end, $\Esp_{gh_O^*}[\log p(Z_O|T)]$ does not need to be optimized.
 \subsubsection{Final derivative and optimal estimators}
 \paragraph{$M_H$:}
 \begin{align*}
-\partial_{M_H} KL &= \Omega_H M_H + \widetilde{M}_OP_{gOH}\odot\Omega_{OH} =0\\
-\iff& M_H =-\Omega_H^{-1}\times \widetilde{M}_OP_{gOH}\odot\Omega_{OH}
+\partial_{M_H} KL &= M_H\Omega_H  + \widetilde{M}_O(P_{gOH}\odot\Omega_{OH}) =0\\
+\iff& M_H =- \widetilde{M}_O(P_{gOH}\odot\Omega_{OH})\Omega_H^{-1}
 \end{align*}
 \paragraph{$S_H$:}
 \begin{align*}
-\partial_{s_{ih}} KL &=  \omega_{hh}- \frac{1}{s_{ih}} = 0\\
-\iff & s_{ih} = \frac{1}{\omega_{hh}}
+\partial_{s_{ih}^2} KL &=  \frac{\omega_{hh}}{2}- \frac{1}{2s_{ih}^2} = 0\\
+\iff & s_{ih}^2 = \frac{1}{\omega_{hh}}
 \end{align*}
 \paragraph{$\widetilde{\beta}$:}
 \begin{align*}
@@ -417,51 +417,81 @@ In the end, $\Esp_{gh_O^*}[\log p(Z_O|T)]$ does not need to be optimized.
 \subsection{M step: optimizing in $(\beta, \Omega)$}
  
 $$ \argmax_{\beta, \Omega} \mathcal{J}(Y ; g,h) =\argmax_{\beta, \Omega} \left\{ \Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(Z\mid T) ]\right\} $$
+
+\subsubsection{General expression}
 \begin{align*}
-\log (p_\beta(T)p_{\Omega_T}(Z\mid T))  &= \sum_{kl} \mathds{1}\{kl \in T\} \log \beta_{kl} - \log B + \frac{n}{2}\log |\Omega_T| - <\Omega_T,Z^\intercal Z>\\
-\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(Z\mid T) ] &= \sum_{kl} P_{gkl} \log\beta_{kl} +\frac{n}{2} \Esp_g[\log |\Omega_T|] - <\Esp_g [\Omega_T], \Esp_h[Z^\intercal Z]>- \log B
+\log (p_\beta(T)p_{\Omega_T}(Z\mid T))  &= \sum_{kl} \mathds{1}\{kl \in T\} \log \beta_{kl} - \log B + \frac{n}{2}\log |\Omega_T| - \frac{1}{2}<\Omega_T,Z^\intercal Z>\\
+\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(Z\mid T) ] &= \sum_{kl} P_{gkl} \log\beta_{kl} +\frac{n}{2} \Esp_g[\log |\Omega_T|] -\frac{1}{2} <\Esp_g [\Omega_T], \Esp_h[Z^\intercal Z]>- \log B
 \end{align*}
+
 $\Omega_T$ is tree-strucutred, so its determinent is decomposable on the edges:
 $$|\Omega_{T}| = \prod_{k} \omega_{kk} \prod_{kl \in T} \frac{\omega_{kk}\omega_{ll}-\omega_{kl}^2}{\omega_{kk}\omega_{ll}}$$
+
 And we get
-$$\Esp_g[\log |\Omega_{T}|]= \sum _{kl} P_{gkl} \left[ \log\left(\frac{\omega_{kk}\omega_{ll}-\omega_{kl}^2}{\omega_{kk}\omega_{ll}}\right)\right]$$
+
+$$\Esp_g[\log |\Omega_{T}|]= \sum _{kl} P_{gkl} \left[ \log\left(\frac{\omega_{kk}\omega_{ll}-\omega_{kl}^2}{\omega_{kk}\omega_{ll}}\right)\right] + \sum_k \log \omega_{kk}$$
 
 Finally, denoting $\psi_{kl} = \left(\frac{\omega_{kk}\omega_{ll}-\omega_{kl}^2}{\omega_{kk}\omega_{ll}}\right)^{n/2}$ we obtain:
 \begin{align*}
-\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(Z\mid T) ] &=\sum_{kl} P_{gkl} \left(\log  \beta_{kl}\psi_{kl}\right) - <P_g \odot \Omega, \widetilde{M}^\intercal \widetilde{M} + \widetilde{S}>- \log B
+\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(Z\mid T) ] &=\sum_{kl} P_{gkl} \left(\log  \beta_{kl}\psi_{kl}\right) + \frac{n}{2}\sum_k \log \omega_{kk} - \frac{1}{2}<P_g \odot \Omega, \widetilde{M}^\intercal \widetilde{M} + \widetilde{S}>- \log B
 \end{align*}
-\paragraph{$\beta$:}
+
+\subsubsection{Update formulas}
+\paragraph{Update of $\beta$:}
 \begin{align*}
 \partial_{\beta_{jk}} \Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(Z\mid T) ] &= \frac{P_{gjk}}{\beta_{jk}} - \frac{\partial_{\beta_{jk}} B }{B}\\
 &=\frac{P_{gjk}}{\beta_{jk}}  - [M(W)]_{jk}\\
-=0 \iff &\widehat{\beta}_{jk} = P_{gjk} / [M(W)]_{jk}
-\end{align*}
-\paragraph{$\Omega$:}
+=0 \iff & \boxed{\widehat{\beta}_{jk} = P_{gjk} / [M(W)]_{jk}}
+\end{align*}\\
+
+
+\paragraph{Update of $\Omega$:}
 
 \[
- \partial_{\omega_{kl}}(\sum_{kl} P_{gkl} \left(\log  \beta_{kl}\psi_{kl}\right))=\begin{cases}
-               -n\times \frac{P_{gkl} \omega_{kl}}{\omega_{kk}\omega_{ll}-\omega_{kl}^2} \text{\hspace{1cm}if $k\neq l$}\\\\
-              -\frac{n}{2} \sum_l P_{gkl} \frac{\omega_{kl}^2}{\omega_k(\omega_k\omega_l-\omega_{kl}^2)}\text{\hspace{0.5cm}if $k = l$}
+ \partial_{\omega_{kl}}\left(\sum_{kl} P_{gkl} \left(\log  \beta_{kl}\psi_{kl}\right) +\frac{n}{2} \sum_k \log \omega_{kk}\right) =\begin{cases}
+               -n \frac{P_{gkl} }{\omega_{kk}\omega_{ll}-\omega_{kl}^2}\times \omega_{kl} \text{\hspace{1cm}if $k\neq l$}\\\\
+              \frac{n}{2} \times\frac{1}{\omega_{kk}} \left(\sum_l P_{gkl} \frac{\omega_{kl}^2}{(\omega_{kk}\omega_{ll}-\omega_{kl}^2)} + 1\right)\text{\hspace{0.5cm}if $k = l$}
             \end{cases}
 \]
+And
+\begin{align*}
+- \frac{1}{2} <P_g \odot \Omega, \underbrace{\widetilde{M}^\intercal \widetilde{M} + \widetilde{S}}_{n\widetilde{\Sigma}}> &=- \frac{n}{2}\times 2 \times \sum_{j<k}P_{gjk} \omega_{jk} \widetilde{\sigma}_{jk}- \frac{n}{2}\sum_{ k} \omega_{kk} \widetilde{\sigma}_{kk}
+\end{align*}
+The "$\times 2$" above comes from differenciating $j$ from $k$.
 
+We get the complete derivative for diagonal terms of $\Omega$:
 \begin{align*}
- <P_g \odot \Omega, \underbrace{\widetilde{M}^\intercal \widetilde{M} + \widetilde{S}}_{\widetilde{\Sigma}}> &=\sum_{jk}P_{gjk} \omega_{jk} \widetilde{\sigma}_{jk}
+ \partial_{\omega_{kk}}\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(Z\mid T) ] &=\frac{n}{2} \times\frac{1}{\omega_{kk}} \left(\sum_l P_{gkl} \frac{\omega_{kl}^2}{(\omega_{kk}\omega_{ll}-\omega_{kl}^2)} + 1\right) -\frac{n}{2}\widetilde{\sigma}_{kk} =0\\
+ \iff &  \frac{1}{\omega_{kk}} \left(\sum_l P_{gkl} \frac{\omega_{kl}^2}{(\omega_{kk}\omega_{ll}-\omega_{kl}^2)} + 1\right) =\widetilde{\sigma}_{kk}
 \end{align*}
-Complete derivative:
+Then $\widehat{\omega}_{kk}$ is optained through numeric optimization.\\
+
+The complete derivative for off-diagonal terms of $\Omega$ is :
 \begin{align*}
- \partial_{\omega_{kl}}\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(Z\mid T) ] &=-n\times \frac{P_{gkl} \omega_{kl}}{\omega_{kk}\omega_{ll}-\omega_{kl}^2}  -  P_{gkl}\widetilde{\sigma}_{kl} =0\\
- \iff & -\widetilde{\sigma}_{kl} \omega_{kl}^2 + n \omega_{kl} + \widetilde{\sigma}_{kl}\omega_{kk}\omega_{ll}=0
+ \partial_{\omega_{kl}}\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(Z\mid T) ] &=-n \frac{P_{gkl} }{\omega_{kk}\omega_{ll}-\omega_{kl}^2}\times \omega_{kl} - n P_{gjk}  \widetilde{\sigma}_{jk} =0\\
+ \iff & \widetilde{\sigma}_{jk} \omega_{kl}^2 - \omega_{kl} - \widetilde{\sigma}_{jk} \omega_{kk}\omega_{ll} = 0 \\
+ \iff & \widehat{\omega}_{kl} = (1 \pm \sqrt{1+4\widetilde{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}}) / 2\widetilde{\sigma}_{jk}
 \end{align*}
+
+To choose between roots, we use the constraint $\dfrac{\omega_{kl}^2}{\omega_{kk}\omega_{ll}} < 1$ which is equivalent to 
+$$ (1 \pm \sqrt{1+4\widetilde{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}}) < 4\widetilde{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}.$$
+As $\widetilde{\sigma}_{jk}^2 \omega_{kk}\omega_{ll} > 0$ by positive-definitiveness of $\Omega$, we have:
 \begin{align*}
- \partial_{\omega_{kk}}\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(Z\mid T) ] &= -\frac{n}{2} \sum_l P_{gkl} \frac{\omega_{kl}^2}{\omega_{kk}(\omega_{kk}\omega_{ll}-\omega_{kl}^2)} =0\\
- \iff & \sum_l P_{gkl} \frac{\omega_{kl}^2}{\omega_{kk}(\omega_{kk}\omega_{ll}-\omega_{kl}^2)} =0
+&1 - \sqrt{1+4\widetilde{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}} < 1- \sqrt{4\widetilde{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}}\\
+\iff &(1 - \sqrt{1+4\widetilde{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}})^2 < ( \sqrt{4\widetilde{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}}-1)^2 < 4\widetilde{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}
 \end{align*}
+
+On the other hand, we also have:
+\begin{align*}
+&(1 + \sqrt{1+4\widetilde{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}})^2 >4\widetilde{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}.
+\end{align*}
+
+Therefore: $$\boxed{ \widehat{\omega}_{kl} = (1 - \sqrt{1+4\widetilde{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}}) / 2\widetilde{\sigma}_{jk}}$$
 
 \section*{Remarks}
 \begin{itemize}
 \item add $\log(2\pi)$ when needed
-\item update formula for $s_{hi}$ do not depend on $i$.
+\item update formula for $s_{ih}$ do not depend on $i$.
 \item In 2.3.4, using $\widetilde{\overline{\Omega_{Tm}}}$ instead?
 \item end update $\Omega$, per block ?
 \end{itemize}
