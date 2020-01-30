@@ -81,7 +81,7 @@ init.mclust<-function(S,nb.missing=1, n.noise=50,plot=TRUE, title="",trueClique=
 # For OPTIM
 
 # Min for VE
-argminKL <- function(gamma, Cg, Pg, M,S,omega,W,trim=TRUE){
+argminKL <- function(gamma, Cg, Pg, M,S,omega,W,lambda,trim=TRUE){
   p=ncol(Cg)
   r=ncol(omega)-p
   O = 1:p
@@ -92,8 +92,9 @@ argminKL <- function(gamma, Cg, Pg, M,S,omega,W,trim=TRUE){
     gamma=gamma-mean(gamma)
     gamma[which(gamma<(-30))]=-30
   }
-  Mei = Meila(F_Vec2Sym(exp(gamma)))
-  lambda = SetLambda(Pg, Mei )
+  #browser()
+  #Mei=Meila( F_Vec2Sym(exp(gamma)))
+  # lambda = SetLambda(Pg, Mei )
   EhZoZo = t(M[,O])%*%M[,O]+ diag(colSums(S[,O]))
   
   # terme 1 : T1=-Egh[log p(ZH | ZO)]
@@ -101,7 +102,8 @@ argminKL <- function(gamma, Cg, Pg, M,S,omega,W,trim=TRUE){
             sum(diag(Pg[O,H]*omega[O,H] %*% (t(M[,H])%*%M[,O]))) )
   
   # terme 2 : T2=-Eg[log p(T)] - entr(g(T))
-  T2 <- -(2*sum(F_Sym2Vec(Pg)*(log(F_Sym2Vec(W)) - log(exp(gamma))) - log(SumTree(W)) + #2* parce que les vecteurs sont la moitié des matrices
+  # browser()
+  T2 <- -(2*sum(F_Sym2Vec(Pg)*(log(F_Sym2Vec(W)) - gamma) - log(SumTree(W)) + #2* parce que les vecteurs sont la moitié des matrices
                   log(SumTree(F_Vec2Sym(exp(gamma)))) + # - car minimisation
                   lambda*(sum(exp(gamma)) - 0.5)))  # 0.5 pour somme des beta /2
   
@@ -113,18 +115,18 @@ argminKL <- function(gamma, Cg, Pg, M,S,omega,W,trim=TRUE){
             0.5*sum(diag( (Pg[O,O]*omega[O,O] - Cg) %*% EhZoZo)) )
   
   KL = T1+T2+T3+T4
-  # if(is.nan(KL)){
-  #   cat(max(gamma),": higher bound ")
-  #   gamma[which(gamma>(30))]=30
-  #   Mei = Meila(F_Vec2Sym(exp(gamma)))
-  #   lambda = SetLambda(Pg, Mei )
-  #   T2 <- -(sum(F_Sym2Vec(Pg)*(log(F_Sym2Vec(W)) - log(exp(gamma))) - log(SumTree(W)) +
-  #                 log(SumTree(F_Vec2Sym(exp(gamma))))+
-  #                 lambda*(sum(exp(gamma)) - 0.5)))  # 0.5 pour somme des beta /2
-  #   
-  #   KL = T1+T2+T3+T4
-  #   if(is.nan(KL))   cat("\nbeta tilde optimization failed\n")
-  # }
+  if(is.nan(KL)){
+    cat(max(gamma),": higher bound ")
+    gamma[which(gamma>(30))]=30
+    Mei = Meila(F_Vec2Sym(exp(gamma)))
+    lambda = SetLambda(Pg, Mei )
+    T2 <- -(2*sum(F_Sym2Vec(Pg)*(log(F_Sym2Vec(W)) - gamma) - log(SumTree(W)) + #2* parce que les vecteurs sont la moitié des matrices
+                    log(SumTree(F_Vec2Sym(exp(gamma)))) + # - car minimisation
+                    lambda*(sum(exp(gamma)) - 0.5)))  # 0.5 pour somme des beta /2
+    
+    KL = T1+T2+T3+T4
+    if(is.nan(KL))   cat("\nbeta tilde optimization failed\n")
+  }
   return(KL)
 }
 
@@ -146,24 +148,140 @@ argmaxJ<-function(gamma,Pg,omega,sigmaTilde,n){
   return(maxJ)
 }
 
-Grad_J_W<-function(gamma,Pg,omega,M,S){
-  Mei = Meila(F_Vec2Sym(exp(gamma)))
-  lambda = SetLambda(Pg, Mei)
-  return( F_Sym2Vec(Pg) - exp(gamma)*(F_Sym2Vec(Mei) - lambda))
+
+
+wrap_optimDiag <- function(omega_ii, i) {
+  return(optimDiag(i, omega_ii, omega, SigmaTilde, Pg))
 }
-optimDiag <- function(i, k_ii, K, Sigma, alpha) {
+
+optimDiag <- function(i, omega_ii, omega, SigmaTilde, Pg) {
   
-  p <- nrow(K)
-  O = 1:p
-  k <- K[i, setdiff(O, i)]
-  a <- alpha[i, setdiff(O, i)]
-  quotient = a * k ^ 2 / (k_ii * diag(K)[setdiff(O, i)] - k ^ 2)
-  return(1 / k_ii - Sigma[i, i] + sum(quotient))
+  q <- nrow(omega)
+  phi = CorOmegaMatrix(omega)
+  quotient = diag(Pg %*% ((1- phi)/phi))[i]
+  
+  grad=(1/omega_ii)*(sum(quotient)+1) - Sigma[i, i]
+  return( grad)
 }
+
+dichotomie <- function(a, b, f, epsilon){
+  # ---------------------------------------------------------------------------------------------------------
+  # FUNCTION
+  #   find the zero of monotonous function f by binary search.
+  # INPUT
+  #   a        : minimum argument of f
+  #   b        : maximum argument of f
+  #   epsilon  : tolerance (length of last interval)
+  # OUTPUT
+  #   c        : approximate zero of f with epsilon tolerance
+  # ---------------------------------------------------------------------------------------------------------
+  
+  min <- a
+  max <- b
+  sgn <- sign(f(max)-f(min))
+  c <- (max+min)/2
+  while(abs(f(c))>1e-5){
+    c <- (max+min)/2
+    if(sgn*f(c)>0){
+      max <- c
+    } else{
+      min <- c
+    }
+  }
+  return(c)
+}
+
+computeOffDiag<-function(omegaDiag,SigmaTilde){
+  q=length(omegaDiag)
+  omega=matrix(0,q,q)
+  sapply(1:(q-1),
+         function(j){
+           sapply((j+1):q,
+                  function(k){
+                    omega[k, j] <<- (1 - sqrt( 1+4*SigmaTilde[j,k]^2*omegaDiag[j]*omegaDiag[k]))/(2*SigmaTilde[j,k])
+                    omega[j, k] <<- omega[k, j]
+                  }
+           )
+         }
+  )
+  diag(omega)=omegaDiag
+  return(omega)
+}
+
+EdgeProba <- function(W, verbatim=FALSE){
+  it=-1
+  Wcum = SumTree(W)
+  if(!isSymmetric(W)){cat('Pb: W non symmpetric!')}
+  while(!is.finite(Wcum)){
+    #handles numerical issues with matrix tree theorem
+    it=it+1
+    borne=30-it
+    if(verbatim) message(cat("W corrected, bound=",borne))
+    
+    W.log=log(F_Sym2Vec(W))
+    W.center=W.log-mean(W.log)
+    W.center[which(W.center<(-borne))]=-borne
+    W=F_Vec2Sym(exp(W.center))
+    Wcum = SumTree(W)
+  }
+  
+  p = nrow(W); P = matrix(0, p, p)
+  #core of computation
+  sapply(1:(p-1),
+         function(j){
+           sapply((j+1):p,
+                  function(k){
+                    W_jk = W; W_jk[j, k] = W_jk[k, j] = 0 #kills kj edge in W_kj
+                    P[k, j] <<- 1 - SumTree(W_jk) / Wcum
+                    P[j, k] <<- P[k, j]
+                  }
+           )
+         }
+  )
+  P[which(P<1e-10)]=1e-10
+  diag(P)=0
+  return(P)
+}
+
+SetLambda2<- function(P, M,n, eps = 1e-6){
+  # F.x has to be increasing. The target value is 0
+  #browser()
+  p=ncol(P)
+  F.x <- function(x){
+    if(x!=0){
+      sum(log(P / (x+M)))/(p*(p-1))
+    }else{
+      (2*sum(log(P[upper.tri(P)] / M[upper.tri(M)])))/(p*(p-1))
+    }
+  }
+  x.min = ifelse(F.x(0) >0,-20,1e-4);
+  while(F.x(x.min)>0){x.min = x.min -x.min/2}
+  x.max = 10
+  while(F.x(x.max)<0){x.max = x.max * 2}
+  x = (x.max+x.min)/2
+  f.min = F.x(x.min)
+  f.max = F.x(x.max)
+  f = F.x(x)
+  
+  while(abs(x.max-x.min) > eps){
+    if(f > 0) {
+      x.max = x
+      f.max = f
+    } else{
+      x.min = x
+      f.min = f
+    }
+    x = (x.max+x.min)/2;
+    f = F.x(x)
+  }
+  if(abs( 1 - sum(P / (x+M)))>2) browser()
+  return(x)
+}
+
 #####################
 # For hidden proba
 
-HiddenEdgeProba <- function(W,r=1){
+HiddenEdgeProba <- function(W,r=1, verbatim=FALSE){
   #computes the probability for two links to a hidden covariates to NOT be there
   #Coded for 1 hidden covariate
   it=-1
@@ -173,7 +291,7 @@ HiddenEdgeProba <- function(W,r=1){
     #handles numerical issues with matrix tree theorem
     it=it+1
     borne=30-it
-    message(cat("W corrected, bound=",borne))
+    if(verbatim)cat("W corrected, bound=",borne)
     
     W.log=log(F_Sym2Vec(W))
     W.center=W.log-mean(W.log)
@@ -235,10 +353,32 @@ CorOmegaMatrix<-function(omega){ # code for 1 hidden covariate. Otherwise, must 
          })
   return(CorOmega)
 }
-CorOmegaMatrix(omega)
-det(omega[c(2,3),c(2,3)])
-k=2
-j=3
+
+computeWtree<-function(omega, W, Wg, MH, MO, SO){
+  n=nrow(MH) ; r=ncol(MH) ; p=ncol(MO)
+  O = 1:p ; H=(p+1):(p+r)
+  # browser()
+  phi <- CorOmegaMatrix(omega)
+  
+  sigmaO<-(t(MO)%*%MO + diag(colSums(SO)))/n
+  
+  A<-log(Wg*phi^(-n*0.5)/W)
+  B<-(n*0.5*omega[O,O]*sigmaO)
+  C<-(omega[O,H]*t(MH)%*%MO - 2*n*omega[H,O]*diag(omega[O,O]%*%sigmaO)/omega[H,H])
+  
+  logWtree<-matrix(0,p+r,p+r)
+  logWtree[O,O]<-A[O,O]+B
+  logWtree[O,H]<-A[O,H]+C
+  logWtree[H,O]<-t(logWtree[O,H])
+  logWtree[H,H]<- A[H,H]
+  return(logWtree)
+}
+
+
+
+
+
+
 
 
 
