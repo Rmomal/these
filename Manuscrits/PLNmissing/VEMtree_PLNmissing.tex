@@ -391,12 +391,12 @@ In the following we denote  $\varphi = \left( 1-\frac{\omega_{kl}^2}{\omega_{kk}
 \end{align*}
  
  Where the matrix $\log W$ is of general off-diagonal term:
- $$\log W_{kl} = \log(\varphi_{kl} \widetilde{\beta}_{kl}/\beta_{kl}) + \mathds{1}_{\{kl \in O^2\}} \omega_{kl} [\widetilde{M}_O^\intercal \widetilde{M}_O]_{kl} + \mathds{1}_{\{ kl \in O\times H \}} \omega_{kl} [M_H^\intercal \widetilde{M}_O]_{kl} $$
+ $$\log W_{kl} = \log(\varphi_{kl} \widetilde{\beta}_{kl}/\beta_{kl}) + \mathds{1}_{\{kl \in O^2\}} \frac{1}{2}\omega_{kl} [\widetilde{M}_O^\intercal \widetilde{M}_O]_{kl} + \mathds{1}_{\{ kl \in O\times H \}} \omega_{kl} [M_H^\intercal \widetilde{M}_O]_{kl} $$
  
 Defining matrices A, B and C as follows:
 \[\left\{\begin{array}{ll}
 A_{kl} &= \varphi_{kl} \widetilde{\beta}_{kl}/\beta_{kl}\\
-B_{kl} &=\exp(\omega_{kl}[\widetilde{M}_O^\intercal \widetilde{M}_O]_{kl})\\
+B_{kl} &=\exp(\frac{1}{2}\omega_{kl}[\widetilde{M}_O^\intercal \widetilde{M}_O]_{kl})\\
 C_{kl} &=\exp(\omega_{kl}[M_H^\intercal \widetilde{M}_O]_{kl})
 \end{array}\right.\]
 
