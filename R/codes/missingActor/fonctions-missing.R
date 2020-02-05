@@ -50,7 +50,7 @@ argminKL <- function(gamma, Pg, M,S,omega,W,p,lambda ){
   O = 1:p
   H=(p+1):(p+r)
   omegaH=omega[H,H]
-   
+  
   EhZoZo = t(M[,O])%*%M[,O]+ diag(colSums(S[,O]))
   
   KL <- -n*0.5*sum(log(diag(omega)))+0.5*omegaH*( t(M[,H])%*%M[,H]+sum(S[,H]) ) +   
@@ -60,7 +60,7 @@ argminKL <- function(gamma, Pg, M,S,omega,W,p,lambda ){
     2*sum(F_Sym2Vec(Pg)*(gamma-log(F_Sym2Vec(W))))-log(SumTree(F_Vec2Sym(exp(gamma))))+
     log(SumTree(W))-lambda*(sum(exp(gamma)) - 0.5) -0.5*sum(log(S[,H]))
   
- 
+  
   return(KL)
 }
 
@@ -72,16 +72,11 @@ Grad_KL_Wg <- function(gamma, Cg, Pg, M,S,omega,W){
 
 # Max for Mstep
 
-argmaxJ<-function(gamma,Pg,omega,sigmaTilde,lambda,n, trim=TRUE, verbatim=TRUE){
-  
-  
-  
+argmaxJ<-function(gamma,Pg,omega,sigmaTilde,phi,lambda,n, trim=TRUE, verbatim=TRUE){
   W=F_Vec2Sym(exp(gamma))
   
   #browser()
-  logphi=log(CorOmegaMatrix(omega))
-  
-  maxJ <- sum(Pg*F_Vec2Sym(F_Sym2Vec(log(W)) + n*0.5*F_Sym2Vec(logphi))) + 
+  maxJ <- sum(Pg*F_Vec2Sym(F_Sym2Vec(log(W)) - n*0.5*F_Sym2Vec(log(phi)))) + 
     n*0.5*sum(log(diag(omega))) - log(SumTree(W)) - 
     0.5*sum( Pg * omega * sigmaTilde * n) - n*0.5*sum(diag(omega*sigmaTilde)) 
   + lambda*(sum(W)-0.5)
@@ -124,7 +119,7 @@ dichotomie <- function(a, b, f, epsilon){
   sgn <- sign(f(max)-f(min))
   c <- (max+min)/2
   # browser()
-  print(f(c))
+ # print(f(c))
   while(abs(f(c))>1e-5){
     c <- (max+min)/2
     if(sgn*f(c)>0){
@@ -446,11 +441,11 @@ accppvtpr<-function(probs,ome,h, seuil=0.5){
   AccH=round(mean(1*(probs[h,]>seuil)==ome[h,]),2)
   AccO=round(mean(1*(probs[-h,-h]>seuil)==ome[-h,-h]),2)
   PPV=round(sum((ome==1)*(probs>seuil))/(sum((ome==1)*(probs>seuil))+
-                                         sum((ome==0)*(probs>seuil))),2)#TP/(TP+FP)
+                                           sum((ome==0)*(probs>seuil))),2)#TP/(TP+FP)
   PPVH=round(sum((ome[h,]==1)*(probs[h,]>seuil))/(sum((ome[h,]==1)*(probs[h,]>seuil))+
-                                                  sum((ome[h,]==0)*(probs[h,]>seuil))),2)
+                                                    sum((ome[h,]==0)*(probs[h,]>seuil))),2)
   PPVO=round(sum((ome[-h,-h]==1)*(probs[-h,-h]>seuil))/(sum((ome[-h,-h]==1)*(probs[-h,-h]>seuil))+
-                                                        sum((ome[-h,-h]==0)*(probs[-h,-h]>seuil))),2)
+                                                          sum((ome[-h,-h]==0)*(probs[-h,-h]>seuil))),2)
   
   TPR=round(sum((ome==1)*(probs>seuil))/sum(ome==1), 2)
   TPRH=round(sum((ome[h,]==1)*(probs[h,]>seuil))/sum(ome[h,]==1), 2)
