@@ -1,0 +1,268 @@
+---
+title: "Comparaison de deux formules"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+
+Formule obtenue théorique:
+
+$$ \widetilde{\beta}_{jk} = \frac{\beta_{jk}}{\varphi_{jk}}\exp\Big(-\frac{1}{2} \omega_{jk}[\widetilde{M}_O^T \widetilde{M}_O]\Big)$$
+$$ \widetilde{\beta}_{kh} = \frac{\beta_{kh}}{\varphi_{kh}}\exp\Big(-\frac{1}{2} \omega_{kh}[\widetilde{M}_H^T \widetilde{M}_O]\Big)$$
+Formules intuitée dans les simulations:
+
+*Idée 1:*
+Valeur absolue dans l'exponentielle:
+$$ \widetilde{\beta}_{jk} = \frac{\beta_{jk}}{\varphi_{jk}}\exp\Big(|-\frac{1}{2} \omega_{jk}[\widetilde{M}_O^T \widetilde{M}_O]|\Big)$$
+
+
+*Idée 2:*
+$\varphi$ et $\beta$ sont inversés:
+
+$$ \widetilde{\beta}_{jk} = \frac{\varphi_{jk}}{\beta_{jk}}\exp\Big(-\frac{1}{2} \omega_{jk}[\widetilde{M}_O^T \widetilde{M}_O]\Big)$$
+
+*Idée 3:*
+$\varphi$ et $\beta$ sont inversés avec valeur absolue supplémentaire:
+
+$$ \widetilde{\beta}_{jk} = \frac{\varphi_{jk}}{\beta_{jk}}\exp\Big(|-\frac{1}{2} \omega_{jk}[\widetilde{M}_O^T \widetilde{M}_O]|\Big)$$
+
+
+```{r, eval=FALSE }
+computeWg<-function(phi,omega,W,MH,MO, alpha, form="theory"){
+  p=ncol(MO) ; r=ncol(MH)
+  O = 1:p ; H = (p+1):(p+r)
+  psi=phi^(-n*alpha*0.5)
+  Wg<-matrix(0,(p+r),(p+r))
+  if(form=="theory"){
+    Wg[O,O]<-W[O,O]*exp(-0.5*alpha*omega[O,O]*(t(MO)%*%MO))/psi[O,O]
+    Wg[O,H]<-W[O,H]*exp(-alpha*omega[O,H]*(t(MH)%*%MO))/psi[O,H]
+  }
+  if(form=="id1"){
+    Wg[O,O]<-psi[O,O]*exp(abs(-0.5*alpha*omega[O,O]*(t(MO)%*%MO)))/W[O,O]
+    Wg[O,H]<-psi[O,H]*exp(abs(-alpha*omega[O,H]*(t(MH)%*%MO)))/W[O,H]  
+  }
+  
+  if(form=="id2"){
+    Wg[O,O]<-psi[O,O]*exp(-0.5*alpha*omega[O,O]*(t(MO)%*%MO))/W[O,O]
+    Wg[O,H]<-psi[O,H]*exp(-alpha*omega[O,H]*(t(MH)%*%MO))/W[O,H]  
+  }
+  if(form=="id3"){
+    Wg[O,O]<-psi[O,O]*exp(abs(-0.5*alpha*omega[O,O]*(t(MO)%*%MO)))/W[O,O]
+    Wg[O,H]<-psi[O,H]*exp(abs(-alpha*omega[O,H]*(t(MH)%*%MO)))/W[O,H]  
+  }
+  
+  Wg[H,O]<-t(Wg[O,H])
+  diag(Wg) = 1
+ # shrinking and centering
+  gamma=log(Wg[O,H])
+  gamma[which(gamma<(-30))]=-30
+  gamma=gamma-mean(gamma)
+  gamma[which(gamma>10)]=10
+  Wg[O,H]=exp(gamma)
+  Wg[H,O]<-t(Wg[O,H])
+  gamma=log(F_Sym2Vec(Wg[O,O]))
+  gamma[which(gamma<(-30))]=-30
+  gamma=gamma-mean(gamma)
+  gamma[which(gamma>max(log(Wg[O,H])))]=max(log(Wg[O,H]))
+  Wg[O,O]=exp(F_Vec2Sym(gamma))
+  
+  diag(Wg) = 1
+  
+  return(Wg)
+}
+```
+
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+library(EMtree)
+library(PLNmodels)
+library(LITree)
+library(ggraph)
+library(tidygraph)
+library(tidyverse)
+library(mvtnorm)
+library(useful)
+library(mclust)
+library(MASS)
+library(reshape2)#for ggimage
+library(gridExtra)
+source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
+#source("/Users/raphaellemomal/these/R/codes/missingActor/VEMtree.R")
+```
+ 
+
+# Data simulation
+
+```{r}
+# simu parameters
+set.seed(7)
+n=200
+p=14
+r=1
+type="scale-free"
+plot=TRUE
+
+
+# Code for one hidden covariate
+
+
+################
+#----- DATA
+# simulate graph and omega, then sigma0 and finally counts
+data=data_from_scratch(type = type,p = p+r,n = n,signed = FALSE,prob = 5/p,v = 0.001)
+omega=data$omega
+hidden=which(diag(omega)%in%sort(diag(omega), decreasing = TRUE)[1:r])[1:r] # on cache les r plus gros
+trueClique=which(omega[hidden,-hidden]!=0)
+if(plot){
+  G=draw_network(1*(omega==1),groupes=1*(diag(omega)==diag(omega)[hidden][1]), 
+                 layout="nicely",curv=0,nb=2,pal="black",nodes_label = 1:(p+r))$G
+  print(G)
+}
+Kh  <- omega[hidden,hidden]
+Ko  <- omega[-hidden,-hidden]
+Koh <- omega[-hidden,hidden]
+Km  <- Ko - Koh %*%solve(Kh)%*% t(Koh)
+sigmaO=solve(Km)
+counts=generator_PLN(sigmaO,covariates = NULL,n=n, seuil=15)
+
+ome_init=omega[c(2:15,1),c(2:15,1)]#ome is for testing
+ome=ome_init
+diag(ome)=0
+
+####################
+#----- PLN on counts
+# optimization of theta and h(Z_O)
+
+PLNfit<-PLN(counts~1)
+MO<-PLNfit$var_par$M # MiO = ith row of MO
+SO<-PLNfit$var_par$S # SiO = diag(ith row of SO)
+sigma_obs=PLNfit$model_par$Sigma
+ 
+```
+
+# Initialisation
+
+```{r}
+# whole Z
+# initviasigma=init.mclust(sigma_obs,title="Sigma",trueClique = trueClique,n.noise=p*3+5)
+# initial.param<-initEM(sigma_obs,n=n,cliquelist = list(initviasigma),pca=TRUE) # quick and dirty modif for initEM to take a covariance matrix as input
+# omega_init=initial.param$K0
+# sigma_init=initial.param$Sigma0
+
+# Tree
+O=1:p
+Wg_init <- matrix(1, p+r, p+r); diag(Wg_init) = 0; Wg_init =Wg_init / sum(Wg_init)
+W_init <- matrix(1, p+r, p+r); diag(W_init) = 0;# W_init =W_init / sum(W_init)
+W_init[O,O] <- EMtree_corZ(cov2cor(sigma_obs),n = n,maxIter = 20)$edges_weight
+
+
+```
+
+
+# Inference
+
+## Formule Théorique
+
+
+```{r pressure}
+resVe.Th=VE(MO,SO,sigma_obs,ome_init,W_init,Wg_init,maxIter=150,eps=1e-3, plot=TRUE, 
+         form="theory",alpha=0.8)
+
+```
+
+## Formule essai
+
+```{r}
+resVe.id1=VE(MO,SO,sigma_obs,ome_init,W_init,Wg_init,maxIter=150,eps=1e-3, plot=TRUE, 
+        form="id1",alpha=0.8)
+
+```
+
+
+```{r}
+resVe.id2=VE(MO,SO,sigma_obs,ome_init,W_init,Wg_init,maxIter=150,eps=1e-3, plot=TRUE, 
+         form="id2",alpha=0.8)
+
+```
+
+```{r}
+resVe.id3=VE(MO,SO,sigma_obs,ome_init,W_init,Wg_init,maxIter=150,eps=1e-3, plot=TRUE, 
+         form="id2",alpha=0.8)
+
+```
+
+ 
+# Comparaison
+
+TPR : True Positive Rate = TP/(TP+FN)
+PPV : Positive Predictive value  = TP/(TP+FP)
+
+Quantités calculées en séparant les O et les H.
+
+## Formule Théorique
+
+```{r, echo=FALSE}
+h=15
+seuil=0.5
+performance=accppvtpr(resVe.Th$Gprobs,ome,h,seuil)
+Acc=performance[1] ;AccH=performance[2] ;AccO=performance[3] 
+PPV=performance[4] ;PPVH=performance[5] ; PPVO=performance[6]
+TPR=performance[7] ;TPRH=performance[8] ;TPRO=performance[9] 
+p1<-ggimage(resVe.Th$Gprobs)+labs(title=paste0("G hat (thresh=",seuil,")"))
+p2<-ggimage(ome)+labs(title="G")
+grid.arrange(p1,p2,ncol=2, top=paste0("Tpr=",TPR," (TprO=",TPRO," , TprH=",TPRH,
+                                      ")\n Ppv=",PPV," (PpvO=",PPVO," , PpvH=",PPVH,")"))
+
+```
+
+## Formules essais
+
+### id1 : valeur absolue:
+
+```{r,echo=FALSE}
+performance=accppvtpr(resVe.id1$Gprobs,ome,h,seuil)
+Acc=performance[1] ;AccH=performance[2] ;AccO=performance[3] 
+PPV=performance[4] ;PPVH=performance[5] ; PPVO=performance[6]
+TPR=performance[7] ;TPRH=performance[8] ;TPRO=performance[9] 
+p1<-ggimage(resVe.id1$Gprobs)+labs(title=paste0("G hat (thresh=",seuil,")"))
+p2<-ggimage(ome)+labs(title="G")
+grid.arrange(p1,p2,ncol=2, top=paste0("Tpr=",TPR," (TprO=",TPRO," , TprH=",TPRH,
+                                      ")\n Ppv=",PPV," (PpvO=",PPVO," , PpvH=",PPVH,")"))
+
+
+```
+
+### id2 : inversion phi et beta:
+
+```{r,echo=FALSE}
+performance=accppvtpr(resVe.id2$Gprobs,ome,h,seuil)
+Acc=performance[1] ;AccH=performance[2] ;AccO=performance[3] 
+PPV=performance[4] ;PPVH=performance[5] ; PPVO=performance[6]
+TPR=performance[7] ;TPRH=performance[8] ;TPRO=performance[9] 
+p1<-ggimage(resVe.id2$Gprobs)+labs(title=paste0("G hat (thresh=",seuil,")"))
+p2<-ggimage(ome)+labs(title="G")
+grid.arrange(p1,p2,ncol=2, top=paste0("Tpr=",TPR," (TprO=",TPRO," , TprH=",TPRH,
+                                      ")\n Ppv=",PPV," (PpvO=",PPVO," , PpvH=",PPVH,")"))
+
+
+```
+
+ 
+### id3 : inversion et valeur absolue:
+
+```{r,echo=FALSE}
+performance=accppvtpr(resVe.id3$Gprobs,ome,h,seuil)
+Acc=performance[1] ;AccH=performance[2] ;AccO=performance[3] 
+PPV=performance[4] ;PPVH=performance[5] ; PPVO=performance[6]
+TPR=performance[7] ;TPRH=performance[8] ;TPRO=performance[9] 
+p1<-ggimage(resVe.id3$Gprobs)+labs(title=paste0("G hat (thresh=",seuil,")"))
+p2<-ggimage(ome)+labs(title="G")
+grid.arrange(p1,p2,ncol=2, top=paste0("Tpr=",TPR," (TprO=",TPRO," , TprH=",TPRH,
+                                      ")\n Ppv=",PPV," (PpvO=",PPVO," , PpvH=",PPVH,")"))
+
+
+```
+
+ 

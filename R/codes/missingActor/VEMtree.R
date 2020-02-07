@@ -42,7 +42,8 @@ Ko  <- omega[-hidden,-hidden]
 Koh <- omega[-hidden,hidden]
 Km  <- Ko - Koh %*%solve(Kh)%*% t(Koh)
 sigmaO=solve(Km)
-counts=generator_PLN(sigmaO,covariates = NULL,n=n)
+counts=generator_PLN(sigmaO,covariates = NULL,n=n, seuil=15)
+
 ome_init=omega[c(2:15,1),c(2:15,1)] #ome is for testing
 diag(ome)=0
 ####################
@@ -59,10 +60,10 @@ sigma_obs=PLNfit$model_par$Sigma
 #--  Initialize
 
 # whole Z
-initviasigma=init.mclust(sigma_obs,title="Sigma",trueClique = trueClique,n.noise=p*3+5)
-initial.param<-initEM(sigma_obs,n=n,cliquelist = list(initviasigma),pca=TRUE) # quick and dirty modif for initEM to take a covariance matrix as input
-omega_init=initial.param$K0
-sigma_init=initial.param$Sigma0
+# initviasigma=init.mclust(sigma_obs,title="Sigma",trueClique = trueClique,n.noise=p*3+5)
+# initial.param<-initEM(sigma_obs,n=n,cliquelist = list(initviasigma),pca=TRUE) # quick and dirty modif for initEM to take a covariance matrix as input
+# omega_init=initial.param$K0
+# sigma_init=initial.param$Sigma0
 
 # Tree
 O=1:p
@@ -72,7 +73,7 @@ W_init[O,O] <- EMtree_corZ(cov2cor(sigma_obs),n = n,maxIter = 20)$edges_weight
 
 
 
-VE<-function(MO,SO,sigma_obs,omega,W,Wg,MH = matrix(10,n,r),maxIter,eps, alpha,beta.min=1e-10, plot=FALSE){
+VE<-function(MO,SO,sigma_obs,omega,W,Wg,MH = matrix(1,n,r),maxIter,eps, alpha,theoretical=TRUE,beta.min=1e-10, plot=FALSE){
   t1=Sys.time()
   n=nrow(MO);  p=ncol(MO);  O=1:ncol(MO); H=(p+1):ncol(omega);r=length(H); iter=0 ; 
   omegaH=omega[H,H]; 
@@ -82,15 +83,17 @@ VE<-function(MO,SO,sigma_obs,omega,W,Wg,MH = matrix(10,n,r),maxIter,eps, alpha,b
   phi=CorOmegaMatrix(omega)
   SH <- 1/omegaH
   S<-cbind(SO, rep(SH,n)) # all SHi have same solution, depending only on Mstep
-  logWtree<-computeWtree(omega, W, Wg, MH, MO, SO,phi,alpha=alpha, trim=FALSE)  
-  
+  # logWtree<-computeWtree(omega, W, Wg, MH, MO, SO,phi,alpha=alpha, trim=FALSE)  
+  Wg= computeWg(phi,omega,W,MH,MO,alpha,theoretical=theoretical)
+  print(theoretical)
+  diag(Wg)=1
   KL<-numeric(maxIter)
   
   while( ((diffKL < 0) && (iter < maxIter)) || (iter < 3)){
     iter=iter+1
-    cat(iter)
+    #   cat(iter)
     #-- Probabilities estimates
-    Pg = EdgeProba(exp(logWtree))
+    Pg = EdgeProba(Wg)
     if(sum(is.nan(Pg))!=0){
       browser()
       cat( ": adjust ", summary(c(logWtree)), "\n")
@@ -103,23 +106,24 @@ VE<-function(MO,SO,sigma_obs,omega,W,Wg,MH = matrix(10,n,r),maxIter,eps, alpha,b
     MH.new<-  (-MO) %*% (Pg[O,H] * omega[O,H]) / omegaH
     diffMH<-max(abs(MH-MH.new))
     
-    M<-cbind(MO, MH.new)
-    Mei=Meila(Wg) #justifier que Mei soit calculée avec Wg et pas Wgtree
-    lambda=SetLambda(Pg,Mei)
-    Wg.new= Pg/(Mei+lambda)
+    # M<-cbind(MO, MH.new)
+    # Mei=Meila(Wg) #justifier que Mei soit calculée avec Wg et pas Wgtree
+    # lambda=SetLambda(Pg,Mei)
+    #   browser()
+    Wg.new= computeWg(phi,omega,W,MH,MO,alpha) #Pg/(Mei+lambda)
     diag(Wg.new)=1
     Wg.new[which(Wg.new< beta.min)] = beta.min
+    
     #  Wg.new=trimW( Wg.new) # triggers nan in Pg
     Wdiff=max(abs(F_Sym2Vec(Wg.new)-F_Sym2Vec(Wg)))
     if(is.nan(Wdiff)) browser()
     
-    KL[iter]<-argminKL(F_Sym2Vec(log(Wg.new)), Pg, M,S,omega,W,p,lambda)
+    KL[iter]<-argminKL(F_Sym2Vec(log(Wg.new)), Pg, M,S,omega,phi,W,p)
     
     if(iter>1) diffKL =(KL[iter] - KL[iter-1])
     
     MH=MH.new
     Wg=Wg.new
-    logWtree<-computeWtree(omega, W, Wg, MH, MO, SO,phi,alpha=alpha, trim=FALSE)  
     
     #-- end
     
@@ -143,10 +147,13 @@ VE<-function(MO,SO,sigma_obs,omega,W,Wg,MH = matrix(10,n,r),maxIter,eps, alpha,b
       theme(strip.background=element_rect(fill="gray50",colour ="gray50"))
     print(g)
   }
+  Pg = EdgeProba(Wg)
+  
   res=list(Gprobs=Pg,Gweights=Wg,Hmeans=M,Hvar=S, KL=KL, diff=diff, diffW=diffW )
   return(res)
 }
-resVe=VE(MO,SO,sigma_obs,ome_init,W_init,Wg_init,maxIter=150,eps=1e-3, plot=TRUE, alpha=0)
+resVe=VE(MO,SO,sigma_obs,ome_init,W_init,Wg_init,maxIter=150,eps=1e-3, plot=TRUE, 
+         form="id1",alpha=0.6)
 
 h=15
 ome=omega[c(2:h,1),c(2:h,1)]
@@ -174,7 +181,7 @@ Mstep<-function(M,S,Pg, omega,W,maxIter, beta.min, trim=TRUE,plot=FALSE,eps, ver
   n=nrow(S) 
   SigmaTilde = (t(M)%*%M+ diag(colSums(S)) )/ n
   iter=0
-print("Iter n°:")
+  print("Iter n°:")
   while((diffJ>eps && iter < maxIter) || iter < 3){
     iter=iter+1
     print(iter)
@@ -187,7 +194,7 @@ print("Iter n°:")
     W.new[which(W.new< beta.min)] = beta.min
     diffW=max(abs(F_Sym2Vec(W.new)-F_Sym2Vec(W)))
     
-   # W=trimW(W)
+    # W=trimW(W)
     # omega
     maxi = 1e-3
     mini = 1e+3

@@ -44,8 +44,8 @@ init.mclust<-function(S,nb.missing=1, n.noise=50,plot=TRUE, title="",trueClique=
 # For OPTIM
 
 # Min for VE
-argminKL <- function(gamma, Pg, M,S,omega,W,p,lambda ){
-  
+argminKL <- function(gamma, Pg, M,S,omega,phi,W,p ){
+ # browser()
   r=ncol(omega)-p
   O = 1:p
   H=(p+1):(p+r)
@@ -56,9 +56,9 @@ argminKL <- function(gamma, Pg, M,S,omega,W,p,lambda ){
   KL <- -n*0.5*sum(log(diag(omega)))+0.5*omegaH*( t(M[,H])%*%M[,H]+sum(S[,H]) ) +   
     sum(diag(Pg[O,H]*omega[O,H] %*% (t(M[,H])%*%M[,O]) )) + 
     0.5*sum(diag( (Pg[O,O]*omega[O,O]) %*% EhZoZo)) -
-    n*0.5*2*sum(F_Sym2Vec(Pg)*log(F_Sym2Vec(CorOmegaMatrix(omega))))+
+    n*0.5*2*sum(F_Sym2Vec(Pg)*log(F_Sym2Vec(phi)))+
     2*sum(F_Sym2Vec(Pg)*(gamma-log(F_Sym2Vec(W))))-log(SumTree(F_Vec2Sym(exp(gamma))))+
-    log(SumTree(W))-lambda*(sum(exp(gamma)) - 0.5) -0.5*sum(log(S[,H]))
+    log(SumTree(W)) -0.5*sum(log(S[,H]))#-lambda*(sum(exp(gamma)) - 0.5)
   
   
   return(KL)
@@ -70,7 +70,49 @@ Grad_KL_Wg <- function(gamma, Cg, Pg, M,S,omega,W){
   return( F_Sym2Vec(Pg) - exp(gamma)*(F_Sym2Vec(Mei) + lambda)) # inversion du signe du lambda
 }
 
-# Max for Mstep
+computeWg<-function(phi,omega,W,MH,MO, alpha, form="theory"){
+  p=ncol(MO) ; r=ncol(MH)
+  O = 1:p ; H = (p+1):(p+r)
+  psi=phi^(-n*alpha*0.5)
+  Wg<-matrix(0,(p+r),(p+r))
+  if(form=="theory"){
+    Wg[O,O]<-W[O,O]*exp(-0.5*alpha*omega[O,O]*(t(MO)%*%MO))/psi[O,O]
+    Wg[O,H]<-W[O,H]*exp(-alpha*omega[O,H]*(t(MH)%*%MO))/psi[O,H]
+  }
+  if(form=="id1"){
+    Wg[O,O]<-psi[O,O]*exp(abs(-0.5*alpha*omega[O,O]*(t(MO)%*%MO)))/W[O,O]
+    Wg[O,H]<-psi[O,H]*exp(abs(-alpha*omega[O,H]*(t(MH)%*%MO)))/W[O,H]  
+  }
+  
+  if(form=="id2"){
+    Wg[O,O]<-psi[O,O]*exp(-0.5*alpha*omega[O,O]*(t(MO)%*%MO))/W[O,O]
+    Wg[O,H]<-psi[O,H]*exp(-alpha*omega[O,H]*(t(MH)%*%MO))/W[O,H]  
+  }
+  if(form=="id3"){
+    Wg[O,O]<-psi[O,O]*exp(abs(-0.5*alpha*omega[O,O]*(t(MO)%*%MO)))/W[O,O]
+    Wg[O,H]<-psi[O,H]*exp(abs(-alpha*omega[O,H]*(t(MH)%*%MO)))/W[O,H]  
+  }
+  
+  Wg[H,O]<-t(Wg[O,H])
+  diag(Wg) = 1
+ # browser()
+  gamma=log(Wg[O,H])
+  gamma[which(gamma<(-30))]=-30
+  gamma=gamma-mean(gamma)
+  gamma[which(gamma>10)]=10
+  Wg[O,H]=exp(gamma)
+  Wg[H,O]<-t(Wg[O,H])
+  gamma=log(F_Sym2Vec(Wg[O,O]))
+  gamma[which(gamma<(-30))]=-30
+  gamma=gamma-mean(gamma)
+  gamma[which(gamma>max(log(Wg[O,H])))]=max(log(Wg[O,H]))
+  Wg[O,O]=exp(F_Vec2Sym(gamma))
+  
+  diag(Wg) = 1
+  
+  return(Wg)
+}
+ # Max for Mstep
 
 argmaxJ<-function(gamma,Pg,omega,sigmaTilde,phi,lambda,n, trim=TRUE, verbatim=TRUE){
   W=F_Vec2Sym(exp(gamma))
@@ -300,10 +342,10 @@ computeWtree<-function(omega, W, Wg, MH, MO, SO,phi, alpha=0,trim=TRUE){
   # browser()
   sigmaO<-(t(MO)%*%MO + diag(colSums(SO)))/n
   
-  A<-log(Wg*phi^(-n*0.5)/W)
+  A<-log(Wg*phi^(-n*alpha*0.5)/W)
   #  browser()
-  B<-(0.5*omega[O,O]*t(MO)%*%MO*alpha)
-  C<-(omega[O,H]*t(MH)%*%MO)# - 2*n*omega[H,O]*diag(omega[O,O]%*%sigmaO)/omega[H,H])
+  B<-(0.5*omega[O,O]*t(MO)%*%MO)*alpha
+  C<-(omega[O,H]*t(MH)%*%MO*alpha)# - 2*n*omega[H,O]*diag(omega[O,O]%*%sigmaO)/omega[H,H])
   # browser()
   logWtree<-matrix(0,p+r,p+r)
   logWtree[O,O]<-A[O,O]+B
@@ -365,7 +407,7 @@ trimW<-function(W, trim=TRUE,verbatim=FALSE){
 ########################################
 # GENERAL
 
-generator_PLN<-function(Sigma,covariates=NULL, n=50){
+generator_PLN<-function(Sigma,covariates=NULL, n=50, seuil=20){
   p<-ncol(Sigma)
   if(!is.null(covariates)){
     n<-nrow(covariates)
@@ -383,9 +425,9 @@ generator_PLN<-function(Sigma,covariates=NULL, n=50){
   }
   
   Z<- rmvnorm(n, rep(0,nrow(Sigma)), Sigma)
-  while(sum((Z+prod)>21)>0){
+  while(sum((Z+prod)>seuil)>0){
     #  browser()
-    badlines=which((Z+prod)>21, arr.ind = TRUE)[,1]
+    badlines=which((Z+prod)>seuil, arr.ind = TRUE)[,1]
     Zbad<-Z[badlines,]
     Zgood=Z[-badlines,]
     Znew= rmvnorm(nrow(Zbad), rep(0,nrow(Sigma)), Sigma)
@@ -452,4 +494,131 @@ accppvtpr<-function(probs,ome,h, seuil=0.5){
   TPRO=round(sum((ome[-h,-h]==1)*(probs[-h,-h]>seuil))/sum(ome[-h,-h]==1), 2)
   
   return(c(Acc,AccH,AccO,PPV,PPVH,PPVO,TPR,TPRH,TPRO))
+}
+
+#rewrite data from scratch
+library(huge)
+library(Matrix)
+data_from_scratch2<-function(type, p=20,n=50, r=5, covariates=NULL,prob=log(p)/p,dens=log(p)/p,
+         signed=FALSE,v=0.01,draw=FALSE){
+  # make graph
+  graph<- generator_graph(graph=type,p=p,prob=prob,dens=dens,r=r)
+  param<-generator_param(G=as.matrix(graph),signed=signed,v=v)
+  data<-generator_PLN(param$sigma,covariates,n)
+  if(draw){
+    g=as_tbl_graph(as.matrix(graph)) %>%
+      ggraph(layout="nicely")+
+      geom_edge_link()+
+      geom_node_point(size=2, color="blue")
+    print(g)
+  }
+  
+  return(list(data=data,omega= param$omega))
+}
+
+F_Vec2Sym <- function(A.vec){
+  # Makes a symmetric matrix from the vector made of its lower tirangular part
+  n = (1+sqrt(1+8*length(A.vec)))/2
+  A.mat = matrix(0, n, n)
+  A.mat[lower.tri(A.mat)] = A.vec
+  A.mat = A.mat + t(A.mat)
+  return(A.mat)
+}
+
+##################################################################
+F_Sym2Vec <- function(A.mat){
+  # Makes a vector from the lower triangular par of a symmetric matrix
+  return(A.mat[lower.tri(A.mat)])
+}
+
+
+EMtree_corZ<-function(CovZ,n,  maxIter=30, cond.tol=1e-10, verbatim=TRUE, plot=FALSE){
+  CorZ=cov2cor(CovZ)
+  p = ncol(CorZ)
+  alpha.psi = Psi_alpha(CorZ, n, cond.tol=cond.tol)
+  psi = alpha.psi$psi
+  beta.unif = matrix(1, p, p); diag(beta.unif) = 0; beta.unif = beta.unif / sum(beta.unif)
+  FitEM = FitBetaStatic(beta.init=beta.unif, psi=psi, maxIter = maxIter,
+                        verbatim=verbatim, plot=plot)
+  return(FitEM)
+}
+
+VE<-function(MO,SO,sigma_obs,omega,W,Wg,MH = matrix(1,n,r),maxIter,eps, alpha,form,beta.min=1e-10, plot=FALSE){
+  t1=Sys.time()
+  n=nrow(MO);  p=ncol(MO);  O=1:ncol(MO); H=(p+1):ncol(omega);r=length(H); iter=0 ; 
+  omegaH=omega[H,H]; 
+  diffKL=-1 ; diff=c(1000); Wdiff=1; diffW=c(0.1); diffMH=1; diffM=c(0.1)
+  
+  M<-cbind(MO, MH)
+  phi=CorOmegaMatrix(omega)
+  SH <- 1/omegaH
+  S<-cbind(SO, rep(SH,n)) # all SHi have same solution, depending only on Mstep
+  # logWtree<-computeWtree(omega, W, Wg, MH, MO, SO,phi,alpha=alpha, trim=FALSE)  
+  Wg= computeWg(phi,omega,W,MH,MO,alpha,form=form)
+
+  diag(Wg)=1
+  KL<-numeric(maxIter)
+  
+  while( ((diffKL < 0) && (iter < maxIter)) || (iter < 3)){
+    iter=iter+1
+    #   cat(iter)
+    #-- Probabilities estimates
+    Pg = EdgeProba(Wg)
+    if(sum(is.nan(Pg))!=0){
+      browser()
+      cat( ": adjust ", summary(c(logWtree)), "\n")
+      logWtree=log(adjustW(exp(logWtree)))
+      cat("to: ",summary(c(logWtree)), "\n")
+      Pg = EdgeProba(exp(logWtree))
+    } 
+    #-- Updates
+    #- MH et SH
+    MH.new<-  (-MO) %*% (Pg[O,H] * omega[O,H]) / omegaH
+    diffMH<-max(abs(MH-MH.new))
+    
+    # M<-cbind(MO, MH.new)
+    # Mei=Meila(Wg) #justifier que Mei soit calculée avec Wg et pas Wgtree
+    # lambda=SetLambda(Pg,Mei)
+    #   browser()
+    Wg.new= computeWg(phi,omega,W,MH,MO,alpha, form=form) #Pg/(Mei+lambda)
+    diag(Wg.new)=1
+    Wg.new[which(Wg.new< beta.min)] = beta.min
+    
+    #  Wg.new=trimW( Wg.new) # triggers nan in Pg
+    Wdiff=max(abs(F_Sym2Vec(Wg.new)-F_Sym2Vec(Wg)))
+    if(is.nan(Wdiff)) browser()
+    
+    KL[iter]<-argminKL(F_Sym2Vec(log(Wg.new)), Pg, M,S,omega,phi,W,p)
+    
+    if(iter>1) diffKL =(KL[iter] - KL[iter-1])
+    
+    MH=MH.new
+    Wg=Wg.new
+    
+    #-- end
+    
+    if(iter>1){
+      diff = c(diff,diffKL)
+      diffW=c(diffW,Wdiff)
+      diffM=c(diffM,diffMH)
+    } 
+  }
+  KL=KL[1:iter]
+  t2=Sys.time(); time=t2-t1
+  cat(paste0("\nVE step converged in ",round(time,3), attr(time, "units")," and ", iter," iterations.",
+             "\nFinal W difference: ",round(diffW[iter],5),
+             "\nFinal KL difference: ",round(diff[iter],4)))
+  if(plot){
+    g=data.frame(Diff.W=diffW,  diff.KL=diff,diff.MH=diffM, PartofKL=KL) %>% rowid_to_column() %>% 
+      pivot_longer(-rowid,names_to="key",values_to = "values") %>% 
+      ggplot(aes(rowid,values, color=key))+
+      geom_point()+geom_line()+scale_color_brewer(palette="Dark2")+
+      facet_wrap(~key, scales="free")+theme_light()+labs(x="iter",y="")+
+      theme(strip.background=element_rect(fill="gray50",colour ="gray50"))
+    print(g)
+  }
+  Pg = EdgeProba(Wg)
+  
+  res=list(Gprobs=Pg,Gweights=Wg,Hmeans=M,Hvar=S, KL=KL, diff=diff, diffW=diffW )
+  return(res)
 }
