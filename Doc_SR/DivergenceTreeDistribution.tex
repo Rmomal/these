@@ -16,6 +16,12 @@
 \usepackage[colorinlistoftodos]{todonotes}
 \usepackage[colorlinks=true, allcolors=blue]{hyperref}
 
+\newcommand{\Esp}{\mathbb{E}}
+\newcommand{\Hcal}{\mathcal{H}}
+\newcommand{\Jcal}{\mathcal{J}}
+\newcommand{\Ncal}{\mathcal{N}}
+\newcommand{\Pcal}{\mathcal{P}}
+\renewcommand{\Pr}{\mathbb{P}}
 \newcommand{\Tcal}{\mathcal{T}}
 
 \title{Divergence between distributions over spanning trees}
@@ -125,8 +131,86 @@ IS(F || G)
 - p^{p-2}.
 $$
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage \section{Testing hypotheses in the PLNtree model} 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\paragraph{PLNtree model.}
+\begin{itemize}
+ \item $T \sim f(\cdot; \beta)$;
+ \item $\{Z_i\}_{1 \leq i \leq n}$ iid $\mid T$: $Z_i \mid T \sim \Ncal(0, \Omega_T)$, each $\Omega_T$ being extracted from a unique matrix $\Omega$ according to $T$;
+ \item $\{Y_{ij}\}_{1 \leq i \leq n, 1 \leq j \leq p}$ indep. $\mid \{Z_i\}$: $Y_{ij} \mid Z_{ij} \sim \Pcal(e^{x_i^\intercal \theta_j + Z_{ij}})$.
+\end{itemize}
+
+\paragraph{Problem.} Consider data arising from two sites (1 and 2): Test
+$$
+H_0^\beta = \{\beta^1 = \beta^2\}
+$$
+or
+$$
+H_0^{\beta \Omega} = \{(\beta^1, \Omega^1) = (\beta^2, \Omega^2)\}
+$$
+using a likelihood ratio test (LRT).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Inference of the PLNtree} 
+
+Following \cite{MRA19}, we aim at minimizing the lower bound 
+\begin{align*}
+ \Jcal(\beta, \Omega, \theta; h, g) 
+ & = \log p_{\beta, \Omega, \theta}(Y) - KL(h(Z) \otimes g(T) || p(Z, T \mid Y)) \\
+ & = \Esp_{g, h} \log p_{\beta, \Omega, \theta}(Y, Z, T) + \Hcal(h) + \Hcal(g) \\
+ & = \Esp_{g} \log p_{\beta}(T) + \Esp_{g, h} \log p_{\Omega_T}(Z) 
+ + \Esp_{h} \log p_{\beta}(Y \mid Z) + \Hcal(h) + \Hcal(g) 
+\end{align*}
+where $h(T)$ is a tree distribution parametrized with $(\widetilde{\beta}_{kl})$ and $g$ is a product of multivariate diagonal Gaussian distributions: $h(Z) = \prod_{i=1}^n \Ncal(Z_i; \widetilde{m}_i, \widetilde{S}_i)$.
+
+\paragraph{2-step procedure.} 
+Because
+\begin{align*}
+ \Jcal(\beta, \Omega, \theta; g, h) 
+ = & \; \Esp_{h} \log p_{\Omega}(Z) + \Esp_{h} \log p_{\beta}(Y \mid Z) + \Hcal(h) & & (a)\\
+ & + \Esp_{g, h} \log p_{\Omega_T}(Z) - \Esp_{h} \log p_{\Omega}(Z) & & (b)\\
+%  \Jcal_3(\beta, \Omega; g, h)
+ & + \Esp_{g} \log p_{\beta}(T) + \Hcal(g), & & (c)
+\end{align*}
+we first use a VEM algorithm to fit (using \url{PLNmodels})
+$$
+(\widehat{\Omega}, \widehat{\theta}, \widetilde{h}) = \arg\max_{\Omega, \theta, h} \; \Esp_{h} \log p_{\Omega}(Z) + \Esp_{h} \log p_{\theta}(Y \mid Z) + \Hcal(h),
+$$
+and then use an EM algorithm to fit (using \url{EMtree})
+$$
+(\widehat{\beta}, \widetilde{g}) = \arg\max_{\beta, g} \; \Esp_{g, \widetilde{h}} \log p_{\widehat{\Omega}_T}(Z) + \Esp_{g} \log p_{\beta}(T) + \Hcal(g).
+$$
+
+\paragraph{Evaluation of the resulting lower bound.} After optimization we have that
+\begin{align*}
+ \Esp_{\widetilde{h}} \log p_{\widehat{\Omega}}(Z)
+ & = \frac{n}2 \log |\widehat{\Omega}| - \frac{np}2, \\
+ \Esp_{\widetilde{h}} \log p_{\widehat{\theta}}(Y \mid Z)
+ & = \sum_{i, j} - e^{x_i^\intercal \widehat{\theta}_j + \widetilde{m}_{ij} + \widetilde{s}_{ijj}^2/2} + Y_{ij} (x_i^\intercal \widehat{\theta}_j + \widetilde{m}_{ij}) - \log(Y_{ij} !), \\
+ \Hcal(\widetilde{h})
+ & = - \frac12 \sum_i \log|\widetilde{S}_i|
+ = - \frac12 \sum_{i, j} \log|\widetilde{s}_{ij}^2|, \\
+ \Esp_{\widetilde{g}, \widetilde{h}} \log p_{\widehat{\Omega}_T}(Z)
+ & = 
+ \frac{n}2 \sum_j \log \widehat{\omega}_{jj} 
+ + \frac12 \sum_{i, j} \widehat{\omega}_{jj} (\widetilde{m}_{ij}^2 + \widetilde{s}_{ij}^2) 
+ + \frac{n}2 \sum_{j < k} \widetilde{P}_{jk} \log(1 - \widehat{\rho}_{kl}^2)
+ + \sum_{i, j < k} \widetilde{P}_{jk} \widehat{\omega}_{jk} \widetilde{m}_{ij} \widetilde{m}_{ik}, \\
+ \Esp_{\widetilde{g}} \log p_{\widehat{\beta}}(T) 
+ & = \sum_{j < k} \widetilde{P}_{jk} \log \widehat{\beta}_{jk} - \log \widehat{B}, 
+\\
+ \Hcal(\widetilde{g})
+ & = - \sum_{j < k} \widetilde{P}_{jk} \log \widetilde{\beta}_{jk} + \log \widetilde{B}
+\end{align*}
+ where $\widetilde{P}_{jk} = \Pr_{\widetilde{g}}\{jk \in T\}$. 
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage 
 \bibliography{/home/robin/Biblio/BibGene}
 \bibliographystyle{plain}
 
