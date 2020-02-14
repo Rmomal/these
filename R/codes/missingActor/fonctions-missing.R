@@ -22,7 +22,9 @@ findCliques<-function(covX,k){
   return(cliquelist = split(1:length(reordered.cluster),reordered.cluster))
 }
 init.mclust<-function(S,nb.missing=1, n.noise=50,plot=TRUE, title="",trueClique=NULL){
-  # browser()
+ browser()
+  
+  
   X<-data.frame(t(t(eigen(S)$vectors[,1:2])*sqrt(eigen(S)$values[1:2])))
   
   p=nrow(X)+nb.missing
@@ -34,10 +36,19 @@ init.mclust<-function(S,nb.missing=1, n.noise=50,plot=TRUE, title="",trueClique=
   noiseInit<-sample(c(T,F), size=nrow(X)+n.noise, replace=T, prob=c(3, 1))
   
   datapolar=cart2pol(x=data[,1],y=data[,2])[,1:2]
-  datapolar=datapolar %>% mutate(theta2=ifelse(theta>pi,theta-pi,theta)) %>% dplyr::select(r,theta2)
-  newdata=pol2cart(datapolar$r,datapolar$theta2)[,1:2]
+  datapolar=datapolar %>% mutate(theta2=ifelse(theta>pi,theta-pi,theta)) %>%
+    dplyr::select(r,theta2)
   
-  clust=Mclust(data=newdata,initialization = list(noise=noiseInit),G=nb.missing)
+col=rep(1,nrow(datapolar))
+col[1:15]=2
+col[trueClique]=3
+  plot(datapolar,col=col)
+  
+  newdata=pol2cart(datapolar$r,datapolar$theta2)[,1:2]
+  plot(newdata,col=c(rep(2,15),c(1,nrow(newdata)-15)))
+  clust=Mclust(data=newdata,
+               initialization = list(noise=noiseInit),
+               G=nb.missing)
   groups<-mclust::map(clust$z)
   res<-which(groups==1)[which(groups==1)<=nrow(X)] 
   if(plot){
@@ -128,9 +139,8 @@ VE<-function(MO,SO,sigma_obs,omega,W,Wg,MH = matrix(1,n,r),maxIter,minIter,eps,
     g=data.frame(Diff.W=diffW,  diff.KL=diff,diff.MH=diffM, PartofKL=KL) %>% rowid_to_column() %>% 
       pivot_longer(-rowid,names_to="key",values_to = "values") %>% 
       ggplot(aes(rowid,values, color=key))+
-      geom_point()+geom_line()+scale_color_brewer(palette="Dark2")+
-      facet_wrap(~key, scales="free")+theme_light()+labs(x="iter",y="")+
-      theme(strip.background=element_rect(fill="gray50",colour ="gray50"))
+      geom_point()+geom_line()+ facet_wrap(~key, scales="free")+ labs(x="iter",y="") +
+      mytheme.dark
     print(g)
   }
   Pg = EdgeProba(Wg)
@@ -281,9 +291,8 @@ Mstep<-function(M,S,Pg, omega,W,maxIter, beta.min, trim=TRUE,plot=FALSE,eps, ver
     g=data.frame(Diff.W=diff.W,Diff.J=diff.J, Jbound=maxJ) %>% rowid_to_column() %>% 
       pivot_longer(-rowid,names_to="key",values_to = "values") %>% 
       ggplot(aes(rowid,values, color=key))+
-      geom_point()+geom_line()+scale_color_brewer(palette="Dark2")+
-      facet_wrap(~key, scales="free")+theme_light()+labs(x="iter",y="")+
-      theme(strip.background=element_rect(fill="gray50",colour ="gray50"))
+      geom_point()+geom_line()+ mytheme.dark+
+      facet_wrap(~key, scales="free")+labs(x="iter",y="") 
     print(g)
   }
   res=list(W=W, omega=omega, diff=diff, diffW=diffW, finalJ=maxJ[iter])
@@ -556,37 +565,36 @@ ggimage<-function(data){
     geom_tile() +guides(fill=FALSE)+ theme(plot.title = element_text(size=10, hjust=0.5))
 }
 plotVEM<-function(probs,omega,r,seuil){
+  # plots heatmaps for the chosen threshold and print verdicts as title
   q=ncol(omega)
   h=(q-r):q
   performance=accppvtpr(probs,omega,h,seuil)
   Acc=performance[1] ;AccH=performance[2] ;AccO=performance[3] 
   PPV=performance[4] ;PPVH=performance[5] ; PPVO=performance[6]
   TPR=performance[7] ;TPRH=performance[8] ;TPRO=performance[9] 
-  p1<-ggimage(resVe$Gprobs)+labs(title=paste0("G hat (thresh=",seuil,")"))
-  p2<-ggimage(ome)+labs(title="G")
+  p1<-ggimage(resVe$Gprobs)+labs(title=paste0("G hat"))
+  p2<-ggimage(ome)+labs(title="True G")
   grid.arrange(p1,p2,ncol=2, top=paste0("Tpr=",TPR," (TprO=",TPRO," , TprH=",TPRH,
                                         ")\n Ppv=",PPV," (PpvO=",PPVO," , PpvH=",PPVH,")"))
   
 }
-
-plotM<-function(resM,ome,h,seuil){
-  performance=accppvtpr(resVe$Gprobs,ome,h,seuil)
-  Acc=performance[1] ;AccH=performance[2] ;AccO=performance[3] 
-  PPV=performance[4] ;PPVH=performance[5] ; PPVO=performance[6]
-  TPR=performance[7] ;TPRH=performance[8] ;TPRO=performance[9] 
-  p1<-ggimage(resVe$Gprobs)+labs(title=paste0("G hat (thresh=",seuil,")"))
-  p2<-ggimage(ome)+labs(title="G")
-  grid.arrange(p1,p2,ncol=2, top=paste0("Tpr=",TPR," (TprO=",TPRO," , TprH=",TPRH,
-                                        ")\n Ppv=",PPV," (PpvO=",PPVO," , PpvH=",PPVH,")"))
-  
-}
-
 
 courbes_seuil<-function(probs,omega,h,seq_seuil){
-
+  
   tmp=sapply(seq_seuil,function(x)  accppvtpr(seuil=x,probs=probs,omega=omega,h=h))
   res=data.frame(cbind(t(tmp),seq_seuil))
   colnames(res)=c("Acc","AccH","AccO","PPV","PPVH","PPVO","TPR","TPRH","TPRO","seuil")
   return(res)
   
+}
+plotVerdict<-function(values){
+  # plots verdict curves along threshold from VEM result
+
+  values %>%as_tibble() %>%    gather(key,value, -seuil) %>%
+    mutate(status=ifelse(substr(key,4,4)=="","all",substr(key,4,4))) %>% 
+    mutate(key=substr(key,1,3)) %>% spread(key,value,-seuil) %>% 
+    mutate(PPV=ifelse(PPV<0,NA,PPV)) %>% 
+    ggplot(aes(TPR,PPV,color=status))+
+    geom_point()+  geom_line()+
+    facet_wrap(~status, scales="free")+mytheme.dark
 }

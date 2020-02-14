@@ -11,7 +11,16 @@ library(mclust)
 library(MASS)
 library(reshape2)#for ggimage
 library(gridExtra)
+library(harrypotter)
 source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
+
+
+mytheme.dark <- list(theme_light(), scale_color_brewer("",palette="Dark2"),guides(color=FALSE),
+                theme(strip.background=element_rect(fill="gray50",colour ="gray50")))
+# mypal<-c(brewer.pal(3, "Blues"),brewer.pal(3, "Reds"),brewer.pal(3, "Greens"))
+# mypal<-c(brewer.pal(8, "Dark2"),"blue","red")
+mytheme <- list(theme_light(), scale_fill_brewer("",palette="Dark2"),#scale_colour_hp_d(option = "RavenClaw", name = ""), #scale_color_manual("",values=mypal),
+                guides(color=FALSE),theme(strip.background=element_rect(fill="gray50",colour ="gray50")))
 
 # simu parameters
 set.seed(7)
@@ -60,7 +69,8 @@ sigma_obs=PLNfit$model_par$Sigma
 #--  Initialize
 
 # whole Z
-initviasigma=init.mclust(cov2cor(sigma_obs),title="Sigma",trueClique = trueClique,n.noise=p*3+5)
+initviasigma=init.mclust(scale(cov2cor(sigma_obs)),title="Sigma",
+                         trueClique = trueClique,n.noise=p*3*4/pi)
 #findCliques(cov2cor(sigma_obs),k = 2)
 initial.param<-initEM(sigma_obs,n=n,cliquelist = list(initviasigma),pca=TRUE) # quick and dirty modif for initEM to take a covariance matrix as input
 omega_init=initial.param$K0
@@ -89,15 +99,15 @@ Pg=resVe.Th$Gprobs
 resM=Mstep(M,S,Pg, omega_init,W_init,maxIter=2, beta.min=1e-6, eps=1e-2 ,plot=TRUE)
 
 
-VEMtree<-function(MO,SO,sigma_obs,ome_init,W_init,Wg_init, verbatim=TRUE, plot=TRUE){
+VEMtree<-function(MO,SO,sigma_obs,ome_init,W_init,Wg_init, verbatim=TRUE, plot=TRUE, eps=1e-2){
   MH = matrix(100,n,r); omega=omega_init;  W=W_init;  Wg=Wg_init
   n=nrow(MO);  p=ncol(MO);  O=1:ncol(MO); H=(p+1):ncol(omega);r=length(H); iter=0 ; 
-  KL=c() ; J=c()
+  KL=c() ; J=c();diffW=c();diffOm=c()
   t1=Sys.time()
-  while(iter<2){
+  while((diffW[iter] > eps && diffOm[iter] > eps) || iter<2){
     iter=iter+1
     #VE
-    resVe<-VE(MO,SO,sigma_obs,omega,W,Wg,MH=MH,maxIter=5,minIter=3,eps=1e-3, plot=FALSE, 
+    resVe<-VE(MO,SO,sigma_obs,omega,W,Wg,MH=MH,maxIter=2,minIter=1,eps=1e-3, plot=FALSE, 
               form="theory",alpha=0.9, verbatim=FALSE)
     KL[iter]=resVe$KL
     M=resVe$Hmeans ; MH=matrix(M[,H],n,r)
@@ -105,9 +115,13 @@ VEMtree<-function(MO,SO,sigma_obs,ome_init,W_init,Wg_init, verbatim=TRUE, plot=T
     Pg=resVe$Gprobs
     Wg=resVe$Gweights
     #M
-    resM<-Mstep(M,S,Pg, ome_init,W_init,maxIter=5, beta.min=1e-6, eps=1e-2 ,plot=FALSE, verbatim=FALSE)
-    W=resM$W
-    omega=resM$omega
+    resM<-Mstep(M,S,Pg, ome_init,W_init,maxIter=2, beta.min=1e-6, eps=1e-2 ,plot=FALSE, verbatim=FALSE)
+    W.new=resM$W
+    diffW[iter]=abs(max(W.new-W))
+    W=W.new
+    omega.new=resM$omega
+    diffOm[iter]=abs(max(omega.new-omega))
+    omega=omega.new
     J[iter]=resM$finalJ
   }
   t2=Sys.time()
@@ -115,26 +129,20 @@ VEMtree<-function(MO,SO,sigma_obs,ome_init,W_init,Wg_init, verbatim=TRUE, plot=T
   if(verbatim) cat(paste0("\nVEMtree ran in ",round(time,3), attr(time, "units")," and ", iter," iterations.",
                           "\nFinal Jbound difference: ",round(J[iter]-J[iter-1],5)))
   if(plot){
-    g=data.frame(Jbound=J, KL=KL) %>% rowid_to_column() %>% 
+    g=data.frame(Jbound=J, KL=KL, diffW=diffW, diffOm=diffOm) %>% rowid_to_column() %>% 
       pivot_longer(-rowid,names_to="key",values_to = "values") %>% 
       ggplot(aes(rowid,values, color=key))+
-      geom_point()+geom_line()+scale_color_brewer(palette="Dark2")+
-      facet_wrap(~key, scales="free")+theme_light()+labs(x="iter",y="")+
-      theme(strip.background=element_rect(fill="gray50",colour ="gray50"))
+      geom_point()+geom_line() + facet_wrap(~key, scales="free")+labs(x="iter",y="")+ mytheme.dark
     print(g)
   }
   
   return(list(M=M,S=S,Pg=Pg,Wg=Wg,W=W,omega=omega))
 }
-resVEM<-VEMtree(MO,SO,sigma_obs,omega_init,W_init,Wg_init)
+resVEM<-VEMtree(MO,SO,sigma_obs,omega_init,W_init,Wg_init, eps=1e-1)
 plotVEM(resVEM$Pg,ome,r=1,seuil=0.5)
 values=courbes_seuil(probs = resVEM$Pg,omega = ome,h = 15,seq_seuil = seq(0,1,0.05))
-values %>%as_tibble() %>%    gather(key,value, -seuil) %>% 
-  ggplot(aes(seuil,value,color=key))+
-  geom_point()+  geom_line()+
-  facet_wrap(~key, scales="free")+theme_light()+scale_color_brewer(palette="Paired")+
-  theme(strip.background=element_rect(fill="gray50",colour ="gray50"))
+plotVerdict(values)
 
 #TODO
 # choice of alpha
-# stop criterion
+# VEM stop criterion

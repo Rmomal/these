@@ -1,0 +1,15 @@
+---
+title: "VEMtree: Results"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+# Simulating data
+
+# Initialization
+
+# VEMtree function
+
+# Results
