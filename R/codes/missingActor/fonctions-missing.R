@@ -1,5 +1,61 @@
 #############
 # initialization
+initEM <- function(covX = NULL,n=1e6,
+                   #                   S = NULL,
+                   pca=TRUE,cliquelist) {
+  # -----------------------------------------------------------------------------------------------------------------------------
+  # FUNCTION
+  #   Initialize EM by selecting a possible clique and taking the principal component of this clique
+  #   as initial value for the hidden variable
+  # INPUT
+  #   X      : data matrix (nxp)
+  #   clique : vector containing the indices of the nodes in the clique. Default is NULL and the clique
+  #            is determined with hierarchical clustering.
+  # OUTPUT
+  #   Sigma0    : initial value of complete covariance matrix ((p+1)x(p+1) matrix)
+  #   K0        : initial value of complete precision matrix ((p+1)x(p+1) matrix)
+  #   clique    : vector containing the indices of the nodes in the clique
+  # -----------------------------------------------------------------------------------------------------------------------------
+  
+  # ajout Rmomal 
+  
+  X=rmvnorm(n,rep(0,nrow(covX)), covX)
+  #  n<-nrow(X)
+  nbCliques <- length(cliquelist)
+  if(pca){
+    pr <- lapply(1:nbCliques, function(k)
+      prcomp(t(X[, cliquelist[[k]]]), center = TRUE, scale = TRUE))
+    mat <- lapply(1:nbCliques, function(k)
+      scale(pr[[k]]$rotation[, 1], center = TRUE, scale = TRUE))
+    newX <- scale(X, center = TRUE, scale = TRUE)
+    newX <- scale(cbind(newX, do.call(cbind, mat)), center = TRUE, scale = TRUE)
+  }else{
+    
+    # mat <- lapply(1:nbCliques, function(k)
+    #   rowMeans(X[, cliquelist[[k]]]) )
+    mat <- lapply(1:nbCliques, function(k){
+      apply(X[, cliquelist[[k]]], 1, function(x) median(x))
+    }
+    )
+    
+    mat=do.call(cbind, mat)
+    newX <- scale(cbind(X, mat), center = TRUE, scale = TRUE) # pourquoi scale
+  }
+  
+  
+  # pour chacune des cliques identifiées dans X, on résume les variables liées par une acp.
+  # en récupérant le vecteur principal de chaque acp, qui vont jouer le rôle de nouvelles variables
+  # qui étaient manquantes et corrélées à toutes les variables de la clique.
+  mu <- matrix(0, ncol(newX), 1)
+  newX <- newX + mvrnorm(n, mu, 0.01 * diag(ncol(newX)))
+  Sigma0 <- 1 / n * t(newX) %*% (newX)
+  K0 <- solve(Sigma0)
+  return(structure(list(
+    Sigma0 = Sigma0,
+    K0 = K0,
+    cliquelist = cliquelist
+  )))
+}
 #Find the clique created by the missing actor
 findCliques<-function(covX,k){
   # -----------------------------------------------------------------------------------------------------------------------------
@@ -22,52 +78,53 @@ findCliques<-function(covX,k){
   return(cliquelist = split(1:length(reordered.cluster),reordered.cluster))
 }
 init.mclust<-function(S,nb.missing=1, n.noise=50,plot=TRUE, title="",trueClique=NULL){
- browser()
+  #browser()
+  #X <-data.frame(t(t(eigen(S)$vectors[,1:2])*sqrt(eigen(S)$values[1:2])))
+  Scomp=prcomp(S,scale. = TRUE)
+  data=data.frame(Scomp$rotation[,1:2]%*%diag(Scomp$sdev[1:2]))
+  
+  datapolar=cart2pol(x=data[,1],y=data[,2])[,1:2] # recup r et theta
   
   
-  X<-data.frame(t(t(eigen(S)$vectors[,1:2])*sqrt(eigen(S)$values[1:2])))
-  
-  p=nrow(X)+nb.missing
-  b=apply(X, 2, range)
-  poissonNoise<-apply(b, 2, function(x,n=n.noise){
-    runif(n,min=x[1]-0.1, max=x[2]+0.1)
-  })
-  data=rbind(X, poissonNoise)
-  noiseInit<-sample(c(T,F), size=nrow(X)+n.noise, replace=T, prob=c(3, 1))
-  
-  datapolar=cart2pol(x=data[,1],y=data[,2])[,1:2]
-  datapolar=datapolar %>% mutate(theta2=ifelse(theta>pi,theta-pi,theta)) %>%
+  datapolar_half=datapolar %>% mutate(theta2=ifelse(theta>pi,theta-pi,theta)) %>%
     dplyr::select(r,theta2)
   
-col=rep(1,nrow(datapolar))
-col[1:15]=2
-col[trueClique]=3
-  plot(datapolar,col=col)
+  # noise in polar coords
+  r <- sqrt(runif(n.noise))
+  theta2 <- runif(n.noise, 0, pi)
   
-  newdata=pol2cart(datapolar$r,datapolar$theta2)[,1:2]
-  plot(newdata,col=c(rep(2,15),c(1,nrow(newdata)-15)))
+  datapolarall=rbind(datapolar_half,cbind(r,theta2)) 
+  
+  newdata=pol2cart(datapolarall$r,datapolarall$theta2)[,1:2]
+  #plot(newdata,col=col, xlim=c(-1,1),ylim=c(-1,1), pch=20)
+  
+  #  noiseInit<-sample(c(T,F), size=nrow(X)+n.noise, replace=T, prob=c(3, 1))
+  noiseInit<-c(rep(F,ncol(S)),rep(T,n.noise))
   clust=Mclust(data=newdata,
                initialization = list(noise=noiseInit),
                G=nb.missing)
   groups<-mclust::map(clust$z)
-  res<-which(groups==1)[which(groups==1)<=nrow(X)] 
-  if(plot){
-    if(!is.null(trueClique)){
-      #False positives rate
-      N=setdiff(1:p,trueClique)
-      FP=sum(res%in%N)/length(N)
-      # False negatives rate
-      FN=sum(setdiff(1:p,res)%in%trueClique)/length(trueClique)
-      title=paste0(title,":"," FN=", round(FN,2),",FP=",round(FP,2))
-    }
-    
-    g= ggplot(X,aes(X1,X2, label=rownames(X),color=rownames(X)%in%res))+geom_point(size=0.1)+
+  res<-which(groups==1)[which(groups==1)<=nrow(S)] 
+  # if(length(res)==0)browser()
+  
+  #   browser()
+  if(!is.null(trueClique)){
+    #False positives rate
+    p=ncol(S)
+    N=setdiff(1:p,trueClique)
+    FP=sum(res%in%N)/length(N)
+    # False negatives rate
+    FN=sum(setdiff(1:p,res)%in%trueClique)/length(trueClique)
+    title=paste0(title,":"," FN=", round(FN,2),",FP=",round(FP,2))
+  }
+  if(plot){   
+    g= ggplot(data,aes(X1,X2, label=1:p,color=(1:p)%in%res))+geom_point(size=0.1)+
       theme_light()+geom_text()+labs(x="eig vect 1",y="eig vect 2", title=title)+
       guides(color=FALSE)+scale_color_brewer(palette="Dark2")+
       geom_hline(yintercept=0, color="gray50")+geom_vline(xintercept=0, color="gray50")
     print(g)
   }
-  return(res)
+  return(list(init=res, FPN=c(FN,FP)))
 }
 
 #################
@@ -93,7 +150,7 @@ VE<-function(MO,SO,sigma_obs,omega,W,Wg,MH = matrix(1,n,r),maxIter,minIter,eps,
   diag(Wg)=1
   KL<-numeric(maxIter)
   
-  while( ((diffKL < 0) && (iter < maxIter)) || (iter < minIter)){
+  while( ((diffW > eps) && (iter < maxIter)) || (iter < minIter)){
     iter=iter+1
     #   cat(iter)
     #-- Probabilities estimates
@@ -159,12 +216,16 @@ argminKL <- function(gamma, Pg, M,S,omega,phi,W,p ){
   
   EhZoZo = t(M[,O])%*%M[,O]+ diag(colSums(S[,O]))
   
-  KL <- -n*0.5*sum(log(diag(omega)))+0.5*omegaH*( t(M[,H])%*%M[,H]+sum(S[,H]) ) +   
-    sum(diag(Pg[O,H]*omega[O,H] %*% (t(M[,H])%*%M[,O]) )) + 
-    0.5*sum(diag( (Pg[O,O]*omega[O,O]) %*% EhZoZo)) -
-    n*0.5*2*sum(F_Sym2Vec(Pg)*log(F_Sym2Vec(phi)))+
-    2*sum(F_Sym2Vec(Pg)*(gamma-log(F_Sym2Vec(W))))-log(SumTree(F_Vec2Sym(exp(gamma))))+
-    log(SumTree(W)) -0.5*sum(log(S[,H]))#-lambda*(sum(exp(gamma)) - 0.5)
+  KL <- 
+    0.5 * sum(diag(omegaH * (t(M[, H]) %*% M[, H] + sum(S[, H])))) +
+    sum(diag(Pg[O, H] * omega[O, H] %*% (t(M[, H]) %*% M[, O]))) +
+    0.5 * sum(diag((Pg[O, O] * omega[O, O]) %*% EhZoZo)) -
+    n * 0.5 * sum(log(diag(omega))) -
+    n * 0.5 * 2 * sum(F_Sym2Vec(Pg) * log(F_Sym2Vec(phi))) +
+    2 * sum(F_Sym2Vec(Pg) * (gamma - log(F_Sym2Vec(W)))) -
+    log(SumTree(F_Vec2Sym(exp(gamma)))) +
+    log(SumTree(W)) - 
+    0.5 * sum(log(S[, H]))#-lambda*(sum(exp(gamma)) - 0.5)
   
   
   return(KL)
@@ -180,25 +241,25 @@ computeWg<-function(phi,omega,W,MH,MO, alpha, form="theory"){
     logWg[O,O]<-log(W[O,O])+log(psi[O,O])-0.5*alpha*omega[O,O]*(t(MO)%*%MO)
     logWg[O,H]<-log(W[O,H])+log(psi[O,H])-alpha*omega[O,H]*(t(MH)%*%MO)
   }
-  if(form=="id1"){
-    
-    logWg[O,O]<-log(W[O,O])+log(psi[O,O])+abs(-0.5*alpha*omega[O,O]*(t(MO)%*%MO))
-    logWg[O,H]<-log(W[O,H])+log(psi[O,H])+abs(-alpha*omega[O,H]*(t(MH)%*%MO))
-  }
-  
-  if(form=="id2"){
-    logWg[O,O]<- -0.5*alpha*omega[O,O]*(t(MO)%*%MO)-log(W[O,O])-log(psi[O,O])
-    logWg[O,H]<- -alpha*omega[O,H]*(t(MH)%*%MO)-log(W[O,H]) -log(psi[O,H])
-  }
-  if(form=="id3"){
-    logWg[O,O]<- abs(-0.5*alpha*omega[O,O]*(t(MO)%*%MO))-log(W[O,O])-log(psi[O,O])
-    logWg[O,H]<- abs(-alpha*omega[O,H]*(t(MH)%*%MO))-log(W[O,H])-log(psi[O,H]) 
-  }
-  if(form=="id4"){
-    #  browser()
-    logWg[O,O]<-log(W[O,O]) -0.5*alpha*omega[O,O]*(t(MO)%*%MO)-log(psi[O,O])
-    logWg[O,H]<-log(W[O,H]) -alpha*omega[O,H]*(t(MH)%*%MO)-log(psi[O,H])
-  }
+  # if(form=="id1"){
+  #   
+  #   logWg[O,O]<-log(W[O,O])+log(psi[O,O])+abs(-0.5*alpha*omega[O,O]*(t(MO)%*%MO))
+  #   logWg[O,H]<-log(W[O,H])+log(psi[O,H])+abs(-alpha*omega[O,H]*(t(MH)%*%MO))
+  # }
+  # 
+  # if(form=="id2"){
+  #   logWg[O,O]<- -0.5*alpha*omega[O,O]*(t(MO)%*%MO)-log(W[O,O])-log(psi[O,O])
+  #   logWg[O,H]<- -alpha*omega[O,H]*(t(MH)%*%MO)-log(W[O,H]) -log(psi[O,H])
+  # }
+  # if(form=="id3"){
+  #   logWg[O,O]<- abs(-0.5*alpha*omega[O,O]*(t(MO)%*%MO))-log(W[O,O])-log(psi[O,O])
+  #   logWg[O,H]<- abs(-alpha*omega[O,H]*(t(MH)%*%MO))-log(W[O,H])-log(psi[O,H]) 
+  # }
+  # if(form=="id4"){
+  #   #  browser()
+  #   logWg[O,O]<-log(W[O,O]) -0.5*alpha*omega[O,O]*(t(MO)%*%MO)-log(psi[O,O])
+  #   logWg[O,H]<-log(W[O,H]) -alpha*omega[O,H]*(t(MH)%*%MO)-log(psi[O,H])
+  # }
   
   logWg[H,O]<-t(logWg[O,H])
   diag(logWg) = 0
@@ -245,7 +306,7 @@ Mstep<-function(M,S,Pg, omega,W,maxIter, beta.min, trim=TRUE,plot=FALSE,eps, ver
   SigmaTilde = (t(M)%*%M+ diag(colSums(S)) )/ n
   iter=0
   
-  while((diffW>eps && iter < maxIter) || iter < 3){
+  while((diffW>eps && iter < maxIter) ){
     iter=iter+1
     
     if(verbatim)  cat(paste0("\nIter n°:",iter))
@@ -303,7 +364,7 @@ argmaxJ<-function(gamma,Pg,omega,sigmaTilde,phi,n, trim=TRUE, verbatim=TRUE){
   
   maxJ <- sum(Pg*F_Vec2Sym(F_Sym2Vec(gamma) + n*0.5*F_Sym2Vec(log(phi)))) + 
     n*0.5*sum(log(diag(omega))) - log(SumTree(exp(gamma))) - 
-    0.5*n*sum( Pg * omega * sigmaTilde)# - n*0.5*sum(diag(omega*sigmaTilde)) 
+    0.5*n*sum(diag( Pg * omega %*% sigmaTilde))# - n*0.5*sum(diag(omega*sigmaTilde)) 
   # + lambda*(sum(W)-0.5)
   
   return(maxJ)
@@ -364,6 +425,37 @@ computeOffDiag<-function(omegaDiag,SigmaTilde){
   )
   diag(omega)=omegaDiag
   return(omega)
+}
+
+
+#=====
+#Lower bound
+
+LowerBound<-function(Pg ,omega, M, S, W, Wg,p){
+  n=nrow(M)
+  q=nrow(omega)
+  r=q-p
+  O=1:p
+  H=(p+1):q
+  psi=CorOmegaMatrix(omega)
+  #Egh lop (Z |T)
+  # browser()
+  T1<- 2*sum(F_Sym2Vec(Pg * log (psi ^(n*0.5)))) + n*0.5* sum(log(diag(omega))) 
+  - 0.5* sum(diag(Pg*omega %*% (t(M)%*%M + diag(colSums(S))))) - q *n* 0.5 * log(2*pi)
+  
+  # H(h(ZO)): stays constant
+  # T2<-0.5*sum(log(S[,O])) + p*n*0.5 * ( 1+log(2*pi))
+  
+  # Eg log(p) - Eg log(g)
+  T2<-sum(Pg * (log(W) - log(Wg))) - log(SumTree(W))+ log(SumTree(Wg))
+  
+  #Eh log h(ZH)
+  T3<- 0.5*sum(log(S[,H])) - n*r*0.5*(1+log(2*pi))
+  
+  
+  J=T1+T2+T3
+  
+  return(data.frame(J=J, "Egh(log pZ|T)"=T1, "Eg(log p/g)"=T2, "Eh(log hZH)"=T3))
 }
 
 
@@ -572,8 +664,8 @@ plotVEM<-function(probs,omega,r,seuil){
   Acc=performance[1] ;AccH=performance[2] ;AccO=performance[3] 
   PPV=performance[4] ;PPVH=performance[5] ; PPVO=performance[6]
   TPR=performance[7] ;TPRH=performance[8] ;TPRO=performance[9] 
-  p1<-ggimage(resVe$Gprobs)+labs(title=paste0("G hat"))
-  p2<-ggimage(ome)+labs(title="True G")
+  p1<-ggimage(probs)+labs(title=paste0("G hat"))
+  p2<-ggimage(omega)+labs(title="True G")
   grid.arrange(p1,p2,ncol=2, top=paste0("Tpr=",TPR," (TprO=",TPRO," , TprH=",TPRH,
                                         ")\n Ppv=",PPV," (PpvO=",PPVO," , PpvH=",PPVH,")"))
   
@@ -584,17 +676,83 @@ courbes_seuil<-function(probs,omega,h,seq_seuil){
   tmp=sapply(seq_seuil,function(x)  accppvtpr(seuil=x,probs=probs,omega=omega,h=h))
   res=data.frame(cbind(t(tmp),seq_seuil))
   colnames(res)=c("Acc","AccH","AccO","PPV","PPVH","PPVO","TPR","TPRH","TPRO","seuil")
-  return(res)
+  return(as_tibble(res))
   
 }
-plotVerdict<-function(values){
+plotVerdict<-function(values,colonne){
   # plots verdict curves along threshold from VEM result
-
-  values %>%as_tibble() %>%    gather(key,value, -seuil) %>%
+  colonne<-enquo(colonne)
+  values %>%as_tibble() %>% gather(key,value, - !!colonne)%>%
     mutate(status=ifelse(substr(key,4,4)=="","all",substr(key,4,4))) %>% 
-    mutate(key=substr(key,1,3)) %>% spread(key,value,-seuil) %>% 
+    mutate(key=substr(key,1,3)) %>% spread(key,value)%>% 
     mutate(PPV=ifelse(PPV<0,NA,PPV)) %>% 
     ggplot(aes(TPR,PPV,color=status))+
+    geom_rect(aes(xmin=0.5, xmax=1, ymin=0.5, ymax=1), fill="gray90", color="gray90",alpha=0.1)+
     geom_point()+  geom_line()+
-    facet_wrap(~status, scales="free")+mytheme.dark
+    facet_wrap(~status)+mytheme.dark+
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
 }
+
+
+
+
+
+VEMtree<-function(counts,MO,SO,sigma_obs,ome_init,W_init,Wg_init, verbatim=TRUE,maxIter=20,
+                  plot=TRUE, eps=1e-2, alpha){
+  # MH = matrix(100,n,r);
+  n=nrow(MO);  p=ncol(MO);  O=1:ncol(MO); H=(p+1):ncol(omega);r=length(H);
+  pr=prcomp(t(counts),scale. = FALSE)
+  MH = matrix(pr$rotation[,1]*pr$sdev[1],nrow=n,ncol=r)
+  omega=omega_init;  W=W_init;  Wg=Wg_init
+  iter=0 ; lowbound=list()
+  KL=c() ; J=c();diffW=c();diffOm=c()
+  t1=Sys.time()
+  while((diffW[iter] > eps && diffOm[iter] > eps && iter < maxIter) || iter<1){
+    iter=iter+1
+    #VE
+    resVe<-VE(MO,SO,sigma_obs,omega,W,Wg,MH=MH,maxIter=2,minIter=1,eps=1e-3, plot=FALSE, 
+              form="theory",alpha=alpha, verbatim=FALSE)
+    KL[iter]=resVe$KL
+    M=resVe$Hmeans ; MH=matrix(M[,H],n,r)
+    S=resVe$Hvar
+    Pg=resVe$Gprobs
+    Wg=resVe$Gweights
+    #M
+    resM<-Mstep(M,S,Pg, ome_init,W_init,maxIter=2, beta.min=1e-6, eps=1e-3 ,plot=FALSE, verbatim=FALSE)
+    W.new=resM$W
+    diffW[iter]=abs(max(W.new-W))
+    W=W.new
+    omega.new=resM$omega
+    diffOm[iter]=abs(max(omega.new-omega))
+    omega=omega.new
+    J[iter]=resM$finalJ
+    
+    
+    lowbound[[iter]] = LowerBound(Pg ,omega, M, S, W, Wg,p)
+  }
+  lowbound=do.call(rbind,lowbound)
+  features<-data.frame(Jbound=J, KL=KL, diffW=diffW, diffOm=diffOm)
+  t2=Sys.time()
+  t2=Sys.time(); time=t2-t1
+  if(verbatim) cat(paste0("\nVEMtree ran in ",round(time,3), attr(time, "units")," and ", iter," iterations.",
+                          "\nFinal Jbound difference: ",round(J[iter]-J[iter-1],5)))
+  if(plot){
+    g1<-features %>% rowid_to_column() %>% 
+      pivot_longer(-rowid,names_to="key",values_to = "values") %>% 
+      ggplot(aes(rowid,values, color=key))+
+      geom_point()+geom_line() + facet_wrap(~key, scales="free")+
+      labs(x="",y="", title="Stoping criteria")+ mytheme.dark
+    
+    
+    g2<- lowbound %>% rowid_to_column() %>% gather(key,value,-rowid) %>% 
+      ggplot(aes(rowid,value, color=key))+geom_point()+geom_line()+
+      facet_wrap(~key, scales="free")+
+      labs(x="iteration",y="", title="Lower bound and components")+mytheme
+    
+    grid.arrange(g1, g2, ncol=1)
+  }
+  
+  
+  return(list(M=M,S=S,Pg=Pg,Wg=Wg,W=W,omega=omega, lowbound=lowbound, features=features))
+}
+
