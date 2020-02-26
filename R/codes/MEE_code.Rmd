@@ -1,0 +1,263 @@
+---
+title: "Simulation Code"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval = FALSE)
+```
+
+ 
+# Data simulation
+
+## Covariates
+
+This code creates a set of three covariates: X1 is discrete, X2 is Gaussian and X3 is a standard Uniform. These can respectively be interpreted as a batch covariate, a continuous covariate like temperature and a measure in percentage. Covariates are stored in the appropriate directory for later use.
+
+```{r}
+diff=c("easy","hard")
+path<-"~/Data"
+
+for( difficulty in diff){
+  n<-switch(difficulty,"easy"=100,"hard"=50)
+  covar<-data.frame(X1=round(runif(n)*5),X2=rnorm(n,0,2),  X3=runif(n))
+  saveRDS(covar,paste0(path,"/covar_",difficulty,".rds"))
+}
+
+```
+
+## Counts
+
+The following piece of code generates 100 count datasets for two levels of difficulty and three types of structures, with the previously simulated covariates. The `signed=TRUE` parameter allows for both positive and negative interactions. The  precision matrix and  corresponding count dataset created by `EMtree::data_from_scratch` are stored for a later use in the appropriate directory. 
+
+```{r}
+types<-c("cluster","scale-free","erdos")
+
+for( difficulty in diff){
+  nbspecies<-switch(difficulty,"easy"=20,"hard"=30)
+  for(type in types){
+    cat(type,difficulty,"\n")
+    for(nbgraph in 1:100){
+      #reads the previously created covariates
+      covar <- readRDS(paste0(path,"/covar_",difficulty,".rds"))
+      #generates dependency graph and count data
+      dat <- data_from_scratch(type, p=nbspecies, r=10, covar=covar, signed=TRUE)
+      saveRDS(dat,paste0(path,"/Signed.Data_",type,"_",difficulty,nbgraph,".rds"))
+    }
+  }
+}
+```
+
+
+# Experiments
+
+First load the data (counts $Y$, the original true graph, and covariates):
+
+```{r}
+dat<-readRDS(paste0(path,"/Signed.Data_",type,"_",difficulty,nbgraph,".rds"))
+Y<-dat[[1]]
+edgesOrigin<-ifelse(abs(dat[[2]])<1e-16,0,1) # get the original graph from the precision matrix
+covar <- readRDS(paste0(path,"/covar_",difficulty,".rds"))
+m<- model.matrix(~X1+X2+X3,covar) 
+```
+
+Then two types of experiments are done: comparing the original true graph to either the optimal final network (binary matrix), or to scores/probabilities on the edges when available (numeric matrix).
+
+## First type of experiment:
+
+We construct FDR (False Discovery Rates)  and density ratio measures as the following:
+
+```{r}
+# inf is the optimal network inferred from one count dataset by one of the method 
+tpfn <- c(table(inf,edgesOrigin))
+#TPFN manages cases where some quantities in tpfn are NA
+TPFN <- data.frame("TN"=tpfn[1],"FP"=tpfn[2],"FN"=tpfn[3],"TP"=tpfn[4] ) %>% 
+  as_tibble() %>% mutate(TN=as.numeric(as.character(TN)),
+                         FN=as.numeric(as.character(FN)),
+                         TP=as.numeric(as.character(TP)),
+                         FP=as.numeric(as.character(FP)),
+                         sum=TN+TP+FP+FN,FDR=FP/(TP+FP)) %>%
+  mutate(FN=ifelse(is.na(sum),FP,FN), FP=ifelse(is.na(sum),0,FP), 
+         TP=ifelse(is.na(sum),0,TP))
+# Finally:
+measures <- TPFN %>% mutate(FDR=FP/(TP+FP),densPred=(TP+FP)/(TP+FN))
+```
+
+
+
+##Second type of experiment:
+
+When comparing scores to 1/0 labels of presence/absence, we use the ROCR package to build AUC (Area Under the ROC curve) measures:
+
+
+```{r}
+library(ROCR)
+diagnost_auc<-function(obs, pred){
+  obs_pred<-vec_obs_pred(obs,pred)
+  prediction<-prediction(obs_pred[[1]],obs_pred[[2]])
+  # Run the AUC calculations
+  ROC_auc <- performance(prediction,"auc")
+  res<-round(ROC_auc@y.values[[1]],digits=3)
+  return(res)
+}
+# scores is the matrix of edges scores or probabilities for either SpiecEasi, 
+# gCoda or EMtree method:
+diagnost_auc(scores, edgesOrigin)
+```
+
+ 
+# Inference methods
+## SpiecEasi
+
+The R package `SpiecEasi`is available on gitHub (https://github.com/zdk123/SpiecEasi).
+
+```{r}
+library(SpiecEasi)
+
+clr.matrix <- function(x.f, mar=2, ...) {apply(x.f, mar, clr, ...)}
+U<-t(clr.matrix(Y,mar=1)) #centered log-ratio data transformation
+Uresid<-lm(U~m)$residuals # spiecEasi is run on residuals of transform data, 
+# to take covariates into account
+
+spieceasi_edges<-SpiecEasi::spiec.easi(Uresid, method='mb', 
+                                        lambda.min.ratio=1e-3, nlambda=100,
+                                        pulsar.params=list(rep.num=20, thresh=0.1))
+inf<-spieceasi_scores$refit[[1]] # get optimal final network
+
+#============
+# Scores
+spieceasi_scores<- spiec.easi(Uresid, method="glasso",icov.select = FALSE,
+                              nlambda = 50, verbose = FALSE)
+K.score <- Reduce("+",inf$est$path)
+scores<- K.score / max(K.score)
+
+```
+
+
+## gCoda
+
+The original code for the  gCoda method is available on gitHub (https://github.com/huayingfang/gCoda). The gCoda algorithm works with the covariance matrix from transformed counts. I added the following lines in the gCoda function, to account for covariates after data transformation:
+
+```{r}
+#=====
+# code before transformation
+x <- x + pseudo;
+x <- x / rowSums(x);
+S <- var(log(x) - rowMeans(log(x)))
+
+#=====
+# code after transformation
+x <- x + pseudo;
+x <- x / rowSums(x);
+x <- log(x) - rowMeans(log(x))
+string <- paste("x", paste(covar, collapse = " + "), sep = " ~ ")
+formula <- as.formula(string)
+model <- lm(x ~ as.matrix(lm(formula, x = T)$x))
+U <- model$residuals
+S <- var(U)
+```
+
+
+gCoda requires the `huge`, which has been updated since the orignial gCoda code was published. For it to work, we have to get the previous version of the function `hugeglasso_sub`, which coded in C++. The file hugeglasso.cpp is available in https://github.com/Rmomal/MEE_supplement_code if you like.
+
+```{r}
+require(huge)
+library(Rcpp)
+sourceCpp("~/hugeglasso.cpp")
+```
+
+After this alteration to the gCoda function, the latter is used as follows:
+
+```{r}
+gCoda_edges <- gcoda(Y, counts=T, covar=covar, nlambda=100, lambda.min.ratio=1e-3) 
+
+inf<-(gCoda_edges$opt.icov>1e-16)*1 # get optimal final network
+
+#============
+# Scores
+gCoda_scores<-gcoda(Y, counts=T, covar=covar)
+K.score <- Reduce("+",out_gcodaResid$path)
+scores<- K.score / max(K.score)
+
+```
+
+
+## ecoCopula
+
+The `ecoCopula` is avalable on gitHub (https://github.com/gordy2x/ecoCopula).
+
+```{r}
+library(ecoCopula)
+my_mod<-ecoCopula::manyglm(Y~m, family="negativ.binomial")
+inf <- cgr(my_mod, method="AIC")$best_graph$graph # optimal final network
+```
+
+## MRFcov
+
+The `MRFcov` package is available on CRAN.
+
+```{r}
+library(MRFcov) 
+mrfres<- MRFcov(data = cbind(Y,m[,-1]), n_nodes = p, family = 'poisson', 
+                symmetrise = "mean",n_cores=3, n_covariates = 3)$graph
+inf <- 1*(mrfres!=0) # optimal final network
+```
+
+
+## MInt
+
+The  `MInt` package is available on CRAN. The reading of data for this package is a little tricky, the following functions ease the process:
+
+```{r}
+library(MInt)
+data_for_MInt<-function(Y,covar,path){ 
+  Y <-cbind(1:nrow(Y),Y)
+  Y<-rbind(c("Observations",1:(ncol(Y)-1)),Y)
+  covariates <-cbind(1:nrow(covar),covar)
+  covariates<-rbind(c("Observations","feature1","feature2","feature3"),covariates)
+  pathY<-paste0(path,"mint_data/y.txt")
+  pathX<-paste0(path,"mint_data/x.txt")
+  write.table(Y, file = pathY, sep = " ", col.names = FALSE, row.names = FALSE)
+  write.table(covariates, file = pathX, sep = " ", col.names = FALSE, row.names = FALSE)
+  invisible(list(y=pathY,x=pathX))
+}
+eval_store_mint<-function(Y,covar,path){
+  data<-data_for_MInt(Y,covar,path) 
+  x <- data[["x"]]
+  y <- data[["y"]]
+  m <- MInt::mint(y,x,fmla = ~feature1 + feature2+feature3)
+  m <- estimate(m)
+  pred<-m$param$P
+  return(pred)
+}
+```
+
+Then the inference is straightforward:
+
+```{r}
+library(MInt)
+inf <- (eval_store_mint(Y,covar,path)>1e-16)*1 # optimal final network
+```
+
+
+## EMtree
+
+The EMtree R package is available on gitHub (https://github.com/Rmomal/EMtree). It requires the R package `PLNmodels`, available on the CRAN. The resampling procedure can be used as written below, with call to the `parallel` library for allowing the parallel computation (here with 3 cores). 20 sub-samples is usually enough (`S=20`) and this is what is set for the article computations. The tolerance is set lower for hard cases, as numerical artifacts tend to appear more often there. 
+
+No resampling is performed to obtain edges probabilities for the second type of experiments.
+
+```{r}
+library(EMtree) 
+library(PLNmodels)
+library(parallel)
+cond.tol<-switch(difficulty,"easy"=1e-12,"hard"=1e-6) 
+resample<-ResampleEMtree(counts=Y, covar_matrix=m, S=20, maxIter=50,
+                         cond.tol=cond.tol,cores=3)
+pmat<-resample$Pmat # rect. matrix gathering edges probabilities obtained for all sub-samples      
+inf<-1*(freq_selec(pmat, Pt=2/p)>0.8) # optimal final network after thresholding to 80%
+
+#============
+# Edges probabilities
+PLN_Y = PLNmodels::PLN(Y ~ -1 + ., data=m)
+EMtree_prob<-EMtree(PLN_Y)$edges_prob # obtained with no resampling
+```

@@ -8,7 +8,8 @@ library(rags2ridges)
 theme_set(theme_bw())
 path<-"/Users/raphaellemomal/simulations/Simu/PLN.2.0/"
 vignette("Gaussian_Poisson_CRFs")
-TPFN_compute(methods = c("ecoCopula","EMtree"),diffs=c("easy","hard"),types="erdos",B=30,S=30, cores=3)
+TPFN_compute(methods = c("ecoCopula","EMtree"),diffs=c("easy","hard"),
+             types="erdos",B=30,S=30, cores=3)
 build_TFPN_plots(type = "erdos",difficulty = "easy",FDR = TRUE)
 E<-gridLine("erdos",TRUE)
 

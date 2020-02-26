@@ -11,7 +11,22 @@ library(mclust)
 library(MASS)
 library(reshape2)#for ggimage
 library(gridExtra)
+library(harrypotter)
 source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
+
+mytheme.light <- list(theme_light(), scale_color_brewer("",palette="Set3"),guides(color=FALSE),
+                     theme(strip.background=element_rect(fill="gray50",colour ="gray50"),
+                           plot.title = element_text(hjust = 0.5)))
+
+mytheme.dark <- list(theme_light(), scale_color_brewer("",palette="Dark2"),guides(color=FALSE),
+                     theme(strip.background=element_rect(fill="gray50",colour ="gray50"),
+                           plot.title = element_text(hjust = 0.5)))
+# mypal<-c(brewer.pal(3, "Blues"),brewer.pal(3, "Reds"),brewer.pal(3, "Greens"))
+# mypal<-c(brewer.pal(8, "Dark2"),"blue","red")
+mytheme <- list(theme_light(), scale_fill_brewer("",palette="Dark2"),#scale_colour_hp_d(option = "RavenClaw", name = ""), #scale_color_manual("",values=mypal),
+                guides(color=FALSE),
+                theme(strip.background=element_rect(fill="gray50",colour ="gray50"),
+                      plot.title = element_text(hjust = 0.5)))
 
 # simu parameters
 set.seed(7)
@@ -20,15 +35,11 @@ p=14
 r=1
 type="scale-free"
 plot=TRUE
-
-
-# Code for one hidden covariate
-
-
+ 
 ################
 #----- DATA
 # simulate graph and omega, then sigma0 and finally counts
-data=data_from_scratch(type = type,p = p+r,n = n,signed = FALSE,prob = 5/p,v = 0.001)
+data=data_from_scratch(type = type,p = p+r,n = n,signed = FALSE,prob = 5/p,v = 0)
 omega=data$omega
 hidden=which(diag(omega)%in%sort(diag(omega), decreasing = TRUE)[1:r])[1:r] # on cache les r plus gros
 trueClique=which(omega[hidden,-hidden]!=0)
@@ -42,9 +53,10 @@ Ko  <- omega[-hidden,-hidden]
 Koh <- omega[-hidden,hidden]
 Km  <- Ko - Koh %*%solve(Kh)%*% t(Koh)
 sigmaO=solve(Km)
-counts=generator_PLN(sigmaO,covariates = NULL,n=n, seuil=15)
+counts=generator_PLN(sigmaO,covariates = NULL,n=n)
 
 ome_init=omega[c(2:15,1),c(2:15,1)] #ome is for testing
+ome=ome_init
 diag(ome)=0
 ####################
 #----- PLN on counts
@@ -55,15 +67,36 @@ MO<-PLNfit$var_par$M # MiO = ith row of MO
 SO<-PLNfit$var_par$S # SiO = diag(ith row of SO)
 sigma_obs=PLNfit$model_par$Sigma
 
+plot(sigmaO ,sigma_obs)
 ####################
 #-----  VE step
 #--  Initialize
 
 # whole Z
-# initviasigma=init.mclust(sigma_obs,title="Sigma",trueClique = trueClique,n.noise=p*3+5)
-# initial.param<-initEM(sigma_obs,n=n,cliquelist = list(initviasigma),pca=TRUE) # quick and dirty modif for initEM to take a covariance matrix as input
-# omega_init=initial.param$K0
-# sigma_init=initial.param$Sigma0
+initviasigma=init.mclust((cov2cor(sigma_obs)),title="Sigma",
+                         trueClique = trueClique,n.noise=1)$init
+
+# etude de la quantité de bruit à privilégier:
+# B=30 ; coeff=seq(0.1,4,0.5)
+# test=lapply(coeff,function(c){
+#   res=cbind( data.frame( t(sapply(1:B, function(x){
+#     init.mclust(sigma_obs,title="Sigma",
+#                 trueClique = trueClique,n.noise=round(p*c))$FPN
+#   }))),c)
+# })
+# test=do.call(rbind,test)
+# colnames(test)=c("FN","FP","coeff")
+# test %>% mutate(nul = (FN==1 & FP==0)) %>% filter(!nul) %>% dplyr::select(-nul) %>% 
+#   gather(FNP,value,-coeff) %>% 
+#   ggplot(aes(as.factor(coeff),value,fill=FNP))+geom_boxplot()+mytheme.light
+
+# test %>% mutate(nul = (FN==1 & FP==0)) %>% filter(!nul) %>% dplyr::select(-nul) %>%
+#   group_by(coeff) %>% summarise(sumFP=sum(FP), sumFN=sum(FN), sum=sum(FP+FN))
+
+#findCliques(cov2cor(sigma_obs),k = 2)
+initial.param<-initEM(sigma_obs,n=n,cliquelist = list(initviasigma),pca=TRUE) # quick and dirty modif for initEM to take a covariance matrix as input
+omega_init=initial.param$K0
+sigma_init=initial.param$Sigma0
 
 # Tree
 O=1:p
@@ -72,179 +105,109 @@ W_init <- matrix(1, p+r, p+r); diag(W_init) = 0;# W_init =W_init / sum(W_init)
 W_init[O,O] <- EMtree_corZ(cov2cor(sigma_obs),n = n,maxIter = 20)$edges_weight
 
 
-
-VE<-function(MO,SO,sigma_obs,omega,W,Wg,MH = matrix(1,n,r),maxIter,eps, alpha,theoretical=TRUE,beta.min=1e-10, plot=FALSE){
-  t1=Sys.time()
-  n=nrow(MO);  p=ncol(MO);  O=1:ncol(MO); H=(p+1):ncol(omega);r=length(H); iter=0 ; 
-  omegaH=omega[H,H]; 
-  diffKL=-1 ; diff=c(1000); Wdiff=1; diffW=c(0.1); diffMH=1; diffM=c(0.1)
-  
-  M<-cbind(MO, MH)
-  phi=CorOmegaMatrix(omega)
-  SH <- 1/omegaH
-  S<-cbind(SO, rep(SH,n)) # all SHi have same solution, depending only on Mstep
-  # logWtree<-computeWtree(omega, W, Wg, MH, MO, SO,phi,alpha=alpha, trim=FALSE)  
-  Wg= computeWg(phi,omega,W,MH,MO,alpha,theoretical=theoretical)
-  print(theoretical)
-  diag(Wg)=1
-  KL<-numeric(maxIter)
-  
-  while( ((diffKL < 0) && (iter < maxIter)) || (iter < 3)){
-    iter=iter+1
-    #   cat(iter)
-    #-- Probabilities estimates
-    Pg = EdgeProba(Wg)
-    if(sum(is.nan(Pg))!=0){
-      browser()
-      cat( ": adjust ", summary(c(logWtree)), "\n")
-      logWtree=log(adjustW(exp(logWtree)))
-      cat("to: ",summary(c(logWtree)), "\n")
-      Pg = EdgeProba(exp(logWtree))
-    } 
-    #-- Updates
-    #- MH et SH
-    MH.new<-  (-MO) %*% (Pg[O,H] * omega[O,H]) / omegaH
-    diffMH<-max(abs(MH-MH.new))
-    
-    # M<-cbind(MO, MH.new)
-    # Mei=Meila(Wg) #justifier que Mei soit calculée avec Wg et pas Wgtree
-    # lambda=SetLambda(Pg,Mei)
-    #   browser()
-    Wg.new= computeWg(phi,omega,W,MH,MO,alpha) #Pg/(Mei+lambda)
-    diag(Wg.new)=1
-    Wg.new[which(Wg.new< beta.min)] = beta.min
-    
-    #  Wg.new=trimW( Wg.new) # triggers nan in Pg
-    Wdiff=max(abs(F_Sym2Vec(Wg.new)-F_Sym2Vec(Wg)))
-    if(is.nan(Wdiff)) browser()
-    
-    KL[iter]<-argminKL(F_Sym2Vec(log(Wg.new)), Pg, M,S,omega,phi,W,p)
-    
-    if(iter>1) diffKL =(KL[iter] - KL[iter-1])
-    
-    MH=MH.new
-    Wg=Wg.new
-    
-    #-- end
-    
-    if(iter>1){
-      diff = c(diff,diffKL)
-      diffW=c(diffW,Wdiff)
-      diffM=c(diffM,diffMH)
-    } 
-  }
-  KL=KL[1:iter]
-  t2=Sys.time(); time=t2-t1
-  cat(paste0("\nVE step converged in ",round(time,3), attr(time, "units")," and ", iter," iterations.",
-             "\nFinal W difference: ",round(diffW[iter],5),
-             "\nFinal KL difference: ",round(diff[iter],4)))
-  if(plot){
-    g=data.frame(Diff.W=diffW,  diff.KL=diff,diff.MH=diffM, PartofKL=KL) %>% rowid_to_column() %>% 
-      pivot_longer(-rowid,names_to="key",values_to = "values") %>% 
-      ggplot(aes(rowid,values, color=key))+
-      geom_point()+geom_line()+scale_color_brewer(palette="Dark2")+
-      facet_wrap(~key, scales="free")+theme_light()+labs(x="iter",y="")+
-      theme(strip.background=element_rect(fill="gray50",colour ="gray50"))
-    print(g)
-  }
-  Pg = EdgeProba(Wg)
-  
-  res=list(Gprobs=Pg,Gweights=Wg,Hmeans=M,Hvar=S, KL=KL, diff=diff, diffW=diffW )
-  return(res)
-}
-resVe=VE(MO,SO,sigma_obs,ome_init,W_init,Wg_init,maxIter=150,eps=1e-3, plot=TRUE, 
-         form="id1",alpha=0.6)
-
+pr=prcomp(t(counts),scale. = FALSE)
+MH = matrix(pr$rotation[,1]*pr$sdev[1],nrow=n,ncol=r)
+resVe.Th=VE(MO ,SO,MH = matrix(100,n,r),sigma_obs,ome_init,W_init,Wg_init,maxIter=150,
+            minIter=8,eps=1e-3, plot=TRUE,
+            form="theory",alpha=0.9)
 h=15
-ome=omega[c(2:h,1),c(2:h,1)]
-diag(ome)=0
-seuil=0.5
-performance=accppvtpr(resVe$Gprobs,ome,h,seuil)
-Acc=performance[1] ;AccH=performance[2] ;AccO=performance[3] 
-PPV=performance[4] ;PPVH=performance[5] ; PPVO=performance[6]
-TPR=performance[7] ;TPRH=performance[8] ;TPRO=performance[9] 
-p1<-ggimage(resVe$Gprobs)+labs(title=paste0("G hat (thresh=",seuil,")"))
-p2<-ggimage(ome)+labs(title="G")
-grid.arrange(p1,p2,ncol=2, top=paste0("Tpr=",TPR," (TprO=",TPRO," , TprH=",TPRH,
-                                      ")\n Ppv=",PPV," (PpvO=",PPVO," , PpvH=",PPVH,")"))
-# auc 0.92 en partant du vrai omega, 
-# et en annulant le terme B dans le calcul de logWtree
-
-
+plotVE(resVe.Th,ome,h,seuil=0.5)
 ####################
 #-----  M steps
 
-Mstep<-function(M,S,Pg, omega,W,maxIter, beta.min, trim=TRUE,plot=FALSE,eps, verbatim=TRUE){
+# M=resVe.Th$Hmeans
+# S=resVe.Th$Hvar
+# Pg=resVe.Th$Gprobs
+# resM=Mstep(M,S,Pg, omega_init,W_init,maxIter=2, beta.min=1e-6, eps=1e-2 ,plot=TRUE)
+
+
+VEMtree<-function(counts,MO,SO,sigma_obs,ome_init,W_init,Wg_init, verbatim=TRUE,maxIter=20, plot=TRUE, eps=1e-2, alpha){
+  # MH = matrix(100,n,r);
+  n=nrow(MO);  p=ncol(MO);  O=1:ncol(MO); H=(p+1):ncol(omega);r=length(H);
+  pr=prcomp(t(counts),scale. = FALSE)
+  MH = matrix(pr$rotation[,1]*pr$sdev[1],nrow=n,ncol=r)
+  omega=omega_init;  W=W_init;  Wg=Wg_init
+  iter=0 ; lowbound=list()
+  KL=c() ; J=c();diffW=c();diffOm=c()
   t1=Sys.time()
-  diffJ=(1); diff.J=c(1);  diff.W=c(0.05)
-  maxJ=c()
-  n=nrow(S) 
-  SigmaTilde = (t(M)%*%M+ diag(colSums(S)) )/ n
-  iter=0
-  print("Iter n°:")
-  while((diffJ>eps && iter < maxIter) || iter < 3){
+  while((diffW[iter] > eps && diffOm[iter] > eps && iter < maxIter) || iter<1){
     iter=iter+1
-    print(iter)
-    #-- Updates
-    # beta
-    
-    Mei=Meila(W)  
-    lambda=SetLambda(Pg,Mei)
-    W.new= Pg/(Mei+lambda)
-    W.new[which(W.new< beta.min)] = beta.min
-    diffW=max(abs(F_Sym2Vec(W.new)-F_Sym2Vec(W)))
-    
-    # W=trimW(W)
-    # omega
-    maxi = 1e-3
-    mini = 1e+3
-    
-    omegaDiag <- sapply(1:(p+r), function(i){
-      dichotomie(mini, maxi, function(omega_ii)
-        optimDiag( omega_ii,i, omega, SigmaTilde, Pg), 1e-5)
-    })
-    
-    omega.new=computeOffDiag(omegaDiag,SigmaTilde)
-    phi=CorOmegaMatrix(omega)
-    maxJ[iter]<-argmaxJ(F_Sym2Vec(log(W.new)),Pg,omega.new,SigmaTilde,phi,lambda,n)
-    if(is.nan(maxJ[iter])) browser()
-    if(iter>1){
-      diffJ = (maxJ[iter] - maxJ[iter-1])
-      diff.J = c(diff.J,diffJ)
-      diff.W = c(diff.W,diffW)
-    } 
-    omega=omega.new
+    #VE
+    resVe<-VE(MO,SO,sigma_obs,omega,W,Wg,MH=MH,maxIter=2,minIter=1,eps=1e-3, plot=FALSE, 
+              form="theory",alpha=alpha, verbatim=FALSE)
+    KL[iter]=resVe$KL
+    M=resVe$Hmeans ; MH=matrix(M[,H],n,r)
+    S=resVe$Hvar
+    Pg=resVe$Gprobs
+    Wg=resVe$Gweights
+    #M
+    resM<-Mstep(M,S,Pg, ome_init,W_init,maxIter=2, beta.min=1e-6, eps=1e-3 ,plot=FALSE, verbatim=FALSE)
+    W.new=resM$W
+    diffW[iter]=abs(max(W.new-W))
     W=W.new
+    omega.new=resM$omega
+    diffOm[iter]=abs(max(omega.new-omega))
+    omega=omega.new
+    J[iter]=resM$finalJ
+    
+   
+    lowbound[[iter]] = LowerBound(Pg ,omega, M, S, W, Wg,p)
   }
+  lowbound=do.call(rbind,lowbound)
+  features<-data.frame(Jbound=J, KL=KL, diffW=diffW, diffOm=diffOm)
+  t2=Sys.time()
   t2=Sys.time(); time=t2-t1
-  cat(paste0("M step converged in ",round(time,3), attr(time, "units")," and ", iter," iterations.",
-             "\nFinal maxJ difference: ",round(diff.J[iter],4)))
-  # browser()
+  if(verbatim) cat(paste0("\nVEMtree ran in ",round(time,3), attr(time, "units")," and ", iter," iterations.",
+                          "\nFinal Jbound difference: ",round(J[iter]-J[iter-1],5)))
   if(plot){
-    g=data.frame(Diff.W=diff.W,Diff.J=diff.J, Jbound=maxJ) %>% rowid_to_column() %>% 
+    g1<-features %>% rowid_to_column() %>% 
       pivot_longer(-rowid,names_to="key",values_to = "values") %>% 
       ggplot(aes(rowid,values, color=key))+
-      geom_point()+geom_line()+scale_color_brewer(palette="Dark2")+
-      facet_wrap(~key, scales="free")+theme_light()+labs(x="iter",y="")+
-      theme(strip.background=element_rect(fill="gray50",colour ="gray50"))
-    print(g)
+      geom_point()+geom_line() + facet_wrap(~key, scales="free")+
+      labs(x="",y="", title="Stoping criteria")+ mytheme.dark
+
+    
+   g2<- lowbound %>% rowid_to_column() %>% gather(key,value,-rowid) %>% 
+      ggplot(aes(rowid,value, color=key))+geom_point()+geom_line()+
+      facet_wrap(~key, scales="free")+
+     labs(x="iteration",y="", title="Lower bound and components")+mytheme
+    
+   grid.arrange(g1, g2, ncol=1)
   }
-  res=list(W=W, omega=omega, diff=diff, diffW=diffW)
-  return(res)
+  
+  
+  return(list(M=M,S=S,Pg=Pg,Wg=Wg,W=W,omega=omega, lowbound=lowbound, features=features))
 }
-resM=Mstep(M,S,Pg, ome_init,W_init,maxIter=50, beta.min=1e-6, eps=1e-2 ,plot=TRUE)
+resVEM<-VEMtree(counts,MO,SO,sigma_obs,omega_init,W_init,Wg_init, eps=5e-3, alpha=1,
+                maxIter=1, plot=FALSE)
+plotVEM(resVEM$Pg,ome,r=1,seuil=0.5)
+values=courbes_seuil(probs = resVEM$Pg,omega = ome,h = 15,seq_seuil = seq(0,1,0.05))
+plotVerdict(values, seuil)
+
+# lower bound check
+resVEM$lowbound %>% rowid_to_column() %>% gather(key,value,-rowid) %>% 
+  ggplot(aes(rowid,value, color=key))+geom_point()+geom_line()+
+  facet_wrap(~key, scales="free")+mytheme
+
+#====
+#ajustement omega
+
+# vrai vs initialisation vs estimation
+# ome_init = vrai omega reordonne pour comparaison (acteur manquant en fin de matrice)
+# omega_init = matrice d'initialisation obtenue par initEM et mclust
+# omega_res = omega estime par VEMtree
+omegas = data.frame(vrai = F_Sym2Vec(ome_init) , init = F_Sym2Vec(omega_init),
+                    estimation = F_Sym2Vec(resVEM$omega))
+omegas %>% gather(key, value, -vrai) %>% 
+  ggplot(aes(as.factor(vrai), value,  fill=key, clor=key))+geom_boxplot()+
+  mytheme+coord_cartesian(ylim = c(-1,2))
 
 
-M=resVe$Hmeans
-S=resVe$Hvar
-Pg=resVe$Gprobs
-
-VEMtree<-function(MO,SO,sigma_obs,ome_init,W_init,Wg_init){
-  MH = matrix(10,n,r)
-  resVe<-VE(MO,SO,sigma_obs,ome_init,W_init,Wg_init,MH=MH,maxIter=5,eps=1e-3, plot=TRUE, alpha=0)
-  M=resVe$Hmeans
-  S=resVe$Hvar
-  Pg=resVe$Gprobs
-  resM<-Mstep(M,S,Pg, ome_init,W_init,maxIter=5, beta.min=1e-6, eps=1e-2 ,plot=FALSE)
-}
-
+Diagomegas = data.frame(vrai = diag(ome_init) , init = diag(omega_init),
+                    estimation = diag(resVEM$omega))
+Diagomegas %>% gather(key, value, -vrai) %>% 
+  ggplot(aes((vrai), value,  color=key))+geom_point()+ theme_light()+
+  geom_abline()
+#TODO
+# choice of alpha
+# VEM stop criterion
