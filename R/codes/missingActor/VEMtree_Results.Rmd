@@ -7,6 +7,7 @@ output:
 ---
 
 # Simulating data
+
 ```{r, message=FALSE, warning=FALSE, echo=FALSE}
 library(EMtree)
 library(PLNmodels)
@@ -18,6 +19,7 @@ library(mvtnorm)
 library(useful)
 library(rlang)
 library(mclust)
+library(ROCR)
 library(MASS)
 library(reshape2)#for ggimage
 library(gridExtra)
@@ -101,7 +103,7 @@ data.frame(melt(sigmaO)[1:2], vrai=melt(sigmaO)[3], estimation=melt(sigma_obs)[3
 
 Study of the prefered quantity of noise in this example:
 
-```{r, cache=FALSE}
+```{r, cache=TRUE}
 B=20 ; coeff=seq(0.1,4,0.5)
 varyCoeff=lapply(coeff,function(c){
   res=cbind( data.frame( t(sapply(1:B, function(x){
@@ -147,8 +149,8 @@ W_init[O,O] <- EMtree_corZ(cov2cor(sigma_obs),n = n,maxIter = 20)$edges_weight
 ## Until convergence
 
 ```{r, cache=FALSE, fig.height=12, fig.width=8}
-resVEM_conv<-VEMtree(counts,MO,SO,sigma_obs,omega_init,W_init,Wg_init, eps=5e-3, alpha=1,
-                maxIter=400)
+resVEM_conv<-VEMtree(counts,MO,SO,sigma_obs,omega_init,W_init,Wg_init, eps=1e-3, alpha=1,
+                maxIter=50)
 
 ```
 

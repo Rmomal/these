@@ -9,14 +9,15 @@ library(mvtnorm)
 library(useful)
 library(mclust)
 library(MASS)
+library(ROCR)
 library(reshape2)#for ggimage
 library(gridExtra)
 library(harrypotter)
 source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
 
 mytheme.light <- list(theme_light(), scale_color_brewer("",palette="Set3"),guides(color=FALSE),
-                     theme(strip.background=element_rect(fill="gray50",colour ="gray50"),
-                           plot.title = element_text(hjust = 0.5)))
+                      theme(strip.background=element_rect(fill="gray50",colour ="gray50"),
+                            plot.title = element_text(hjust = 0.5)))
 
 mytheme.dark <- list(theme_light(), scale_color_brewer("",palette="Dark2"),guides(color=FALSE),
                      theme(strip.background=element_rect(fill="gray50",colour ="gray50"),
@@ -35,7 +36,7 @@ p=14
 r=1
 type="scale-free"
 plot=TRUE
- 
+
 ################
 #----- DATA
 # simulate graph and omega, then sigma0 and finally counts
@@ -121,40 +122,59 @@ plotVE(resVe.Th,ome,h,seuil=0.5)
 # resM=Mstep(M,S,Pg, omega_init,W_init,maxIter=2, beta.min=1e-6, eps=1e-2 ,plot=TRUE)
 
 
-VEMtree<-function(counts,MO,SO,sigma_obs,ome_init,W_init,Wg_init, verbatim=TRUE,maxIter=20, plot=TRUE, eps=1e-2, alpha){
-  # MH = matrix(100,n,r);
+VEMtree<-function(counts,MO,SO,sigma_obs,ome_init,W_init,Wg_init, verbatim=TRUE,maxIter=20, 
+                  plot=TRUE, eps=1e-2, alpha, vraiOm){
+  
   n=nrow(MO);  p=ncol(MO);  O=1:ncol(MO); H=(p+1):ncol(omega);r=length(H);
   pr=prcomp(t(counts),scale. = FALSE)
   MH = matrix(pr$rotation[,1]*pr$sdev[1],nrow=n,ncol=r)
   omega=omega_init;  W=W_init;  Wg=Wg_init
   iter=0 ; lowbound=list()
-  KL=c() ; J=c();diffW=c();diffOm=c()
+  KL=c() ; J=c();diffW=c();diffOm=c();diffWg=c();diffPg=c();diffMH=c();diffOmDiag=c();rvalue=c();diffquantile=c()
   t1=Sys.time()
-  while((diffW[iter] > eps && diffOm[iter] > eps && iter < maxIter) || iter<1){
-    iter=iter+1
+  Pg=matrix(0.5, ncol(W),ncol(W))
+  SH=matrix(1,nrow=n,ncol=r)
+  while( iter<maxIter){ #(diffW[iter] > eps && diffOm[iter] > eps && iter < maxIter) || iter<1
+    
+    iter=iter+1 
+    cat(paste0("\n Iter n°", iter))
     #VE
-    resVe<-VE(MO,SO,sigma_obs,omega,W,Wg,MH=MH,maxIter=2,minIter=1,eps=1e-3, plot=FALSE, 
+    resVe<-VE(MO,SO,SH, sigma_obs,omega,W,Wg,MH=MH,Pg=Pg,maxIter=1,minIter=1,eps=1e-3, plot=FALSE, 
               form="theory",alpha=alpha, verbatim=FALSE)
     KL[iter]=resVe$KL
-    M=resVe$Hmeans ; MH=matrix(M[,H],n,r)
-    S=resVe$Hvar
-    Pg=resVe$Gprobs
-    Wg=resVe$Gweights
+    M=resVe$Hmeans ; 
+    S=resVe$Hvar ; SH=matrix(S[,H],n,r)
+    Pg.new=resVe$Gprobs
+    Wg.new=resVe$Gweights
+    MH.new<-matrix(M[,H],n,r)
+
+    diffMH[iter]<-abs(max(MH.new-MH))
+    diffWg[iter]<-abs(max(Wg.new-Wg))
+    diffPg[iter]<-abs(max(Pg.new-Pg))
+    Wg=Wg.new
+    Pg=Pg.new
+    MH=MH.new
     #M
-    resM<-Mstep(M,S,Pg, ome_init,W_init,maxIter=2, beta.min=1e-6, eps=1e-3 ,plot=FALSE, verbatim=FALSE)
+    resM<-Mstep(M,S,Pg, omega,W,maxIter=5, beta.min=1e-6, eps=1e-3 ,plot=FALSE, verbatim=FALSE,
+                Wg=Wg, p=p)
     W.new=resM$W
     diffW[iter]=abs(max(W.new-W))
     W=W.new
     omega.new=resM$omega
-    diffOm[iter]=abs(max(omega.new-omega))
+    diffOm[iter]=abs(max(F_Sym2Vec(omega.new)-F_Sym2Vec(omega)))
+    diffOmDiag[iter]=abs(max(diag(omega.new)-diag(omega)))
     omega=omega.new
+    rvalue[iter]=summary(lm(diag(omega)~diag(vraiOm)))$r.squared
+    diffquantile[iter]=quantile(F_Sym2Vec(omega)[F_Sym2Vec(vraiOm)==1], 0.25) - quantile(F_Sym2Vec(omega)[F_Sym2Vec(vraiOm)==0], 0.75)
+
     J[iter]=resM$finalJ
     
-   
+    
     lowbound[[iter]] = LowerBound(Pg ,omega, M, S, W, Wg,p)
   }
   lowbound=do.call(rbind,lowbound)
-  features<-data.frame(Jbound=J, KL=KL, diffW=diffW, diffOm=diffOm)
+  features<-data.frame(diffMH=diffMH, diffWg=diffWg, diffPg=diffPg, diffW=diffW, diffOm=diffOm, diffOmDiag=diffOmDiag,
+                       adjustDiag=rvalue, diffquantile=diffquantile)
   t2=Sys.time()
   t2=Sys.time(); time=t2-t1
   if(verbatim) cat(paste0("\nVEMtree ran in ",round(time,3), attr(time, "units")," and ", iter," iterations.",
@@ -165,21 +185,22 @@ VEMtree<-function(counts,MO,SO,sigma_obs,ome_init,W_init,Wg_init, verbatim=TRUE,
       ggplot(aes(rowid,values, color=key))+
       geom_point()+geom_line() + facet_wrap(~key, scales="free")+
       labs(x="",y="", title="Stoping criteria")+ mytheme.dark
-
     
-   g2<- lowbound %>% rowid_to_column() %>% gather(key,value,-rowid) %>% 
+    
+    g2<- lowbound %>% rowid_to_column() %>% gather(key,value,-rowid) %>% 
       ggplot(aes(rowid,value, color=key))+geom_point()+geom_line()+
       facet_wrap(~key, scales="free")+
-     labs(x="iteration",y="", title="Lower bound and components")+mytheme
+      labs(x="iteration",y="", title="Lower bound and components")+mytheme
     
-   grid.arrange(g1, g2, ncol=1)
+    grid.arrange(g1, g2, ncol=1)
   }
   
   
   return(list(M=M,S=S,Pg=Pg,Wg=Wg,W=W,omega=omega, lowbound=lowbound, features=features))
 }
-resVEM<-VEMtree(counts,MO,SO,sigma_obs,omega_init,W_init,Wg_init, eps=5e-3, alpha=1,
-                maxIter=1, plot=FALSE)
+
+resVEM<-VEMtree(counts,MO,SO,sigma_obs,omega_init,W_init,Wg_init, eps=1e-3, alpha=1,
+                maxIter=10, plot=TRUE,vraiOm=ome_init)
 plotVEM(resVEM$Pg,ome,r=1,seuil=0.5)
 values=courbes_seuil(probs = resVEM$Pg,omega = ome,h = 15,seq_seuil = seq(0,1,0.05))
 plotVerdict(values, seuil)
@@ -188,6 +209,8 @@ plotVerdict(values, seuil)
 resVEM$lowbound %>% rowid_to_column() %>% gather(key,value,-rowid) %>% 
   ggplot(aes(rowid,value, color=key))+geom_point()+geom_line()+
   facet_wrap(~key, scales="free")+mytheme
+
+
 
 #====
 #ajustement omega
@@ -200,14 +223,20 @@ omegas = data.frame(vrai = F_Sym2Vec(ome_init) , init = F_Sym2Vec(omega_init),
                     estimation = F_Sym2Vec(resVEM$omega))
 omegas %>% gather(key, value, -vrai) %>% 
   ggplot(aes(as.factor(vrai), value,  fill=key, clor=key))+geom_boxplot()+
-  mytheme+coord_cartesian(ylim = c(-1,2))
+  mytheme#+coord_cartesian(ylim = c(-1,2))
 
+omegas %>% group_by(vrai) %>% summarise(q75=quantile(estimation, 0.75),
+                                        q25=quantile(estimation, 0.25))
+quantile(omegas$estimation[omegas$vrai==1], 0.25) - quantile(omegas$estimation[omegas$vrai==0], 0.75)
 
 Diagomegas = data.frame(vrai = diag(ome_init) , init = diag(omega_init),
-                    estimation = diag(resVEM$omega))
+                        estimation = diag(resVEM$omega))
 Diagomegas %>% gather(key, value, -vrai) %>% 
   ggplot(aes((vrai), value,  color=key))+geom_point()+ theme_light()+
   geom_abline()
+
+rvalue=summary(lm(Diagomegas$estimation~Diagomegas$vrai))$r.squared
+
 #TODO
 # choice of alpha
 # VEM stop criterion

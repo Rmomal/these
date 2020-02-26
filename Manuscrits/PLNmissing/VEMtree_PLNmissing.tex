@@ -38,6 +38,8 @@
 
 \newcommand{\Esp}{\mathds{E}}
 \newcommand{\entr}{\mathcal{H}}
+
+
 \begin{document}
 
 \maketitle
@@ -429,13 +431,12 @@ At step $(t+1)$ of the VE part of the algorithm, the following updates occur:
 
 
 \paragraph{$\widetilde{\beta}$:}
-Applying Lemma from Meila, the derivative of $\widetilde{B}$ with respect to $\widetilde{\beta}_{jk}$ is :
-$$\partial_{\widetilde{\beta}_{jk}} (\widetilde{B}) = [\bm{M}(\bm{W})]_{jk} \times \widetilde{B} $$
-\begin{align*}
-\partial_{\widetilde{\beta}} KL &= -P_{gjk}+\widetilde{\beta}_{jk} \left( [\bm{M}(\bm{W})]_{jk} + \lambda)\right) =0\\
-\iff & \boxed{\widetilde{\beta}_{jk}^{t+1} = P_{gjk}^{t+1}/\left([\bm{M}(\bm{W^t})]_{jk} + \lambda\right)}
-\end{align*}
- 
+
+\[\left\{\begin{array}{ll r}
+\widetilde{\beta}_{jk} &= \frac{\beta_{jk}}{\varphi_{jk}}\exp\Big(-\frac{1}{2} \omega_{jk}[\widetilde{M}_O^T \widetilde{M}_O]\Big) & ,jk \in O\times O\\
+\widetilde{\beta}_{kh} &=\frac{\beta_{kh}}{\varphi_{kh}}\exp\Big(-\frac{1}{2} \omega_{kh}[\widetilde{M}_H^T \widetilde{M}_O]\Big) & ,kh \in O\times H
+\end{array}\right.\]
+
 \subsection{M step: optimizing in $(\beta, \Omega)$}
  
 $$ \argmax_{\beta, \Omega} \mathcal{J}(Y ; g,h) =\argmax_{\beta, \Omega} \left\{ \Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(Z\mid T) ]\right\} $$
@@ -457,18 +458,13 @@ Finally, denoting $\psi_{kl} = \left(\frac{\omega_{kk}\omega_{ll}-\omega_{kl}^2}
 \begin{align*}
 \Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(Z\mid T) ] &=\sum_{kl} P_{gkl} \left(\log  \beta_{kl}\psi_{kl}\right) + \frac{n}{2}\sum_k \log \omega_{kk} - \frac{1}{2}<P_g \odot \Omega, \widetilde{M}^\intercal \widetilde{M} + \widetilde{S}>- \log B
 \end{align*}
-
-Here again, we add an identifiability constraint on the $\beta_{jk}$ via a $\lambda$ penalty. As the aim is to maximise the function, this time it is preceded by a minus sign:
-\begin{align*}
-\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(Z\mid T) ] &=\sum_{kl} P_{gkl} \left(\log  \beta_{kl}\psi_{kl}\right) + \frac{n}{2}\sum_k \log \omega_{kk} - \frac{1}{2}<P_g \odot \Omega, \widetilde{M}^\intercal \widetilde{M} + \widetilde{S}>\\
-& \;\;\;- \log B - \lambda(\sum_{jk} \beta_{jk} - 1 )
-\end{align*}
+ 
 \subsubsection{Update formulas}
 \paragraph{Update of $\beta$:}
 \begin{align*}
-\partial_{\beta_{jk}} \Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(Z\mid T) ] &= \frac{P_{gjk}}{\beta_{jk}} - \frac{\partial_{\beta_{jk}} B }{B} + \lambda\\
-&=\frac{P_{gjk}}{\beta_{jk}}  - [M(W)]_{jk} - \lambda\\
-=0 \iff & \boxed{\widehat{\beta}_{jk} = P_{gjk} / ([M(W)]_{jk} + \lambda)}
+\partial_{\beta_{jk}} \Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(Z\mid T) ] &= \frac{P_{gjk}}{\beta_{jk}} - \frac{\partial_{\beta_{jk}} B }{B} \\
+&=\frac{P_{gjk}}{\beta_{jk}}  - [M(W)]_{jk} \\
+=0 \iff & \boxed{\widehat{\beta}_{jk} = P_{gjk} / ([M(W)]_{jk})}
 \end{align*}\\
 
 

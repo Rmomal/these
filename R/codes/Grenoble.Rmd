@@ -1,0 +1,33 @@
+---
+title: "Glasso / EMtree Workshop"
+output: html_notebook
+---
+
+```{r}
+library(EMtree)
+library(glasso)
+library(huge)
+```
+
+
+
+```{r}
+library(ade4)
+library(tidyverse)
+data(baran95)
+counts = as.matrix(baran95$fau)
+covar = as_tibble(baran95$plan)
+
+n = nrow(counts)
+p = ncol(counts)
+
+library(PLNmodels)
+model<-PLN(counts ~ 1)
+output<-EMtree(model,  maxIter = 10, plot=TRUE)
+
+col=outer(rep(1:p),matrix(1,p,p))
+plot(abs(F_Sym2Vec(solve(model$model_par$Sigma))), log(F_Sym2Vec(output$edges_prob)), col=F_Sym2Vec(col), pch=20, xlab="abs(partCor(Z))",ylab="log(Pjk)")
+plot(abs(F_Sym2Vec(cov2cor(model$model_par$Sigma))), log(F_Sym2Vec(output$edges_prob)), col=F_Sym2Vec(col), pch=20, xlab="abs(cor(Z))",ylab="log(Pjk)")
+
+```
+
