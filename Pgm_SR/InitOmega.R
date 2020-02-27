@@ -13,7 +13,8 @@ Corr <- cov2cor(Sigma); sigma <- sqrt(diag(Sigma))
 coef <- matrix(0, p, cliqueNb); lambda <- rep(0, cliqueNb)
 sapply(1:cliqueNb, function(c){
    pca <- eigen(cov2cor(Corr[cliqueList[[c]], cliqueList[[c]]]))
-   coef[, c] <<- rep(0, p); coef[cliqueList[[c]], c] <<- pca$vectors[, 1]
+   coef[, c] <<- rep(0, p); 
+   coef[cliqueList[[c]], c] <<- pca$vectors[, 1]
    lambda[c] <<- pca$values[1]
 }) 
 

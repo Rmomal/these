@@ -1,8 +1,8 @@
 #############
 # initialization
-initEM <- function(covX = NULL,n=1e6,
+initEM <- function(Sigma = NULL,n=1e6,
                    #                   S = NULL,
-                   pca=TRUE,cliquelist) {
+                   pca=TRUE,cliqueList) {
   # -----------------------------------------------------------------------------------------------------------------------------
   # FUNCTION
   #   Initialize EM by selecting a possible clique and taking the principal component of this clique
@@ -19,44 +19,69 @@ initEM <- function(covX = NULL,n=1e6,
   
   
   # code sans simulation de données
+  Corr <- cov2cor(Sigma); sigma <- sqrt(diag(Sigma))
+  coef <- matrix(0, p, cliqueNb); lambda <- rep(0, cliqueNb)
+  sapply(1:cliqueNb, function(c){
+    pca <- eigen(cov2cor(Corr[cliqueList[[c]], cliqueList[[c]]]))
+    coef[, c] <<- rep(0, p); 
+    coef[cliqueList[[c]], c] <<- pca$vectors[, 1]
+    lambda[c] <<- pca$values[1]
+  }) 
   
+  # Recontructing Sigma
+  CorrFull <- rbind(cbind(Corr, Corr%*%coef), cbind(t(coef)%*%Corr, 1.1*t(coef)%*%Corr%*%coef))
+ # isSymmetric(CorrFull); eigen(CorrFull)$values; plot(CorrFull[1:p, 1:p], Corr); abline(0, 1)
+  sigmaFull <- c(sigma, rep(1, cliqueNb)) 
+  SigmaFull <- diag(sigmaFull) %*% CorrFull %*% diag(sigmaFull)
+ # isSymmetric(SigmaFull); eigen(SigmaFull)$values; plot(SigmaFull[1:p, 1:p], Sigma); abline(0, 1)
+  
+  # Initialising Omega
+  OmegaFull <- solve(SigmaFull)
+  #isSymmetric(OmegaFull); eigen(OmegaFull)$values
+  # sapply(1:cliqueNb, function(c){
+  #    OmegaFull[(1:p)[-cliqueList[[c]]], (p+c)] <<- OmegaFull[(p+c), (1:p)[-cliqueList[[c]]]] <<- 0
+  # })
+  # isSymmetric(OmegaFull); eigen(OmegaFull)$values
+  coefDiag <- c(rep(1, p), 1/sqrt(diag(OmegaFull[p+(1:cliqueNb), p+(1:cliqueNb)])))
+  OmegaFull <- diag(coefDiag) %*% OmegaFull %*% diag(coefDiag)
   
   # ajout Rmomal 
-  
-  X=rmvnorm(n,rep(0,nrow(covX)), covX)
-  #  n<-nrow(X)
-  nbCliques <- length(cliquelist)
-  if(pca){
-    pr <- lapply(1:nbCliques, function(k)
-      prcomp(t(X[, cliquelist[[k]]]), center = TRUE, scale = TRUE))
-    mat <- lapply(1:nbCliques, function(k)
-      scale(pr[[k]]$rotation[, 1], center = TRUE, scale = TRUE))
-    newX <- scale(X, center = TRUE, scale = TRUE)
-    newX <- scale(cbind(newX, do.call(cbind, mat)), center = TRUE, scale = TRUE)
-  }else{
-    
-    # mat <- lapply(1:nbCliques, function(k)
-    #   rowMeans(X[, cliquelist[[k]]]) )
-    mat <- lapply(1:nbCliques, function(k){
-      apply(X[, cliquelist[[k]]], 1, function(x) median(x))
-    }
-    )
-    
-    mat=do.call(cbind, mat)
-    newX <- scale(cbind(X, mat), center = TRUE, scale = TRUE) # pourquoi scale
-  }
-  
-  
-  # pour chacune des cliques identifiées dans X, on résume les variables liées par une acp.
-  # en récupérant le vecteur principal de chaque acp, qui vont jouer le rôle de nouvelles variables
-  # qui étaient manquantes et corrélées à toutes les variables de la clique.
-  mu <- matrix(0, ncol(newX), 1)
-  newX <- newX + mvrnorm(n, mu, 0.01 * diag(ncol(newX)))
-  Sigma0 <- 1 / n * t(newX) %*% (newX)
-  K0 <- solve(Sigma0)
+##################  
+  # X=rmvnorm(n,rep(0,nrow(covX)), covX)
+  # #  n<-nrow(X)
+  # nbCliques <- length(cliquelist)
+  # if(pca){
+  #   pr <- lapply(1:nbCliques, function(k)
+  #     prcomp(t(X[, cliquelist[[k]]]), center = TRUE, scale = TRUE))
+  #   mat <- lapply(1:nbCliques, function(k)
+  #     scale(pr[[k]]$rotation[, 1], center = TRUE, scale = TRUE))
+  #   newX <- scale(X, center = TRUE, scale = TRUE)
+  #   newX <- scale(cbind(newX, do.call(cbind, mat)), center = TRUE, scale = TRUE)
+  # }else{
+  #   
+  #   # mat <- lapply(1:nbCliques, function(k)
+  #   #   rowMeans(X[, cliquelist[[k]]]) )
+  #   mat <- lapply(1:nbCliques, function(k){
+  #     apply(X[, cliquelist[[k]]], 1, function(x) median(x))
+  #   }
+  #   )
+  #   
+  #   mat=do.call(cbind, mat)
+  #   newX <- scale(cbind(X, mat), center = TRUE, scale = TRUE) # pourquoi scale
+  # }
+  # 
+  # 
+  # # pour chacune des cliques identifiées dans X, on résume les variables liées par une acp.
+  # # en récupérant le vecteur principal de chaque acp, qui vont jouer le rôle de nouvelles variables
+  # # qui étaient manquantes et corrélées à toutes les variables de la clique.
+  # mu <- matrix(0, ncol(newX), 1)
+  # newX <- newX + mvrnorm(n, mu, 0.01 * diag(ncol(newX)))
+  # Sigma0 <- 1 / n * t(newX) %*% (newX)
+  # K0 <- solve(Sigma0)
+  ############
   return(structure(list(
-    Sigma0 = Sigma0,
-    K0 = K0,
+    Sigma0 = SigmaFull,
+    K0 = OmegaFull,
     cliquelist = cliquelist
   )))
 }
