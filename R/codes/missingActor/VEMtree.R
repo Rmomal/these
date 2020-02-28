@@ -95,7 +95,7 @@ initviasigma=init.mclust((cov2cor(sigma_obs)),title="Sigma",
 #   group_by(coeff) %>% summarise(sumFP=sum(FP), sumFN=sum(FN), sum=sum(FP+FN))
 
 #findCliques(cov2cor(sigma_obs),k = 2)
-initial.param<-initEM(sigma_obs,n=n,cliquelist = list(initviasigma),pca=TRUE) # quick and dirty modif for initEM to take a covariance matrix as input
+initial.param<-initEM(sigma_obs,n=n,cliqueList = list(initviasigma),cst=10, pca=TRUE) # quick and dirty modif for initEM to take a covariance matrix as input
 omega_init=initial.param$K0
 sigma_init=initial.param$Sigma0
 
@@ -122,7 +122,7 @@ plotVE(resVe.Th,ome,h,seuil=0.5)
 # resM=Mstep(M,S,Pg, omega_init,W_init,maxIter=2, beta.min=1e-6, eps=1e-2 ,plot=TRUE)
 
 
-VEMtree<-function(counts,MO,SO,sigma_obs,ome_init,W_init,Wg_init, verbatim=TRUE,maxIter=20, 
+VEMtree<-function(counts,MO,SO,ome_init,W_init,Wg_init, verbatim=TRUE,maxIter=20, 
                   plot=TRUE, eps=1e-2, alpha, vraiOm){
   
   n=nrow(MO);  p=ncol(MO);  O=1:ncol(MO); H=(p+1):ncol(omega);r=length(H);
@@ -139,7 +139,7 @@ VEMtree<-function(counts,MO,SO,sigma_obs,ome_init,W_init,Wg_init, verbatim=TRUE,
     iter=iter+1 
     cat(paste0("\n Iter n°", iter))
     #VE
-    resVe<-VE(MO,SO,SH, sigma_obs,omega,W,Wg,MH=MH,Pg=Pg,maxIter=1,minIter=1,eps=1e-3, plot=FALSE, 
+    resVe<-VE(MO,SO,SH,omega,W,Wg,MH=MH,Pg=Pg,maxIter=1,minIter=1,eps=1e-3, plot=FALSE, 
               form="theory",alpha=alpha, verbatim=FALSE)
     KL[iter]=resVe$KL
     M=resVe$Hmeans ; 
@@ -164,7 +164,7 @@ VEMtree<-function(counts,MO,SO,sigma_obs,ome_init,W_init,Wg_init, verbatim=TRUE,
     diffOm[iter]=abs(max(F_Sym2Vec(omega.new)-F_Sym2Vec(omega)))
     diffOmDiag[iter]=abs(max(diag(omega.new)-diag(omega)))
     omega=omega.new
-    rvalue[iter]=summary(lm(diag(omega)~diag(vraiOm)))$r.squared
+    rvalue[iter]=summary(lm(diag(omega)[O]~diag(vraiOm)[O]))$r.squared
     diffquantile[iter]=quantile(F_Sym2Vec(omega)[F_Sym2Vec(vraiOm)==1], 0.25) - quantile(F_Sym2Vec(omega)[F_Sym2Vec(vraiOm)==0], 0.75)
 
     J[iter]=resM$finalJ
@@ -173,7 +173,7 @@ VEMtree<-function(counts,MO,SO,sigma_obs,ome_init,W_init,Wg_init, verbatim=TRUE,
     lowbound[[iter]] = LowerBound(Pg ,omega, M, S, W, Wg,p)
   }
   lowbound=do.call(rbind,lowbound)
-  features<-data.frame(diffMH=diffMH, diffWg=diffWg, diffPg=diffPg, diffW=diffW, diffOm=diffOm, diffOmDiag=diffOmDiag,
+  features<-data.frame(log.diffMH=log(diffMH), diffWg=diffWg, diffPg=diffPg, diffW=diffW, diffOm=diffOm, diffOmDiag=diffOmDiag,
                        adjustDiag=rvalue, diffquantile=diffquantile)
   t2=Sys.time()
   t2=Sys.time(); time=t2-t1
@@ -199,8 +199,13 @@ VEMtree<-function(counts,MO,SO,sigma_obs,ome_init,W_init,Wg_init, verbatim=TRUE,
   return(list(M=M,S=S,Pg=Pg,Wg=Wg,W=W,omega=omega, lowbound=lowbound, features=features))
 }
 
-resVEM<-VEMtree(counts,MO,SO,sigma_obs,omega_init,W_init,Wg_init, eps=1e-3, alpha=1,
-                maxIter=10, plot=TRUE,vraiOm=ome_init)
+initial.param<-initEM(sigma_obs,n=n,cliqueList = list(initviasigma),cst=1.5, pca=TRUE) # quick and dirty modif for initEM to take a covariance matrix as input
+omega_init=initial.param$K0
+sigma_init=initial.param$Sigma0
+
+
+resVEM<-VEMtree(counts,MO,SO,omega_init,W_init,Wg_init, eps=1e-3, alpha=1,
+                maxIter=5, plot=TRUE,vraiOm=ome_init)
 plotVEM(resVEM$Pg,ome,r=1,seuil=0.5)
 values=courbes_seuil(probs = resVEM$Pg,omega = ome,h = 15,seq_seuil = seq(0,1,0.05))
 plotVerdict(values, seuil)
@@ -231,7 +236,7 @@ quantile(omegas$estimation[omegas$vrai==1], 0.25) - quantile(omegas$estimation[o
 
 Diagomegas = data.frame(vrai = diag(ome_init) , init = diag(omega_init),
                         estimation = diag(resVEM$omega))
-Diagomegas %>% gather(key, value, -vrai) %>% 
+Diagomegas[-nrow(Diagomegas),] %>% gather(key, value, -vrai) %>% 
   ggplot(aes((vrai), value,  color=key))+geom_point()+ theme_light()+
   geom_abline()
 
