@@ -70,7 +70,7 @@ for( difficulty in diff){
     cat(type,difficulty,"\n")
     obj<-mclapply(1:100,function(nbgraph){
       cat("\n",nbgraph,":")
-      covar <- readRDS(paste0(path,"TPFN/Data/covar_",difficulty,".rds"))
+      covar <- readRDS(paste0(path,"TPFN/Data/covar_",difficulty,".rds")) # same covar as in correct_Data, file copied
       # omegaOriginal <- readRDS(paste0("/Users/raphaellemomal/simulations/Simu/PLN.2.0/",type,
       #                                 "/d/Sets_param/Graph",nbgraph,"_",nbspiecies,".rds"))$omega
       # edgesOrigin<-ifelse(abs(F_Sym2Vec(omegaOriginal))<1e-16,0,1)
@@ -427,15 +427,19 @@ ggsave("Threshold_effect.png",plot=p,  width=14, height=8)
 #########--------------------------        TPFN PLOTS        --------------------############                  
 #######@#####################################################################################
 
-build_TFPN_plots<-function(type,difficulty,method,factors=methods,colors,FDR=FALSE, TPFN=FALSE,FOR=FALSE, senspe=FALSE){
+build_TFPN_plots<-function(type,difficulty,method,factors=methods,resultspath, resultsname,
+                           colors,FDR=FALSE, TPFN=FALSE,FOR=FALSE, senspe=FALSE){
+  
   cols<-c("TN","FP" ,"FN"  ,"TP","method" ,"times","unit","type", "difficulty" ,"graph",  "sum","FDR")
   res<-do.call(rbind, lapply(method, function(meth){
-    obj <-readRDS(paste0(path,"TPFN/Results/",meth,"_",type,"_TFPN_", difficulty,".rds")) %>% dplyr::select(cols)
+   # obj <-readRDS(paste0(path,"TPFN/Results/",meth,"_",type,"_TFPN_", difficulty,".rds")) %>% dplyr::select(cols)
+   obj <-readRDS(paste0(resultspath, resultsname,meth,"_",type,"_TFPN_", difficulty,".rds")) %>% dplyr::select(cols)
+    # obj <-readRDS(paste0("/Users/raphaellemomal/Clark/Results/",meth,"_",type,"_TFPN_",difficulty,".rds")) %>% dplyr::select(cols)
     obj$method=meth
     
     return(obj)
   }))
-  res<-res%>% mutate(method=fct_relevel(method,factors),# %>% mutate(method = fct_recode(method, "EMtree-10" = "EM"))
+  res<-res%>% mutate(#method=fct_relevel(method,factors),# %>% mutate(method = fct_recode(method, "EMtree-10" = "EM"))
                      FDR=FP/(TP+FP),  densPred=(TP+FP)/(TP+FN), FOR=FN/(FN+TN),
                      sens=TP/(TP+FN), spe=TN/(TN+FP))
   p <-ggplot(res,aes( x=method, color=method))+
@@ -514,7 +518,7 @@ build_TFPN_plots<-function(type,difficulty,method,factors=methods,colors,FDR=FAL
   # }
 }
 
-gridLine<-function(type,method,factors,colors,top=TRUE){
+gridLine<-function(type,method,factors,resultspath, resultsname,colors,top=TRUE){
   label<-switch(type,"erdos"="Erdös \n \n","cluster"="Cluster \n \n",
                 "scale-free"="Scale-free \n \n")
   if(top){
@@ -522,15 +526,16 @@ gridLine<-function(type,method,factors,colors,top=TRUE){
   }else{
     top1="";top2=""
   }
-  p1<-build_TFPN_plots(type = type,difficulty ="easy",method=method,factors=factors,colors=colors,
+  p1<-build_TFPN_plots(type = type,difficulty ="easy",method=method,factors=factors,resultspath, resultsname,colors=colors,
                        FDR = TRUE)
   
-  p2<-build_TFPN_plots(type = type,difficulty ="easy",method=method,factors=factors,colors=colors,
+  p2<-build_TFPN_plots(type = type,difficulty ="easy",method=method,factors=factors,resultspath, resultsname,colors=colors,
                        FDR = FALSE)
+
   g1<-grid.arrange(p1,p2, ncol=2, nrow=1,top=top1,right="\n")
-  p1<-build_TFPN_plots(type = type,difficulty ="hard",method=method,factors=factors,colors=colors,
+  p1<-build_TFPN_plots(type = type,difficulty ="hard",method=method,factors=factors,resultspath, resultsname,colors=colors,
                        FDR = TRUE)
-  p2<-build_TFPN_plots(type = type,difficulty ="hard",method=method,factors=factors,colors=colors,
+  p2<-build_TFPN_plots(type = type,difficulty ="hard",method=method,factors=factors,resultspath, resultsname,colors=colors,
                        FDR = FALSE)
   g2<-grid.arrange(p1,p2, ncol=2, nrow=1,top=top2, right=label)
   
