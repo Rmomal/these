@@ -13,8 +13,8 @@ library(ROCR)
 library(reshape2)#for ggimage
 library(gridExtra)
 library(harrypotter)
-source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
-
+#source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
+source("/home/mmip/Raphaelle/these/R/codes/missingActor/fonctions-missing.R")
 mytheme.light <- list(theme_light(), scale_color_brewer("",palette="Set3"),guides(color=FALSE),
                       theme(strip.background=element_rect(fill="gray50",colour ="gray50"),
                             plot.title = element_text(hjust = 0.5)))
@@ -95,33 +95,6 @@ initviasigma=init.mclust((cov2cor(sigma_obs)),title="Sigma",
 #   group_by(coeff) %>% summarise(sumFP=sum(FP), sumFN=sum(FN), sum=sum(FP+FN))
 
 #findCliques(cov2cor(sigma_obs),k = 2)
-initial.param<-initEM(sigma_obs,n=n,cliqueList = list(initviasigma),cst=10, pca=TRUE) # quick and dirty modif for initEM to take a covariance matrix as input
-omega_init=initial.param$K0
-sigma_init=initial.param$Sigma0
-
-# Tree
-O=1:p
-Wg_init <- matrix(1, p+r, p+r); diag(Wg_init) = 0; Wg_init =Wg_init / sum(Wg_init)
-W_init <- matrix(1, p+r, p+r); diag(W_init) = 0;# W_init =W_init / sum(W_init)
-W_init[O,O] <- EMtree_corZ(cov2cor(sigma_obs),n = n,maxIter = 20)$edges_weight
-
-
-pr=prcomp(t(counts),scale. = FALSE)
-MH = matrix(pr$rotation[,1]*pr$sdev[1],nrow=n,ncol=r)
-resVe.Th=VE(MO ,SO,MH = matrix(100,n,r),sigma_obs,ome_init,W_init,Wg_init,maxIter=150,
-            minIter=8,eps=1e-3, plot=TRUE,
-            form="theory",alpha=0.9)
-h=15
-plotVE(resVe.Th,ome,h,seuil=0.5)
-####################
-#-----  M steps
-
-# M=resVe.Th$Hmeans
-# S=resVe.Th$Hvar
-# Pg=resVe.Th$Gprobs
-# resM=Mstep(M,S,Pg, omega_init,W_init,maxIter=2, beta.min=1e-6, eps=1e-2 ,plot=TRUE)
-
-
 VEMtree<-function(counts,MO,SO,ome_init,W_init,Wg_init, verbatim=TRUE,maxIter=20, 
                   plot=TRUE, eps=1e-2, alpha, vraiOm){
   
@@ -199,15 +172,31 @@ VEMtree<-function(counts,MO,SO,ome_init,W_init,Wg_init, verbatim=TRUE,maxIter=20
   return(list(M=M,S=S,Pg=Pg,Wg=Wg,W=W,omega=omega, lowbound=lowbound, features=features))
 }
 
-initial.param<-initEM(sigma_obs,n=n,cliqueList = list(initviasigma),cst=1.5, pca=TRUE) # quick and dirty modif for initEM to take a covariance matrix as input
+
+####################
+#-----  Initialisation
+# Tree
+O=1:p
+Wg_init <- matrix(1, p+r, p+r); diag(Wg_init) = 0; Wg_init =Wg_init / sum(Wg_init)
+W_init <- matrix(1, p+r, p+r); diag(W_init) = 0;# W_init =W_init / sum(W_init)
+W_init[O,O] <- EMtree_corZ(cov2cor(sigma_obs),n = n,maxIter = 20)$edges_weight
+
+# Z
+initial.param<-initEM(sigma_obs,n=n,cliqueList = list(initviasigma),cst=5, pca=TRUE) # quick and dirty modif for initEM to take a covariance matrix as input
 omega_init=initial.param$K0
 sigma_init=initial.param$Sigma0
 
 
+####################
+#-----  VEM
+
 resVEM<-VEMtree(counts,MO,SO,omega_init,W_init,Wg_init, eps=1e-3, alpha=1,
-                maxIter=5, plot=TRUE,vraiOm=ome_init)
+                maxIter=20, plot=TRUE,vraiOm=ome_init)
 plotVEM(resVEM$Pg,ome,r=1,seuil=0.5)
 values=courbes_seuil(probs = resVEM$Pg,omega = ome,h = 15,seq_seuil = seq(0,1,0.05))
+values %>% mutate(crit = PPV+TPR) %>% filter(crit==max(crit, na.rm=TRUE)) %>%
+  summarise(mins=min(seuil), maxs=max(seuil), PPV=max(PPV), PPVO=max(PPVO),PPVH=max(PPVH), 
+            TPR=max(TPR),TPRO=max(TPRO),TPRH=max(TPRH))
 plotVerdict(values, seuil)
 
 # lower bound check
