@@ -1,6 +1,6 @@
 #############
 # initialization
-initEM <- function(Sigma = NULL,n=1e6,
+initEM <- function(Sigma = NULL,n=1e6,cst=1.1,
                    #                   S = NULL,
                    pca=TRUE,cliqueList) {
   # -----------------------------------------------------------------------------------------------------------------------------
@@ -17,7 +17,7 @@ initEM <- function(Sigma = NULL,n=1e6,
   #   clique    : vector containing the indices of the nodes in the clique
   # -----------------------------------------------------------------------------------------------------------------------------
   
-  
+  cliqueNb=length(cliqueList) ; p=ncol(Sigma)
   # code sans simulation de données
   Corr <- cov2cor(Sigma); sigma <- sqrt(diag(Sigma))
   coef <- matrix(0, p, cliqueNb); lambda <- rep(0, cliqueNb)
@@ -29,7 +29,7 @@ initEM <- function(Sigma = NULL,n=1e6,
   }) 
   
   # Recontructing Sigma
-  CorrFull <- rbind(cbind(Corr, Corr%*%coef), cbind(t(coef)%*%Corr, 1.1*t(coef)%*%Corr%*%coef))
+  CorrFull <- rbind(cbind(Corr, Corr%*%coef), cbind(t(coef)%*%Corr, cst*t(coef)%*%Corr%*%coef))
  # isSymmetric(CorrFull); eigen(CorrFull)$values; plot(CorrFull[1:p, 1:p], Corr); abline(0, 1)
   sigmaFull <- c(sigma, rep(1, cliqueNb)) 
   SigmaFull <- diag(sigmaFull) %*% CorrFull %*% diag(sigmaFull)
@@ -42,7 +42,7 @@ initEM <- function(Sigma = NULL,n=1e6,
   #    OmegaFull[(1:p)[-cliqueList[[c]]], (p+c)] <<- OmegaFull[(p+c), (1:p)[-cliqueList[[c]]]] <<- 0
   # })
   # isSymmetric(OmegaFull); eigen(OmegaFull)$values
-  coefDiag <- c(rep(1, p), 1/sqrt(diag(OmegaFull[p+(1:cliqueNb), p+(1:cliqueNb)])))
+  coefDiag <- c(rep(1, p), 1/sqrt(diag(OmegaFull)[p+(1:cliqueNb)]))
   OmegaFull <- diag(coefDiag) %*% OmegaFull %*% diag(coefDiag)
   
   # ajout Rmomal 
@@ -82,7 +82,7 @@ initEM <- function(Sigma = NULL,n=1e6,
   return(structure(list(
     Sigma0 = SigmaFull,
     K0 = OmegaFull,
-    cliquelist = cliquelist
+    cliquelist = cliqueList
   )))
 }
 #Find the clique created by the missing actor
@@ -161,7 +161,7 @@ init.mclust<-function(S,nb.missing=1, n.noise=50,plot=TRUE, title="",trueClique=
 
 #=====
 # VE step
-VE<-function(MO,SO,SH,sigma_obs,omega,W,Wg,MH,Pg,maxIter,minIter,eps, 
+VE<-function(MO,SO,SH,omega,W,Wg,MH,Pg,maxIter,minIter,eps, 
              alpha,form,beta.min=1e-10, plot=FALSE,verbatim=FALSE){
   t1=Sys.time()
   M=cbind(MO,MH) ;  S<-cbind(SO, matrix(rep(SH,n),n,1))
@@ -207,7 +207,7 @@ VE<-function(MO,SO,SH,sigma_obs,omega,W,Wg,MH,Pg,maxIter,minIter,eps,
   if(is.nan(Wdiff)) browser()
   
   #---- MH 
-  MH.new<- 10*(-MO) %*% (Pg[O,H] * omega[O,H]) / omegaH
+  MH.new<- (-MO) %*% (Pg[O,H] * omega[O,H]) #omegaH=1
   diffMH<-max(abs(MH-MH.new))
   M=cbind(MO,MH.new)
   
