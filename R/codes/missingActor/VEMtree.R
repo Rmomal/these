@@ -61,7 +61,7 @@ diag(ome)=0
 ####################
 #----- PLN on counts
 # optimization of theta and h(Z_O)
-remotes::install_github("jchiquet/PLNmodels@dev")
+#remotes::install_github("jchiquet/PLNmodels@dev")
 
 PLNfit<-PLN(counts~1)
 MO<-PLNfit$var_par$M # MiO = ith row of MO
@@ -97,15 +97,24 @@ W_init[O,O] <- EMtree_corZ(cov2cor(sigma_obs),n = n,maxIter = 20)$edges_weight
 # Z
 initviasigma=init.mclust((cov2cor(sigma_obs)),title="Sigma",
                          trueClique = trueClique,n.noise=1)$init
-initial.param<-initEM(sigma_obs,n=n,cliqueList = list(initviasigma),cst=1.1, pca=TRUE) # quick and dirty modif for initEM to take a covariance matrix as input
+initial.param<-initEM(sigma_obs,n=n,cliqueList = list(initviasigma),cst=1.05, pca=TRUE) # quick and dirty modif for initEM to take a covariance matrix as input
 omega_init=initial.param$K0
 sigma_init=initial.param$Sigma0
 
+
+# test epsilon SNR
+# seqEpsi=seq(1.01, 5, 0.05)
+# varyEpsi=sapply(seqEpsi, function(epsilon){
+#   initial.param<-initEM(sigma_obs,n=n,cliqueList = list(initviasigma),cst=epsilon, pca=TRUE) # quick and dirty modif for initEM to take a covariance matrix as input
+#   omega_init=initial.param$K0
+#   compute_nSNR(K = omega_init,indexmissing = ncol(omega_init))
+# })
+# data.frame(SNR=varyEpsi,epsilon=seqEpsi) %>% ggplot(aes(epsilon, SNR))+geom_point()+mytheme
 ####################
 #-----  VEM
 
-resVEM<-VEMtree(counts,MO,SO,omega_init,W_init,Wg_init, eps=1e-3, alpha=1,
-                maxIter=10, plot=TRUE,vraiOm=ome_init)
+resVEM<-VEMtree(counts,MO,SO,omega_init,W_init,Wg_init, eps=2e-2, alpha=1,
+                maxIter=10, plot=TRUE,vraiOm=ome_init,print.hist=FALSE)
 features=resVEM$features
 plotVEM(resVEM$Pg,ome,r=1,seuil=0.5)
 values=courbes_seuil(probs = resVEM$Pg,omega = ome,h = 15,seq_seuil = seq(0,1,0.02))

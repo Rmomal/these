@@ -1,0 +1,154 @@
+---
+title: "Missing Barents"
+author: "Raphaëlle Momal"
+date: "03/03/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+ 
+library(EMtree)
+library(PLNmodels)
+library(ggraph)
+library(tidygraph)
+library(tidyverse)
+library(mvtnorm)
+library(useful)
+library(mclust)
+library(MASS)
+library(ROCR)
+library(reshape2)#for ggimage
+library(gridExtra)
+load("/home/mmip/Raphaelle/these/Data_SR/BarentsFish.Rdata")
+source("/home/mmip/Raphaelle/these/R/codes/missingActor/fonctions-missing.R")
+```
+
+# Data
+
+```{r}
+counts=Data$count
+X=data.frame(Data$covariates)
+Offset=Data$offset
+n=nrow(counts)
+p=ncol(counts)
+```
+
+```{r echo=FALSE, warning=FALSE}
+countOrder=counts[,order(colSums(counts))]
+g1<-(rowSums(counts)) %>% as_tibble() %>% ggplot(aes(value))+geom_histogram()+mytheme+labs(title="Sites richness")
+g2<-(colSums(counts)) %>% as_tibble() %>% ggplot(aes(value))+geom_histogram()+mytheme+labs(title="Species richness")
+grid.arrange(g1, g2, ncol=2)
+g1<-ggimage(log(0.000001+t(countOrder)%*%countOrder/n))+labs(title="Empirical log Sigma, \norder by richness")
+countOrder=counts[order(X$Temperature),]
+g2<-ggimage(log(0.000001+countOrder%*%t(countOrder)/p))+labs(title="Empirical log sites covariance, \norder by temperature")
+grid.arrange(g1, g2, ncol=2)
+```
+
+# Fit PLNmodel
+
+```{r}
+
+PLNfit<-PLN(counts~1)
+MO<-PLNfit$var_par$M # MiO = ith row of MO
+SO<-PLNfit$var_par$S # SiO = diag(ith row of SO)
+sigma_obs=PLNfit$model_par$Sigma
+
+```
+
+
+# Initialization
+
+```{r}
+#Tree
+O=1:p
+r=1
+Wg_init <- matrix(1, p+r, p+r); diag(Wg_init) = 0; Wg_init =Wg_init / sum(Wg_init)
+W_init <- matrix(1, p+r, p+r); diag(W_init) = 0; W_init =W_init / sum(W_init)
+W_init[O,O] <- EMtree_corZ(cov2cor(sigma_obs),n = n,maxIter = 20)$edges_weight
+
+# Z
+initviasigma=init.mclust((cov2cor(sigma_obs)),title="Sigma",
+                         trueClique = NULL,n.noise=1)$init
+initial.param<-initEM(sigma_obs,n=n,cliqueList = list(initviasigma),cst=1.05, pca=TRUE) # quick and dirty modif for initEM to take a covariance matrix as input
+omega_init=initial.param$K0
+g1<-ggimage(omega_init)+labs(title="Omega obtained for initialization")
+```
+
+```{r, echo=FALSE}
+ometmp=omega_init
+diag(ometmp)=0
+g2<-ggimage(ometmp)+labs(title="With diagonal set to 0")
+grid.arrange(g1, g2, ncol=2)
+```
+
+
+The SNR of the obtained omega for initialization is about 65%
+
+```{r}
+compute_nSNR(omega_init,1)
+```
+
+
+# Inference with VEMtree
+
+```{r}
+BarentsVEM<-VEMtree(counts = counts,MO = MO,SO = SO,ome_init = omega_init,W_init = W_init,Wg_init = Wg_init, eps=1e-2, alpha=0.5, maxIter=10, plot=TRUE,vraiOm = NULL, print.hist = FALSE)
+ 
+BarentsVEM$features$diffW
+```
+
+
+```{r}
+g1<-ggimage(BarentsVEM$Pg)
+g2<-ggimage(BarentsVEM$Wg)
+g3<-ggimage(BarentsVEM$omega)
+grid.arrange(g1,g2,g3,ncol=3)
+```
+
+
+```{r, echo=FALSE, fig.height=4, fig.width=10}
+fit=lm(BarentsVEM$M[,p+1]~X$Temperature)
+stats=paste0("Adj R2 = ",signif(summary(fit)$adj.r.squared, 3),
+                      "\nCor. Pears. = ",signif(cor(BarentsVEM$M[,p+1],X$Temperature),3))
+
+pr=prcomp(t(counts),scale. = FALSE)
+MHinit= matrix(pr$rotation[,1]*pr$sdev[1],nrow=n,ncol=r)
+
+dataMH=data.frame(MH=BarentsVEM$M[,p+1], temperature=X$Temperature, MHinit=MHinit) 
+
+g1<-dataMH%>% 
+  ggplot(aes(MHinit, MH))+geom_point()+mytheme
+
+
+g2<-dataMH%>% 
+  ggplot(aes(temperature, MH))+geom_point()+mytheme+
+  geom_smooth(method=lm)+
+    annotate("text",x=1,y=min(BarentsVEM$M[,p+1]),label=stats)
+
+
+fitinit=lm(dataMH$MHinit~X$Temperature)
+statsinit=paste0("Adj R2 = ",signif(summary(fitinit)$adj.r.squared, 3),
+                      "\nCor. Pears. = ",signif(cor(dataMH$MHinit,X$Temperature),3))
+
+g3<-dataMH%>% 
+  ggplot(aes(temperature, MHinit))+geom_point()+mytheme+
+  geom_smooth(method=lm) +
+    annotate("text",x=3,y=400,label=statsinit)
+
+grid.arrange(g1,g2,g3,ncol=3)
+```
+
+```{r}
+R2<-apply(BarentsVEM$M[,-(p+1)],2,function(y){
+  fit=lm(y~X$Temperature)
+  return(signif(summary(fit)$adj.r.squared, 5))
+})
+corel<-apply(BarentsVEM$M[,-(p+1)],2,function(y){
+  corel=cor(y,X$Temperature)
+})
+summary(R2)
+summary(corel)
+
+tibble(R2=R2,corel=corel) %>% gather(key,value) %>% 
+   ggplot(aes(value))+geom_histogram(bins=20)+facet_wrap(~key, scales="free")+ mytheme+labs(x="",y="")
+```
