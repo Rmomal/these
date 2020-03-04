@@ -92,7 +92,7 @@ compute_nSNR(omega_init,1)
 # Inference with VEMtree
 
 ```{r}
-BarentsVEM<-VEMtree(counts = counts,MO = MO,SO = SO,ome_init = omega_init,W_init = W_init,Wg_init = Wg_init, eps=1e-2, alpha=0.5, maxIter=10, plot=TRUE,vraiOm = NULL, print.hist = FALSE)
+BarentsVEM<-VEMtree(counts = counts,MO = MO,SO = SO,ome_init = omega_init,W_init = W_init,Wg_init = Wg_init, eps=1e-2, alpha=1, maxIter=4, plot=TRUE,vraiOm = NULL, print.hist = FALSE)
  
 BarentsVEM$features$diffW
 ```
@@ -152,3 +152,30 @@ summary(corel)
 tibble(R2=R2,corel=corel) %>% gather(key,value) %>% 
    ggplot(aes(value))+geom_histogram(bins=20)+facet_wrap(~key, scales="free")+ mytheme+labs(x="",y="")
 ```
+
+
+# Comparaison avec le modèle ajusté
+
+```{r}
+PLNfit<-PLN(counts~X$Temperature+X$Latitude+X$Longitude+X$Depth)
+fitEM<-EMtree(PLNfit,maxIter = 30,cond.tol = 1e-8,verbatim = TRUE, plot=TRUE)
+```
+
+```{r}
+fitProb<-F_Sym2Vec(fitEM$edges_prob)
+fitWeights<-F_Sym2Vec(fitEM$edges_weight)
+missingProb<-F_Sym2Vec(BarentsVEM$Pg[1:p,1:p])
+missingProbBeta<-F_Sym2Vec(EdgeProba(BarentsVEM$W)[1:p,1:p])
+missingWeights<-F_Sym2Vec(BarentsVEM$W[1:p,1:p])
+res<-data.frame(fitp=(fitProb),missingp=(missingProb),
+           fitw=fitWeights,missingw=missingWeights, missingpw=missingProbBeta) 
+g1<-res%>% 
+  ggplot(aes(rank(fitp), rank(missingp)))+geom_point()+geom_abline()+mytheme
+g2<-res%>% 
+  ggplot(aes(rank(fitw), rank(missingpw)))+geom_point()+geom_abline()+mytheme
+g3<-res%>% 
+  ggplot(aes(rank(fitw), rank(missingw)))+geom_point()+geom_abline()+mytheme
+grid.arrange(g1, g2, g3,ncol=3)
+
+```
+
