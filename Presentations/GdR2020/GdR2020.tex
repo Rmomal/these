@@ -1,0 +1,344 @@
+\documentclass[11pt]{beamer}
+\usetheme{Luebeck}
+%\usecolortheme{seahorse}
+\useinnertheme{rectangles}
+\useoutertheme{infolines}
+\usepackage{xcolor}
+\usepackage{natbib}
+\usepackage[utf8]{inputenc}
+\usepackage{tikz}
+\usepackage{tabularx}
+\usepackage{lipsum}
+\usepackage{amsmath,graphicx,dsfont}
+\usepackage{graphicx}
+\usetikzlibrary{shapes,backgrounds,arrows,automata,snakes,shadows,positioning, mindmap}
+%\usepackage[citestyle=verbose]{biblatex}
+%===================================
+\newcommand\betab{{\boldsymbol{\beta}}}
+\newcommand\thetab{{\boldsymbol{\theta}}}
+\newcommand\Sigmab{{\boldsymbol{\Sigma}}}
+\newcommand\Yb{{\bf Y}}
+\newcommand\Zb{{\bf Z}}
+%===================================
+\newcommand{\Ccal}{\mathcal{C}}
+\newcommand{\edgeunit}{1.5}
+\newcommand{\emphase}[1]{\textcolor{Complement}{#1}}
+\newcommand{\bleu}[1]{\textcolor{Framableulight}{#1}}
+\newcommand{\pos}[1]{\textcolor{Darkgreen}{#1}}
+\newcommand{\nega}[1]{\textcolor{Nicered}{#1}}
+\newcommand{\independent}{\perp \!\!\! \perp}
+
+\newcommand{\Ncal}{\mathcal{N}}
+\tikzset{%
+    observed/.style={%
+    scale=0.6,circle,draw=Framableulight,transform shape,fill=white,font=\Large}
+}
+\tikzset{%
+    basic/.style={%
+    scale=0.4,circle,draw=Framableu,transform shape,fill=Framableulight,font=\small}
+}
+\newcommand{\argmax}{\mathop{\mathrm{argmax}}}   
+\newcommand{\backupbegin}{
+   \newcounter{framenumberappendix}
+   \setcounter{framenumberappendix}{\value{framenumber}}
+}
+\newcommand{\backupend}{
+   \addtocounter{framenumberappendix}{-\value{framenumber}}
+   \addtocounter{framenumber}{\value{framenumberappendix}} 
+}
+
+\makeatletter
+\setbeamertemplate{footline}
+{
+  \leavevmode%
+  \hbox{%
+  \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,center]{author in head/foot}%
+    \usebeamerfont{author in head/foot}Mixture of trees for network inference%~~\beamer@ifempty{\insertshortinstitute}{}{(\insertshortinstitute)}
+  \end{beamercolorbox}%
+  \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,center]{title in head/foot}%
+    \usebeamerfont{title in head/foot} Networking days
+  \end{beamercolorbox}%
+  \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,right]{date in head/foot}%
+    \usebeamerfont{date in head/foot}\insertshortdate{}\hspace*{2em}
+    \insertframenumber{} / \inserttotalframenumber\hspace*{2ex} 
+  \end{beamercolorbox}}%
+  \vskip0pt%
+}
+\makeatother
+%===================================
+\definecolor{Framableu}{RGB}{12,91,122}
+\definecolor{Framableulight}{RGB}{18,144,176}
+\definecolor{Nicered}{RGB}{176,18,65}
+%\definecolor{Nicered}{RGB}{141,14,52}
+\definecolor{Lightpink}{RGB}{229,177,218}
+\definecolor{Green}{RGB}{144,176,18}
+\definecolor{Lightcomplement}{RGB}{235,204,196}
+\definecolor{Darkgoldenrod}{RGB}{176,144,18}
+\definecolor{Darkomplement}{RGB}{122,43,12}
+\definecolor{Complement}{RGB}{176,50,18}
+\definecolor{Darkgreen}{RGB}{52,141,14}
+%===================================
+\setbeamertemplate{itemize items}[square]
+\setbeamertemplate{blocks}[shadow=false]
+\setbeamertemplate{caption}{\raggedright\insertcaption\par}
+%===================================
+\setbeamercolor{section in head/foot}{fg=white,bg=Framableu}
+\setbeamercolor{subsection in head/foot}{fg=white,bg=Framableulight}
+\setbeamercolor{author in head/foot}{bg=Framableu}
+\setbeamercolor{item}{fg=Framableulight}
+\setbeamercolor*{structure}{bg=Framableulight!20,fg=Framableulight}
+\setbeamercolor*{palette secondary}{use=structure,fg=white,bg=structure.fg!75}
+\setbeamercolor{section in toc}{fg=Framableu,bg=white}
+\setbeamercolor{frametitle}{fg=Framableu!80,bg=white}
+\setbeamercolor{block title}{fg=white, bg=Framableulight}  
+%===================================
+\title{Inference of species interaction networks with missing actors from abundance data}
+
+\author{Raphaëlle Momal\\
+\tiny{Supervision:  S. Robin$^{{1}}$ and C. Ambroise$^{\inst{2}}$  }}
+\institute[]
+{
+  \inst{1}%
+  UMR AgroParisTech / INRA MIA-Paris \\
+  \inst{2}%
+  LaMME, Evry
+  }
+\date{March 10$^{\text{th}}$, 2020}
+
+
+%#################################################################
+
+\begin{document}
+
+\begin{frame}
+    \titlepage
+    \begin{center}
+    \includegraphics[width=0.15\linewidth]{images/UPsaclay.png}
+    \includegraphics[width=0.2\linewidth]{images/agro.PNG}\hspace{0.1cm}
+	\includegraphics[width=0.15\linewidth]{images/inrae.png}\hspace{0.15cm}
+	\includegraphics[width=0.17\linewidth]{images/lmh.png}\hspace{0.15cm}
+\end{center}
+\end{frame}
+
+\section{The thesis project}
+%====================================================================
+%====================================================================
+
+
+\section{Graphical models}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  GGM : matrice de précision encode la structure de dépendence
+\subsection{Classical}
+\begin{frame}{Statistical framework for conditional dependence}
+\bleu{Example}:\bigskip
+\begin{columns}
+\begin{column}{0.3\linewidth}\hspace{0.5cm}
+\begin{tikzpicture}	
+
+      \tikzstyle{every edge}=[-,>=stealth',shorten >=1pt,auto,thin,draw]
+		\node[observed] (A1) at (0*\edgeunit, 0*\edgeunit) {$A_1$};
+		\node[observed] (A2) at (1.5*\edgeunit, -0.5*\edgeunit) {$A_2$};
+		\node[observed] (A3) at (1*\edgeunit, 1*\edgeunit) {$A_3$};
+		\node[observed] (A4) at (2.5*\edgeunit, 0.2*\edgeunit) {$A_4$};
+		\path (A1) edge [] (A2)
+        (A1) edge [] (A3)
+        (A2) edge [] (A3)
+        (A2) edge [] (A4);
+	\end{tikzpicture}\\
+\end{column}
+\begin{column}{0.5\linewidth}
+	\begin{itemize}
+	\item Connected: all variables are dependant \bigskip
+	\item \emphase{Markov property} : G encodes the conditional independences\\\bigskip
+	 e.g. $A_4 \independent (A_1, A_3) \: |A_2$ \vspace{0.2cm}
+\end{itemize}
+\end{column}
+\end{columns}
+\begin{center}
+ \only<1>{   \[ p(A_1, \dots, A_p) \propto \prod_{C \in \Ccal_G} \psi_C(A_C) \]
+  where $\Ccal_G =$ set of maximal cliques of $G$.}
+  \only<2>{ Here:  \[ P(A) \propto \psi_{1}(A_1,A_2,A_3) \; \psi_{2}(A_2,A_4) \]}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{\textit{Gaussian Graphical Models} (GGM)}
+
+The Gaussian setting gives the cliques directly.\bigskip\\
+\only<1>{
+$Y$ a multivariate Gaussian of dimension $d$:
+\vspace{0.3cm}
+\begin{center}
+  $Y=(Y_1,...,Y_d) \sim \mathcal{N}_d(0,\Omega^{-1})$,\\
+$\Omega  = (\omega_{ij})_{ i,j }$. \\
+\end{center}
+ \vspace{0.3cm}
+ The factorization is straightforward:
+\begin{align*}
+p(y) &\propto exp(-y^T \Omega y /2)\\
+&\propto \prod_{j,k : \emphase{\omega_{jk} \neq 0 }} exp(-y_j \omega_{jk} y_k /2)  
+\end{align*}
+}
+\only<2>{
+ \begin{columns} 
+ \begin{column}{0.5\linewidth}
+
+ \begin{flushright}
+\[\Omega=
+\left(
+\begin{array}{*{4}{c}}
+* & * & * & 0\\
+*& * & * & *\\
+* & * & * & 0\\
+0 & * & 0 & *
+\end{array}
+\right)
+\]
+ \end{flushright}
+ \end{column}
+ \begin{column}{0.05\linewidth}
+\begin{center}
+ $\Rightarrow$
+\end{center}
+\end{column}
+ \begin{column}{0.45\linewidth}
+ \begin{flushleft}
+\vspace{0.8cm}
+ \begin{tikzpicture}
+     
+      \tikzstyle{every edge}=[-,>=stealth',shorten >=1pt,auto,thin,draw]
+		\node[observed] (A1) at (0*\edgeunit, 0*\edgeunit) {$A_1$};
+		\node[observed] (A2) at (1.5*\edgeunit, -0.5*\edgeunit) {$A_2$};
+		\node[observed] (A3) at (1*\edgeunit, 1*\edgeunit) {$A_3$};
+		\node[observed] (A4) at (2.5*\edgeunit, 0.2*\edgeunit) {$A_4$};
+		\path (A1) edge [] (A2)
+        (A1) edge [] (A3)
+        (A2) edge [] (A3)
+        (A2) edge [] (A4);
+
+\end{tikzpicture}\\
+\end{flushleft}
+ \end{column}
+
+\end{columns}}
+\end{frame}
+%====================================================================
+\begin{frame}{Missing actor}
+$A_2$ is not observed:
+ \begin{columns} 
+ \begin{column}{0.5\linewidth}
+
+ \begin{flushright}
+ \begin{tikzpicture}
+     
+      \tikzstyle{every edge}=[-,>=stealth',shorten >=1pt,auto,thin,draw]
+		\node[observed] (A1) at (0*\edgeunit, 0*\edgeunit) {$A_1$};
+		\node[observed] (A2) at (1.5*\edgeunit, -0.5*\edgeunit) {$A_2$};
+		\node[observed] (A3) at (1*\edgeunit, 1*\edgeunit) {$A_3$};
+		\node[observed] (A4) at (2.5*\edgeunit, 0.2*\edgeunit) {$A_4$};
+		\path (A1) edge [gray,dashed] (A2)
+        (A1) edge [] (A3)
+        (A2) edge [gray,dashed] (A3)
+        (A2) edge [gray,dashed] (A4);
+
+\end{tikzpicture}\\
+ \end{flushright}
+ \end{column}
+ \begin{column}{0.05\linewidth}
+\begin{center}
+\pause
+ $\Longrightarrow$
+\end{center}
+\end{column}
+ \begin{column}{0.45\linewidth}
+ \begin{flushleft}
+\vspace{0.8cm}
+ \begin{tikzpicture}
+     
+      \tikzstyle{every edge}=[-,>=stealth',shorten >=1pt,auto,thin,draw]
+		\node[observed] (A1) at (0*\edgeunit, 0*\edgeunit) {$A_1$};
+		%\node[observed] (A2) at (1.5*\edgeunit, -0.5*\edgeunit) {$A_2$};
+		\node[observed] (A3) at (1*\edgeunit, 1*\edgeunit) {$A_3$};
+		\node[observed] (A4) at (2.5*\edgeunit, 0.2*\edgeunit) {$A_4$};
+		\path  (A1) edge [] (A3)
+        (A3) edge [red] (A4)
+        (A4) edge [red] (A1);
+
+\end{tikzpicture}\\
+\end{flushleft}
+Spurious edges, hard to interpret the structure
+ \end{column}
+\end{columns}
+\bigskip
+\begin{center}
+\only<3>{How to infer a missing actor in a network ?}
+\only<4>{How to infer (a missing actor in) a network ?}
+\end{center}
+\end{frame}
+
+%====================================================================
+\begin{frame}{Graphical model for abundance data}
+$P\ell N$ model:
+   \large{ $$ Y_{ij} \sim \mathcal{P}\big(\exp(\underbrace{o_{ij} + x_i^\intercal \thetab_j}_{\text{fixed}} + \underbrace{Z_{ij}}_{\text{random}})\big).$$} \normalsize 
+     \pause
+   \begin{itemize}
+       \item classically \citep{AiH89}: $ Z \sim\mathcal{N}(0,\Omega^{-1})$
+       \item easy handling of multi-variate data, offsets and covariates
+   \end{itemize}
+   \bigskip
+     \textit{GGM}: $\Omega$ encodes the \emphase{conditional dependency} structure.\\
+   \pause
+   \bigskip
+   \citet{MRA20}: foster sparsity with a random spanning tree: $$Z|T \sim \mathcal{N}(0, \emphase{\Omega_T}^{-1}) $$
+ %  $$ Z \sim \sum p(T)\mathcal{N}(0,\Sigma_T), \hspace{1cm} T \sim \prod_{jk}\beta_{jk}/B $$
+   
+
+\end{frame}
+
+%====================================================================
+\begin{frame}{Computing edge probabilities}
+
+
+\end{frame}
+%====================================================================
+
+\begin{frame}
+\begin{center}
+\Large{Thank you!}    
+\end{center}
+
+\bigskip
+\bigskip
+
+\small{
+Contact :\\
+\begin{description}
+\item[email] raphaelle.momal@agroparistech.fr
+\item[Web]Rmomal.github.io
+\item[Twitter] @MomalRaphaelle\\
+\end{description}}
+
+
+
+\end{frame}
+
+%====================================================================
+%====================================================================
+%====================================================================
+%====================================================================
+%====================================================================
+%====================================================================
+
+\appendix
+\backupbegin
+\begin{frame}[allowframebreaks]
+\bibliographystyle{apalike}
+{\tiny
+    \bibliography{biblio3}}
+\frametitle{References}
+%\bibliography{cellcite}
+\end{frame}\backupend
+
+
+
+\end{document}
