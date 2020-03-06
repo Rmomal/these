@@ -35,6 +35,10 @@
     scale=0.6,circle,draw=Framableulight,transform shape,fill=white,font=\Large}
 }
 \tikzset{%
+    bigMissing/.style={%
+    scale=0.6,circle,draw=orange,transform shape,fill=white,font=\Large}
+}
+\tikzset{%
     basic/.style={%
     scale=0.4,circle,draw=Framableu,transform shape,fill=Framableulight,font=\small}
 }
@@ -46,6 +50,13 @@
     missing/.style={%
     scale=0.7,circle,draw=orange,transform shape,fill=orange,font=\small}
 }
+\tikzset{%
+    variable/.style={%
+    scale=0.9,rectangle,draw=white,transform shape,fill=white,font=\Large}
+}
+
+
+
 \newcommand{\argmax}{\mathop{\mathrm{argmax}}}   
 \newcommand{\backupbegin}{
    \newcounter{framenumberappendix}
@@ -138,7 +149,7 @@
 %  GGM : matrice de précision encode la structure de dépendence
 \subsection{Graphical Models}
 \begin{frame}{Statistical framework for conditional dependence}
-\bleu{Example}:\bigskip
+\bleu{Graphical Models}:\bigskip
 \begin{columns}
 \begin{column}{0.3\linewidth}\hspace{0.5cm}
 \begin{tikzpicture}	
@@ -232,7 +243,7 @@ $A_2$ is not observed:
      
       \tikzstyle{every edge}=[-,>=stealth',shorten >=1pt,auto,thin,draw]
 		\node[observed] (A1) at (0*\edgeunit, 0*\edgeunit) {$A_1$};
-		\node[observed] (A2) at (1.5*\edgeunit, -0.5*\edgeunit) {$A_2$};
+		\node[bigMissing] (A2) at (1.5*\edgeunit, -0.5*\edgeunit) {$A_2$};
 		\node[observed] (A3) at (1*\edgeunit, 1*\edgeunit) {$A_3$};
 		\node[observed] (A4) at (2.5*\edgeunit, 0.2*\edgeunit) {$A_4$};
 		\path (A1) edge [gray,dashed] (A2)
@@ -260,12 +271,12 @@ $A_2$ is not observed:
 		\node[observed] (A3) at (1*\edgeunit, 1*\edgeunit) {$A_3$};
 		\node[observed] (A4) at (2.5*\edgeunit, 0.2*\edgeunit) {$A_4$};
 		\path  (A1) edge [] (A3)
-        (A3) edge [red] (A4)
-        (A4) edge [red] (A1);
+        (A3) edge [orange] (A4)
+        (A4) edge [orange] (A1);
 
 \end{tikzpicture}\\
 \end{flushleft}
-Spurious edges, hard to interpret the structure
+Spurious edges leading to wrong interpretation
  \end{column}
 \end{columns}
 \bigskip
@@ -354,7 +365,19 @@ Edge probabilities\footnotemark:\\
         (Z5) edge [] (Z2)
         (Z5) edge [] (Z4)
         (Z4) edge [] (Z3);
-\end{tikzpicture} 
+\end{tikzpicture} \\
+
+\begin{tikzpicture}	
+      \tikzstyle{every edge}=[-,>=stealth',shorten >=1pt,auto,thin,draw]
+		\node[rectangle] (A1) at (0.625*\edgeunit, 2*\edgeunit) {$T$};
+		\node[rectangle] (A2) at (0*\edgeunit, 1*\edgeunit) {$\Zb_O$};
+		\node[rectangle] (A3) at (1.25*\edgeunit, 1*\edgeunit) {$\Zb_H$};
+		\node[rectangle] (A4) at (0*\edgeunit, 0*\edgeunit) {$\Yb$};
+		\path (A1) edge [] (A2)
+        (A1) edge [] (A3)
+        (A2) edge [] (A3)
+        (A2) edge [] (A4);
+	\end{tikzpicture} 
 \end{center}
 \end{column}
 
@@ -362,7 +385,7 @@ Edge probabilities\footnotemark:\\
 \pause
 \begin{itemize}
 \item $\Zb = (\Zb_O,\Zb_H)$
-\item Variantion inference with more dimensions (following \citet{genevieve})
+\item Variational inference with more dimensions (following \citet{genevieve})
 \item Selection model criteria
 \item Additional outputs: means of the missing actors found
 \end{itemize}
@@ -393,15 +416,34 @@ Edge probabilities\footnotemark:\\
 \item 4 available covariates (temperature, longitude, latitude, depth)
 \end{itemize}
 
-\begin{align*}
-BIC_0 &= \\
-BIC_1 &=
-\end{align*}
+\bigskip\bigskip
+
+Selection model criteria (no covariates):
+$$vBIC_0 = 4431 \;\; \text{ vs. } \;\; vBIC_1 =8501$$
+
 \end{frame}
 %====================================================================
 
 \begin{frame}{Inference with no covariates}
-\includegraphics[width=5cm]{images/Barents_missing.png}
+
+\begin{columns}
+\begin{column}{0.5\linewidth}
+\includegraphics[width=6cm]{images/Barents_missing.png}
+\end{column}
+
+\begin{column}{0.4\linewidth}
+The inferred means of the missing actor are highly linked to the temperature
+\end{column}
+
+\end{columns}
+\end{frame}
+%====================================================================
+\section{Conclusion}
+\begin{frame}{Perspectives}
+\begin{itemize}
+\item Simulation study
+\item Illustration on spatialized data
+\end{itemize}
 \end{frame}
 %====================================================================
 
