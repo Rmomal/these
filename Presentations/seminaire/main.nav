@@ -106,7 +106,10 @@
 \headcommand {\beamer@sectionpages {31}{36}}
 \headcommand {\beamer@subsectionpages {31}{36}}
 \headcommand {\beamer@appendixpages {37}}
-\headcommand {\slideentry {7}{0}{7}{37/37}{}{1}}
+\headcommand {\beamer@sectionpages {37}{36}}
+\headcommand {\beamer@subsectionpages {37}{36}}
+\headcommand {\sectionentry {8}{\translate {References}}{37}{\translate {References}}{1}}
+\headcommand {\slideentry {8}{0}{0}{37/37}{}{1}}
 \headcommand {\beamer@framepages {37}{37}}
 \headcommand {\beamer@partpages {37}{37}}
 \headcommand {\beamer@subsectionpages {37}{37}}

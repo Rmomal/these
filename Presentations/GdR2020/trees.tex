@@ -1,0 +1,126 @@
+\only<1>{\begin{tabular}{c}
+	\begin{tikzpicture}
+ \tikzstyle{every edge}=[-,>=stealth',shorten >=1pt,auto,thin,draw]
+		\node[basic] (Z1) at (0*\edgeunit, 0*\edgeunit) {};
+		\node[basic] (Z2) at (1*\edgeunit, 0*\edgeunit) {};
+		\node[basic] (Z3) at (1*\edgeunit, 1*\edgeunit) {};
+		\node[basic] (Z4) at (0*\edgeunit, 1*\edgeunit) {};
+		\path (Z1) edge [] (Z2)
+        (Z1) edge [] (Z3)
+        (Z2) edge [] (Z4);
+	\end{tikzpicture}\\
+	\small{$p(T=t_1) = 0.12$}
+\end{tabular}}
+	   
+\only<2>{\begin{tabular}{c}
+\begin{tikzpicture}
+\tikzstyle{every basic}=[draw=none,text=black,scale=0.5,
+      transform shape,circular drop shadow] 
+		\node[basic] (Z1) at (0*\edgeunit, 0*\edgeunit) {};
+		\node[basic] (Z2) at (1*\edgeunit, 0*\edgeunit) {};
+		\node[basic] (Z3) at (1*\edgeunit, 1*\edgeunit) {};
+		\node[basic] (Z4) at (0*\edgeunit, 1*\edgeunit) {};
+		\path (Z1) edge [] (Z2)
+        (Z1) edge [] (Z3)
+        (Z1) edge [] (Z4);
+		\end{tikzpicture} \\
+		\small{$p(T=t_2) = 0.51$}
+	   \end{tabular}}
+	   
+\only<3>{\begin{tabular}{c}
+\begin{tikzpicture}
+\tikzstyle{every basic}=[draw=none,text=black,scale=0.5,
+      transform shape,circular drop shadow] 
+		\node[basic] (Z1) at (0*\edgeunit, 0*\edgeunit) {};
+		\node[basic] (Z2) at (1*\edgeunit, 0*\edgeunit) {};
+		\node[basic] (Z3) at (1*\edgeunit, 1*\edgeunit) {};
+		\node[basic] (Z4) at (0*\edgeunit, 1*\edgeunit) {};
+		\path (Z1) edge [] (Z2)
+        (Z2) edge [] (Z3)
+        (Z2) edge [] (Z4); 
+\end{tikzpicture}\\
+		\small{$p(T=t_3) = 0.02$}
+		\end{tabular}}
+	   
+\only<4>{\begin{tabular}{c}
+\begin{tikzpicture}
+\tikzstyle{every basic}=[draw=none,text=black,scale=0.5,
+      transform shape,circular drop shadow] 
+		\node[basic] (Z1) at (0*\edgeunit, 0*\edgeunit) {};
+		\node[basic] (Z2) at (1*\edgeunit, 0*\edgeunit) {};
+		\node[basic] (Z3) at (1*\edgeunit, 1*\edgeunit) {};
+		\node[basic] (Z4) at (0*\edgeunit, 1*\edgeunit) {}; 
+		\path (Z1) edge [] (Z2)
+        (Z3) edge [] (Z4)
+        (Z2) edge [] (Z4);
+\end{tikzpicture} \\
+		\small{$p(T=t_4) = 0.3$}
+\end{tabular}}
+
+\only<5-6>{	 
+\begin{tabular}{c}
+
+\begin{tabular}{m{1cm} m{2cm}}
+	\begin{tikzpicture}
+ \tikzstyle{every edge}=[-,>=stealth',shorten >=1pt,auto,thin,draw]
+		\node[basic] (Z1) at (0*\smalledgeunit, 0*\smalledgeunit) {};
+		\node[basic] (Z2) at (1*\smalledgeunit, 0*\smalledgeunit) {};
+		\node[basic] (Z3) at (1*\smalledgeunit, 1*\smalledgeunit) {};
+		\node[basic] (Z4) at (0*\smalledgeunit, 1*\smalledgeunit) {};
+		\path (Z1) edge [] (Z2)
+        (Z1) edge [] (Z3)
+        (Z2) edge [] (Z4);
+	\end{tikzpicture} &
+	\small{$p(t_1) = 0.12$}
+\end{tabular}\\
+
+\begin{tabular}{m{1cm} m{2cm}}
+\begin{tikzpicture}
+\tikzstyle{every basic}=[draw=none,text=black,scale=0.5,
+      transform shape,circular drop shadow] 
+		\node[basic] (Z1) at (0*\smalledgeunit, 0*\smalledgeunit) {};
+		\node[basic] (Z2) at (1*\smalledgeunit, 0*\smalledgeunit) {};
+		\node[basic] (Z3) at (1*\smalledgeunit, 1*\smalledgeunit) {};
+		\node[basic] (Z4) at (0*\smalledgeunit, 1*\smalledgeunit) {};
+		\path (Z1) edge [] (Z2)
+        (Z1) edge [] (Z3)
+        (Z1) edge [] (Z4);
+		\end{tikzpicture} &
+		\small{$p(t_2) = 0.51$}
+	   \end{tabular}\\
+	   
+	   \begin{tabular}{m{1cm} m{2cm}}
+\begin{tikzpicture}
+\tikzstyle{every basic}=[draw=none,text=black,scale=0.5,
+      transform shape,circular drop shadow] 
+		\node[basic] (Z1) at (0*\smalledgeunit, 0*\smalledgeunit) {};
+		\node[basic] (Z2) at (1*\smalledgeunit, 0*\smalledgeunit) {};
+		\node[basic] (Z3) at (1*\smalledgeunit, 1*\smalledgeunit) {};
+		\node[basic] (Z4) at (0*\smalledgeunit, 1*\smalledgeunit) {};
+		\path (Z1) edge [] (Z2)
+        (Z2) edge [] (Z3)
+        (Z2) edge [] (Z4); 
+\end{tikzpicture}&
+		\small{$p(t_3) = 0.02$}
+		\end{tabular}\\
+
+\begin{tabular}{m{1cm} m{2cm}}
+\begin{tikzpicture}
+\tikzstyle{every basic}=[draw=none,text=black,scale=0.5,
+      transform shape,circular drop shadow] 
+		\node[basic] (Z1) at (0*\smalledgeunit, 0*\smalledgeunit) {};
+		\node[basic] (Z2) at (1*\smalledgeunit, 0*\smalledgeunit) {};
+		\node[basic] (Z3) at (1*\smalledgeunit, 1*\smalledgeunit) {};
+		\node[basic] (Z4) at (0*\smalledgeunit, 1*\smalledgeunit) {}; 
+		\path (Z1) edge [] (Z2)
+        (Z3) edge [] (Z4)
+        (Z2) edge [] (Z4);
+\end{tikzpicture} &
+		\small{$p(t_4) = 0.3$}
+\end{tabular}\\
+
+\Large{\textbf{.}}\\
+\Large{\textbf{.}}\\
+\Large{\textbf{.}}
+
+\end{tabular}}

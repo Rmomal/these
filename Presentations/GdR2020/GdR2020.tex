@@ -22,6 +22,7 @@
 %===================================
 \newcommand{\Ccal}{\mathcal{C}}
 \newcommand{\edgeunit}{1.5}
+\newcommand{\smalledgeunit}{1}
 \newcommand{\emphase}[1]{\textcolor{Complement}{#1}}
 \newcommand{\bleu}[1]{\textcolor{Framableulight}{#1}}
 \newcommand{\pos}[1]{\textcolor{Darkgreen}{#1}}
@@ -36,6 +37,14 @@
 \tikzset{%
     basic/.style={%
     scale=0.4,circle,draw=Framableu,transform shape,fill=Framableulight,font=\small}
+}
+\tikzset{%
+    large/.style={%
+    scale=0.7,circle,draw=white,transform shape,fill=Framableulight,font=\small}
+}
+\tikzset{%
+    missing/.style={%
+    scale=0.7,circle,draw=orange,transform shape,fill=orange,font=\small}
 }
 \newcommand{\argmax}{\mathop{\mathrm{argmax}}}   
 \newcommand{\backupbegin}{
@@ -53,10 +62,10 @@
   \leavevmode%
   \hbox{%
   \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,center]{author in head/foot}%
-    \usebeamerfont{author in head/foot}Mixture of trees for network inference%~~\beamer@ifempty{\insertshortinstitute}{}{(\insertshortinstitute)}
+    \usebeamerfont{author in head/foot}Missing actor in network inference%~~\beamer@ifempty{\insertshortinstitute}{}{(\insertshortinstitute)}
   \end{beamercolorbox}%
   \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,center]{title in head/foot}%
-    \usebeamerfont{title in head/foot} Networking days
+    \usebeamerfont{title in head/foot} GdR EcoStat Rennes 2020
   \end{beamercolorbox}%
   \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,right]{date in head/foot}%
     \usebeamerfont{date in head/foot}\insertshortdate{}\hspace*{2em}
@@ -120,15 +129,14 @@
 \end{center}
 \end{frame}
 
-\section{The thesis project}
 %====================================================================
 %====================================================================
 
 
-\section{Graphical models}
+\section{Introduction}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %  GGM : matrice de précision encode la structure de dépendence
-\subsection{Classical}
+\subsection{Graphical Models}
 \begin{frame}{Statistical framework for conditional dependence}
 \bleu{Example}:\bigskip
 \begin{columns}
@@ -163,23 +171,14 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}{\textit{Gaussian Graphical Models} (GGM)}
-
-The Gaussian setting gives the cliques directly.\bigskip\\
-\only<1>{
-$Y$ a multivariate Gaussian of dimension $d$:
-\vspace{0.3cm}
-\begin{center}
-  $Y=(Y_1,...,Y_d) \sim \mathcal{N}_d(0,\Omega^{-1})$,\\
-$\Omega  = (\omega_{ij})_{ i,j }$. \\
-\end{center}
+ \vspace{-1cm}
+ $$Y=(Y_1,...,Y_d) \sim \mathcal{N}_d(0,\Omega^{-1})$$\\
  \vspace{0.3cm}
+ 
  The factorization is straightforward:
-\begin{align*}
-p(y) &\propto exp(-y^T \Omega y /2)\\
-&\propto \prod_{j,k : \emphase{\omega_{jk} \neq 0 }} exp(-y_j \omega_{jk} y_k /2)  
-\end{align*}
-}
-\only<2>{
+$$p(y) \propto \prod_{j,k : \emphase{\omega_{jk} \neq 0 }} exp(-y_j \omega_{jk} y_k /2)  $$
+\pause
+\vspace{-1cm}
  \begin{columns} 
  \begin{column}{0.5\linewidth}
 
@@ -220,7 +219,7 @@ p(y) &\propto exp(-y^T \Omega y /2)\\
 \end{flushleft}
  \end{column}
 
-\end{columns}}
+\end{columns}
 \end{frame}
 %====================================================================
 \begin{frame}{Missing actor}
@@ -244,13 +243,13 @@ $A_2$ is not observed:
 \end{tikzpicture}\\
  \end{flushright}
  \end{column}
- \begin{column}{0.05\linewidth}
+ \begin{column}{0.1\linewidth}
 \begin{center}
 \pause
  $\Longrightarrow$
 \end{center}
 \end{column}
- \begin{column}{0.45\linewidth}
+ \begin{column}{0.4\linewidth}
  \begin{flushleft}
 \vspace{0.8cm}
  \begin{tikzpicture}
@@ -272,17 +271,19 @@ Spurious edges, hard to interpret the structure
 \bigskip
 \begin{center}
 \only<3>{How to infer a missing actor in a network ?}
-\only<4>{How to infer (a missing actor in) a network ?}
+\only<4>{How to infer (a missing actor in) a network from abundance data?}
 \end{center}
 \end{frame}
 
 %====================================================================
+\section{Network inference}
+\subsection{Abundance data}
 \begin{frame}{Graphical model for abundance data}
 $P\ell N$ model:
    \large{ $$ Y_{ij} \sim \mathcal{P}\big(\exp(\underbrace{o_{ij} + x_i^\intercal \thetab_j}_{\text{fixed}} + \underbrace{Z_{ij}}_{\text{random}})\big).$$} \normalsize 
      \pause
    \begin{itemize}
-       \item classically \citep{AiH89}: $ Z \sim\mathcal{N}(0,\Omega^{-1})$
+       \item classically \citep{AiH89}: $ \Zb_i \sim\mathcal{N}(0,\Omega^{-1})$ iid
        \item easy handling of multi-variate data, offsets and covariates
    \end{itemize}
    \bigskip
@@ -290,15 +291,117 @@ $P\ell N$ model:
    \pause
    \bigskip
    \citet{MRA20}: foster sparsity with a random spanning tree: $$Z|T \sim \mathcal{N}(0, \emphase{\Omega_T}^{-1}) $$
- %  $$ Z \sim \sum p(T)\mathcal{N}(0,\Sigma_T), \hspace{1cm} T \sim \prod_{jk}\beta_{jk}/B $$
-   
-
+ Inference with an efficient variational EM algorithm.
 \end{frame}
 
 %====================================================================
-\begin{frame}{Computing edge probabilities}
+\subsection{With trees}
+\begin{frame}{Explore the space with trees}
 
+\begin{columns}
 
+\begin{column}{0.45\linewidth}
+\input{trees.tex}
+\end{column}
+
+\begin{column}{0.45\linewidth}
+\begin{center}
+\only<6>{
+Edge probabilities\footnotemark:\\
+		\vspace{0.5cm}
+		
+\begin{tabular}{c}
+		\begin{tikzpicture}
+			\node[large] (Z1) at (0*\edgeunit, 0*\edgeunit) { };
+		\node[large] (Z2) at (1*\edgeunit, 0*\edgeunit) { };
+		\node[large] (Z3) at (1*\edgeunit, 1*\edgeunit) { };
+		\node[large] (Z4) at (0*\edgeunit, 1*\edgeunit) { };
+		\draw [line width=5pt] (Z1) -- (Z2); 
+		\draw [line width=3pt] (Z1) -- (Z3); 
+		\draw [line width=.5pt] (Z1) -- (Z4); 
+		\draw [line width=2pt] (Z2) -- (Z3); 
+		\draw [line width=.5pt] (Z2) -- (Z4); 
+ %		\draw [line width=.5pt] (Z3) -- (Z4); 
+		\end{tikzpicture}   \end{tabular}\\
+		
+		\vspace{0.5cm}
+		
+		$\displaystyle{\mathds{P}((j,k)\in T )= \sum_{\substack{t \in \mathcal{T}\\ (j,k)\in t}} p(t)}$
+	
+	   }
+	   \end{center}
+\end{column}
+
+\end{columns}
+\only<6>{
+\footnotetext[1]{https://github.com/Rmomal/EMtree}}
+\end{frame}
+%====================================================================
+\section{Missing actor}
+\begin{frame}{More dimensions ?}
+\begin{columns}
+\begin{column}{0.3\linewidth}
+\begin{center}
+\begin{tikzpicture}
+\tikzstyle{every basic}=[draw=none,text=black,scale=0.5,
+      transform shape,circular drop shadow] 
+		\node[basic] (Z1) at (0*\edgeunit, 0*\edgeunit) {};
+		\node[basic] (Z2) at (1*\edgeunit, 0*\edgeunit) {};
+		\node[basic] (Z3) at (1*\edgeunit, 1*\edgeunit) {};
+		\node[basic] (Z4) at (0*\edgeunit, 1*\edgeunit) {}; 
+		\node[missing] (Z5) at (0.5*\edgeunit, 0.5*\edgeunit) {}; 
+		\path (Z5) edge [] (Z1)
+        (Z5) edge [] (Z2)
+        (Z5) edge [] (Z4)
+        (Z4) edge [] (Z3);
+\end{tikzpicture} 
+\end{center}
+\end{column}
+
+\begin{column}{0.65\linewidth}
+\pause
+\begin{itemize}
+\item $\Zb = (\Zb_O,\Zb_H)$
+\item Variantion inference with more dimensions (following \citet{genevieve})
+\item Selection model criteria
+\item Additional outputs: means of the missing actors found
+\end{itemize}
+\end{column}
+\end{columns}
+
+\bigskip\bigskip
+\begin{center}
+/!\textbackslash Work in progress /!\textbackslash 
+\end{center}
+\end{frame}
+%====================================================================
+\subsection{Simulation data}
+\begin{frame}{Results on a scale-free graph}
+\begin{center}
+\includegraphics[width=4cm]{images/SFgraph}
+\pause
+\includegraphics[width=6cm]{images/Ghat}\\
+\pause
+\includegraphics[width=8.8cm]{images/precrec_missing.png}
+\end{center}
+\end{frame}
+%====================================================================
+\subsection{Illustration}
+\begin{frame}{Barents fish data}
+\begin{itemize}
+\item Abundances of 30 species in 89 sites of the Barents sea
+\item 4 available covariates (temperature, longitude, latitude, depth)
+\end{itemize}
+
+\begin{align*}
+BIC_0 &= \\
+BIC_1 &=
+\end{align*}
+\end{frame}
+%====================================================================
+
+\begin{frame}{Inference with no covariates}
+\includegraphics[width=5cm]{images/Barents_missing.png}
 \end{frame}
 %====================================================================
 
@@ -318,8 +421,11 @@ Contact :\\
 \item[Twitter] @MomalRaphaelle\\
 \end{description}}
 
+\bigskip
 
-
+\begin{center}
+\footnotesize{Currently looking for a job opportunity!}
+\end{center}
 \end{frame}
 
 %====================================================================
