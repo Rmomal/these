@@ -347,13 +347,26 @@ Edge probabilities\footnotemark:\\
 \only<6>{
 \footnotetext[1]{https://github.com/Rmomal/EMtree}}
 \end{frame}
+
 %====================================================================
 \section{Missing actor}
 \begin{frame}{More dimensions ?}
-\begin{columns}
-\begin{column}{0.3\linewidth}
 \begin{center}
-\begin{tikzpicture}
+
+\only<1>{\begin{tikzpicture}
+\tikzstyle{every basic}=[draw=none,text=black,scale=0.5,
+      transform shape,circular drop shadow] 
+		\node[basic] (Z1) at (0*\edgeunit, 0*\edgeunit) {};
+		\node[basic] (Z2) at (1*\edgeunit, 0*\edgeunit) {};
+		\node[basic] (Z3) at (1*\edgeunit, 1*\edgeunit) {};
+		\node[basic] (Z4) at (0*\edgeunit, 1*\edgeunit) {}; 
+		%\node[missing] (Z5) at (0.5*\edgeunit, 0.5*\edgeunit) {}; 
+		\path (Z4) edge [] (Z3)
+        (Z3) edge [] (Z2)
+         (Z2) edge [] (Z1)
+         (Z4) edge [] (Z1);
+\end{tikzpicture}} 
+\only<2>{\begin{tikzpicture}
 \tikzstyle{every basic}=[draw=none,text=black,scale=0.5,
       transform shape,circular drop shadow] 
 		\node[basic] (Z1) at (0*\edgeunit, 0*\edgeunit) {};
@@ -364,9 +377,49 @@ Edge probabilities\footnotemark:\\
 		\path (Z5) edge [] (Z1)
         (Z5) edge [] (Z2)
         (Z5) edge [] (Z4)
-        (Z4) edge [] (Z3);
-\end{tikzpicture} \\
+        (Z5) edge [] (Z3)
+        (Z4) edge [dashed] (Z3)
+        (Z3) edge [dashed] (Z2)
+         (Z2) edge [dashed] (Z1)
+         (Z4) edge [dashed] (Z1);
+\end{tikzpicture}} \\
+\end{center}
+\only<2>{
+\begin{itemize}
+\item Unobserved species
+\item Unobserved covariate ?
+\end{itemize}}
 
+\bigskip\bigskip
+
+\only<2>{Gaussian case: \citet{genevieve}}
+\end{frame}
+
+%====================================================================
+
+\begin{frame}{Graphical model with missing actors}
+\begin{columns}
+\begin{column}{0.3\linewidth}
+\begin{center}
+\begin{tikzpicture}	
+      \tikzstyle{every edge}=[-,>=stealth',shorten >=1pt,auto,thin,draw]
+		\node[rectangle] (A1) at (0*\edgeunit, 2*\edgeunit) {$T$};
+		\node[rectangle] (A2) at (0*\edgeunit, 1*\edgeunit) {$\Zb$};
+		%\node[rectangle] (A3) at (1.25*\edgeunit, 1*\edgeunit) {$\Zb_H$};
+		\node[rectangle] (A4) at (0*\edgeunit, 0*\edgeunit) {$\Yb$};
+		\path (A1) edge [] (A2)
+       % (A1) edge [] (A3)
+     %   (A2) edge [] (A3)
+        (A2) edge [] (A4);
+	\end{tikzpicture} \\
+	
+	$$vBIC_0 = \mathcal{J}_0(\Yb) - \frac{D}{2}\log(n) $$
+\end{center}
+\end{column}
+
+\begin{column}{0.65\linewidth}
+\pause
+\begin{center}
 \begin{tikzpicture}	
       \tikzstyle{every edge}=[-,>=stealth',shorten >=1pt,auto,thin,draw]
 		\node[rectangle] (A1) at (0.625*\edgeunit, 2*\edgeunit) {$T$};
@@ -377,29 +430,18 @@ Edge probabilities\footnotemark:\\
         (A1) edge [] (A3)
         (A2) edge [] (A3)
         (A2) edge [] (A4);
-	\end{tikzpicture} 
+	\end{tikzpicture} \\
+	
+	$$vBIC_q = \mathcal{J}_q(\Yb) - \frac{D+2pq}{2}\log(n) $$
 \end{center}
-\end{column}
-
-\begin{column}{0.65\linewidth}
-\pause
-\begin{itemize}
-\item $\Zb = (\Zb_O,\Zb_H)$
-\item Variational inference with more dimensions (following \citet{genevieve})
-\item Selection model criteria
-\item Additional outputs: means of the missing actors found
-\end{itemize}
 \end{column}
 \end{columns}
 
 \bigskip\bigskip
-\begin{center}
-/!\textbackslash Work in progress /!\textbackslash 
-\end{center}
 \end{frame}
 %====================================================================
 \subsection{Simulation data}
-\begin{frame}{Results on a scale-free graph}
+\begin{frame}{Results on a scale-free graph \emphase{\footnotesize{/!\textbackslash Work in progress /!\textbackslash }}}
 \begin{center}
 \includegraphics[width=4cm]{images/SFgraph}
 \pause
@@ -426,23 +468,20 @@ $$vBIC_0 = 4431 \;\; \text{ vs. } \;\; vBIC_1 =8501$$
 
 \begin{frame}{Inference with no covariates}
 
-\begin{columns}
-\begin{column}{0.5\linewidth}
-\includegraphics[width=6cm]{images/Barents_missing.png}
-\end{column}
-
-\begin{column}{0.4\linewidth}
-The inferred means of the missing actor are highly linked to the temperature
-\end{column}
-
-\end{columns}
+ \begin{center}
+\only<1>{\includegraphics[width=6cm]{images/Barents_missing.png}}
+\only<2>{\includegraphics[width=9cm]{images/R2_missing.png}}
+ \end{center}
+\only<1>{The inferred means of the missing actor are highly linked to the temperature}
+\only<2>{Neighbors of the missing actor are also highly linked to the temperature}
+ 
 \end{frame}
 %====================================================================
 \section{Conclusion}
 \begin{frame}{Perspectives}
 \begin{itemize}
 \item Simulation study
-\item Illustration on spatialized data
+\item Tests on spatialized data: 
 \end{itemize}
 \end{frame}
 %====================================================================

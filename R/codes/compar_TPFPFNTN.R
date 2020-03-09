@@ -140,12 +140,13 @@ ggsave(paste0(path,"/TPFN/DisagRateErdos.png"),plot=p,height=5,width=7)
 ################################                  COMPUTE TPFN                  ################################                  
 ################################################################################################################
 
-TPFN_compute<-function(methods,diffs,types, cores=3,B=100,S=10){
+TPFN_compute<-function(methods,diffs,types, cores=3,B=100,S=10, 
+                       datapath, dataname, resultspath, resultsname){
   for(method in methods){
     for( difficulty in diffs){#c(1e-3,1e-2,1e-1,1,10
       # for(th in c(0.005,0.05,0.1,0.5)){
       #  for(S in c(2,5,10,20)){
-      path<-"/Users/raphaellemomal/simulations/Simu/PLN.2.0/"
+     # path<-"/Users/raphaellemomal/simulations/Simu/PLN.2.0/"
       
       cond.tol<-switch(difficulty,"easy"=1e-12,"hard"=1e-6)
       for(type in types){
@@ -157,10 +158,10 @@ TPFN_compute<-function(methods,diffs,types, cores=3,B=100,S=10){
           cat("\ngraph ",nbgraph)
           ########################
           # récupérer les données et covariables associées générées précédemment, possibilités graphs signés
-          dat<-readRDS(paste0(path,"TPFN/correct_Data/Signed.Data_",type,"_",difficulty,nbgraph,".rds"))
+          dat<-readRDS(paste0(datapath,dataname,type,"_",difficulty,nbgraph,".rds"))
           Y<-dat[[1]]
           edgesOrigin<-ifelse(abs(F_Sym2Vec(dat[[2]]))<1e-16,0,1)
-          covar <- readRDS(paste0(path,"TPFN/correct_Data/covar_",difficulty,".rds"))
+          covar <- readRDS(paste0(datapath,"covar_",difficulty,".rds"))
           m<- model.matrix(~X1+X2+X3,covar)# l'intercept est enlevé dans le PLN de resample
           p=ncol(Y)
           ########################
@@ -234,7 +235,7 @@ TPFN_compute<-function(methods,diffs,types, cores=3,B=100,S=10){
                            TP=ifelse(is.na(sum),0,TP))
         ########################
         # res est un tibble qi contient pour B graphs d'un type*difficulté, les TPFN corrigés, times et FDR pour une méthode
-        saveRDS(res, paste0(path,"/TPFN/Results/",method,"_",type,"_TFPN_",difficulty,".rds"))
+        saveRDS(res, paste0(resultspath,resultsname,method,"_",type,"_TFPN_",difficulty,".rds"))
         #   saveRDS(res,paste0(path,"/TPFN/results/",method,"_",type,"_TFPN_",difficulty,".rds"))
         #   saveRDS(lapply(obj, function(x){x[[2]]}), paste0(path,"/TPFN/results/Ghat",method,"_",type,"_TFPN_",difficulty,".rds"))
         T2<-Sys.time()
@@ -526,16 +527,20 @@ gridLine<-function(type,method,factors,resultspath, resultsname,colors,top=TRUE)
   }else{
     top1="";top2=""
   }
-  p1<-build_TFPN_plots(type = type,difficulty ="easy",method=method,factors=factors,resultspath, resultsname,colors=colors,
+  p1<-build_TFPN_plots(type = type,difficulty ="easy",method=method,factors=factors,
+                       resultspath, resultsname,colors=colors,
                        FDR = TRUE)
   
-  p2<-build_TFPN_plots(type = type,difficulty ="easy",method=method,factors=factors,resultspath, resultsname,colors=colors,
+  p2<-build_TFPN_plots(type = type,difficulty ="easy",method=method,factors=factors,
+                       resultspath, resultsname,colors=colors,
                        FDR = FALSE)
 
   g1<-grid.arrange(p1,p2, ncol=2, nrow=1,top=top1,right="\n")
-  p1<-build_TFPN_plots(type = type,difficulty ="hard",method=method,factors=factors,resultspath, resultsname,colors=colors,
+  p1<-build_TFPN_plots(type = type,difficulty ="hard",method=method,factors=factors,
+                       resultspath, resultsname,colors=colors,
                        FDR = TRUE)
-  p2<-build_TFPN_plots(type = type,difficulty ="hard",method=method,factors=factors,resultspath, resultsname,colors=colors,
+  p2<-build_TFPN_plots(type = type,difficulty ="hard",method=method,factors=factors,
+                       resultspath, resultsname,colors=colors,
                        FDR = FALSE)
   g2<-grid.arrange(p1,p2, ncol=2, nrow=1,top=top2, right=label)
   

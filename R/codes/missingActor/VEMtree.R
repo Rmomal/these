@@ -13,8 +13,8 @@ library(ROCR)
 library(reshape2)#for ggimage
 library(gridExtra)
 library(harrypotter)
-#source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
-source("/home/mmip/Raphaelle/these/R/codes/missingActor/fonctions-missing.R")
+source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
+#source("/home/mmip/Raphaelle/these/R/codes/missingActor/fonctions-missing.R")
 mytheme.light <- list(theme_light(), scale_color_brewer("",palette="Set3"),guides(color=FALSE),
                       theme(strip.background=element_rect(fill="gray50",colour ="gray50"),
                             plot.title = element_text(hjust = 0.5)))
@@ -45,7 +45,7 @@ hidden=which(diag(omega)%in%sort(diag(omega), decreasing = TRUE)[1:r])[1:r] # on
 trueClique=which(omega[hidden,-hidden]!=0)
 if(plot){
   G=draw_network(1*(omega==1),groupes=1*(diag(omega)==diag(omega)[hidden][1]), 
-                 layout="nicely",curv=0,nb=2,pal="black",nodes_label = 1:(p+r))$G
+                 layout="nicely",curv=0,nb=2,pal="black",nodes_label =rep("",p+r))$G
   print(G)
 }
 Kh  <- omega[hidden,hidden]
@@ -101,6 +101,8 @@ initial.param<-initEM(sigma_obs,n=n,cliqueList = list(initviasigma),cst=1.05, pc
 omega_init=initial.param$K0
 sigma_init=initial.param$Sigma0
 
+pr=prcomp(t(counts[,initviasigma]),scale. = FALSE)
+MHinit = matrix(pr$rotation[,1]*pr$sdev[1],nrow=n,ncol=r)
 
 # test epsilon SNR
 # seqEpsi=seq(1.01, 5, 0.05)
@@ -113,15 +115,16 @@ sigma_init=initial.param$Sigma0
 ####################
 #-----  VEM
 
-resVEM<-VEMtree(counts,MO,SO,omega_init,W_init,Wg_init, eps=2e-2, alpha=1,
-                maxIter=10, plot=TRUE,vraiOm=ome_init,print.hist=FALSE)
+resVEM<-VEMtree(counts,MO,SO,MH=MHinit,omega_init,W_init,Wg_init, eps=1e-2, alpha=0.8,
+                maxIter=5, plot=TRUE,vraiOm=ome_init)
 features=resVEM$features
 plotVEM(resVEM$Pg,ome,r=1,seuil=0.5)
 values=courbes_seuil(probs = resVEM$Pg,omega = ome,h = 15,seq_seuil = seq(0,1,0.02))
 values %>% mutate(crit = PPV+TPR) %>% filter(crit==max(crit, na.rm=TRUE)) %>%
   summarise(mins=min(seuil), maxs=max(seuil), PPV=max(PPV), PPVO=max(PPVO),PPVH=max(PPVH), 
             TPR=max(TPR),TPRO=max(TPRO),TPRH=max(TPRH))
-plotVerdict(values, seuil)
+plotVerdict(values, seuil)+guides(color=FALSE)
+ggsave("precrec_missing.png", plot=p, width=8, height=4,path= "/Users/raphaellemomal/these/R/images")
 
 # lower bound check
 resVEM$lowbound %>% rowid_to_column() %>% gather(key,value,-rowid) %>% 

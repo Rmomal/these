@@ -542,7 +542,7 @@ mytheme.light <- list(theme_light(), scale_color_brewer("",palette="Set3"),guide
                       theme(strip.background=element_rect(fill="gray50",colour ="gray50"),
                             plot.title = element_text(hjust = 0.5)))
 
-mytheme.dark <- list(theme_light(), scale_color_brewer("",palette="Dark2"),
+mytheme.dark <- list(theme_light(), scale_color_brewer("",palette="Dark2"), scale_fill_brewer("",palette="Dark2"),
                      theme(strip.background=element_rect(fill="gray50",colour ="gray50"),
                            plot.title = element_text(hjust = 0.5)))
 # mypal<-c(brewer.pal(3, "Blues"),brewer.pal(3, "Reds"),brewer.pal(3, "Greens"))

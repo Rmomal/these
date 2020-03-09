@@ -194,22 +194,70 @@ grid.arrange(g1, g2, g3,ncol=3)
 # selection model criteria
 
 ```{r}
-PLNfit = PLN(counts~1)
+PLNfit = PLN(counts~X$Temperature)
 theta=PLNfit$model_par$Theta
 int=matrix(1, nrow(counts),1)
+matcovar=cbind(int, X$Temperature)
 omegainit0=solve(PLNfit$model_par$Sigma)
-
+MO=PLNfit$var_par$M
+SO=PLNfit$var_par$S
 VEM0<-VEMtree(counts, MO, SO, MH=NULL,ome_init = omegainit0,W_init = W_init[O,O],Wg_init = Wg_init[O,O],plot = FALSE, maxIter = 10,print.hist = FALSE, vraiOm = NULL, alpha=1, verbatim=FALSE )
 
 BarentsVEM<-VEMtree(counts = counts,MO = MO,SO = SO,MH=MHinit,ome_init = omega_init,W_init = W_init,Wg_init = Wg_init, eps=1e-2, alpha=1, maxIter=10, plot=FALSE,vraiOm = NULL, print.hist = FALSE)
 
-J0<-True_lowBound(counts,VEM0$M,VEM0$S, theta, int,VEM0$W, VEM0$Wg, VEM0$Pg, VEM0$omega )
-vBIC0<-VBIC(J0, ncol(counts),r=0, d=0, n=nrow(counts))
+J0<-True_lowBound(counts,VEM0$M,VEM0$S, theta, matcovar,VEM0$W, VEM0$Wg, VEM0$Pg, VEM0$omega )
+vBIC0<-VBIC(J0, ncol(counts),r=0, d=1, n=nrow(counts))
 
-J1<-True_lowBound(counts,BarentsVEM$M,BarentsVEM$S, theta, int,BarentsVEM$W, BarentsVEM$Wg, BarentsVEM$Pg, BarentsVEM$omega )
-vBIC1<-VBIC(J1, ncol(counts),r=1, d=0, n=nrow(counts))
+J1<-True_lowBound(counts,BarentsVEM$M,BarentsVEM$S, theta, matcovar,BarentsVEM$W, BarentsVEM$Wg, BarentsVEM$Pg, BarentsVEM$omega )
+vBIC1<-VBIC(J1, ncol(counts),r=1, d=1, n=nrow(counts))
 
 vBIC0
 vBIC1
+```
+
+# Position of missing actor in the network
+
+Here we want to characterize the position of the missing actor in the network: what neighbors does it have ? Especially, are they more lined to temperature than other species ?
+
+
+Maybe not the same scale for observed edges probabilities and others ?
+
+```{r}
+hist(BarentsVEM$Pg, breaks=30)
+hist(BarentsVEM$Pg[31,], breaks=30)
+```
+
+
+```{r}
+
+netO=1*(BarentsVEM$Pg[1:30,1:30]>0.1)
+netH<-1*(BarentsVEM$Pg[31,]>0.06)
+network<-cbind(rbind(netO, netH[-31]), c(netH))
+draw_network(network, curv=0, layout="kk", pal = "royalblue3")
+```
+
+```{r}
+R2H<-apply(BarentsVEM$M[,which(netH==1)],2,function(y){
+  fit=lm(y~X$Temperature)
+  return(signif(summary(fit)$adj.r.squared, 5))
+})
+corelH<-apply(BarentsVEM$M[,which(netH==1)],2,function(y){
+  corel=cor(y,X$Temperature)
+})
+R2O<-apply(BarentsVEM$M[,-c(which(netH==1), p+1)],2,function(y){
+  fit=lm(y~X$Temperature)
+  return(signif(summary(fit)$adj.r.squared, 5))
+})
+corelO<-apply(BarentsVEM$M[,-c(which(netH==1), p+1)],2,function(y){
+  corel=cor(y,X$Temperature)
+})
+
+dataH<-data.frame(R2=R2H, corel=corelH, type="Neighbors")
+dataO<-data.frame(R2=R2O,corel=corelO, type="Others")
+
+R2plot<-rbind(dataH,dataO) %>% gather(key,value, -type) %>% 
+   ggplot(aes(value, fill=type, color=type))+geom_density(alpha=0.5)+facet_wrap(~key, scales="free")+ mytheme.dark+labs(x="",y="")
+ggsave("R2_missing.png", plot=R2plot, width=7.5, height=4,path= "/Users/raphaellemomal/these/R/images")
+
 ```
 
