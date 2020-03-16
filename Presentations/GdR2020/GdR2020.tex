@@ -294,8 +294,8 @@ $P\ell N$ model:
    \large{ $$ Y_{ij} \sim \mathcal{P}\big(\exp(\underbrace{o_{ij} + x_i^\intercal \thetab_j}_{\text{fixed}} + \underbrace{Z_{ij}}_{\text{random}})\big).$$} \normalsize 
      \pause
    \begin{itemize}
-       \item classically \citep{AiH89}: $ \Zb_i \sim\mathcal{N}(0,\Omega^{-1})$ iid
-       \item easy handling of multi-variate data, offsets and covariates
+       \item Classically \citep{AiH89}: $ \Zb_i \sim\mathcal{N}(0,\Omega^{-1})$ iid
+       \item Easy handling of multi-variate data, offsets and covariates \citep{CMR18}
    \end{itemize}
    \bigskip
      \textit{GGM}: $\Omega$ encodes the \emphase{conditional dependency} structure.\\
@@ -303,6 +303,7 @@ $P\ell N$ model:
    \bigskip
    \citet{MRA20}: foster sparsity with a random spanning tree: $$Z|T \sim \mathcal{N}(0, \emphase{\Omega_T}^{-1}) $$
  Inference with an efficient variational EM algorithm.
+
 \end{frame}
 
 %====================================================================
@@ -478,10 +479,19 @@ $$vBIC_0 = 4431 \;\; \text{ vs. } \;\; vBIC_1 =8501$$
 \end{frame}
 %====================================================================
 \section{Conclusion}
-\begin{frame}{Perspectives}
+\begin{frame}{In a nutshell}
+\bleu{Contributions}
 \begin{itemize}
-\item Simulation study
-\item Tests on spatialized data: 
+\item Probabilistic model for detecting missing actor in species interaction network inference from abundance data
+\item Efficient variational inference, selection model criteria
+\item Missing actor characterization through its means and neighborhood \\
+\end{itemize}
+\bigskip
+
+\bleu{Perspectives}
+\begin{itemize}
+\item Accounting for spatial effects of ecological datasets for network inference (violation of sites independence hypothesis)
+\item Spatial effects as missing actors in the network ?
 \end{itemize}
 \end{frame}
 %====================================================================
