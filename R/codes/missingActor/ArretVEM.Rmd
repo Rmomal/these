@@ -1,0 +1,164 @@
+---
+title: "ArretVEM"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+# Initialization
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE }
+library(EMtree)
+library(PLNmodels)
+library(LITree)
+library(ggraph)
+library(tidygraph)
+library(tidyverse)
+library(mvtnorm)
+library(useful)
+library(mclust)
+library(MASS)
+library(ROCR)
+library(reshape2)#for ggimage
+library(gridExtra)
+library(harrypotter)
+source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
+#source("/home/mmip/Raphaelle/these/R/codes/missingActor/fonctions-missing.R")
+mytheme.light <- list(theme_light(), scale_color_brewer("",palette="Set3"),guides(color=FALSE),
+                      theme(strip.background=element_rect(fill="gray50",colour ="gray50"),
+                            plot.title = element_text(hjust = 0.5)))
+
+mytheme.dark <- list(theme_light(), scale_color_brewer("",palette="Dark2"),
+                     theme(strip.background=element_rect(fill="gray50",colour ="gray50"),
+                           plot.title = element_text(hjust = 0.5)))
+# mypal<-c(brewer.pal(3, "Blues"),brewer.pal(3, "Reds"),brewer.pal(3, "Greens"))
+# mypal<-c(brewer.pal(8, "Dark2"),"blue","red")
+mytheme <- list(theme_light(), scale_fill_brewer("",palette="Dark2"),#scale_colour_hp_d(option = "RavenClaw", name = ""), #scale_color_manual("",values=mypal),
+                theme(strip.background=element_rect(fill="gray50",colour ="gray50"),
+                      plot.title = element_text(hjust = 0.5)))
+
+# simu parameters
+set.seed(7)
+n=200
+p=14
+r=1
+type="scale-free"
+plot=TRUE
+
+################
+#----- DATA
+# simulate graph and omega, then sigma0 and finally counts
+data=data_from_scratch(type = type,p = p+r,n = n,signed = FALSE,prob = 5/p,v = 0)
+omega=data$omega
+hidden=which(diag(omega)%in%sort(diag(omega), decreasing = TRUE)[1:r])[1:r] # on cache les r plus gros
+trueClique=which(omega[hidden,-hidden]!=0)
+if(plot){
+  G=draw_network(1*(omega==1),groupes=1*(diag(omega)==diag(omega)[hidden][1]), 
+                 layout="nicely",curv=0,nb=2,pal="black",nodes_label =rep("",p+r))$G
+  print(G)
+}
+Kh  <- omega[hidden,hidden]
+Ko  <- omega[-hidden,-hidden]
+Koh <- omega[-hidden,hidden]
+Km  <- Ko - Koh %*%solve(Kh)%*% t(Koh)
+sigmaO=solve(Km)
+counts=generator_PLN(sigmaO,covariates = NULL,n=n)
+
+ome_init=omega[c(2:15,1),c(2:15,1)] #ome is for testing
+ome=ome_init
+diag(ome)=0
+####################
+#----- PLN on counts
+# optimization of theta and h(Z_O)
+#remotes::install_github("jchiquet/PLNmodels@dev")
+
+PLNfit<-PLN(counts~1)
+MO<-PLNfit$var_par$M # MiO = ith row of MO
+SO<-PLNfit$var_par$S # SiO = diag(ith row of SO)
+sigma_obs=PLNfit$model_par$Sigma
+plot(sigma_obs,sigmaO)
+ 
+####################
+#-----  Initialisation
+# Tree
+O=1:p
+Wg_init <- matrix(1, p+r, p+r); diag(Wg_init) = 0; Wg_init =Wg_init / sum(Wg_init)
+W_init <- matrix(1, p+r, p+r); diag(W_init) = 0; W_init =W_init / sum(W_init)
+W_init[O,O] <- EMtree_corZ(cov2cor(sigma_obs),n = n,maxIter = 20)$edges_weight
+
+# Z
+initviasigma=init.mclust((cov2cor(sigma_obs)),title="Sigma",
+                         trueClique = trueClique,n.noise=1,plot = TRUE)$init
+initial.param<-initEM(sigma_obs,n=n,cliqueList = list(initviasigma),cst=1.05, pca=TRUE) # quick and dirty modif for initEM to take a covariance matrix as input
+omega_init=initial.param$K0
+sigma_init=initial.param$Sigma0
+
+pr=prcomp(t(counts[,initviasigma]),scale. = FALSE)
+MHinit = matrix(pr$rotation[,1]*pr$sdev[1],nrow=n,ncol=r)
+
+```
+
+
+```{r, message=FALSE, warning=FALSE, results=FALSE}
+alpha=seq(1,0.6, -0.1)
+eps=c(1e-5,1e-4,1e-3,1e-2)
+
+models<-lapply(alpha, function(a){
+  lapply(eps, function(ep){
+    VEMtree(counts,MO,SO,MH=MHinit,omega_init,W_init,Wg_init, eps=ep, 
+            alpha=a,
+            maxIter=50, plot=FALSE,vraiOm=ome_init,
+            condTrack=FALSE,print.hist=FALSE)
+  })
+})
+
+
+Lowbounds=do.call(rbind, do.call(rbind,lapply(seq_along(models), function(a){
+  lapply(seq_along(models[[a]]), function(ep){
+    models[[a]][[ep]]$lowbound %>% dplyr::select(J,parameter) %>% rowid_to_column() %>%  
+      mutate(alpha=alpha[a], eps=eps[ep])
+  })
+})))
+
+precrec=do.call(rbind, do.call(rbind,lapply(seq_along(models), function(a){
+  lapply(seq_along(models[[a]]), function(ep){
+    probs=models[[a]][[ep]]$Pg
+    values=courbes_seuil(probs =probs,omega = ome,h = 15,seq_seuil = seq(0,1,0.01))
+    values %>% mutate(crit = PPV+TPR) %>% filter(crit==max(crit, na.rm=TRUE)) %>%
+      summarise(mins=min(seuil), maxs=max(seuil), PPV=max(PPV), PPVO=max(PPVO),PPVH=max(PPVH), 
+                TPR=max(TPR),TPRO=max(TPRO),TPRH=max(TPRH)) %>% 
+      mutate(alpha=alpha[a], eps=eps[ep])
+  })
+})))
+```
+
+
+# Lowbounds 
+```{r, fig.height=10, fig.width=10 , echo=FALSE}
+
+Lowbounds %>%
+  ggplot(aes(rowid,J))+geom_point(aes(color=as.factor(parameter)), size=3)+geom_line()+
+  facet_grid(alpha~eps,scales="free_x",labeller = label_both )+
+  labs(x="Iter x 4",y="", title="Lower bound as a function of alpha and epsilon")+mytheme+
+  scale_color_discrete("")
+```
+
+As epsilon decreases, a smaller alpha is needed to reach a stable maximal value of the lower bound.
+
+# Precision Recall qualities
+
+Threshold values which maximizes PPV+TPR, and corresponding values for H and O parts.
+
+```{r, echo=FALSE}
+precrec %>% dplyr::select(-mins,-maxs) %>% gather(key, value,-alpha, -eps) %>% 
+  ggplot(aes(as.factor(eps),value, group=key, color=key))+geom_point()+geom_line()+
+  facet_wrap(~alpha)+mytheme.dark+labs(x="epsilon",y="","Optimal precision recall quantities reached as alpha varies")
+
+precrec %>% dplyr::select(mins,maxs, alpha, eps) %>% gather(key, value,-alpha, -eps) %>% 
+  ggplot(aes(as.factor(eps),value, group=key, color=key))+geom_point()+geom_line()+
+  facet_wrap(~alpha )+mytheme.dark+labs(x="epsilon",y="threshold range",
+                                                     title="Optimal threshold range as alpha varies")
+```
+
+A rather small precision (epsilon of 1e-2) does not mean weaker performances.

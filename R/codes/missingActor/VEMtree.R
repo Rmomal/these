@@ -115,8 +115,9 @@ MHinit = matrix(pr$rotation[,1]*pr$sdev[1],nrow=n,ncol=r)
 ####################
 #-----  VEM
 
-resVEM<-VEMtree(counts,MO,SO,MH=MHinit,omega_init,W_init,Wg_init, eps=1e-2, alpha=0.8,
-                maxIter=5, plot=TRUE,vraiOm=ome_init)
+resVEM<-VEMtree(counts,MO,SO,MH=MHinit,omega_init,W_init,Wg_init, eps=1e-3, 
+                alpha=0.8,
+                maxIter=30, plot=TRUE,vraiOm=ome_init, condTrack=FALSE,print.hist=FALSE)
 features=resVEM$features
 plotVEM(resVEM$Pg,ome,r=1,seuil=0.5)
 values=courbes_seuil(probs = resVEM$Pg,omega = ome,h = 15,seq_seuil = seq(0,1,0.02))
@@ -127,10 +128,32 @@ plotVerdict(values, seuil)+guides(color=FALSE)
 ggsave("precrec_missing.png", plot=p, width=8, height=4,path= "/Users/raphaellemomal/these/R/images")
 
 # lower bound check
-resVEM$lowbound %>% rowid_to_column() %>% gather(key,value,-rowid) %>% 
-  ggplot(aes(rowid,value, color=key))+geom_point()+geom_line()+
-  facet_wrap(~key, scales="free")+mytheme
+resVEM$low
+bound %>% rowid_to_column() %>%  gather(key,value,-rowid,-parameter) %>% 
+  ggplot(aes(rowid,value, group=key))+geom_point(aes(color=as.factor(parameter)), size=3)+geom_line()+
+  facet_wrap(~key, scales="free")+
+  labs(x="iteration",y="", title="Lower bound and components")+mytheme+
+  scale_color_discrete("")
 
+# model selection
+PLNfit = PLN(counts~1)
+theta=PLNfit$model_par$Theta
+int=matrix(1, nrow(counts),1) # intercept
+matcovar=int
+omegainit0=solve(PLNfit$model_par$Sigma)
+MO=PLNfit$var_par$M
+SO=PLNfit$var_par$S
+VEM0<-VEMtree(counts, MO, SO, MH=NULL,ome_init = omegainit0,W_init = W_init[O,O],Wg_init = Wg_init[O,O],
+              plot = FALSE, maxIter = 10,print.hist = FALSE, vraiOm = NULL, alpha=1, verbatim=FALSE )
+
+VEM1<-VEMtree(counts,MO = MO,SO = SO,MH=MHinit,ome_init = omega_init,W_init = W_init,Wg_init = Wg_init,
+              eps=1e-2, alpha=0.9, maxIter=10, plot=FALSE,vraiOm = NULL, print.hist = FALSE)
+
+J0<-True_lowBound(counts,VEM0$M,VEM0$S, theta, matcovar,VEM0$W, VEM0$Wg, VEM0$Pg, VEM0$omega )
+vBIC0<-VBIC(J0, ncol(counts),r=0, d=1, n=nrow(counts))
+
+J1<-True_lowBound(counts,VEM1$M,VEM1$S, theta, matcovar,VEM1$W, VEM1$Wg, VEM1$Pg, VEM1$omega )
+vBIC1<-VBIC(J1, ncol(counts),r=1, d=1, n=nrow(counts))
 
 
 #====

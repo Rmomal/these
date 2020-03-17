@@ -196,23 +196,75 @@ argminKL <- function(gamma, Pg, M,S,omega,phi,W,p ){
   
   return(KL)
 }
-computeWg<-function(phi,omega,W,MH,MO, alpha,hidden=TRUE,bool=FALSE, hist=FALSE ){
+findAlpha<-function(log_expr,cond.tol=1e-10){
+  alpha.grid = (1:n)/n
+  #----
+  condtest<-sapply(alpha.grid,function(alpha){
+    test=F_Sym2Vec(log_expr*alpha)
+    test=test-mean(test)
+    test=F_Vec2Sym(exp(test))
+    lambda = svd(test)$d
+    cond = min(abs(lambda))/max(abs(lambda))
+  })
+  
+  if(condtest[length(condtest)]>cond.tol){
+    alpha=1
+  }else{
+    alpha=alpha.grid[max(which(condtest>cond.tol))]
+  }
+  return(alpha)
+}
+computeWg<-function(phi,omega,W,MH,MO, alpha,hidden=TRUE, hist=FALSE, condTrack=FALSE ){
   
   p=ncol(MO); O = 1:p ; n=nrow(MO)
-  if(hidden){  r=ncol(MH); H = (p+1):(p+r)   
+  if(hidden){  r=ncol(MH)
+  H = (p+1):(p+r)  
+  M=cbind(MO,MH)
   }else{
     r=0
   }
   
   logWg<-matrix(0,(p+r),(p+r)) ; Wg<-matrix(0,(p+r),(p+r))
-  psi=phi^(n*alpha*0.5)
+  psi=phi^(n*0.5)
   
-  # browser()
-  logWg[O,O]<-log(W[O,O])+n*0.5*alpha*log(phi[O,O])-0.5*alpha*omega[O,O]*(t(MO)%*%MO)
+  if(!condTrack){
+    a1=a2=alpha
+    #findAlpha(log_expr = n*0.5*alpha*log(phi[O,O]),cond.tol = 1e-10)
+    #cat(paste0(", alpha=",a1))
+      test=F_Sym2Vec(n*0.5*a1*log(phi)-0.5*a2*omega*(t(M)%*%M))
+      test=test-mean(test)
+      test=F_Vec2Sym(exp(test))
+      lambda = svd(test)$d
+      cond = min(abs(lambda))/max(abs(lambda))
+      cat(paste0(", cond=",round(cond,25)))
+  }else{
+    a1<-findAlpha(log_expr = n*0.5*alpha*log(phi[O,O]),cond.tol = 1e-10)
+    a2<-findAlpha(log_expr = -0.5*alpha*omega*(t(M)%*%M),cond.tol = 1e-10)
+  }
+  
+  logWg[O,O]<-log(W[O,O])+n*0.5*a1*log(phi[O,O])-0.5*a2*omega[O,O]*(t(MO)%*%MO)
   diag(logWg) = 0
+  #---
+  # condtest3<-sapply(alpha.grid,function(alpha){
+  #   test3=F_Sym2Vec(alpha*(n*0.5*log(phi)-0.5*omega*(t(M)%*%M)))
+  #   test3=test3-mean(test3)
+  #   test3=F_Vec2Sym(exp(test3))
+  #   lambda = svd(test3)$d
+  #   cond3 = min(abs(lambda))/max(abs(lambda))
+  # })
+  # 
+  # datacond<-data.frame(alpha=alpha.grid, test1=log(condtest1), test2=log(condtest2), test3=log(condtest3))
+  # g=datacond %>% gather(key, value, -alpha) %>% ggplot(aes(alpha,value, color=key))+geom_point()+mytheme+
+  #   geom_hline(yintercept = -23) 
+  # print(g)
+  
+  
   # shrinking and centering
   gammaO=F_Sym2Vec(logWg[O,O])
-  if(hist)  hist(gammaO, breaks=20, main="O in")
+  cat(paste0(", rangeO=", round(max(gammaO)-min(gammaO),5)))
+  if(hist){ par(mfrow=c(2,2))
+    hist(gammaO, breaks=20, main="O in")
+  }
   gammaO=gammaO-mean(gammaO)
   gammaO[which(gammaO<(-30))]=-30
   gammaO[which(gammaO>20)]=20
@@ -222,12 +274,13 @@ computeWg<-function(phi,omega,W,MH,MO, alpha,hidden=TRUE,bool=FALSE, hist=FALSE 
   diag(Wg) = 1
   
   if(hidden){
-    logWg[O,H]<-log(W[O,H])+n*0.5*alpha*log(phi[O,H])-alpha*omega[O,H]*(t(MH)%*%MO)
+    
+    logWg[O,H]<-log(W[O,H])+n*0.5*a1*log(phi[O,H])-a2*omega[O,H]*(t(MH)%*%MO)
     logWg[H,O]<-t(logWg[O,H])
     
     gammaOH=logWg[O,H]
+    cat(paste0(", rangeH=", round(max(gammaOH)-min(gammaOH),5)))
     if(hist){
-      par(mfrow=c(2,2))
       hist(gammaOH, breaks=20, main="OH in")
     } 
     gammaOH=gammaOH-mean(gammaOH)
@@ -338,7 +391,23 @@ computeOffDiag<-function(omegaDiag,SigmaTilde){
          }
   )
   diag(omega)=omegaDiag
+  
   return(omega)
+}
+
+computeOmegaOH<-function(omegaDiag,SigmaTilde,p){
+
+  q=length(omegaDiag)
+  omegaOH=matrix(0, q-1, q-p)
+  sapply(1:(q-1),
+         function(k){
+           sapply((p+1):q,
+                  function(j){
+                    omegaOH[k,(j-p)] <<- (1 - ( 1+4*SigmaTilde[k,j]^2*omegaDiag[j]*omegaDiag[k])^0.5)/(2*SigmaTilde[k,j])
+                  })
+         } )
+  
+  return(omegaOH)
 }
 
 
@@ -346,7 +415,7 @@ computeOffDiag<-function(omegaDiag,SigmaTilde){
 #Lower bound
 
 LowerBound<-function(Pg ,omega, M, S, W, Wg,p){
-
+  
   n=nrow(M)
   q=nrow(omega)
   O=1:p
@@ -626,7 +695,7 @@ compute_nSNR<-function(K, indexmissing){
 
 #===========
 VE<-function(MO,SO,SH,omega,W,Wg,MH,Pg,maxIter,minIter,eps, 
-             alpha,form,beta.min=1e-10, plot=FALSE,verbatim=FALSE, bool=bool,hist=hist){
+             alpha,form,beta.min=1e-10, plot=FALSE,verbatim=FALSE, condTrack=FALSE,hist=FALSE){
   t1=Sys.time()
   n=nrow(MO);  p=ncol(MO);  O=1:ncol(MO); iter=0 ; 
   
@@ -647,7 +716,7 @@ VE<-function(MO,SO,SH,omega,W,Wg,MH,Pg,maxIter,minIter,eps,
   }
   
   # cat(paste0("\n entree VE: ",LB,"\n"))
-   
+  
   phi=CorOmegaMatrix(omega)
   
   KL<-numeric(maxIter)
@@ -679,7 +748,7 @@ VE<-function(MO,SO,SH,omega,W,Wg,MH,Pg,maxIter,minIter,eps,
   # cat(paste0("KL after MH = ",KL))
   
   #---- Wg
-  Wg.new= computeWg(phi,omega,W,MH.new,MO,alpha,hidden=hidden,bool=bool, hist=hist)  
+  Wg.new= computeWg(phi,omega,W,MH.new,MO,alpha,hidden=hidden, hist=hist, condTrack=condTrack)  
   diag(Wg.new)=1
   Wg.new[which(Wg.new< beta.min)] = beta.min
   
@@ -720,14 +789,14 @@ VE<-function(MO,SO,SH,omega,W,Wg,MH,Pg,maxIter,minIter,eps,
   if(verbatim) cat(paste0("\nVE step converged in ",round(time,3), attr(time, "units")," and ", iter," iterations.",
                           "\nFinal W difference: ",round(diffW[iter],5),
                           "\nFinal KL difference: ",round(diff[iter],4)))
-
+  
   if(plot){
     if(hidden){
       plotdata=data.frame(Diff.W=diffW,  diff.KL=diff,diff.MH=diffM, PartofKL=KL)
     }else{
       plotdata=data.frame(Diff.W=diffW,  diff.KL=diff, PartofKL=KL)
     }
- 
+    
     g=plotdata %>% rowid_to_column() %>% 
       pivot_longer(-rowid,names_to="key",values_to = "values") %>% 
       ggplot(aes(rowid,values, color=key))+
@@ -735,12 +804,12 @@ VE<-function(MO,SO,SH,omega,W,Wg,MH,Pg,maxIter,minIter,eps,
       mytheme.dark
     print(g)
   }
- if(hidden){
-  LB= rbind(LB1, LB2)
- }else{
-   LB=LB2
- }
-
+  if(hidden){
+    LB= rbind(LB1, LB2)
+  }else{
+    LB=LB2
+  }
+  
   res=list(Gprobs=Pg,Gweights=Wg,Hmeans=M,Hvar=S, KL=KL[iter], diff=diffM, diffW=diffW,LB=LB  )
   return(res)
 }
@@ -751,11 +820,26 @@ Mstep<-function(M,S,Pg, omega,W,maxIter, beta.min, trim=TRUE,plot=FALSE,eps, ver
   diffJ=(1); diff.J=c(1);  diff.W=c(0.05);diffW=1
   maxJ=c()
   n=nrow(S) 
+  O=1:p ; q=ncol(omega)
+  hidden=(q!=p)
+  if(hidden) H=(p+1):q
   SigmaTilde = (t(M)%*%M+ diag(colSums(S)) )/ n
   iter=0
+  omegaDiag=diag(omega)
+   
+  omega.new=computeOffDiag(omegaDiag, SigmaTilde)
+  # omegaOH.new=matrix(computeOmegaOH(omegaDiag,SigmaTilde,p),p,length(H))
+  # omegaOO.new=solve(SigmaTilde[O,O]) + omegaOH.new%*%t(omegaOH.new)
+  # omega.new=matrix(0, q,q)
+  # omega.new[O,O]<-omegaOO.new
+  # omega.new[O,H]<-omegaOH.new
+  # omega.new[H,O]<-t(omega[O,H])
+  # omega.new[H,H]<-diag(1, length(H))
+  #  omegaDiag<-optimDiag(Pg, omega, SigmaTilde)
+  # diag(omega.new)=omegaDiag
   
-  omegaDiag<-optimDiag(Pg, omega, SigmaTilde)
-  omega.new=computeOffDiag(omegaDiag,SigmaTilde)
+  diffinvSigO= max(abs(solve(SigmaTilde[O,O])-((omega.new[O,O]-1/omega.new[H,H]*matrix(omega.new[O,H], p, length(H))%*%matrix(omega.new[H,O],length(H),p)))))
+  cat(paste0(", diffinvSigO=",round(diffinvSigO,5)))
   LB1=c(LowerBound(Pg = Pg, omega=omega.new, M=M, S=S,W=W, Wg=Wg,p),"omega")
   phi=CorOmegaMatrix(omega.new) # de omega ou omega.new ?
   
@@ -801,7 +885,7 @@ Mstep<-function(M,S,Pg, omega,W,maxIter, beta.min, trim=TRUE,plot=FALSE,eps, ver
 
 #===========
 VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, verbatim=TRUE,maxIter=20, 
-                  plot=TRUE, eps=1e-2, alpha, vraiOm, print.hist=FALSE){
+                  plot=TRUE, eps=1e-2, alpha, vraiOm, print.hist=FALSE, condTrack){
   
   n=nrow(MO);  p=ncol(MO);  O=1:ncol(MO);
   hidden=!is.null(MH)
@@ -821,9 +905,9 @@ VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, verbatim=TRUE,maxIter
     iter=iter+1 
     cat(paste0("\n Iter n°", iter))
     #VE
-    bool=ifelse(iter>=10,TRUE,FALSE)
+    
     resVE<-VE(MO,SO,SH,omega,W,Wg,MH=MH,Pg=Pg,maxIter=1,minIter=1,eps=1e-3, plot=FALSE, 
-              form="theory",alpha=alpha, verbatim=FALSE, bool=bool, hist=print.hist)
+              form="theory",alpha=alpha, verbatim=FALSE,condTrack=condTrack, hist=print.hist)
     KL[iter]=resVE$KL
     M=resVE$Hmeans ; 
     S=resVE$Hvar ;
@@ -868,38 +952,41 @@ VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, verbatim=TRUE,maxIter
   
   lowbound[,1:3]<-apply(lowbound[,1:3],2,function(x) as.numeric(as.character(x)))
   if(hidden){
-    features<-data.frame(diffMH=diffMH, diffWg=diffWg, diffPg=diffPg, diffW=diffW, diffOm=diffOm,
-                         diffOmDiag=diffOmDiag)
+    features<-data.frame(diffMH=diffMH, diffWg=diffWg, diffPg=diffPg, diffW=diffW, diffOm=diffOm)#,
+    # diffOmDiag=diffOmDiag)
   }else{
-    features<-data.frame(diffWg=diffWg, diffPg=diffPg, diffW=diffW, diffOm=diffOm,
-                         diffOmDiag=diffOmDiag)
+    features<-data.frame(diffWg=diffWg, diffPg=diffPg, diffW=diffW, diffOm=diffOm)#,
+    #diffOmDiag=diffOmDiag)
   }
   
   if(!is.null(vraiOm)){
-    features$adjustDiag=rvalue
+    # features$adjustDiag=rvalue
     features$diffquantile=diffquantile
   }
   t2=Sys.time()
   t2=Sys.time(); time=t2-t1
   if(verbatim) cat(paste0("\nVEMtree ran in ",round(time,3), attr(time, "units")," and ", iter," iterations.",
-                          "\nFinal weights difference: ",round(diffW[iter],4)))
+                          "\nFinal weights difference: ",round(diffW[iter],7)))
   if(plot){
-    g1<-features %>% rowid_to_column() %>% 
+    
+    g1<-features  %>%  rowid_to_column() %>% 
       pivot_longer(-rowid,names_to="key",values_to = "values") %>% 
       ggplot(aes(rowid,values, color=key))+
       geom_point()+geom_line() + facet_wrap(~key, scales="free")+
-      labs(x="",y="", title="Parameters")+ mytheme.dark
+      labs(x="",y="", title="Parameters")+ mytheme.dark+guides(color=FALSE)
+    
     
     g2<- lowbound %>% rowid_to_column() %>%  gather(key,value,-rowid,-parameter) %>% 
       ggplot(aes(rowid,value, group=key))+geom_point(aes(color=as.factor(parameter)), size=3)+geom_line()+
       facet_wrap(~key, scales="free")+
-      labs(x="iteration",y="", title="Lower bound and components")+mytheme
+      labs(x="iteration",y="", title="Lower bound and components")+mytheme+
+      scale_color_discrete("")
     
-    grid.arrange(g1, g2, ncol=1)
+    grid.arrange(g1,g2, ncol=1)
   }
   
   
-  return(list(M=M,S=S,Pg=Pg,Wg=Wg,W=W,omega=omega, lowbound=lowbound, features=features))
+  return(list(M=M,S=S,Pg=Pg,Wg=Wg,W=W,omega=omega, lowbound=lowbound, features=features, finalIter=iter))
 }
 
 True_lowBound<-function(Y, M,S,theta,X, W, Wg, Pg, omega){

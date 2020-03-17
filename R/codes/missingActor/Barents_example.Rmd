@@ -194,10 +194,10 @@ grid.arrange(g1, g2, g3,ncol=3)
 # selection model criteria
 
 ```{r}
-PLNfit = PLN(counts~X$Temperature)
+PLNfit = PLN(counts~1)
 theta=PLNfit$model_par$Theta
 int=matrix(1, nrow(counts),1)
-matcovar=cbind(int, X$Temperature)
+matcovar=int#cbind(int, X$Temperature)
 omegainit0=solve(PLNfit$model_par$Sigma)
 MO=PLNfit$var_par$M
 SO=PLNfit$var_par$S
@@ -230,10 +230,10 @@ hist(BarentsVEM$Pg[31,], breaks=30)
 
 ```{r}
 
-netO=1*(BarentsVEM$Pg[1:30,1:30]>0.1)
+netO=1*(BarentsVEM$Pg[1:30,1:30]>0.2)
 netH<-1*(BarentsVEM$Pg[31,]>0.06)
 network<-cbind(rbind(netO, netH[-31]), c(netH))
-draw_network(network, curv=0, layout="kk", pal = "royalblue3")
+draw_network(network, curv=0, layout="kk", pal = "royalblue3", nodes_label = 1:31)
 ```
 
 ```{r}
@@ -257,7 +257,7 @@ dataO<-data.frame(R2=R2O,corel=corelO, type="Others")
 
 R2plot<-rbind(dataH,dataO) %>% gather(key,value, -type) %>% 
    ggplot(aes(value, fill=type, color=type))+geom_density(alpha=0.5)+facet_wrap(~key, scales="free")+ mytheme.dark+labs(x="",y="")
-ggsave("R2_missing.png", plot=R2plot, width=7.5, height=4,path= "/Users/raphaellemomal/these/R/images")
-
+#ggsave("R2_missing.png", plot=R2plot, width=7.5, height=4,path= "/Users/raphaellemomal/these/R/images")
+R2plot
 ```
 
