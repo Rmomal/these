@@ -128,8 +128,7 @@ plotVerdict(values, seuil)+guides(color=FALSE)
 ggsave("precrec_missing.png", plot=p, width=8, height=4,path= "/Users/raphaellemomal/these/R/images")
 
 # lower bound check
-resVEM$low
-bound %>% rowid_to_column() %>%  gather(key,value,-rowid,-parameter) %>% 
+resVEM$lowbound %>% rowid_to_column() %>%  gather(key,value,-rowid,-parameter) %>% 
   ggplot(aes(rowid,value, group=key))+geom_point(aes(color=as.factor(parameter)), size=3)+geom_line()+
   facet_wrap(~key, scales="free")+
   labs(x="iteration",y="", title="Lower bound and components")+mytheme+
