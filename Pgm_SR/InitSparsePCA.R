@@ -65,9 +65,11 @@ sapply(1:nrow(Y), function(i){Y[i, ] <<- Y[i, ] + rmvnorm(1, sigma=diag(S[i, ]))
 # Y <- PLNfit$var_par$M
 Y <- scale(Y)
 
-sPCA <- FitSparsePCA(Y, q=3)
+q <- 3
+sPCA <- FitSparsePCA(Y, q=q)
 plot(sPCA$alphaGrid, sPCA$loglik, ylim=c(min(sPCA$bic), max(sPCA$loglik)), type='b', log='x')
 points(sPCA$alphaGrid, sPCA$bic, type='b', col=2)
 abline(v=sPCA$alphaOpt, col=2, lty=2)
 sPCA$cliques
-
+cor(Data$covariates)
+cor(cbind(sPCA$sPcaOpt$scores, Data$covariates))[1:q, q+(1:ncol(Data$covariates))]
