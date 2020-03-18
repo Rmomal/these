@@ -1,0 +1,121 @@
+---
+title: "InitSelect"
+output: html_document
+---
+
+# Initialization
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE }
+library(EMtree)
+library(PLNmodels)
+library(ggraph)
+library(tidygraph)
+library(tidyverse)
+library(mvtnorm)
+library(useful)
+library(mclust)
+library(MASS)
+library(ROCR)
+library(reshape2)#for ggimage
+library(gridExtra)
+library(kableExtra)
+
+source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
+#source("/home/mmip/Raphaelle/these/R/codes/missingActor/fonctions-missing.R")
+mytheme.light <- list(theme_light(), scale_color_brewer("",palette="Set3"),guides(color=FALSE),
+                      theme(strip.background=element_rect(fill="gray50",colour ="gray50"),
+                            plot.title = element_text(hjust = 0.5)))
+
+mytheme.dark <- list(theme_light(), scale_color_brewer("",palette="Dark2"),
+                     theme(strip.background=element_rect(fill="gray50",colour ="gray50"),
+                           plot.title = element_text(hjust = 0.5)))
+# mypal<-c(brewer.pal(3, "Blues"),brewer.pal(3, "Reds"),brewer.pal(3, "Greens"))
+# mypal<-c(brewer.pal(8, "Dark2"),"blue","red")
+mytheme <- list(theme_light(), scale_fill_brewer("",palette="Dark2"),#scale_colour_hp_d(option = "RavenClaw", name = ""), #scale_color_manual("",values=mypal),
+                theme(strip.background=element_rect(fill="gray50",colour ="gray50"),
+                      plot.title = element_text(hjust = 0.5)))
+
+# simu parameters
+set.seed(8) # mauvais 2, 4, 5 on a 2 lié à plein de gens donc pas trouvé et mauvais precrec H,
+# 6 pas assez de voisins
+n=200
+p=14
+r=1
+type="scale-free"
+plot=TRUE
+
+################
+#----- DATA
+# simulate graph and omega, then sigma0 and finally counts
+data=data_from_scratch(type = type,p = p+r,n = n,signed = FALSE,prob = 5/p,v = 0)
+omega=data$omega
+hidden=which(diag(omega)%in%sort(diag(omega), decreasing = TRUE)[1:r])[1:r] # on cache les r plus gros
+trueClique=which(omega[hidden,-hidden]!=0)
+print(trueClique)
+if(plot){
+  G=draw_network(1*(omega==1),groupes=1*(diag(omega)==diag(omega)[hidden][1]), 
+                 layout="nicely",curv=0,nb=2,pal="black",nodes_label =1:(p+r))$G
+  print(G)
+}
+Kh  <- omega[hidden,hidden]
+Ko  <- omega[-hidden,-hidden]
+Koh <- omega[-hidden,hidden]
+Km  <- Ko - Koh %*%solve(Kh)%*% t(Koh)
+sigmaO=solve(Km)
+
+counts=generator_PLN(sigmaO,covariates = NULL,n=n)
+
+ome_init=omega[c(setdiff(1:(p+r), hidden), hidden),c(setdiff(1:(p+r), hidden), hidden)] #ome is for testing
+ome=ome_init
+diag(ome)=0
+####################
+#----- PLN on counts
+# optimization of theta and h(Z_O)
+#remotes::install_github("jchiquet/PLNmodels@dev")
+
+PLNfit<-PLN(counts~1)
+MO<-PLNfit$var_par$M # MiO = ith row of MO
+SO<-PLNfit$var_par$S # SiO = diag(ith row of SO)
+sigma_obs=PLNfit$model_par$Sigma
+plot(sigma_obs,sigmaO)
+
+####################
+#-----  Initialisation
+# Tree
+O=1:p
+Wg_init <- matrix(1, p+r, p+r); diag(Wg_init) = 0; Wg_init =Wg_init / sum(Wg_init)
+W_init <- matrix(1, p+r, p+r); diag(W_init) = 0; W_init =W_init / sum(W_init)
+W_init[O,O] <- EMtree_corZ(cov2cor(sigma_obs),n = n,maxIter = 20)$edges_weight
+
+```
+
+
+Search of several possible initial cliques:
+
+```{r, echo=FALSE}
+B=50
+List.init=vector(mode = "list",length = B)
+lapply(1:B, function(x){
+  List.init[[x]]<<- init.mclust((cov2cor(sigma_obs)),title="Sigma",
+                                trueClique = trueClique,n.noise=1,plot = FALSE)$init
+})
+List.init<-unique(List.init)
+
+```
+
+Test of each initial point:
+
+```{r, echo=FALSE}
+lapply(List.init, function(init){
+  initial.param<-initEM(sigma_obs,n=n,cliqueList = list(init),cst=1.05, pca=TRUE) # quick and dirty modif for initEM to take a covariance matrix as input
+  omega_init=initial.param$K0
+  sigma_init=initial.param$Sigma0
+  
+  pr=prcomp(t(counts[,init]),scale. = FALSE)
+  MHinit = matrix(pr$rotation[,1]*pr$sdev[1],nrow=n,ncol=r)
+})
+
+
+```
+
+

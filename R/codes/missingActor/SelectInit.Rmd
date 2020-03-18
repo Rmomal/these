@@ -1,0 +1,235 @@
+---
+title: "Initial clique selection with vBIC criteria"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+# Initialization
+
+```{r}
+seed=12
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.width=4, fig.height=4}
+library(EMtree)
+library(PLNmodels)
+library(ggraph)
+library(tidygraph)
+library(tidyverse)
+library(mvtnorm)
+library(useful)
+library(mclust)
+library(MASS)
+library(ROCR)
+library(reshape2)#for ggimage
+library(gridExtra)
+library(kableExtra)
+
+source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
+#source("/home/mmip/Raphaelle/these/R/codes/missingActor/fonctions-missing.R")
+
+# simu parameters
+set.seed(seed) # mauvais 2, 4, 5 on a 2 lié à plein de gens donc pas trouvé et mauvais precrec H,
+# 6 pas assez de voisins
+n=200
+p=14
+r=1
+type="scale-free"
+plot=TRUE
+
+################
+#----- DATA
+# simulate graph and omega, then sigma0 and finally counts
+data=data_from_scratch(type = type,p = p+r,n = n,signed = FALSE,prob = 5/p,v = 0)
+omega=data$omega
+hidden=which(diag(omega)%in%sort(diag(omega), decreasing = TRUE)[1:r])[1:r] # on cache les r plus gros
+trueClique=which(omega[hidden,-hidden]!=0)
+print(trueClique)
+if(plot){
+  G=draw_network(1*(omega==1),groupes=1*(diag(omega)==diag(omega)[hidden][1]), 
+                 layout="nicely",curv=0,nb=2,pal="black",nodes_label =1:(p+r))$G
+  print(G)
+}
+Kh  <- omega[hidden,hidden]
+Ko  <- omega[-hidden,-hidden]
+Koh <- omega[-hidden,hidden]
+Km  <- Ko - Koh %*%solve(Kh)%*% t(Koh)
+sigmaO=solve(Km)
+
+counts=generator_PLN(sigmaO,covariates = NULL,n=n)
+ome_init=omega[c(setdiff(1:(p+r), hidden), hidden),c(setdiff(1:(p+r), hidden), hidden)] #ome is for testing
+ome=ome_init
+diag(ome)=0
+####################
+#----- PLN on counts
+
+PLNfit = PLN(counts~1)
+theta=PLNfit$model_par$Theta
+matcovar=matrix(1, nrow(counts),1)
+MO<-PLNfit$var_par$M # MiO = ith row of MO
+SO<-PLNfit$var_par$S # SiO = diag(ith row of SO)
+sigma_obs=PLNfit$model_par$Sigma
+
+####################
+#-----  Initialisation
+# Tree
+O=1:p
+Wg_init <- matrix(1, p+r, p+r); diag(Wg_init) = 0; Wg_init =Wg_init / sum(Wg_init)
+W_init <- matrix(1, p+r, p+r); diag(W_init) = 0; W_init =W_init / sum(W_init)
+W_init[O,O] <- EMtree_corZ(cov2cor(sigma_obs),n = n,maxIter = 20)$edges_weight
+
+```
+
+
+# Search of initial cliques:
+
+Eigen vector space of Sigma: 
+
+```{r}
+init.mclust((cov2cor(sigma_obs)),title="Sigma",
+            trueClique = trueClique,n.noise=1,plot = TRUE)$init
+```
+
+```{r,  message=FALSE}
+B=50
+List.init=vector(mode = "list",length = B)
+for(i in 1:B){
+  List.init[[i]]<- init.mclust((cov2cor(sigma_obs)),title="Sigma",
+                               trueClique = trueClique,n.noise=1,plot = FALSE)$init
+}
+List.init<-unique(List.init)
+List.init
+N=setdiff(1:p,trueClique)
+FP=unlist(lapply(List.init, function(init){sum(init%in%N)/length(N)}))
+FN=unlist(lapply(List.init, function(init){sum(setdiff(1:p,init)%in%trueClique)/length(trueClique)}))
+ 
+```
+
+
+# Run of vBIC
+
+```{r, message=FALSE}
+
+
+vec.vBIC<-unlist(lapply(List.init, function(init){
+  initial.param<-initEM(sigma_obs,n=n,cliqueList = list(init),cst=1.05, pca=TRUE)  
+  omega_init=initial.param$K0
+  pr=prcomp(t(counts[,init]),scale. = FALSE)
+  MHinit = matrix(pr$rotation[,1]*pr$sdev[1],nrow=n,ncol=r)
+  
+  vem<-VEMtree(counts,MO,SO,MH=MHinit,omega_init,W_init,Wg_init, eps=1e-2, 
+               alpha=0.9,
+               maxIter=30, plot=FALSE,vraiOm=ome_init,verbatim=FALSE,
+               condTrack=FALSE,print.hist=FALSE)
+  J1<-True_lowBound(counts,vem$M,vem$S, theta, matcovar,vem$W, vem$Wg, vem$Pg, vem$omega )
+  vBIC<-VBIC(J1, ncol(counts),r=1, d=1, n=nrow(counts))
+  return(vBIC)
+}))
+
+```
+
+
+
+```{r, echo=FALSE}
+data.frame(FP=round(FP,2), FN=round(FN, 2), vBIC=round(vec.vBIC, 2),crit=round(FP+FN,2), clique.size=unlist(lapply(List.init, length))) %>% 
+  mutate(
+    
+    crit = cell_spec(crit, "html", bold = ifelse(crit==min(crit), T, F),
+                     color = ifelse(crit==min(crit), "black", "red"))
+    
+  ) %>% 
+  kable(format = "html", escape = F, align = "c") %>% 
+  kable_styling(bootstrap_options = "striped")%>%
+  row_spec(which.max(vec.vBIC), bold = F, color = "white", background = "#87AE7C")
+```
+
+
+# Robustness
+
+On 20 scale-free graphs each with 15 tries for initialization.
+
+```{r, cache=FALSE, echo=FALSE, message=FALSE,}
+
+SelectInitClique<-function(seed, B){
+  cat(paste0("\n seed ",seed, "\n"))
+  set.seed(seed)
+  n=200
+  p=14
+  r=1
+  type="scale-free"
+  data=data_from_scratch(type = type,p = p+r,n = n,signed = FALSE,prob = 5/p,v = 0)
+  omega=data$omega
+  hidden=which(diag(omega)%in%sort(diag(omega), decreasing = TRUE)[1:r])[1:r] # on cache les r plus gros
+  trueClique=which(omega[hidden,-hidden]!=0)
+  Kh  <- omega[hidden,hidden]
+  Ko  <- omega[-hidden,-hidden]
+  Koh <- omega[-hidden,hidden]
+  Km  <- Ko - Koh %*%solve(Kh)%*% t(Koh)
+  sigmaO=solve(Km)
+  # counts generation
+  counts=generator_PLN(sigmaO,covariates = NULL,n=n)
+  ome_init=omega[c(setdiff(1:(p+r), hidden), hidden),c(setdiff(1:(p+r), hidden), hidden)] 
+  ome=ome_init
+  diag(ome)=0
+  
+  # PLN on counts
+  PLNfit = PLN(counts~1, control = list(trace=FALSE))
+  theta=PLNfit$model_par$Theta
+  matcovar=matrix(1, nrow(counts),1)
+  MO<-PLNfit$var_par$M # MiO = ith row of MO
+  SO<-PLNfit$var_par$S # SiO = diag(ith row of SO)
+  sigma_obs=PLNfit$model_par$Sigma
+  # Tree
+  O=1:p
+  Wg_init <- matrix(1, p+r, p+r); diag(Wg_init) = 0; Wg_init =Wg_init / sum(Wg_init)
+  W_init <- matrix(1, p+r, p+r); diag(W_init) = 0; W_init =W_init / sum(W_init)
+  W_init[O,O] <- EMtree_corZ(cov2cor(sigma_obs),n = n,maxIter = 20, verbatim = FALSE)$edges_weight
+  
+  # list of initial cliques
+  
+  List.init=vector(mode = "list",length = B)
+
+  for(i in 1:B){
+    List.init[[i]]<- init.mclust((cov2cor(sigma_obs)),title="Sigma",
+                                 trueClique = trueClique,n.noise=1,plot = FALSE)$init
+  }
+ 
+  List.init<-unique(List.init)
+  
+  #vBIC computations
+  vec.vBIC<-unlist(lapply(List.init, function(init){
+    initial.param<-initEM(sigma_obs,n=n,cliqueList = list(init),cst=1.05, pca=TRUE)  
+    omega_init=initial.param$K0
+    pr=prcomp(t(counts[,init]),scale. = FALSE)
+    MHinit = matrix(pr$rotation[,1]*pr$sdev[1],nrow=n,ncol=r)
+    
+    vem<-VEMtree(counts,MO,SO,MH=MHinit,omega_init,W_init,Wg_init, eps=1e-2, 
+                 alpha=0.9,
+                 maxIter=30, plot=FALSE,vraiOm=ome_init,verbatim=FALSE,
+                 condTrack=FALSE,print.hist=FALSE)
+    J1<-True_lowBound(counts,vem$M,vem$S, theta, matcovar,vem$W, vem$Wg, vem$Pg, vem$omega )
+    vBIC<-VBIC(J1, ncol(counts),r=1, d=1, n=nrow(counts))
+    return(vBIC)
+  }))
+  N=setdiff(1:p,trueClique)
+  FP=unlist(lapply(List.init, function(init){sum(init%in%N)/length(N)}))
+  FN=unlist(lapply(List.init, function(init){sum(setdiff(1:p,init)%in%trueClique)/length(trueClique)}))
+ 
+  data=data.frame(FP=FP, FN=FN, vBIC=vec.vBIC,crit=FP+FN,crit.rank=rank(FP+FN, ties.method = "min"),
+                  clique.size=unlist(lapply(List.init, length))) 
+  vBIC.choice<-data$crit.rank[which.max(data$vBIC)]
+  cat(paste0("\n end choice \n"))
+  return(list(perf=data, quality=vBIC.choice))
+}
+
+seed=1:20
+res<-lapply(seed, function(x){ SelectInitClique(x, B=15)})
+# rank.size<-unlist(lapply(res, function(x){rank(x$perf$clique.size)}))
+# rank.crit<-unlist(lapply(res, function(x){ x$perf$crit.rank}))
+# plot(rank.crit, rank.size)
+quality<-unlist(lapply(res, function(x){x$quality}))
+quality %>% as_tibble() %>% ggplot(aes(value))+geom_bar(width=0.2, alpha=0.6, fill="deepskyblue3")+mytheme+labs(x="rank of FN+FP", y="choice with max vBIC")
+```
+

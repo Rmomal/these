@@ -127,11 +127,31 @@ init.mclust<-function(S,nb.missing=1, n.noise=50,plot=TRUE, title="",trueClique=
   newdata=pol2cart(datapolarall$r,datapolarall$theta2)[,1:2]
   #plot(newdata,col=col, xlim=c(-1,1),ylim=c(-1,1), pch=20)
   
-  #  noiseInit<-sample(c(T,F), size=nrow(X)+n.noise, replace=T, prob=c(3, 1))
-  noiseInit<-c(rep(F,ncol(S)),rep(T,n.noise))
-  clust=Mclust(data=newdata,
-               initialization = list(noise=noiseInit),
-               G=nb.missing)
+  # noiseInit<-sample(c(T,F), size=ncol(S), replace=T, prob=c(3, 1))
+ noiseInit<-c(rep(F,ncol(S)),rep(T,n.noise))
+# cat("\n before \n")
+ clust= tryCatch({
+   Mclust(data=newdata,
+          initialization = list(noise=noiseInit),
+          G=nb.missing, verbose = FALSE)
+ }, error = function(e) {
+   message("new noise")
+   r <- sqrt(runif(n.noise))
+   theta2 <- runif(n.noise, 0, pi)
+   
+   datapolarall=rbind(datapolar_half,cbind(r,theta2)) 
+   
+   newdata=pol2cart(datapolarall$r,datapolarall$theta2)[,1:2]
+   Mclust(data=newdata,
+          initialization = list(noise=noiseInit),
+          G=nb.missing, verbose = FALSE)
+ }, finally = {
+   
+ })
+ #cat("\n after \n")
+  # clust=Mclust(data=newdata,
+  #              initialization = list(noise=noiseInit),
+  #              G=nb.missing, verbose = FALSE)
   groups<-mclust::map(clust$z)
   res<-which(groups==1)[which(groups==1)<=nrow(S)] 
   # if(length(res)==0)browser()
@@ -214,7 +234,7 @@ findAlpha<-function(log_expr,cond.tol=1e-10){
   }
   return(alpha)
 }
-computeWg<-function(phi,omega,W,MH,MO, alpha,hidden=TRUE, hist=FALSE, condTrack=FALSE ){
+computeWg<-function(phi,omega,W,MH,MO, alpha,hidden=TRUE, hist=FALSE, condTrack=FALSE, verbatim=FALSE ){
   
   p=ncol(MO); O = 1:p ; n=nrow(MO)
   if(hidden){  r=ncol(MH)
@@ -236,7 +256,7 @@ computeWg<-function(phi,omega,W,MH,MO, alpha,hidden=TRUE, hist=FALSE, condTrack=
       test=F_Vec2Sym(exp(test))
       lambda = svd(test)$d
       cond = min(abs(lambda))/max(abs(lambda))
-      cat(paste0(", cond=",round(cond,25)))
+      if(verbatim) cat(paste0(", cond=",round(cond,25)))
   }else{
     a1<-findAlpha(log_expr = n*0.5*alpha*log(phi[O,O]),cond.tol = 1e-10)
     a2<-findAlpha(log_expr = -0.5*alpha*omega*(t(M)%*%M),cond.tol = 1e-10)
@@ -261,7 +281,7 @@ computeWg<-function(phi,omega,W,MH,MO, alpha,hidden=TRUE, hist=FALSE, condTrack=
   
   # shrinking and centering
   gammaO=F_Sym2Vec(logWg[O,O])
-  cat(paste0(", rangeO=", round(max(gammaO)-min(gammaO),5)))
+  if(verbatim)  cat(paste0(", rangeO=", round(max(gammaO)-min(gammaO),5)))
   if(hist){ par(mfrow=c(2,2))
     hist(gammaO, breaks=20, main="O in")
   }
@@ -279,7 +299,7 @@ computeWg<-function(phi,omega,W,MH,MO, alpha,hidden=TRUE, hist=FALSE, condTrack=
     logWg[H,O]<-t(logWg[O,H])
     
     gammaOH=logWg[O,H]
-    cat(paste0(", rangeH=", round(max(gammaOH)-min(gammaOH),5)))
+    if(verbatim)  cat(paste0(", rangeH=", round(max(gammaOH)-min(gammaOH),5)))
     if(hist){
       hist(gammaOH, breaks=20, main="OH in")
     } 
@@ -748,7 +768,7 @@ VE<-function(MO,SO,SH,omega,W,Wg,MH,Pg,maxIter,minIter,eps,
   # cat(paste0("KL after MH = ",KL))
   
   #---- Wg
-  Wg.new= computeWg(phi,omega,W,MH.new,MO,alpha,hidden=hidden, hist=hist, condTrack=condTrack)  
+  Wg.new= computeWg(phi,omega,W,MH.new,MO,alpha,hidden=hidden, hist=hist, condTrack=condTrack, verbatim=FALSE)  
   diag(Wg.new)=1
   Wg.new[which(Wg.new< beta.min)] = beta.min
   
@@ -837,9 +857,9 @@ Mstep<-function(M,S,Pg, omega,W,maxIter, beta.min, trim=TRUE,plot=FALSE,eps, ver
   # omega.new[H,H]<-diag(1, length(H))
   #  omegaDiag<-optimDiag(Pg, omega, SigmaTilde)
   # diag(omega.new)=omegaDiag
-  
-  diffinvSigO= max(abs(solve(SigmaTilde[O,O])-((omega.new[O,O]-1/omega.new[H,H]*matrix(omega.new[O,H], p, length(H))%*%matrix(omega.new[H,O],length(H),p)))))
-  cat(paste0(", diffinvSigO=",round(diffinvSigO,5)))
+  diffinvSigO= max(abs(solve(omega.new)[O,O] - SigmaTilde[O,O]))
+ # diffinvSigO= max(abs(solve(SigmaTilde[O,O])-((omega.new[O,O]-1/omega.new[H,H]*matrix(omega.new[O,H], p, length(H))%*%matrix(omega.new[H,O],length(H),p)))))
+ cat(paste0(", diffinvSigO=",round(diffinvSigO,5)))
   LB1=c(LowerBound(Pg = Pg, omega=omega.new, M=M, S=S,W=W, Wg=Wg,p),"omega")
   phi=CorOmegaMatrix(omega.new) # de omega ou omega.new ?
   
@@ -903,7 +923,7 @@ VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, verbatim=TRUE,maxIter
   while((diffWiter>eps) & (iter<maxIter)){ #(diffW[iter] > eps && diffOm[iter] > eps && iter < maxIter) || iter<1
     
     iter=iter+1 
-    cat(paste0("\n Iter n°", iter))
+    if(verbatim) cat(paste0("\n Iter n°", iter))
     #VE
     
     resVE<-VE(MO,SO,SH,omega,W,Wg,MH=MH,Pg=Pg,maxIter=1,minIter=1,eps=1e-3, plot=FALSE, 
@@ -926,7 +946,7 @@ VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, verbatim=TRUE,maxIter
     Pg=Pg.new
     
     #M
-    resM<-Mstep(M,S,Pg, omega,W,maxIter=2, beta.min=1e-6, eps=1e-3 ,plot=FALSE, verbatim=FALSE,
+    resM<-Mstep(M,S,Pg, omega,W,maxIter=2, beta.min=1e-6, eps=1e-3 ,plot=FALSE, verbatim=TRUE,
                 Wg=Wg, p=p)
     W.new=resM$W
     diffW[iter]=abs(max(W.new-W))
