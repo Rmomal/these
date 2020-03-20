@@ -26,7 +26,8 @@ library(ROCR)
 library(reshape2)#for ggimage
 library(gridExtra)
 library(kableExtra)
-
+library(parallel)
+library(sparsepca)
 source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
 #source("/home/mmip/Raphaelle/these/R/codes/missingActor/fonctions-missing.R")
 
@@ -89,22 +90,29 @@ Eigen vector space of Sigma:
 
 ```{r}
 init.mclust((cov2cor(sigma_obs)),title="Sigma",
-            trueClique = trueClique,n.noise=1,plot = TRUE)$init
+            trueClique = trueClique,n.noise=3*p,plot = TRUE)$init
 ```
 
 ```{r,  message=FALSE}
 B=50
-List.init=vector(mode = "list",length = B)
+List.init=vector(mode = "list")
+c=1
 for(i in 1:B){
-  List.init[[i]]<- init.mclust((cov2cor(sigma_obs)),title="Sigma",
-                               trueClique = trueClique,n.noise=1,plot = FALSE)$init
+  res<- init.mclust((cov2cor(sigma_obs)),title="Sigma",
+                    trueClique = trueClique,n.noise=3*p,plot = FALSE)$init
+  
+  if(length(res)>1){
+    print(res)
+    List.init[[c]]<-res 
+    c=c+1
+  }
 }
 List.init<-unique(List.init)
 List.init
 N=setdiff(1:p,trueClique)
 FP=unlist(lapply(List.init, function(init){sum(init%in%N)/length(N)}))
 FN=unlist(lapply(List.init, function(init){sum(setdiff(1:p,init)%in%trueClique)/length(trueClique)}))
- 
+
 ```
 
 
@@ -113,7 +121,9 @@ FN=unlist(lapply(List.init, function(init){sum(setdiff(1:p,init)%in%trueClique)/
 ```{r, message=FALSE}
 
 
-vec.vBIC<-unlist(lapply(List.init, function(init){
+vec.vBIC<-unlist(lapply(seq_along(List.init), function(num){
+  cat(paste0("\n init ", num,"\n"))
+  init<-List.init[[num]]
   initial.param<-initEM(sigma_obs,n=n,cliqueList = list(init),cst=1.05, pca=TRUE)  
   omega_init=initial.param$K0
   pr=prcomp(t(counts[,init]),scale. = FALSE)
@@ -133,7 +143,7 @@ vec.vBIC<-unlist(lapply(List.init, function(init){
 
 
 ```{r, echo=FALSE}
-data.frame(FP=round(FP,2), FN=round(FN, 2), vBIC=round(vec.vBIC, 2),crit=round(FP+FN,2), clique.size=unlist(lapply(List.init, length))) %>% 
+data.frame(FP=round(FP,2), FN=round(FN, 2), vBIC=round(vec.vBIC, 2),crit=round(FP+FN,2),crit.rank=rank(FP+FN, ties.method = "min"), clique.size=unlist(lapply(List.init, length))) %>% 
   mutate(
     
     crit = cell_spec(crit, "html", bold = ifelse(crit==min(crit), T, F),
@@ -150,15 +160,45 @@ data.frame(FP=round(FP,2), FN=round(FN, 2), vBIC=round(vec.vBIC, 2),crit=round(F
 
 On 20 scale-free graphs each with 15 tries for initialization.
 
-```{r, cache=FALSE, echo=FALSE, message=FALSE,}
+```{r, cache=TRUE, echo=FALSE, message=FALSE,}
 
+FitSparsePCA <- function(Y, q=1, alphaGrid=10^(seq(-4, 0, by=.1)) ){
+  # Fit sparse PCA on a grid of alpha
+  # Needs an estimate o Sigma: empirical variance of the rotated scores 
+  #    + diagonal risidual variances (why not?)
+  n <- nrow(Y); p <- nrow(Y); alphaNb <- length(alphaGrid); 
+  # Fits all sparsePCA
+  sPCA <- list()
+  for(a in 1:alphaNb){
+    sPCA[[a]] <- spca(Y, k=q, alpha=alphaGrid[a])
+    sPCA[[a]]$Sigma <- cov(sPCA[[a]]$scores%*%t(sPCA[[a]]$transform))
+    
+    resVar <- (n-1)*apply(Y - sPCA[[a]]$scores %*% t(sPCA[[a]]$transform), 2, var)/n
+    sPCA[[a]]$Sigma <- sPCA[[a]]$Sigma  + diag(resVar)
+    sPCA[[a]]$df <- 1 + sum(sPCA[[a]]$loadings!=0)
+    sPCA[[a]]$loglik <- sum(dmvnorm((Y), sigma=sPCA[[a]]$Sigma, log=TRUE))
+    sPCA[[a]]$bic <- sPCA[[a]]$loglik - log(n)*sPCA[[a]]$df/2
+  }
+  
+  #2 neighbors minimum
+  df<-unlist(lapply(sPCA, function(sPca){sPca$df}))
+  good<-which(df>3)
+  # Selects alpha via pseudo-BIC
+  loglik <- unlist(lapply(sPCA, function(sPca){sPca$loglik}))
+  bic <- unlist(lapply(sPCA, function(sPca){sPca$bic}))
+  aOpt <- which.max(bic[good])
+  # Find the cliques
+  alphaOpt <- alphaGrid[aOpt]
+  sPcaOpt <- sPCA[[aOpt]]
+  sPcaOpt$loadings
+  cliques <- list(); 
+  sapply(1:ncol(sPcaOpt$loadings), function(j){cliques[[j]] <<- which(sPcaOpt$loadings[, j]!=0)})
+  return(list(sPcaOpt=sPcaOpt, alphaGrid=alphaGrid, alphaOpt=alphaOpt, loglik=loglik, bic=bic, cliques=cliques))
+}
 SelectInitClique<-function(seed, B){
   cat(paste0("\n seed ",seed, "\n"))
   set.seed(seed)
-  n=200
-  p=14
-  r=1
-  type="scale-free"
+  n=200; p=14;r=1;  type="scale-free"
   data=data_from_scratch(type = type,p = p+r,n = n,signed = FALSE,prob = 5/p,v = 0)
   omega=data$omega
   hidden=which(diag(omega)%in%sort(diag(omega), decreasing = TRUE)[1:r])[1:r] # on cache les r plus gros
@@ -187,49 +227,150 @@ SelectInitClique<-function(seed, B){
   W_init <- matrix(1, p+r, p+r); diag(W_init) = 0; W_init =W_init / sum(W_init)
   W_init[O,O] <- EMtree_corZ(cov2cor(sigma_obs),n = n,maxIter = 20, verbatim = FALSE)$edges_weight
   
+  #true vBIC
+  initial.param<-initEM(sigma_obs,n=n,cliqueList = list(trueClique),cst=1.05, pca=TRUE)  
+  omega_init=initial.param$K0
+  pr=prcomp(t(counts[,trueClique]),scale. = FALSE)
+  MHinit = matrix(pr$rotation[,1]*pr$sdev[1],nrow=n,ncol=r)
+  
+  vem<-VEMtree(counts,MO,SO,MH=MHinit,omega_init,W_init,Wg_init, eps=1e-4, 
+               alpha=0.6,
+               maxIter=30, plot=FALSE,vraiOm=ome_init,verbatim=FALSE,
+               condTrack=FALSE,print.hist=FALSE)
+  J1<-True_lowBound(counts,vem$M,vem$S, theta, matcovar,vem$W, vem$Wg, vem$Pg, vem$omega )
+  truevBIC<-VBIC(J1, ncol(counts),r=1, d=1, n=nrow(counts))
   # list of initial cliques
   
-  List.init=vector(mode = "list",length = B)
-
+  #=== MCLUST
+  List.init=vector(mode = "list")
+  c=1
   for(i in 1:B){
-    List.init[[i]]<- init.mclust((cov2cor(sigma_obs)),title="Sigma",
-                                 trueClique = trueClique,n.noise=1,plot = FALSE)$init
+    res<- init.mclust((cov2cor(sigma_obs)),title="Sigma",
+                      trueClique = trueClique,n.noise=3*p,plot = FALSE)$init
+    
+    if(length(res)>1){
+      List.init[[c]]<-res
+      c=c+1
+    }
   }
- 
   List.init<-unique(List.init)
-  
-  #vBIC computations
-  vec.vBIC<-unlist(lapply(List.init, function(init){
-    initial.param<-initEM(sigma_obs,n=n,cliqueList = list(init),cst=1.05, pca=TRUE)  
+  # vBIC computations
+  vec.vBIC<-unlist(lapply(List.init,function(init){
+    initial.param<-initEM(sigma_obs,n=n,cliqueList = list(init),cst=1.05, pca=TRUE)
     omega_init=initial.param$K0
     pr=prcomp(t(counts[,init]),scale. = FALSE)
     MHinit = matrix(pr$rotation[,1]*pr$sdev[1],nrow=n,ncol=r)
     
-    vem<-VEMtree(counts,MO,SO,MH=MHinit,omega_init,W_init,Wg_init, eps=1e-2, 
-                 alpha=0.9,
+    vem<-VEMtree(counts,MO,SO,MH=MHinit,omega_init,W_init,Wg_init, eps=1e-4,
+                 alpha=0.6,
                  maxIter=30, plot=FALSE,vraiOm=ome_init,verbatim=FALSE,
                  condTrack=FALSE,print.hist=FALSE)
     J1<-True_lowBound(counts,vem$M,vem$S, theta, matcovar,vem$W, vem$Wg, vem$Pg, vem$omega )
     vBIC<-VBIC(J1, ncol(counts),r=1, d=1, n=nrow(counts))
     return(vBIC)
   }))
+  
   N=setdiff(1:p,trueClique)
   FP=unlist(lapply(List.init, function(init){sum(init%in%N)/length(N)}))
   FN=unlist(lapply(List.init, function(init){sum(setdiff(1:p,init)%in%trueClique)/length(trueClique)}))
- 
+  
+  #=== sPCA
+  Z1 <- MO
+  sapply(1:nrow(Z1), function(i){Z1[i, ] <<- Z1[i, ] + rmvnorm(1, sigma=diag(SO[i, ]))})
+  Z2<-MO
+  Z3<-rmvnorm(n,sigma = sigma_obs)
+  
+  sPCA.logY <- FitSparsePCA(scale(log(counts+0.5)))
+  sPCA.Y <- FitSparsePCA(scale(counts))
+  sPCA.Z1 <- FitSparsePCA(scale(Z1))
+  sPCA.Z2 <- FitSparsePCA(scale(Z2)) 
+  sPCA.Z3 <- FitSparsePCA(scale(Z3)) 
+  init.spca=c(sPCA.logY$cliques, sPCA.Y$cliques,sPCA.Z1$cliques,sPCA.Z2$cliques,sPCA.Z3$cliques)
+  vec.vBICspca<-unlist(lapply(init.spca,function(init){
+    
+    initial.param<-initEM(sigma_obs,n=n,cliqueList = list(init),cst=1.05, pca=TRUE)  
+    omega_init=initial.param$K0
+    pr=prcomp(t(counts[,init]),scale. = FALSE)
+    MHinit = matrix(pr$rotation[,1]*pr$sdev[1],nrow=n,ncol=r)
+    
+    vem<-VEMtree(counts,MO,SO,MH=MHinit,omega_init,W_init,Wg_init, eps=1e-4, 
+                 alpha=0.6,
+                 maxIter=30, plot=FALSE,vraiOm=ome_init,verbatim=FALSE,
+                 condTrack=FALSE,print.hist=FALSE)
+    J1<-True_lowBound(counts,vem$M,vem$S, theta, matcovar,vem$W, vem$Wg, vem$Pg, vem$omega )
+    vBIC<-VBIC(J1, ncol(counts),r=1, d=1, n=nrow(counts))
+    return(vBIC)
+  }))
+  FP.spca=unlist(lapply(init.spca, function(init){sum(init%in%N)/length(N)}))
+  FN.spca=unlist(lapply(init.spca,function(init){sum(setdiff(1:p,init)%in%trueClique)/length(trueClique)}))
+  sizes.spca=unlist(lapply(init.spca, length))
+  
+  spca.choice=data.frame(FP=FP.spca, FN=FN.spca,sizes=sizes.spca, method=c("spca.logY","spca.Y", "spca.Z1", "spca.Z2", "spca.Z3"), vBIC=vec.vBICspca)
+  #browser()
   data=data.frame(FP=FP, FN=FN, vBIC=vec.vBIC,crit=FP+FN,crit.rank=rank(FP+FN, ties.method = "min"),
-                  clique.size=unlist(lapply(List.init, length))) 
-  vBIC.choice<-data$crit.rank[which.max(data$vBIC)]
+                  sizes=unlist(lapply(List.init, length)))
+  #vBIC.choice<-data$crit.rank[which.max(data$vBIC)]
+  mclust.choice<-data[which.max(data$vBIC), c("FP", "FN","sizes","vBIC")]
+  mclust.choice$method="mclust"
+  choices<-rbind(spca.choice, mclust.choice)
+  
+  data3<-data %>% filter(sizes>3)
+  if(nrow(data3)!=0){
+    mclust.choice.min3<- data3%>% filter(vBIC==max(vBIC)) %>%
+      dplyr::select(FP,FN, sizes, vBIC)
+    mclust.choice.min3$method="mclust.min3"
+    choices<-rbind(choices,mclust.choice.min3)
+  }
+  
+  choices<-rbind(choices, data.frame(FP=0,FN=0, sizes= length(trueClique), method="Truth", vBIC=truevBIC))
+  choices$seed=seed
   cat(paste0("\n end choice \n"))
-  return(list(perf=data, quality=vBIC.choice))
+  
+  return(list(choice=choices))
 }
 
-seed=1:20
-res<-lapply(seed, function(x){ SelectInitClique(x, B=15)})
+seed=1:200
+t1<-Sys.time()
+res<-mclapply(seed, function(x){ SelectInitClique(x, B=30)}, mc.cores=3)
+t2<-Sys.time()
+difftime(t2, t1)
 # rank.size<-unlist(lapply(res, function(x){rank(x$perf$clique.size)}))
 # rank.crit<-unlist(lapply(res, function(x){ x$perf$crit.rank}))
 # plot(rank.crit, rank.size)
-quality<-unlist(lapply(res, function(x){x$quality}))
-quality %>% as_tibble() %>% ggplot(aes(value))+geom_bar(width=0.2, alpha=0.6, fill="deepskyblue3")+mytheme+labs(x="rank of FN+FP", y="choice with max vBIC")
+# quality<-unlist(lapply(res, function(x){x$quality}))
+# quality %>% as_tibble() %>% ggplot(aes(value, y=..prop..))+geom_bar(width=0.5, alpha=0.6, fill="deepskyblue3")+mytheme+labs(x="rank of FN+FP", y="choice with max vBIC")
+
+quality<-do.call(rbind,lapply(res, function(x){x$choice}))
+#plot=
+p1<-quality %>% filter(method!="Truth") %>%  mutate(sum=FP+FN) %>% gather(key, value, -method, -sizes, -vBIC, -seed) %>%
+  ggplot(aes(as.factor(method), value, color=as.factor(key),fill=as.factor(key)))+
+  geom_boxplot(alpha=0.3, notch = TRUE) +theme_light()+labs(x="",y="",title="On 200 scale-free graphs")+
+  scale_color_hp_d("",option = "Gryffindor")+
+  scale_fill_hp_d("",option = "Gryffindor")
+
+quality %>%  
+  ggplot(aes( sizes, y=..prop.., color=method, fill=method ))+
+  geom_bar() +theme_light()+labs(x="",y="",title="Size of found cliques compared to truth")+
+  scale_color_hp_d("",option = "Ravenclaw")+scale_fill_hp_d("",option = "Ravenclaw")
+
+p2<-quality %>%  
+  ggplot(aes( x=as.numeric(sizes), y=method,color=method, fill=method ))+
+  geom_density_ridges()+#stat="binline",bins=14, scale=0.8, draw_baseline=FALSE)
+  theme_light()+labs(x="",y="",title="Size of found cliques compared to truth")+
+  scale_color_hp_d("",option = "Ravenclaw")+ scale_fill_hp_d("",option = "Ravenclaw")
+
+test=quality %>% dplyr::select(-FN, -FP, -sizes) %>% spread(method, vBIC)
+vBICranks<-t(apply(test[,-c(1,ncol(test))],1,function(x){
+  rank(x, ties.method = "min")
+}))
+p3<-vBICranks %>%as_tibble() %>%  gather(key, value) %>% 
+  ggplot(aes( x=value, y=..prop..,color=key, fill=key ))+
+  geom_bar(position = position_dodge(),width = 0.7)+#stat="binline",bins=14, scale=0.8, draw_baseline=FALSE)
+  theme_light()+labs(x="",y="",title="vBIC ranks (max is best)")+
+  scale_color_hp_d("",option = "Ravenclaw")+ scale_fill_hp_d("",option = "Ravenclaw")
+
+
+plot=grid.arrange(p1, p2, p3, ncol=1)
+ggsave(filename = "selectInit_complet.png", plot = plot, path ="/Users/raphaellemomal/these/R/images/", width = 6, height = 9 )
 ```
 

@@ -21,11 +21,17 @@ initEM <- function(Sigma = NULL,n=1e6,cst=1.1,
   # code sans simulation de données
   Corr <- cov2cor(Sigma); sigma <- sqrt(diag(Sigma))
   coef <- matrix(0, p, cliqueNb); lambda <- rep(0, cliqueNb)
-  sapply(1:cliqueNb, function(c){
-    pca <- eigen(cov2cor(Corr[cliqueList[[c]], cliqueList[[c]]]))
+  sapply(1:cliqueNb, function(c){ 
     coef[, c] <<- rep(0, p); 
-    coef[cliqueList[[c]], c] <<- pca$vectors[, 1]
-    lambda[c] <<- pca$values[1]
+    if(length(cliqueList[[c]])>1){
+      pca <-eigen(cov2cor(Corr[cliqueList[[c]], cliqueList[[c]]]))
+      coef[cliqueList[[c]], c] <<- pca$vectors[, 1]
+      lambda[c] <<- pca$values[1]
+    }else{
+      coef[,c]<<-Corr[cliqueList[[c]],]
+    }
+    
+    
   }) 
   
   # Recontructing Sigma
@@ -127,8 +133,8 @@ init.mclust<-function(S,nb.missing=1, n.noise=50,plot=TRUE, title="",trueClique=
   newdata=pol2cart(datapolarall$r,datapolarall$theta2)[,1:2]
   #plot(newdata,col=col, xlim=c(-1,1),ylim=c(-1,1), pch=20)
   
-  # noiseInit<-sample(c(T,F), size=ncol(S), replace=T, prob=c(3, 1))
- noiseInit<-c(rep(F,ncol(S)),rep(T,n.noise))
+  noiseInit<-sample(c(T,F), size=ncol(S), replace=T, prob=c(3, 1))
+# noiseInit<-c(rep(F,ncol(S)),rep(T,n.noise))
 # cat("\n before \n")
  clust= tryCatch({
    Mclust(data=newdata,
@@ -859,7 +865,7 @@ Mstep<-function(M,S,Pg, omega,W,maxIter, beta.min, trim=TRUE,plot=FALSE,eps, ver
   # diag(omega.new)=omegaDiag
   diffinvSigO= max(abs(solve(omega.new)[O,O] - SigmaTilde[O,O]))
  # diffinvSigO= max(abs(solve(SigmaTilde[O,O])-((omega.new[O,O]-1/omega.new[H,H]*matrix(omega.new[O,H], p, length(H))%*%matrix(omega.new[H,O],length(H),p)))))
- cat(paste0(", diffinvSigO=",round(diffinvSigO,5)))
+ if(verbatim) cat(paste0(", diffinvSigO=",round(diffinvSigO,5)))
   LB1=c(LowerBound(Pg = Pg, omega=omega.new, M=M, S=S,W=W, Wg=Wg,p),"omega")
   phi=CorOmegaMatrix(omega.new) # de omega ou omega.new ?
   
@@ -946,7 +952,7 @@ VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, verbatim=TRUE,maxIter
     Pg=Pg.new
     
     #M
-    resM<-Mstep(M,S,Pg, omega,W,maxIter=2, beta.min=1e-6, eps=1e-3 ,plot=FALSE, verbatim=TRUE,
+    resM<-Mstep(M,S,Pg, omega,W,maxIter=2, beta.min=1e-6, eps=1e-3 ,plot=FALSE, verbatim=FALSE,
                 Wg=Wg, p=p)
     W.new=resM$W
     diffW[iter]=abs(max(W.new-W))

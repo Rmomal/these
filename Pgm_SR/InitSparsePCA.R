@@ -58,6 +58,7 @@ sPCA$cliques
 # Simulated data
 # Fits PLN + Creates fake Gaussian latents
 load('../Data_SR/BarentsFish_Group.Rdata')
+load("/Users/raphaellemomal/these/Data_SR/BarentsFish.Rdata")
 # load('../Data_SR/BarentsFish.Rdata')
 PLNfit <- PLN(Data$count ~ 1)
 Y <- PLNfit$var_par$M; S <- PLNfit$var_par$S

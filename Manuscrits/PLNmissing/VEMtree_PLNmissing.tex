@@ -546,6 +546,18 @@ which leads to
 $$\boxed{ \hat{\omega}_{kk} = \frac{1}{\widetilde{\sigma}_{kk}} \left( 1- \sum_l  P_{gkl} \;\omega_{kl} \;\widetilde{\sigma}_{kl}\right)}$$
 \end{itemize}
 
+\section{Model selection criteria}
+
+A variational lower bound of the BIC criteria is available. The true BIC is defined as:
+$$ BIC = \log p(\Ybf) - \frac{D}{2} \log(n) $$
+where D is the number of parameters to estimate. A variational version of this is 
+$$vBIC = \bound(\Ybf; g,h) - \frac{D}{2} \log(n)  $$
+
+Our model estimates regression parameters, weights $\beta$ and the $\Omega$ matrix, which yields
+$$D = p(d+1) + p(p-1)/2 + p(p+1)/2 $$
+if we estimate the diagonal of $\Omega$ as well.
+Now suppose we assume $r$ missing actors. The terms of the diagonals of matrices $\beta$ and $\Omega$ corresponding to missing actors are fixed. As these matrices are symmetrical,  there are $pr$ more parameters to estimate in both of them. Therefore the BIC variational lower bound for $r$ missing actors is
+$$ vBIC_r=\bound_r(\Ybf; g,h) - \frac{D+2pr}{2} \log(n)  $$
 \section{TODO}
  \begin{itemize}
  \item Selection model criteria

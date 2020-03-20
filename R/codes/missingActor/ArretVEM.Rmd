@@ -114,10 +114,10 @@ Example of clique found:
 
 ```{r, echo=FALSE}
 init.first<-init.mclust((cov2cor(sigma_obs)),title="Sigma",
-                        trueClique = trueClique,n.noise=1,plot = TRUE)$init
+                        trueClique = trueClique,n.noise=p*3,plot = TRUE)$init
 for(i in 1:20){
   init.new= init.mclust((cov2cor(sigma_obs)),title="Sigma",
-                        trueClique = trueClique,n.noise=1,plot = FALSE)$init
+                        trueClique = trueClique,n.noise=p*3,plot = FALSE)$init
   if(length(init.new)>length(init.first)) init.first<-init.new
 }
 Opt.init=init.first
