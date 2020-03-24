@@ -1,74 +1,3 @@
-# VEMtree
-library(EMtree)
-library(PLNmodels)
-library(LITree)
-library(ggraph)
-library(tidygraph)
-library(tidyverse)
-library(mvtnorm)
-library(useful)
-library(mclust)
-library(MASS)
-library(ROCR)
-library(reshape2)#for ggimage
-library(gridExtra)
-library(harrypotter)
-source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
-#source("/home/mmip/Raphaelle/these/R/codes/missingActor/fonctions-missing.R")
-mytheme.light <- list(theme_light(), scale_color_brewer("",palette="Set3"),guides(color=FALSE),
-                      theme(strip.background=element_rect(fill="gray50",colour ="gray50"),
-                            plot.title = element_text(hjust = 0.5)))
-
-mytheme.dark <- list(theme_light(), scale_color_brewer("",palette="Dark2"),
-                     theme(strip.background=element_rect(fill="gray50",colour ="gray50"),
-                           plot.title = element_text(hjust = 0.5)))
-# mypal<-c(brewer.pal(3, "Blues"),brewer.pal(3, "Reds"),brewer.pal(3, "Greens"))
-# mypal<-c(brewer.pal(8, "Dark2"),"blue","red")
-mytheme <- list(theme_light(), scale_fill_brewer("",palette="Dark2"),#scale_colour_hp_d(option = "RavenClaw", name = ""), #scale_color_manual("",values=mypal),
-                theme(strip.background=element_rect(fill="gray50",colour ="gray50"),
-                      plot.title = element_text(hjust = 0.5)))
-
-# simu parameters
-set.seed(7)
-n=200
-p=14
-r=1
-type="scale-free"
-plot=TRUE
-
-################
-#----- DATA
-# simulate graph and omega, then sigma0 and finally counts
-data=data_from_scratch(type = type,p = p+r,n = n,signed = FALSE,prob = 5/p,v = 0)
-omega=data$omega
-hidden=which(diag(omega)%in%sort(diag(omega), decreasing = TRUE)[1:r])[1:r] # on cache les r plus gros
-trueClique=which(omega[hidden,-hidden]!=0)
-if(plot){
-  G=draw_network(1*(omega==1),groupes=1*(diag(omega)==diag(omega)[hidden][1]), 
-                 layout="nicely",curv=0,nb=2,pal="black",nodes_label =rep("",p+r))$G
-  print(G)
-}
-Kh  <- omega[hidden,hidden]
-Ko  <- omega[-hidden,-hidden]
-Koh <- omega[-hidden,hidden]
-Km  <- Ko - Koh %*%solve(Kh)%*% t(Koh)
-sigmaO=solve(Km)
-counts=generator_PLN(sigmaO,covariates = NULL,n=n)
-
-ome_init=omega[c(2:15,1),c(2:15,1)] #ome is for testing
-ome=ome_init
-diag(ome)=0
-####################
-#----- PLN on counts
-# optimization of theta and h(Z_O)
-#remotes::install_github("jchiquet/PLNmodels@dev")
-
-PLNfit<-PLN(counts~1)
-MO<-PLNfit$var_par$M # MiO = ith row of MO
-SO<-PLNfit$var_par$S # SiO = diag(ith row of SO)
-sigma_obs=PLNfit$model_par$Sigma
-
-plot(sigmaO ,sigma_obs)
 # etude de la quantité de bruit à privilégier:
 # B=30 ; coeff=seq(0.1,4,0.5)
 # test=lapply(coeff,function(c){
@@ -86,24 +15,6 @@ plot(sigmaO ,sigma_obs)
 # test %>% mutate(nul = (FN==1 & FP==0)) %>% filter(!nul) %>% dplyr::select(-nul) %>%
 #   group_by(coeff) %>% summarise(sumFP=sum(FP), sumFN=sum(FN), sum=sum(FP+FN))
 
-####################
-#-----  Initialisation
-# Tree
-O=1:p
-Wg_init <- matrix(1, p+r, p+r); diag(Wg_init) = 0; Wg_init =Wg_init / sum(Wg_init)
-W_init <- matrix(1, p+r, p+r); diag(W_init) = 0; W_init =W_init / sum(W_init)
-W_init[O,O] <- EMtree_corZ(cov2cor(sigma_obs),n = n,maxIter = 20)$edges_weight
-
-# Z
-initviasigma=init.mclust((cov2cor(sigma_obs)),title="Sigma",
-                         trueClique = trueClique,n.noise=1)$init
-initial.param<-initEM(sigma_obs,n=n,cliqueList = list(initviasigma),cst=1.05, pca=TRUE) # quick and dirty modif for initEM to take a covariance matrix as input
-omega_init=initial.param$K0
-sigma_init=initial.param$Sigma0
-
-pr=prcomp(t(counts[,initviasigma]),scale. = FALSE)
-MHinit = matrix(pr$rotation[,1]*pr$sdev[1],nrow=n,ncol=r)
-
 # test epsilon SNR
 # seqEpsi=seq(1.01, 5, 0.05)
 # varyEpsi=sapply(seqEpsi, function(epsilon){
@@ -112,20 +23,79 @@ MHinit = matrix(pr$rotation[,1]*pr$sdev[1],nrow=n,ncol=r)
 #   compute_nSNR(K = omega_init,indexmissing = ncol(omega_init))
 # })
 # data.frame(SNR=varyEpsi,epsilon=seqEpsi) %>% ggplot(aes(epsilon, SNR))+geom_point()+mytheme
+
+# VEMtree
+library(EMtree)
+library(PLNmodels)
+library(LITree)
+library(ggraph)
+library(tidygraph)
+library(tidyverse)
+library(mvtnorm)
+library(useful)
+library(mclust)
+library(MASS)
+library(ROCR)
+library(reshape2)#for ggimage
+library(gridExtra)
+library(harrypotter)
+source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
+#source("/home/mmip/Raphaelle/these/R/codes/missingActor/fonctions-missing.R")
+
+# simu parameters
+set.seed(7)
+n=200 ;p=14;r=1;type="scale-free";plot=TRUE
+O=1:p
+################
+#----- DATA
+# simulate graph and omega, then sigma0 and finally counts
+missing_data<-missing_from_scratch(n,p,r,type,plot)
+counts=missing_data$Y
+sigmaO= missing_data$Sigma
+omega=missing_data$Omega
+trueClique=missing_data$TC
+hidden=missing_data$H
+
+PLNfit<-PLN(counts~1)
+MO<-PLNfit$var_par$M  
+SO<-PLNfit$var_par$S  
+sigma_obs=PLNfit$model_par$Sigma
+
+clique_mclust=init.mclust((cov2cor(sigma_obs)),title="Sigma", nb.missing = r,
+                          trueClique = trueClique,n.noise=3*p)
+clique_mclust$init
+plotInitMclust(res=clique_mclust,title = "")
+init=initVEM(counts = counts, trueClique = trueClique,initviasigma=clique_mclust$init, sigma_obs,r = r)
+Wginit= init$Wginit; Winit= init$Winit; omegainit=init$omegainit ; MHinit=init$MHinit
+
+plot(sigmaO ,sigma_obs)
+ome_init=omega[c(setdiff(1:(p+r), hidden), hidden),c(setdiff(1:(p+r), hidden), hidden)]
+ome=ome_init ; diag(ome)=0
+
+computeFPN(res = clique_mclust,trueClique = trueClique)
 ####################
 #-----  VEM
-
-resVEM<-VEMtree(counts,MO,SO,MH=MHinit,omega_init,W_init,Wg_init, eps=1e-3, 
-                alpha=0.8,
-                maxIter=30, plot=TRUE,vraiOm=ome_init, condTrack=FALSE,print.hist=FALSE)
-features=resVEM$features
-plotVEM(resVEM$Pg,ome,r=1,seuil=0.5)
-values=courbes_seuil(probs = resVEM$Pg,omega = ome,h = 15,seq_seuil = seq(0,1,0.02))
-values %>% mutate(crit = PPV+TPR) %>% filter(crit==max(crit, na.rm=TRUE)) %>%
+# find alpha on the observed part of the initial "non beta" quantities needed to compute the beta tilde
+alpha<-computeAlpha(omegainit[O,O], MO, SO)
+resVEMfilter<-VEMtree(counts,MO,SO,MH=MHinit,omegainit,Winit,Wginit, 
+                eps=1e-3, alpha=alpha,
+                maxIter=20, plot=TRUE,vraiOm=ome_init, condTrack=FALSE,print.hist=FALSE,
+                filterPg=TRUE)
+resVEMraw<-VEMtree(counts,MO,SO,MH=MHinit,omegainit,Winit,Wginit, 
+                      eps=1e-3, alpha=alpha,
+                      maxIter=20, plot=TRUE,vraiOm=ome_init, condTrack=FALSE,print.hist=FALSE,
+                      filterPg=FALSE)
+features=resVEMfilter$features
+plotVEM(resVEMfilter$Pg,ome,r=1,seuil=0.5)
+plotVEM(resVEMraw$Pg,ome,r=1,seuil=0.5)
+valuesRaw=courbes_seuil(probs = resVEMraw$Pg,omega = ome,h = 15,seq_seuil = seq(0,1,0.02))
+valuesFilter=courbes_seuil(probs = resVEMfilter$Pg,omega = ome,h = 15,seq_seuil = seq(0,1,0.02))
+valuesRaw %>% mutate(crit = PPV+TPR) %>% filter(crit==max(crit, na.rm=TRUE)) %>%
   summarise(mins=min(seuil), maxs=max(seuil), PPV=max(PPV), PPVO=max(PPVO),PPVH=max(PPVH), 
             TPR=max(TPR),TPRO=max(TPRO),TPRH=max(TPRH))
-plotVerdict(values, seuil)+guides(color=FALSE)
-ggsave("precrec_missing.png", plot=p, width=8, height=4,path= "/Users/raphaellemomal/these/R/images")
+plotVerdict(valuesFilter, seuil)+guides(color=FALSE)
+plotVerdict(valuesRaw, seuil)+guides(color=FALSE)
+#ggsave("precrec_missing.png", plot=p, width=8, height=4,path= "/Users/raphaellemomal/these/R/images")
 
 # lower bound check
 resVEM$lowbound %>% rowid_to_column() %>%  gather(key,value,-rowid,-parameter) %>% 
@@ -179,7 +149,3 @@ Diagomegas[-nrow(Diagomegas),] %>% gather(key, value, -vrai) %>%
   geom_abline()
 
 rvalue=summary(lm(Diagomegas$estimation~Diagomegas$vrai))$r.squared
-
-#TODO
-# choice of alpha
-# VEM stop criterion

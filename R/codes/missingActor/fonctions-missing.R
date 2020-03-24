@@ -1,95 +1,45 @@
 #############
 # initialization
-initEM <- function(Sigma = NULL,n=1e6,cst=1.1,
-                   #                   S = NULL,
-                   pca=TRUE,cliqueList) {
+initEM <- function(Sigma = NULL,n=1e6,cst=1.1,pca=TRUE,cliqueList) {
   # -----------------------------------------------------------------------------------------------------------------------------
   # FUNCTION
-  #   Initialize EM by selecting a possible clique and taking the principal component of this clique
-  #   as initial value for the hidden variable
+  #   Initialize Sigma and Omega by taking the principal component of cliques as initial value for the hidden variables.
+  #   The PCA is done on the correaltion matrix, the variance of hidden variables are set to the empirical variances of the pca.
+  #   The corresponding precision term in omega is set to 1 for identifiability reasons.
   # INPUT
-  #   X      : data matrix (nxp)
-  #   clique : vector containing the indices of the nodes in the clique. Default is NULL and the clique
-  #            is determined with hierarchical clustering.
+  #   Sigma     :  variance-covariance matrix (p x p)
+  #   cliqueList : list of found cliques, given as vectorss of nodes indices
   # OUTPUT
-  #   Sigma0    : initial value of complete covariance matrix ((p+1)x(p+1) matrix)
-  #   K0        : initial value of complete precision matrix ((p+1)x(p+1) matrix)
+  #   Sigma0    : initial value of complete covariance matrix ((p+r)x(p+r) matrix)
+  #   K0        : initial value of complete precision matrix ((p+r)x(p+r) matrix)
   #   clique    : vector containing the indices of the nodes in the clique
   # -----------------------------------------------------------------------------------------------------------------------------
   
-  cliqueNb=length(cliqueList) ; p=ncol(Sigma)
+  r=length(cliqueList) ; p=ncol(Sigma)
   # code sans simulation de données
   Corr <- cov2cor(Sigma); sigma <- sqrt(diag(Sigma))
-  coef <- matrix(0, p, cliqueNb); lambda <- rep(0, cliqueNb)
-  sapply(1:cliqueNb, function(c){ 
+  coef <- matrix(0, p, r) 
+  sapply(seq_along(cliqueList), function(c){ 
     coef[, c] <<- rep(0, p); 
-    if(length(cliqueList[[c]])>1){
+    if(length(cliqueList[[c]])>1){ # ne pas faire d'acp si la clique est un noeud
       pca <-eigen(cov2cor(Corr[cliqueList[[c]], cliqueList[[c]]]))
       coef[cliqueList[[c]], c] <<- pca$vectors[, 1]
-      lambda[c] <<- pca$values[1]
     }else{
       coef[,c]<<-Corr[cliqueList[[c]],]
-    }
-    
-    
+    }   
   }) 
   
   # Recontructing Sigma
   CorrFull <- rbind(cbind(Corr, Corr%*%coef), cbind(t(coef)%*%Corr, cst*t(coef)%*%Corr%*%coef))
-  # isSymmetric(CorrFull); eigen(CorrFull)$values; plot(CorrFull[1:p, 1:p], Corr); abline(0, 1)
-  sigmaFull <- c(sigma, rep(1, cliqueNb)) 
+  sigmaFull <- c(sigma, rep(1, r)) 
   SigmaFull <- diag(sigmaFull) %*% CorrFull %*% diag(sigmaFull)
-  # isSymmetric(SigmaFull); eigen(SigmaFull)$values; plot(SigmaFull[1:p, 1:p], Sigma); abline(0, 1)
   
   # Initialising Omega
   OmegaFull <- solve(SigmaFull)
-  #isSymmetric(OmegaFull); eigen(OmegaFull)$values
-  # sapply(1:cliqueNb, function(c){
-  #    OmegaFull[(1:p)[-cliqueList[[c]]], (p+c)] <<- OmegaFull[(p+c), (1:p)[-cliqueList[[c]]]] <<- 0
-  # })
-  # isSymmetric(OmegaFull); eigen(OmegaFull)$values
-  coefDiag <- c(rep(1, p), 1/sqrt(diag(OmegaFull)[p+(1:cliqueNb)]))
+  coefDiag <- c(rep(1, p), 1/sqrt(diag(OmegaFull)[p+(1:r)]))
   OmegaFull <- diag(coefDiag) %*% OmegaFull %*% diag(coefDiag)
   
-  # ajout Rmomal 
-  ##################  
-  # X=rmvnorm(n,rep(0,nrow(covX)), covX)
-  # #  n<-nrow(X)
-  # nbCliques <- length(cliquelist)
-  # if(pca){
-  #   pr <- lapply(1:nbCliques, function(k)
-  #     prcomp(t(X[, cliquelist[[k]]]), center = TRUE, scale = TRUE))
-  #   mat <- lapply(1:nbCliques, function(k)
-  #     scale(pr[[k]]$rotation[, 1], center = TRUE, scale = TRUE))
-  #   newX <- scale(X, center = TRUE, scale = TRUE)
-  #   newX <- scale(cbind(newX, do.call(cbind, mat)), center = TRUE, scale = TRUE)
-  # }else{
-  #   
-  #   # mat <- lapply(1:nbCliques, function(k)
-  #   #   rowMeans(X[, cliquelist[[k]]]) )
-  #   mat <- lapply(1:nbCliques, function(k){
-  #     apply(X[, cliquelist[[k]]], 1, function(x) median(x))
-  #   }
-  #   )
-  #   
-  #   mat=do.call(cbind, mat)
-  #   newX <- scale(cbind(X, mat), center = TRUE, scale = TRUE) # pourquoi scale
-  # }
-  # 
-  # 
-  # # pour chacune des cliques identifiées dans X, on résume les variables liées par une acp.
-  # # en récupérant le vecteur principal de chaque acp, qui vont jouer le rôle de nouvelles variables
-  # # qui étaient manquantes et corrélées à toutes les variables de la clique.
-  # mu <- matrix(0, ncol(newX), 1)
-  # newX <- newX + mvrnorm(n, mu, 0.01 * diag(ncol(newX)))
-  # Sigma0 <- 1 / n * t(newX) %*% (newX)
-  # K0 <- solve(Sigma0)
-  ############
-  return(structure(list(
-    Sigma0 = SigmaFull,
-    K0 = OmegaFull,
-    cliquelist = cliqueList
-  )))
+  return(list( Sigma0 = SigmaFull, K0 = OmegaFull, cliquelist = cliqueList))
 }
 #Find the clique created by the missing actor
 findCliques<-function(covX,k){
@@ -97,7 +47,7 @@ findCliques<-function(covX,k){
   # FUNCTION
   # Find k groups of nodes which are 'clique likes"
   # INPUT
-  #   X      : data matrix (nxp)
+  #   covX   : variance-covariance matrix of data  (pxp)
   #   k      : number of groups
   #            is determined with hierarchical clustering.
   # OUTPUT
@@ -113,78 +63,119 @@ findCliques<-function(covX,k){
   return(cliquelist = split(1:length(reordered.cluster),reordered.cluster))
 }
 init.mclust<-function(S,nb.missing=1, n.noise=50,plot=TRUE, title="",trueClique=NULL){
-  #browser()
-  #X <-data.frame(t(t(eigen(S)$vectors[,1:2])*sqrt(eigen(S)$values[1:2])))
   Scomp=prcomp(S,scale. = TRUE)
   data=data.frame(Scomp$rotation[,1:2]%*%diag(Scomp$sdev[1:2]))
-  
   datapolar=cart2pol(x=data[,1],y=data[,2])[,1:2] # recup r et theta
-  
-  
   datapolar_half=datapolar %>% mutate(theta2=ifelse(theta>pi,theta-pi,theta)) %>%
     dplyr::select(r,theta2)
   
   # noise in polar coords
   r <- sqrt(runif(n.noise))
   theta2 <- runif(n.noise, 0, pi)
-  
   datapolarall=rbind(datapolar_half,cbind(r,theta2)) 
+  newdata=pol2cart(datapolarall$r,datapolarall$theta2)[,1:2]#plot(newdata,col=col, xlim=c(-1,1),ylim=c(-1,1), pch=20)
+  noiseInit<-sample(c(T,F), size=ncol(S), replace=T, prob=c(3, 1)) # noiseInit<-c(rep(F,ncol(S)),rep(T,n.noise))
   
-  newdata=pol2cart(datapolarall$r,datapolarall$theta2)[,1:2]
-  #plot(newdata,col=col, xlim=c(-1,1),ylim=c(-1,1), pch=20)
+  clust= tryCatch({
+    Mclust(data=newdata, initialization = list(noise=noiseInit),  G=nb.missing, verbose = FALSE)
+  }, error = function(e) {
+    message("new noise")
+    r <- sqrt(runif(n.noise))
+    theta2 <- runif(n.noise, 0, pi)
+    datapolarall=rbind(datapolar_half,cbind(r,theta2)) 
+    newdata=pol2cart(datapolarall$r,datapolarall$theta2)[,1:2]
+    Mclust(data=newdata, initialization = list(noise=noiseInit),  G=nb.missing, verbose = FALSE)
+  }, finally = { })
+  groups<-mclust::map(clust$z)[1:nrow(S)]
+  res<-lapply(1:nb.missing, function(c){
+    which(groups==c)
+  })
   
-  noiseInit<-sample(c(T,F), size=ncol(S), replace=T, prob=c(3, 1))
-# noiseInit<-c(rep(F,ncol(S)),rep(T,n.noise))
-# cat("\n before \n")
- clust= tryCatch({
-   Mclust(data=newdata,
-          initialization = list(noise=noiseInit),
-          G=nb.missing, verbose = FALSE)
- }, error = function(e) {
-   message("new noise")
-   r <- sqrt(runif(n.noise))
-   theta2 <- runif(n.noise, 0, pi)
-   
-   datapolarall=rbind(datapolar_half,cbind(r,theta2)) 
-   
-   newdata=pol2cart(datapolarall$r,datapolarall$theta2)[,1:2]
-   Mclust(data=newdata,
-          initialization = list(noise=noiseInit),
-          G=nb.missing, verbose = FALSE)
- }, finally = {
-   
- })
- #cat("\n after \n")
-  # clust=Mclust(data=newdata,
-  #              initialization = list(noise=noiseInit),
-  #              G=nb.missing, verbose = FALSE)
-  groups<-mclust::map(clust$z)
-  res<-which(groups==1)[which(groups==1)<=nrow(S)] 
-  # if(length(res)==0)browser()
-  
-  #   browser()
-  if(!is.null(trueClique)){
-    #False positives rate
-    p=ncol(S)
-    N=setdiff(1:p,trueClique)
-    FP=sum(res%in%N)/length(N)
-    # False negatives rate
-    FN=sum(setdiff(1:p,res)%in%trueClique)/length(trueClique)
-    title=paste0(title,":"," FN=", round(FN,2),",FP=",round(FP,2))
-  }else{
-    FN=NA
-    FP=NA
-  }
-  if(plot){   
-    g= ggplot(data,aes(X1,X2, label=1:p,color=(1:p)%in%res))+geom_point(size=0.1)+
-      theme_light()+geom_text()+labs(x="eig vect 1",y="eig vect 2", title=title)+
-      guides(color=FALSE)+scale_color_brewer(palette="Dark2")+
-      geom_hline(yintercept=0, color="gray50")+geom_vline(xintercept=0, color="gray50")
-    print(g)
-  }
-  return(list(init=res, FPN=c(FN,FP)))
+  return(list(init=res, data=data))
 }
 
+computeFPN<-function(cliqueList, trueClique,p){
+  N=setdiff(1:p,trueClique)
+  FP=unlist(lapply(cliqueList, function(init){sum(init%in%N)/length(N)}))
+  FN=unlist(lapply(cliqueList, function(init){
+    sum(setdiff(1:p,init)%in%trueClique)/length(trueClique)}))
+  return(data.frame(FP=FP, FN=FN))
+}
+plotInitMclust<-function(res, title){
+  tmp=sapply(res$init, function(c){
+    res=1*(1:p) %in% c
+  })
+  tmp=tmp %>% as_tibble() %>% mutate(null=ifelse(rowSums(tmp)==0,1,0))
+  colors= as.matrix((tmp))%*%matrix(1:ncol(tmp), ncol(tmp), 1)
+  g= ggplot(res$data,aes(X1,X2, label=1:p,color=as.factor(colors)))+geom_point(size=0.1)+
+    theme_light()+geom_text()+labs(x="eig vect 1",y="eig vect 2", title=title)+
+    guides(color=FALSE)+scale_color_brewer(palette="Dark2")+
+    geom_hline(yintercept=0, color="gray50")+geom_vline(xintercept=0, color="gray50")
+  print(g)
+  
+}
+# Initialization 
+missing_from_scratch<-function(n,p,r,type,plot){
+  data=data_from_scratch(type = type,p = p+r,n = n,signed = FALSE,prob = 5/p,v = 0)
+  omega=data$omega
+  hidden=which(diag(omega)%in%sort(diag(omega), decreasing = TRUE)[1:r])[1:r] # on cache les r plus gros
+  trueClique=lapply(1:r, function(hidden){
+    which(omega[hidden,-hidden]!=0)})
+  if(plot){
+    G=draw_network(1*(omega==1),groupes=1*(diag(omega)==diag(omega)[hidden][1:r]), 
+                   layout="nicely",curv=0,nb=2,pal="black",nodes_label =1:(p+r))$G
+    print(G)
+  }
+  Kh  <- omega[hidden,hidden]
+  Ko  <- omega[-hidden,-hidden]
+  Koh <- omega[-hidden,hidden]
+  Km  <- Ko - Koh %*%solve(Kh)%*% t(Koh)
+  sigmaO=solve(Km)
+  counts=generator_PLN(sigmaO,covariates = NULL,n=n)
+  return(list(Y=counts, Sigma=sigmaO, Omega=omega, TC=trueClique, H=hidden))
+}
+
+
+initVEM<-function(counts,initviasigma,sigma_obs,r){
+  
+  # Tree
+  Wg_init <- matrix(1, p+r, p+r); Wg_init =Wg_init / sum(Wg_init)
+  W_init <- matrix(1, p+r, p+r); W_init =W_init / sum(W_init)
+  W_init[1:p,1:p] <- EMtree_corZ(cov2cor(sigma_obs),n = n,maxIter = 20)$edges_weight
+  diag(Wg_init) = 1;diag(W_init) = 1
+  # Z
+  initial.param<-initEM(sigma_obs,n=n,cliqueList = (initviasigma),cst=1.05, pca=TRUE) # quick and dirty modif for initEM to take a covariance matrix as input
+  omega_init=initial.param$K0
+  MHinit<-sapply(initviasigma, function(clique){
+    pr=prcomp(t(counts[,clique]),scale. = FALSE)
+    res = matrix(pr$rotation[,1]*pr$sdev[1],nrow=n,ncol=1)
+    return(res)
+  })
+  
+  return(list(Wginit= Wg_init, Winit= W_init, omegainit=omega_init,MHinit=MHinit))
+}
+
+computeAlpha<-function(omegainitO, MO, SO, plot=TRUE){
+  n=nrow(MO)
+  alpha.grid=(1:n)/n
+  phi=CorOmegaMatrix(omegainitO)
+  vec.cond<-sapply(alpha.grid ,function(alpha){
+    expr=F_Sym2Vec(alpha*(n*0.5*log(phi)-0.5*omegainitO*(t(MO)%*%MO)))
+    expr=F_Vec2Sym(expr)+diag(colSums(SO))
+    expr=exp(expr)
+    expr=(expr-mean(expr))
+    lambda = svd(expr)$d
+    cond = min(abs(lambda))/max(abs(lambda))
+  })
+  alpha=alpha.grid[max(which(vec.cond>1e-10))]
+  datacond<-data.frame(alpha=alpha.grid,test=log(vec.cond))
+  if(plot){
+    g<-datacond %>% gather(key, value, -alpha) %>% ggplot(aes(alpha,value, color=key))+geom_point()+mytheme+
+      geom_hline(yintercept = log(1e-10))+guides(color=FALSE)+labs(y="Conditioning", title=round(alpha, 3))
+    print(g)
+  }
+  return(alpha)
+}
 #################
 # For OPTIM
 
@@ -196,12 +187,11 @@ argminKL <- function(gamma, Pg, M,S,omega,phi,W,p ){
   hidden= (r!=0)
   if(hidden){
     H=(p+1):(p+r)
-    omegaH=omega[H,H]
   }
   EhZoZo = t(M[,O])%*%M[,O]+ diag(colSums(S[,O]))
   if(hidden){
-    KL <- 0.5 * sum(diag(omegaH * (t(M[, H]) %*% M[, H] + sum(S[, H])))) +
-      sum(diag(Pg[O, H] * omega[O, H] %*% (t(M[, H]) %*% M[, O]))) +
+    KL <- 0.5 * sum(diag( (t(M[, H]) %*% M[, H] + sum(S[, H])))) + # omegaH is 1
+      sum(diag((Pg[O, H] * omega[O, H]) %*% (t(M[, H]) %*% M[, O]))) +
       0.5 * sum(diag((Pg[O, O] * omega[O, O]) %*% EhZoZo)) -
       n * 0.5 * sum(log(diag(omega))) -
       n * 0.5 * 2 * sum(F_Sym2Vec(Pg) * log(F_Sym2Vec(phi))) +
@@ -209,7 +199,6 @@ argminKL <- function(gamma, Pg, M,S,omega,phi,W,p ){
       log(SumTree(F_Vec2Sym(exp(gamma)))) +
       log(SumTree(W)) - 
       0.5 * sum(log(S[, H]))#-lambda*(sum(exp(gamma)) - 0.5)
-    
   }else{
     KL <-    0.5 * sum(diag((Pg[O, O] * omega[O, O]) %*% EhZoZo)) -
       n * 0.5 * sum(log(diag(omega))) -
@@ -217,21 +206,20 @@ argminKL <- function(gamma, Pg, M,S,omega,phi,W,p ){
       2 * sum(F_Sym2Vec(Pg) * (gamma - log(F_Sym2Vec(W)))) -
       log(SumTree(F_Vec2Sym(exp(gamma)))) +
       log(SumTree(W)) 
-    
   }
-  
   return(KL)
 }
 findAlpha<-function(log_expr,cond.tol=1e-10){
   alpha.grid = (1:n)/n
   #----
-  condtest<-sapply(alpha.grid,function(alpha){
+  condtest<-tryCatch({
+    expr=sapply(alpha.grid,function(alpha){
     test=F_Sym2Vec(log_expr*alpha)
     test=test-mean(test)
     test=F_Vec2Sym(exp(test))
     lambda = svd(test)$d
     cond = min(abs(lambda))/max(abs(lambda))
-  })
+  })}, error=function(e){browser()}, finally={})
   
   if(condtest[length(condtest)]>cond.tol){
     alpha=1
@@ -240,7 +228,7 @@ findAlpha<-function(log_expr,cond.tol=1e-10){
   }
   return(alpha)
 }
-computeWg<-function(phi,omega,W,MH,MO, alpha,hidden=TRUE, hist=FALSE, condTrack=FALSE, verbatim=FALSE ){
+computeWg<-function(phi,omega,W,MH,MO,S, alpha,hidden=TRUE, hist=FALSE, condTrack=FALSE, verbatim=FALSE ){
   
   p=ncol(MO); O = 1:p ; n=nrow(MO)
   if(hidden){  r=ncol(MH)
@@ -255,14 +243,6 @@ computeWg<-function(phi,omega,W,MH,MO, alpha,hidden=TRUE, hist=FALSE, condTrack=
   
   if(!condTrack){
     a1=a2=alpha
-    #findAlpha(log_expr = n*0.5*alpha*log(phi[O,O]),cond.tol = 1e-10)
-    #cat(paste0(", alpha=",a1))
-      test=F_Sym2Vec(n*0.5*a1*log(phi)-0.5*a2*omega*(t(M)%*%M))
-      test=test-mean(test)
-      test=F_Vec2Sym(exp(test))
-      lambda = svd(test)$d
-      cond = min(abs(lambda))/max(abs(lambda))
-      if(verbatim) cat(paste0(", cond=",round(cond,25)))
   }else{
     a1<-findAlpha(log_expr = n*0.5*alpha*log(phi[O,O]),cond.tol = 1e-10)
     a2<-findAlpha(log_expr = -0.5*alpha*omega*(t(M)%*%M),cond.tol = 1e-10)
@@ -271,19 +251,20 @@ computeWg<-function(phi,omega,W,MH,MO, alpha,hidden=TRUE, hist=FALSE, condTrack=
   logWg[O,O]<-log(W[O,O])+n*0.5*a1*log(phi[O,O])-0.5*a2*omega[O,O]*(t(MO)%*%MO)
   diag(logWg) = 0
   #---
-  # condtest3<-sapply(alpha.grid,function(alpha){
+  
+  # alpha.grid=(1:n)/n
+  # condsans1<-sapply(alpha.grid ,function(alpha){
   #   test3=F_Sym2Vec(alpha*(n*0.5*log(phi)-0.5*omega*(t(M)%*%M)))
-  #   test3=test3-mean(test3)
   #   test3=F_Vec2Sym(exp(test3))
+  #    test3=test3-mean(test3)
   #   lambda = svd(test3)$d
   #   cond3 = min(abs(lambda))/max(abs(lambda))
   # })
-  # 
-  # datacond<-data.frame(alpha=alpha.grid, test1=log(condtest1), test2=log(condtest2), test3=log(condtest3))
+  # datacond<-data.frame(alpha=alpha.grid,   SansDiag1=log(condsans1),   Diag1=log(condDiag1),
+  #                      SansDiag2=log(condsans2),   Diag2=log(condDiag2))
   # g=datacond %>% gather(key, value, -alpha) %>% ggplot(aes(alpha,value, color=key))+geom_point()+mytheme+
-  #   geom_hline(yintercept = -23) 
+  #   geom_hline(yintercept = -23)
   # print(g)
-  
   
   # shrinking and centering
   gammaO=F_Sym2Vec(logWg[O,O])
@@ -301,7 +282,7 @@ computeWg<-function(phi,omega,W,MH,MO, alpha,hidden=TRUE, hist=FALSE, condTrack=
   
   if(hidden){
     
-    logWg[O,H]<-log(W[O,H])+n*0.5*a1*log(phi[O,H])-a2*omega[O,H]*(t(MH)%*%MO)
+    logWg[O,H]<-log(W[O,H])+n*0.5*a1*log(phi[O,H])-a2*omega[O,H]*t((t(MH)%*%MO))
     logWg[H,O]<-t(logWg[O,H])
     
     gammaOH=logWg[O,H]
@@ -318,7 +299,7 @@ computeWg<-function(phi,omega,W,MH,MO, alpha,hidden=TRUE, hist=FALSE, condTrack=
   }  
   return(Wg)
 }
-CorOmegaMatrix<-function(omega){ # code for 1 hidden covariate. Otherwise, must be a sum on h
+CorOmegaMatrix<-function(omega){ 
   q=ncol(omega)
   CorOmega = matrix(0,q,q)
   
@@ -338,28 +319,23 @@ CorOmegaMatrix<-function(omega){ # code for 1 hidden covariate. Otherwise, must 
 # M step
 
 argmaxJ<-function(gamma,Pg,omega,sigmaTilde,phi,n, trim=TRUE, verbatim=TRUE){
-  
   maxJ <- sum(Pg*F_Vec2Sym(F_Sym2Vec(gamma) + n*0.5*F_Sym2Vec(log(phi)))) + 
     n*0.5*sum(log(diag(omega))) - log(SumTree(exp(gamma))) - 
     0.5*n*sum(diag( Pg * omega %*% sigmaTilde))# - n*0.5*sum(diag(omega*sigmaTilde)) #termes diagonaux
   # + lambda*(sum(W)-0.5)
-  
   return(maxJ)
 }
 
-optimDiag<-function(Pg,omega,SigmaTilde){
-  
+# Diangonal no longer updated 
+optimDiag<-function(Pg,omega,SigmaTilde){ #closed form
   quantity<-Pg*omega*SigmaTilde
   diag(quantity)=0
   vectorSuml<-colSums(quantity)
   vectorSuml[vectorSuml>1]<-1-1e-6
   omegaDiag = (1-vectorSuml)/diag(SigmaTilde)
-  
-  
   return(omegaDiag)
 }
-optimDiag2 <- function(omega_ii,i,  omega, SigmaTilde, Pg) {
-  # browser()
+optimDiag2 <- function(omega_ii,i,  omega, SigmaTilde, Pg) { #for numerical optimization
   q <- nrow(omega)
   phi = CorOmegaMatrix(omega)
   newphi=(1- phi)/phi
@@ -370,16 +346,13 @@ optimDiag2 <- function(omega_ii,i,  omega, SigmaTilde, Pg) {
   return( grad)
 }
 dichotomie <- function(a, b, F.x, eps, bool=FALSE){
-  # if(bool) browser()
+  
   x.min = ifelse(F.x(0) >0,b,1e-4);
   while(F.x(x.min)<0){x.min = x.min -x.min/2}
-  
   x.max = a
-  #browser()
   while(F.x(x.max)>0){x.max = x.max * 2}
   #  cat(paste0("\n [xmin ; xmax] = [",round(x.min,3),",",round(x.max,3),"]"))
   x = (x.max+x.min)/2
-  
   f.min = F.x(x.min)
   f.max = F.x(x.max)
   f = F.x(x)
@@ -387,8 +360,6 @@ dichotomie <- function(a, b, F.x, eps, bool=FALSE){
   while(abs(x.max-x.min) > eps){
     iter=iter+1
     
-    # if(iter%%10 == 0) cat(paste0(iter,", "))
-    # if(iter > 30) browser()
     if(f < 0) {
       x.max = x
       f.max = f
@@ -403,7 +374,7 @@ dichotomie <- function(a, b, F.x, eps, bool=FALSE){
   return(x)
 }
 
-computeOffDiag<-function(omegaDiag,SigmaTilde){
+computeOffDiag<-function(omegaDiag,SigmaTilde){ 
   q=length(omegaDiag)
   omega=matrix(0,q,q)
   sapply(1:(q-1),
@@ -417,12 +388,10 @@ computeOffDiag<-function(omegaDiag,SigmaTilde){
          }
   )
   diag(omega)=omegaDiag
-  
   return(omega)
 }
 
 computeOmegaOH<-function(omegaDiag,SigmaTilde,p){
-
   q=length(omegaDiag)
   omegaOH=matrix(0, q-1, q-p)
   sapply(1:(q-1),
@@ -441,24 +410,19 @@ computeOmegaOH<-function(omegaDiag,SigmaTilde,p){
 #Lower bound
 
 LowerBound<-function(Pg ,omega, M, S, W, Wg,p){
-  
   n=nrow(M)
   q=nrow(omega)
   O=1:p
   psi=CorOmegaMatrix(omega)
+  
   #Egh lop (Z |T)
-  # browser()
-  T1<- 2*sum(F_Sym2Vec(n*0.5* Pg * log (psi ))) + n*0.5* sum(log(diag(omega))) - 0.5* sum( (Pg*omega) * (t(M)%*%M + diag(colSums(S)) )) - q*n* 0.5 * log(2*pi)
+  T1<- 2*sum(F_Sym2Vec(n*0.5* Pg * log (psi ))) + n*0.5* sum(log(diag(omega))) - 0.5* sum( (Pg*omega)*(t(M)%*%M + diag(colSums(S))) ) - q*n*0.5*log(2*pi)
   
   # Eg log(p) - Eg log(g)
-  
   T2<-2*sum(F_Sym2Vec(Pg) * (log(F_Sym2Vec(W)) - log(F_Sym2Vec(Wg)) )) - log(SumTree(W))+ log(SumTree(Wg))
   
-  #Eh log h(ZH)
-  
+  #Eh log h(ZH), reste constant car omegaH fixé à 1 pour identifiabilité 
   T3<- 0.5*sum(log(S)) - n*q*0.5*(1+log(2*pi))
-  
-  #T3 reste constant, cf omegaH fixé à 1 pour identifiabilité 
   
   J=T1+T2+T3
   if(is.nan(J)) browser()
@@ -468,7 +432,7 @@ LowerBound<-function(Pg ,omega, M, S, W, Wg,p){
 
 
 #####################
-# For double hidden proba
+# For double hidden proba, currently not useful
 
 HiddenEdgeProba <- function(W,r=1, verbatim=FALSE){
   #computes the probability for two links to a hidden covariates to NOT be there
@@ -519,6 +483,7 @@ CgMatrix<-function(Pg,Pghkl,omega,p){ # code for 1 hidden covariate. Otherwise, 
 # GENERAL
 F_Vec2Sym <- function(A.vec){
   # Makes a symmetric matrix from the vector made of its lower tirangular part
+  # the diagonal is nul
   n = (1+sqrt(1+8*length(A.vec)))/2
   A.mat = matrix(0, n, n)
   A.mat[lower.tri(A.mat)] = A.vec
@@ -543,19 +508,6 @@ EdgeProba <- function(W, verbatim=FALSE, p.min=1e-10){
   it=-1
   Wcum = SumTree(W)
   if(!isSymmetric(W)){cat('Pb: W non symmpetric!')}
-  # while(!is.finite(Wcum)){
-  #   #handles numerical issues with matrix tree theorem
-  #   it=it+1
-  #   borne=30-it
-  #   if(verbatim) message(cat("W corrected, bound=",borne))
-  #   
-  #   W.log=log(F_Sym2Vec(W))
-  #   W.center=W.log-mean(W.log)
-  #   W.center[which(W.center<(-borne))]=-borne
-  #   W=F_Vec2Sym(exp(W.center))
-  #   Wcum = SumTree(W)
-  # }
-  
   p = nrow(W); P = matrix(0, p, p)
   #core of computation
   sapply(1:(p-1),
@@ -616,10 +568,8 @@ generator_param<-function(G,signed=FALSE,v=0){
 #rewrite data from scratch
 library(huge)
 library(Matrix)
-data_from_scratch<-function(type, p=20,n=50, r=5, covariates=NULL,
-                            prob=log(p)/p,dens=log(p)/p,
-                            signed=FALSE,v=0,draw=FALSE){
-  # make graph
+data_from_scratch<-function(type, p=20,n=50, r=5, covariates=NULL, prob=log(p)/p,
+                            dens=log(p)/p, signed=FALSE,v=0,draw=FALSE){
   graph<- generator_graph(graph=type,p=p,prob=prob,dens=dens,r=r)
   param<-generator_param(G=as.matrix(graph),signed=signed,v=v)
   data<-generator_PLN(param$sigma,covariates,n)
@@ -630,7 +580,6 @@ data_from_scratch<-function(type, p=20,n=50, r=5, covariates=NULL,
       geom_node_point(size=2, color="blue")
     print(g)
   }
-  
   return(list(data=data,omega= param$omega))
 }
 mytheme.light <- list(theme_light(), scale_color_brewer("",palette="Set3"),guides(color=FALSE),
@@ -686,16 +635,13 @@ plotVEM<-function(probs,omega,r,seuil){
   grid.arrange(p1,p2,ncol=2, top=paste0("Tpr=",TPR," (TprO=",TPRO," , TprH=",TPRH,
                                         ")\n Ppv=",PPV," (PpvO=",PPVO," , PpvH=",PPVH,")",
                                         "\n AUC=",auc))
-  
 }
 
 courbes_seuil<-function(probs,omega,h,seq_seuil){
-  
   tmp=sapply(seq_seuil,function(x)  accppvtpr(seuil=x,probs=probs,omega=omega,h=h))
   res=data.frame(cbind(t(tmp),seq_seuil))
   colnames(res)=c("Acc","AccH","AccO","PPV","PPVH","PPVO","TPR","TPRH","TPRO","seuil")
   return(as_tibble(res))
-  
 }
 plotVerdict<-function(values,colonne){
   # plots verdict curves along threshold from VEM result
@@ -715,114 +661,80 @@ compute_nSNR<-function(K, indexmissing){
   H=indexmissing ; p=ncol(K)
   O=(1:p)[-H]
   num=norm(K[O,H]%*%solve(K[O,O])%*%K[H,O],type='F')^2
-  denom=(K[H,H])^2
+  denom=norm(K[H,H], type='F')^2
   return(num/denom)
 }
 
 #===========
-VE<-function(MO,SO,SH,omega,W,Wg,MH,Pg,maxIter,minIter,eps, 
-             alpha,form,beta.min=1e-10, plot=FALSE,verbatim=FALSE, condTrack=FALSE,hist=FALSE){
+VE<-function(MO,SO,SH,omega,W,Wg,MH,Pg,maxIter,minIter,eps, alpha,beta.min=1e-10,
+             plot=FALSE,verbatim=FALSE, condTrack=FALSE,hist=FALSE, filterPg=TRUE){
+  #--Setting up
   t1=Sys.time()
-  n=nrow(MO);  p=ncol(MO);  O=1:ncol(MO); iter=0 ; 
-  
-  diffKL=-1 ; diff=c(1000); Wdiff=1; diffW=c(0.1); diffMH=1; diffM=c(0.1)
-  
+  n=nrow(MO);  p=ncol(MO);  O=1:ncol(MO); 
   hidden=(ncol(omega)!=ncol(MO))
-  
   if(hidden){
     H=(p+1):ncol(omega);r=length(H)
-    omegaH=omega[H,H]
-    SH <- 1/omegaH
-    S<-cbind(SO, matrix(rep(SH,n),n,1))# all SHi have same solution, depending only on Mstep
+    # SH <-diag(1,r) #omegaH is set to diag 1
+    S<-cbind(SO, matrix(rep(1,n),n,r))# all SHi have same solution, depending only on Mstep
     M=cbind(MO,MH) 
   }else{
     S=SO
-    r=O
+    r=0
     M=MO
   }
   
-  # cat(paste0("\n entree VE: ",LB,"\n"))
-  
+  LB=LowerBound(Pg = Pg, omega=omega, M=M, S=S,W=W, Wg=Wg,p)[1]
   phi=CorOmegaMatrix(omega)
-  
-  KL<-numeric(maxIter)
-  
-  #  while( iter < maxIter ){#((diffW > eps) && (iter < maxIter)) || (iter < minIter)
-  iter=iter+1
-  #   cat(iter)
+  KL0 = argminKL(F_Sym2Vec(log(Wg)), Pg, M,S,omega,phi,W,p)
+  KL.new=KL0
   #-- Probabilities estimates
-  # Pg = EdgeProba(Wg)
-  
-  # if(sum(is.nan(Pg))!=0){
-  #   browser()
-  #   cat( ": adjust ", summary(c(logWtree)), "\n")
-  #   logWtree=log(adjustW(exp(logWtree)))
-  #   cat("to: ",summary(c(logWtree)), "\n")
-  #   Pg = EdgeProba(exp(logWtree))
-  # } 
+  Pg.new = EdgeProba(Wg)
+  #  LB0=LowerBound(Pg = Pg, omega=omega, M=M, S=S,W=W, Wg=Wg,p)[1]
+  LB0=LowerBound(Pg = Pg.new, omega=omega, M=M, S=S,W=W, Wg=Wg,p)
+  if(filterPg){
+    if(LB0[1]>LB){
+      Pg=Pg.new
+    }
+  }else{ Pg=Pg.new}
+  LB0=c(LowerBound(Pg = Pg, omega=omega, M=M, S=S,W=W, Wg=Wg,p),"Pg")
   #-- Updates
-  Pg = EdgeProba(Wg)
-  #---- MH 
-  
-  if(hidden) {
-    MH.new<- (-MO) %*% (Pg[O,H] * omega[O,H]) #omegaH=1
-    diffMH<-max(abs(MH-MH.new))
-    M=cbind(MO,MH.new)
-    LB1=c(LowerBound(Pg = Pg, omega=omega, M=M, S=S,W=W, Wg=Wg,p),"MH")
-    KL = argminKL(F_Sym2Vec(log(Wg)), Pg, M,S,omega,phi,W,p)
-  }
-  # cat(paste0("KL after MH = ",KL))
-  
-  #---- Wg
-  Wg.new= computeWg(phi,omega,W,MH.new,MO,alpha,hidden=hidden, hist=hist, condTrack=condTrack, verbatim=FALSE)  
-  diag(Wg.new)=1
-  Wg.new[which(Wg.new< beta.min)] = beta.min
-  
-  LB2=c(LowerBound(Pg = Pg, omega=omega, M=M, S=S,W=W, Wg=Wg.new,p),"Wg")
-  
-  Wdiff=max(abs(F_Sym2Vec(Wg.new)-F_Sym2Vec(Wg)))
-  if(is.nan(Wdiff)) browser()
-  KL = argminKL(F_Sym2Vec(log(Wg.new)), Pg, M,S,omega,phi,W,p)
-  #  cat(paste0("KL after beta tilde = ",KL))
-  
-  #---- Wg
-  # Wg.new= computeWg(phi,omega,W,MH,MO,alpha )  
-  # diag(Wg.new)=1
-  # Wg.new[which(Wg.new< beta.min)] = beta.min
-  # Pg = EdgeProba(Wg.new)
-  # 
-  # 
-  # Wdiff=max(abs(F_Sym2Vec(Wg.new)-F_Sym2Vec(Wg)))
-  # if(is.nan(Wdiff)) browser()
-  # 
-  KL[iter]<-argminKL(F_Sym2Vec(log(Wg.new)), Pg, M,S,omega,phi,W,p)
-  if(iter>1) diffKL =(KL[iter] - KL[iter-1])
-  #  browser()
+  #--- MH 
   if(hidden){
+    MH.new<- (-MO) %*% (Pg[O,H] * omega[O,H]) #omegaH=diag(1)
+    diffMH<-max(abs(MH-MH.new))
+    M.new=cbind(MO,MH.new)
+    LB1=LowerBound(Pg = Pg, omega=omega, M=M.new, S=S,W=W, Wg=Wg,p)
+    # if(LB1[1]>LB0){
     MH=MH.new
     M=cbind(MO,MH)
-  } 
+    KL.new<-argminKL(F_Sym2Vec(log(Wg)), Pg, M,S,omega,phi,W,p)
+    # } 
+    LB1=c(LowerBound(Pg = Pg, omega=omega, M=M, S=S,W=W, Wg=Wg,p),"MH")
+  }else{LB1=LB0}
+  #--- Wg
+  Wg.new= computeWg(phi,omega,W,MH,MO,S=S,alpha,hidden=hidden, hist=hist, condTrack=condTrack, verbatim=FALSE)  
+  diag(Wg.new)=1
+  Wg.new[which(Wg.new< beta.min)] = beta.min
+  diffW=max(abs(F_Sym2Vec(Wg.new)-F_Sym2Vec(Wg)))
+  #LB2=LowerBound(Pg = Pg, omega=omega, M=M, S=S,W=W, Wg=Wg.new,p)
+  #if(LB2[1]>max(LB1[1], LB0)){
   Wg=Wg.new
+  KL.new<-argminKL(F_Sym2Vec(log(Wg.new)), Pg, M,S,omega,phi,W,p)
+  #}
+  LB2=c(LowerBound(Pg = Pg, omega=omega, M=M, S=S,W=W, Wg=Wg,p),"Wg")
+  diffKL = KL.new - KL0
   #-- end
-  if(iter>1){
-    diff = c(diff,diffKL)
-    diffW=c(diffW,Wdiff)
-    if(hidden) diffM=c(diffM,diffMH)
-  } 
-  # }
-  KL=KL[1:iter]
+  
   t2=Sys.time(); time=t2-t1
   if(verbatim) cat(paste0("\nVE step converged in ",round(time,3), attr(time, "units")," and ", iter," iterations.",
                           "\nFinal W difference: ",round(diffW[iter],5),
                           "\nFinal KL difference: ",round(diff[iter],4)))
-  
   if(plot){
     if(hidden){
-      plotdata=data.frame(Diff.W=diffW,  diff.KL=diff,diff.MH=diffM, PartofKL=KL)
+      plotdata=data.frame(diff.W=diffW,  diff.KL=diffKL,diff.MH=diffMH, PartofKL=KL.new)
     }else{
-      plotdata=data.frame(Diff.W=diffW,  diff.KL=diff, PartofKL=KL)
+      plotdata=data.frame(diff.W=diffW,  diff.KL=diffKL, PartofKL=KL.new)
     }
-    
     g=plotdata %>% rowid_to_column() %>% 
       pivot_longer(-rowid,names_to="key",values_to = "values") %>% 
       ggplot(aes(rowid,values, color=key))+
@@ -831,12 +743,11 @@ VE<-function(MO,SO,SH,omega,W,Wg,MH,Pg,maxIter,minIter,eps,
     print(g)
   }
   if(hidden){
-    LB= rbind(LB1, LB2)
+    LB= rbind(LB0,LB1, LB2)
   }else{
-    LB=LB2
+    LB= rbind(LB0, LB2)
   }
-  
-  res=list(Gprobs=Pg,Gweights=Wg,Hmeans=M,Hvar=S, KL=KL[iter], diff=diffM, diffW=diffW,LB=LB  )
+  res=list(Gprobs=Pg,Gweights=Wg,Hmeans=M,Hvar=S, KL=KL.new, diff=diffMH, diffW=diffW,LB=LB)
   return(res)
 }
 
@@ -852,23 +763,19 @@ Mstep<-function(M,S,Pg, omega,W,maxIter, beta.min, trim=TRUE,plot=FALSE,eps, ver
   SigmaTilde = (t(M)%*%M+ diag(colSums(S)) )/ n
   iter=0
   omegaDiag=diag(omega)
-   
-  omega.new=computeOffDiag(omegaDiag, SigmaTilde)
-  # omegaOH.new=matrix(computeOmegaOH(omegaDiag,SigmaTilde,p),p,length(H))
-  # omegaOO.new=solve(SigmaTilde[O,O]) + omegaOH.new%*%t(omegaOH.new)
-  # omega.new=matrix(0, q,q)
-  # omega.new[O,O]<-omegaOO.new
-  # omega.new[O,H]<-omegaOH.new
-  # omega.new[H,O]<-t(omega[O,H])
-  # omega.new[H,H]<-diag(1, length(H))
-  #  omegaDiag<-optimDiag(Pg, omega, SigmaTilde)
-  # diag(omega.new)=omegaDiag
-  diffinvSigO= max(abs(solve(omega.new)[O,O] - SigmaTilde[O,O]))
- # diffinvSigO= max(abs(solve(SigmaTilde[O,O])-((omega.new[O,O]-1/omega.new[H,H]*matrix(omega.new[O,H], p, length(H))%*%matrix(omega.new[H,O],length(H),p)))))
- if(verbatim) cat(paste0(", diffinvSigO=",round(diffinvSigO,5)))
-  LB1=c(LowerBound(Pg = Pg, omega=omega.new, M=M, S=S,W=W, Wg=Wg,p),"omega")
-  phi=CorOmegaMatrix(omega.new) # de omega ou omega.new ?
+  LB0=LowerBound(Pg = Pg, omega=omega, M=M, S=S,W=W, Wg=Wg,p)[1]
   
+  omega.new=computeOffDiag(omegaDiag, SigmaTilde)
+  diffinvSigO= max(abs(solve(omega.new)[O,O] - SigmaTilde[O,O]))
+  # diffinvSigO= max(abs(solve(SigmaTilde[O,O])-((omega.new[O,O]-1/omega.new[H,H]*matrix(omega.new[O,H], p, length(H))%*%matrix(omega.new[H,O],length(H),p)))))
+  if(verbatim) cat(paste0(", diffinvSigO=",round(diffinvSigO,5)))
+  LB1=LowerBound(Pg = Pg, omega=omega.new, M=M, S=S,W=W, Wg=Wg,p)
+  #if(LB1[1]>LB0){
+  omega=omega.new
+  #}
+  LB1=c(LowerBound(Pg = Pg, omega=omega, M=M, S=S,W=W, Wg=Wg,p),"omega")
+  phi=CorOmegaMatrix(omega) # de omega ou omega.new ?
+  Wsave=W
   while((diffW>eps) & (iter <= maxIter)){
     iter=iter+1
     if(verbatim) cat(paste0("\n Mstep:",iter," diffW=",round(diffW,4)))
@@ -880,7 +787,7 @@ Mstep<-function(M,S,Pg, omega,W,maxIter, beta.min, trim=TRUE,plot=FALSE,eps, ver
     W.new[which(W.new< beta.min)] = beta.min
     diffW=max(abs(F_Sym2Vec(W.new)-F_Sym2Vec(W)))
     
-    maxJ[iter]<-argmaxJ(log(W.new),Pg,omega.new,SigmaTilde,phi,n)
+    maxJ[iter]<-argmaxJ(log(W.new),Pg,omega,SigmaTilde,phi,n)
     if(is.nan(maxJ[iter])) browser()
     if(iter>1){
       diffJ = (maxJ[iter] - maxJ[iter-1])
@@ -889,7 +796,15 @@ Mstep<-function(M,S,Pg, omega,W,maxIter, beta.min, trim=TRUE,plot=FALSE,eps, ver
     } 
     W=W.new
   }
-  LB2=c(LowerBound(Pg = Pg, omega=omega.new, M=M, S=S,W=W, Wg=Wg,p),"W")
+  
+  LB2=LowerBound(Pg = Pg, omega=omega, M=M, S=S,W=W, Wg=Wg,p)
+  #la mise à jour des W est non négociable
+  #if(LB2[1]>max(LB0, LB1[1])){
+  W=W.new
+  diffW=max(abs(F_Sym2Vec(W)-F_Sym2Vec(Wsave)))
+  # }else{W=Wsave}
+  
+  LB2=c(LowerBound(Pg = Pg, omega=omega, M=M, S=S,W=W, Wg=Wg,p),"W")
   
   t2=Sys.time(); time=t2-t1
   if(verbatim) cat(paste0("\nM step converged in ",round(time,3), attr(time, "units")," and ", iter," iterations.",
@@ -903,7 +818,7 @@ Mstep<-function(M,S,Pg, omega,W,maxIter, beta.min, trim=TRUE,plot=FALSE,eps, ver
       facet_wrap(~key, scales="free")+labs(x="iter",y="") 
     print(g)
   }
-  omega=omega.new
+  
   res=list(W=W, omega=omega, diff=diff, diffW=diffW, finalJ=maxJ[iter], LB=rbind(LB1,LB2))
   
   return(res)
@@ -911,7 +826,7 @@ Mstep<-function(M,S,Pg, omega,W,maxIter, beta.min, trim=TRUE,plot=FALSE,eps, ver
 
 #===========
 VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, verbatim=TRUE,maxIter=20, 
-                  plot=TRUE, eps=1e-2, alpha, vraiOm, print.hist=FALSE, condTrack){
+                  plot=TRUE, eps=1e-2, alpha, vraiOm, print.hist=FALSE, condTrack, filterPg=TRUE){
   
   n=nrow(MO);  p=ncol(MO);  O=1:ncol(MO);
   hidden=!is.null(MH)
@@ -923,23 +838,21 @@ VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, verbatim=TRUE,maxIter
   diffWiter=1
   t1=Sys.time()
   Pg=matrix(0.5, ncol(W),ncol(W))
-  if(hidden){SH=matrix(1,nrow=n,ncol=r)
-  }else{SH=NULL}
+  SH=ifelse(hidden,matrix(1,nrow=n,ncol=r), NULL)
   
-  while((diffWiter>eps) & (iter<maxIter)){ #(diffW[iter] > eps && diffOm[iter] > eps && iter < maxIter) || iter<1
+  while((((diffW[iter] > eps) || (diffOm[iter] > eps)) && (iter < maxIter))|| iter<1){ #(diffW[iter] > eps && diffOm[iter] > eps && iter < maxIter) || iter<1
     
     iter=iter+1 
     if(verbatim) cat(paste0("\n Iter n°", iter))
     #VE
     
     resVE<-VE(MO,SO,SH,omega,W,Wg,MH=MH,Pg=Pg,maxIter=1,minIter=1,eps=1e-3, plot=FALSE, 
-              form="theory",alpha=alpha, verbatim=FALSE,condTrack=condTrack, hist=print.hist)
+              alpha=alpha, verbatim=FALSE,condTrack=condTrack, hist=print.hist,filterPg=filterPg)
     KL[iter]=resVE$KL
     M=resVE$Hmeans ; 
     S=resVE$Hvar ;
-    if(hidden){
-      SH=matrix(S[,H],n,r)
-    }else{SH=NULL}
+    SH=ifelse(hidden, matrix(S[,H],n,r), NULL)
+    
     Pg.new=resVE$Gprobs
     Wg.new=resVE$Gweights
     if(hidden){MH.new<-matrix(M[,H],n,r)
@@ -955,6 +868,7 @@ VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, verbatim=TRUE,maxIter
     resM<-Mstep(M,S,Pg, omega,W,maxIter=2, beta.min=1e-6, eps=1e-3 ,plot=FALSE, verbatim=FALSE,
                 Wg=Wg, p=p)
     W.new=resM$W
+    
     diffW[iter]=abs(max(W.new-W))
     diffWiter=diffW[iter]
     W=W.new
@@ -963,12 +877,8 @@ VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, verbatim=TRUE,maxIter
     diffOmDiag[iter]=abs(max(diag(omega.new)-diag(omega)))
     omega=omega.new
     if(!is.null(vraiOm)){
-      rvalue[iter]=summary(lm(diag(omega)[O]~diag(vraiOm)[O]))$r.squared
       diffquantile[iter]=quantile(F_Sym2Vec(omega)[F_Sym2Vec(vraiOm)==1], 0.25) - quantile(F_Sym2Vec(omega)[F_Sym2Vec(vraiOm)==0], 0.75)
     }
-    
-    #    J[iter]=resM$finalJ
-    
     
     lowbound[[iter]] = rbind( resVE$LB, resM$LB)#LowerBound(Pg ,omega, M, S, W, Wg,p)
   }
@@ -978,29 +888,24 @@ VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, verbatim=TRUE,maxIter
   
   lowbound[,1:3]<-apply(lowbound[,1:3],2,function(x) as.numeric(as.character(x)))
   if(hidden){
-    features<-data.frame(diffMH=diffMH, diffWg=diffWg, diffPg=diffPg, diffW=diffW, diffOm=diffOm)#,
-    # diffOmDiag=diffOmDiag)
+    features<-data.frame(diffMH=diffMH, diffWg=diffWg, diffPg=diffPg, diffW=diffW, diffOm=diffOm)
   }else{
-    features<-data.frame(diffWg=diffWg, diffPg=diffPg, diffW=diffW, diffOm=diffOm)#,
-    #diffOmDiag=diffOmDiag)
+    features<-data.frame(diffWg=diffWg, diffPg=diffPg, diffW=diffW, diffOm=diffOm)
   }
   
   if(!is.null(vraiOm)){
-    # features$adjustDiag=rvalue
     features$diffquantile=diffquantile
   }
   t2=Sys.time()
-  t2=Sys.time(); time=t2-t1
+  time=t2-t1
   if(verbatim) cat(paste0("\nVEMtree ran in ",round(time,3), attr(time, "units")," and ", iter," iterations.",
                           "\nFinal weights difference: ",round(diffW[iter],7)))
   if(plot){
-    
     g1<-features  %>%  rowid_to_column() %>% 
       pivot_longer(-rowid,names_to="key",values_to = "values") %>% 
       ggplot(aes(rowid,values, color=key))+
       geom_point()+geom_line() + facet_wrap(~key, scales="free")+
       labs(x="",y="", title="Parameters")+ mytheme.dark+guides(color=FALSE)
-    
     
     g2<- lowbound %>% rowid_to_column() %>%  gather(key,value,-rowid,-parameter) %>% 
       ggplot(aes(rowid,value, group=key))+geom_point(aes(color=as.factor(parameter)), size=3)+geom_line()+
@@ -1010,8 +915,6 @@ VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, verbatim=TRUE,maxIter
     
     grid.arrange(g1,g2, ncol=1)
   }
-  
-  
   return(list(M=M,S=S,Pg=Pg,Wg=Wg,W=W,omega=omega, lowbound=lowbound, features=features, finalIter=iter))
 }
 
@@ -1027,3 +930,4 @@ VBIC<-function(TrueJ,p,r,d,n){
   vBIC=TrueJ - nbparam*log(n)/2
   return(vBIC)
 }
+

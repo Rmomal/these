@@ -1,0 +1,138 @@
+---
+title: "filterPg"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+
+# Initialization
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(EMtree)
+library(PLNmodels)
+library(LITree)
+library(ggraph)
+library(tidygraph)
+library(tidyverse)
+library(mvtnorm)
+library(useful)
+library(mclust)
+library(MASS)
+library(ROCR)
+library(reshape2)#for ggimage
+library(gridExtra)
+library(kableExtra)
+source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
+#source("/home/mmip/Raphaelle/these/R/codes/missingActor/fonctions-missing.R")
+
+# simu parameters
+set.seed(7)
+n=200 ;p=14;r=1;type="scale-free";plot=TRUE
+O=1:p
+################
+#----- DATA
+# simulate graph and omega, then sigma0 and finally counts
+missing_data<-missing_from_scratch(n,p,r,type,plot)
+counts=missing_data$Y
+sigmaO= missing_data$Sigma
+omega=missing_data$Omega
+trueClique=missing_data$TC
+hidden=missing_data$H
+
+PLNfit<-PLN(counts~1)
+MO<-PLNfit$var_par$M  
+SO<-PLNfit$var_par$S  
+sigma_obs=PLNfit$model_par$Sigma
+
+clique_mclust=init.mclust((cov2cor(sigma_obs)),title="Sigma", nb.missing = r,
+                          trueClique = trueClique,n.noise=3*p)
+clique_mclust$init
+computeFPN(res = clique_mclust,trueClique = trueClique)
+plotInitMclust(res=clique_mclust,title = "")
+init=initVEM(counts = counts, trueClique = trueClique,initviasigma=clique_mclust$init, sigma_obs,r = r)
+Wginit= init$Wginit; Winit= init$Winit; omegainit=init$omegainit ; MHinit=init$MHinit
+
+plot(sigmaO ,sigma_obs)
+ome_init=omega[c(setdiff(1:(p+r), hidden), hidden),c(setdiff(1:(p+r), hidden), hidden)]
+ome=ome_init ; diag(ome)=0
+
+
+```
+
+N.B.: the quantity of noise in mclust is set to $3p$.
+
+# Alpha
+To compute `alpha`, an svd is carried out on the initial values of the observed part of the non beta terms of the expression of beta tilde.
+$$\log(\widetilde{\beta}) = \log \beta + \log \psi - \frac{1}{2}\Omega M_O^\intercal M_O $$ 
+$$expr = \log \psi - \frac{1}{2}\Omega M_O^\intercal M_O $$ 
+The quantity is first handled as a vector, to not be bothered with the `Inf`diagonal of `log(phi)`. The corresponding symmetrical matrix is then reconstructed (with diagonal 0), variances are added, then we take the exponential and center the whole matrix.
+
+```{r, eval=FALSE}
+computeAlpha<-function(omegainitO, MO, SO){
+  n=nrow(MO)
+  alpha.grid=(1:n)/n
+  phi=CorOmegaMatrix(omegainitO)
+  vec.cond<-sapply(alpha.grid ,function(alpha){
+    expr=F_Sym2Vec(alpha*(n*0.5*log(phi)-0.5*omegainitO*(t(MO)%*%MO)))
+    expr=F_Vec2Sym(expr)+diag(colSums(SO))
+    expr=exp(expr)
+    expr=(expr-mean(expr))
+    lambda = svd(expr)$d
+    cond = min(abs(lambda))/max(abs(lambda))
+  })
+  alpha=alpha.grid[max(which(vec.cond>1e-10))]
+  return(alpha)
+}
+```
+
+```{r}
+alpha<-computeAlpha(omegainit[O,O], MO, SO)
+```
+
+# VEM results
+
+With filter:
+
+* less iterations
+* nice increase of the lower bound
+    
+```{r}
+resVEMfilter<-VEMtree(counts,MO,SO,MH=MHinit,omegainit,Winit,Wginit, 
+                eps=1e-3, alpha=alpha,
+                maxIter=20, plot=TRUE,vraiOm=ome_init, condTrack=FALSE,print.hist=FALSE,
+                filterPg=TRUE)
+resVEMraw<-VEMtree(counts,MO,SO,MH=MHinit,omegainit,Winit,Wginit, 
+                      eps=1e-3, alpha=alpha,
+                      maxIter=20, plot=TRUE,vraiOm=ome_init, condTrack=FALSE,print.hist=FALSE,
+                      filterPg=FALSE)
+```
+
+## G hat
+
+* about the same AUC
+* the main difference is in the range of thresholds giving the best outcome 
+    
+```{r}
+plotVEM(resVEMfilter$Pg,ome,r=1,seuil=0.5)
+plotVEM(resVEMraw$Pg,ome,r=1,seuil=0.5)
+```
+
+## Precision Recall curves
+
+```{r, echo=FALSE, warning=FALSE}
+valuesRaw=courbes_seuil(probs = resVEMraw$Pg,omega = ome,h = 15,seq_seuil = seq(0,1,0.02))
+valuesFilter=courbes_seuil(probs = resVEMfilter$Pg,omega = ome,h = 15,seq_seuil = seq(0,1,0.02))
+valuesRaw %>% mutate(crit = PPV+TPR) %>% filter(crit==max(crit, na.rm=TRUE)) %>%
+  summarise(mins=min(seuil), maxs=max(seuil), PPV=max(PPV), PPVO
+            =max(PPVO),PPVH=max(PPVH), 
+            TPR=max(TPR),TPRO=max(TPRO),TPRH=max(TPRH)) %>% kable(caption = "Raw") %>% kable_styling()
+plotVerdict(valuesRaw, seuil)+guides(color=FALSE)+labs(title="Raw results")
+valuesFilter %>% mutate(crit = PPV+TPR) %>% filter(crit==max(crit, na.rm=TRUE)) %>%
+  summarise(mins=min(seuil), maxs=max(seuil), PPV=max(PPV), PPVO=max(PPVO),PPVH=max(PPVH), 
+            TPR=max(TPR),TPRO=max(TPRO),TPRH=max(TPRH)) %>% kable(caption = "With filter on Pg") %>% kable_styling()
+plotVerdict(valuesFilter, seuil)+guides(color=FALSE)+labs(title="With filter on Pg")
+
+```
+
