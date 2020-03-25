@@ -1,0 +1,54 @@
+\section{Inférence par algorithme EM Variationnel}
+
+\subsection{Approximation de la vraisemblance}
+ \paragraph{Vraisemblance}
+ La vraisemblance jointe des données observées et cachées se factorise comme suit
+\begin{align*}
+p(\Ybf,\Zbf,T)& = p_{\betabf}(T) \: p_{\Omegabf_T}(\Zbf \mid T) \: p_ {\thetabf}(\Ybf \mid \Zbf) \\
+% &= p(T)\: p(Z_O,Z_H \mid T) \: p(\Ybf \mid Z_O,Z_H) \\
+&= p_{\betabf}(T) \: p_{\Omegabf_T}(\Zbf_O \mid T) \: p_{\Omegabf_T}(\Zbf_H  \mid  \Zbf_O,T)  \: p_{\thetabf}(\Ybf \mid \Zbf_O)
+\end{align*} 
+en notant $\betabf$ la matrice contenant les poids des arêtes $\beta_{jk}$. Cette factorisation est suggérée par le modèle graphique donné en Figure \ref{MG}b).
+L'obtention des estimateurs du maximum de vraisemblance demanderait à évaluer la loi conditionnellle de l'ensemble des variables manquantes sachant les données observées, à savoir $p(T, \Zbf \mid \Ybf)$. 
+
+\paragraph{Approximation variationnelle.}
+ Dans le cas présent la loi $p(T, \Zbf \mid \Ybf)$ n'a pas de forme simple et nous adoptons donc une approche variationnelle qui vise à maximiser une borne inférieure de la log-vraisemblance de données observées $\log p(\Ybf)$, à savoir
+\begin{align*}
+    \mathcal{J}(\Ybf; g,h)
+    & = \log p(\Ybf) - KL\left[q(T,\Zbf) \middle\vert\middle\vert\ p(T,\Zbf \mid \Ybf)\right]\\
+    & =\Esp_{q}\big[\log p_{\thetabf}(\Ybf\mid \Zbf_O)+ \log p_{\Omegabf_T}(\Zbf_O \mid T)\big]-\Esp_q[\log h(\Zbf_O)]  +\Esp_{q}[\log p_{\Omegabf_T}(\Zbf_H \mid \Zbf_O,T)] \\
+    & \;\; +\Esp_q\big[\log p_{\betabf}(T) - \log g(T)\big]  -\Esp_q[\log h(\Zbf_H)]
+\end{align*}
+ où $KL\left[q(T,\Zbf) \middle\vert\middle\vert\ p(T,\Zbf \mid \Ybf)\right]$ est la divergence de Küllback-Leibler entre la loi approchée $q(T,\Zbf)$  et leur vraie loi conditionnelle.
+
+\paragraph{Lois approchées}
+L'approximation que nous adoptons repose sur une factorisation de la loi $q$ en le produit de deux lois $h$ et $g$ portant respectivement sur $\Zbf$ et sur $T$: $ q(T,\Zbf) = g(T)h(\Zbf)$. Du fait de cette factorisation supposée, la contribution de  $\Esp_h[\log p(\Zbf\mid T)]$ ainsi que $\log p(T)$ --~seuls termes qui font intervenir $T$ dans la borne inférieure~-- prennent la forme de sommes sur les arêtes. La loi $g$ minimisant la divergence de Küllback doit donc également prendre une forme factorisable sur les arêtes, à savoir :
+$ g(T) = \left(\prod_{kl} \widetilde{\beta}_{kl} \right) / \widetilde{B}$. \\
+ 
+De plus, il découle de l'indépendance des échantillons que $h$ est une loi produit : $ h(\Zbf) = \prod_i h_i(\Zbf_i)$.
+Notre approximation variationnelle consiste à supposer que chacune de ses composantes est une loi normale multivariée : $h(\Zbf_i) = \Ncal(\Zbf_i; \mbf_i, \Sbf_i)$, où $\Sbf_i$ est diagonale.
+
+
+\subsection{Algorithme proposé.}
+
+\paragraph{Optimisation en $\thetabf$ et en $h(\Zbf_O)$.}
+Nous choisissons de tirer partie de l'algorithme VEM implémenté par \citet{CMR18,PLNnetwork} dans le package \url{PLNmodels} pour optimiser la borne inférieure $\bound(\Ybf; g,h)$. Il est en effet possible de faire apparaître dans $\bound(\Ybf; g,h)$ la borne inférieure d'un modèle PLN simple, notée $\bound_{PLN}$. On a :
+\begin{align*}
+\mathcal{J}(\Ybf; g,h) \leq & \mathcal{J}_{PLN}(\Ybf; h(\Zbf_O), \thetabf) \\
+& + \Esp_{gh}[\log p(\Zbf_H \mid \Zbf_O,T) ]+\Esp_g[\log p(T)-\log g(T)]-\Esp_h[\log h(\Zbf_H)].
+\end{align*}
+L'étape VE de l'algorithme maximise $\mathcal{J}_{PLN}$ et fournit les moments d'ordre 1 et 2 de la partie "observée" de la loi approchée $h$: $\mbf_{Oi}$ et $\Sbf_{Oi}$. Reprendre ces estimateurs pour la suite de l'optimisation permet de maximiser $\mathcal{J}(\Ybf;g,h)$ en $\thetabf$ et en partie en $h(\Zbf_O)$. Il reste une dépendance en $\Zbf_O$ dans $\Esp_{gh}[\log p(\Zbf_H \mid \Zbf_O,T) ]$, c'est donc une solution sous-optimale en $h(\Zbf_O)$.
+
+\paragraph{Etape VE : optimisation en $g$ et $h(\Zbf_H)$.}
+L'étape VE minimise la distance entre les distributions conditionnelle et approchée :
+$$  \argmin_{g,h(\Zbf_H)} KL\left(g(T)h(\Zbf) \mid\mid p(\Zbf,T\mid \Ybf)\right)$$
+
+La mise à jour des poids $\widetilde{\beta}_{jk}$ des arêtes entre deux noeuds observés (resp. un noeud observé et un noeud caché) est obtenue en annulant les termes de la distance qui dépendent des arêtes entre deux noeuds observés (resp. un noeud observé et un noeud caché). 
+La mise à jour de $h(\Zbf_H)$ est obtenue en dérivant l'expression et en reprenant les paramètres de la loi $h(\Zbf_O)$ optimisée à l'étape précédente.
+
+\paragraph{Etape M : optimisation en $\beta$ et $\Omega_T$.}
+
+L'étape M maximise la borne inférieure $\mathcal{J}(\Ybf ; g,h)$ en les paramètres de $p(\Zbf,T\mid \Ybf)$ qui n'ont pas encore été optimisés, soit en $\betabf$ et $\Omegabf_T$:
+$$ \argmax_{\betabf, \Omegabf_T} \mathcal{J}(\Ybf ; g,h) =\argmax_{\betabf, \Omegabf_T} \left\{ \Esp_{gh} [\log (p_{\betabf}(T) p_{\Omegabf_T}(\Zbf\mid T))]\right\} $$
+
+La loi de l'arbre est mise à jour au travers de $\betabf$ grâce à la formule explicitée dans \citet{MRA20}. La mise à jour pour  $\Omegabf_T$ est la même que celle obtenue dans \citet{genvieve} concernant les éléments hors de la diagonale, en revanche la diagonale est  obtenue de manière explicite et ne nécessite pas d'optimisation numérique.

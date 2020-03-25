@@ -1,0 +1,47 @@
+\section*{Introduction}
+
+Network inference is used is several domains such as genomics or ecology to deduce the conditional independency structure among covariates from gene expression  or species abundances measures for example. This inference relies on the modelisation of the joint distribution of these measures, for which graphical models provides a natural and well studied framework. In particular, they allow to distinguish between direct associations - linking depending covariates conditionnally on all others- and indirect associations - for example between covariates linked to a third one. Taking environmental and/or experimental covariates into account also prevents from inferring links between variables which jointly vary with these conditions.
+  
+  Gaussian Graphical Models (GGM) are particularly popular but not suited or count data. In this case, a classical approach consists in introducing a gaussian latent layer in the model, conditionnally on which observed data are distributed according to a relevant law for count data such as the Poisson law. The Poisson log-normal model \citep{AiH89} enters this category. Its inference,  made difficult due to  the distribution of the latent layer  conditional on observed data, has recently been carried out using variational approximations  \citep{BKM17}. The use of a gaussian latent layer The use of a Gaussian latent layer provides access to a range of available methods, like network inference using GGM \citep{CMR19}. Furthermore the use a mixture of spanning trees as dependency structure of the latent layer allows the computation of edge probabilities \citep{MRA20}.
+
+However, in numerous pratical experiments it is likely that not all covariates involved in the network have actually been observed. Then, observed samples are drawn from a distribution where some  unobserved covariates, which are called \textit{actors} here, were marginalized as illustrated in Figure \ref{MG}a) below.
+
+The aim of this work is to introduce a statistical framework which allows to infer the existence of missing actors, as well as their position in the network. Similar work exist in Gaussian case  \citep{EMlvggm,genvieve} but extension to count data is,  to our knowledge, new. 
+
+
+\begin{figure}[H]
+ \begin{center}
+\begin{tabular}{lcl}
+a) && b)\vspace{-0.5cm}\\
+\hspace{0.5cm}
+    \begin{tikzpicture}
+  %  \node[variable] (0) at (-0.7*\edgeunit,  .7*\edgeunit) {$a)$};
+     \node[observed] (1) at (-0.5*\edgeunit,  .5*\edgeunit) {$1$};
+     \node[observed] (2) at (-0.5*\edgeunit, -.5*\edgeunit) {$2$};
+     \node[observed] (3) at ( 0.5*\edgeunit, -.5*\edgeunit) {$3$};
+      \node[observed] (4) at ( 0.5*\edgeunit,  .5*\edgeunit) {$4$};
+     \node[covmiss] (x) at (0.0*\edgeunit,  .0*\edgeunit) {$x$};
+       \draw[edge] (2) to (3); \draw[edge] (3) to (4); 
+    \draw[edgemiss] (x) to (1); \draw[edgemiss] (x) to (4);
+     \draw[edge] (1) to (4); 
+     \end{tikzpicture}
+    &\hspace{3cm} &
+ \hspace{0.5cm}
+	\begin{tikzpicture}	
+      \tikzstyle{every edge}=[-,>=stealth',shorten >=1pt,auto,thin,draw]
+		\node[variable] (A1) at (0.625*\length, 2*\length) {$T$};
+		\node[variable] (A2) at (0*\length, 1*\length) {$\Zbf_O$};
+		\node[variable] (A3) at (1.25*\length, 1*\length) {$\Zbf_H   $};
+		\node[variable] (A4) at (0*\length, 0*\length) {$\Ybf$};
+		\path (A1) edge [] (A2)
+        (A1) edge [] (A3)
+        (A2) edge [] (A3)
+        (A2) edge [] (A4);
+	\end{tikzpicture} 
+
+\end{tabular}
+ \caption{$a)$ Example of the marginalization of an unobserved covariate $x$ in a graph with 4 nodes $b)$ Graphical model linking count data $\Ybf$, the latent layer of Gaussian parameters $\Zbf=(\Zbf_O,\Zbf_H)$, and the latent tree $T$.}
+  \label{MG}
+    \end{center}
+\end{figure}
+ 

@@ -194,10 +194,10 @@ Here $p(T,\Zbf \mid \Ybf)$ is untractable. We adopt a variational approximation 
 Where KL is the Küllback-Leibler divergence. The approximation we adopt relies on factorizing $q$ in the product of two distributions $h$ et $g$ relating respectively to $\Zbf$  and $T$: 
 $$p(T,Z | \Ybf) \approx  q(Z,T) = g(T)h(Z).$$
 
- A consequence of this hypothesis is the contributions of   $\Esp_h[\log p(\Zbf\mid T)]$ ainsi que $\log p(T)$ --~seuls termes qui font intervenir $T$ dans la borne inférieure~-- writing as sums on the edges. As distribution   $g$ minimizes the KL divergence, it has to factorizes on the edges as well. Hence:
+ A consequence of this hypothesis is the contributions of   $\Esp_h[\log p(\Zbf\mid T)]$ and $\log p(T)$ --~only terms involving $T$ in the lower bound~-- writing as sums on the edges. As distribution   $g$ minimizes the KL divergence, it has to factorizes on the edges as well. Hence:
 $ g(T) = \left(\prod_{kl} \widetilde{\beta}_{kl} \right) / \widetilde{B}$. \\
  
-Moreover, De plus, it follows from the independence of the samples that $h$ is a product law: $ h(\Zbf) = \prod_i h_i(\Zbf_i)$.
+Moreover, it follows from the independence of the samples that $h$ is a product law: $ h(\Zbf) = \prod_i h_i(\Zbf_i)$.
 Our variational approximation consists in assuming that each of its components is a multivariate Gaussian: $h(\Zbf_i) = \Ncal(\Zbf_i; \mbf_i, \Sbf_i)$, where $\Sbf_i$ is diagonal. More precisely:  $ h(Z_i) =  \mathcal{N}(m_i,S_i)$ , where $S_i$ is diagonal with diagonal $(s_{i1}^2, ... , s_{i(p+r)}^2)$, meaning that $Z_H$ and $Z_O$ are independant. Marginals are written $h_O$  and  $h_H$. $S=\sum_i S_i$  and $ M =  [m_i]_{1 \leq i \leq (p+r)}$ (so $\Esp_h[Z_{\cdot k}^\intercal Z_{\cdot k}] = \sum_i s_{ik} + m_{\cdot k}^\intercal m_{\cdot k}$). $S$ is also diagonal and its H and O blocs are denoted $S_H$ and $S_O$. 
 
 In the following we use the scalar product on the matrix space defined with the trace operator as: 
@@ -560,7 +560,7 @@ Now suppose we assume $r$ missing actors. The terms of the diagonals of matrices
 $$ vBIC_r=\bound_r(\Ybf; g,h) - \frac{D+2pr}{2} \log(n)  $$
 \section{TODO}
  \begin{itemize}
- \item Selection model criteria
+ \item diagonal not fitted
  \item detail building of initialization matrix for omega
  \end{itemize}
 

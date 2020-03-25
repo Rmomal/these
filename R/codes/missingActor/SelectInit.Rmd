@@ -141,11 +141,11 @@ On 20 scale-free graphs each with 15 tries for initialization.
 
 ```{r, cache=TRUE, echo=FALSE, message=FALSE,}
 
-FitSparsePCA <- function(Y, q=1, alphaGrid=10^(seq(-4, 0, by=.1)) ){
+FitSparsePCA <- function(Y, q=1, alphaGrid=10^(seq(-4, 0, by=.1))){
   # Fit sparse PCA on a grid of alpha
   # Needs an estimate o Sigma: empirical variance of the rotated scores 
   #    + diagonal risidual variances (why not?)
-  n <- nrow(Y); p <- nrow(Y); alphaNb <- length(alphaGrid); 
+  n <- nrow(Y); p <- ncow(Y); alphaNb <- length(alphaGrid); 
   # Fits all sparsePCA
   sPCA <- list()
   for(a in 1:alphaNb){
@@ -171,13 +171,26 @@ FitSparsePCA <- function(Y, q=1, alphaGrid=10^(seq(-4, 0, by=.1)) ){
   sPcaOpt <- sPCA[[aOpt]]
   sPcaOpt$loadings
   cliques <- list(); 
-  sapply(1:ncol(sPcaOpt$loadings), function(j){cliques[[j]] <<- which(sPcaOpt$loadings[, j]!=0)})
-  return(list(sPcaOpt=sPcaOpt, alphaGrid=alphaGrid, alphaOpt=alphaOpt, loglik=loglik, bic=bic, cliques=cliques))
+  sapply(1:ncol(sPcaOpt$loadings), function(j){
+    cliques[[j]] <<- which(sPcaOpt$loadings[, j]!=0)
+  })
+  return(list(sPcaOpt=sPcaOpt, alphaGrid=alphaGrid, alphaOpt=alphaOpt, 
+              loglik=loglik, bic=bic, cliques=cliques))
 }
 
-
+boot_FitSparsePCA<-function(Y, B){
+  lapply(1:B, function(x){
+    n=nrow(Y); v=0.8; n.sample=round(0.8*n, 0)
+    ech=sample(1:n,n.sample,replace = FALSE)
+    Y.sample=Y[ech,]
+    c=FitSparsePCA(Y.sample)$cliques
+    return(c)
+  })
+  
+}
 mclust.init<-function(sigma_obs, trueClique, B,n){
   List.init=vector(mode = "list")
+  p=ncol(sigma_obs)
   c=1
   for(i in 1:B){
     res<- init.mclust((cov2cor(sigma_obs)),title="Sigma",
@@ -191,9 +204,22 @@ mclust.init<-function(sigma_obs, trueClique, B,n){
   return(List.init)
 }
 
+varClust.init<-function(sigma_obs){
+  vcPCA = F_VarClustPCA(sigma_obs)
+  filter_content<-list()
+  c=1
+  lapply(seq_along(vcPCA$clustContent), function(x){
+    if(length(vcPCA$clustContent[[x]])>2){
+      filter_content[[c]]<<-vcPCA$clustContent[[x]]
+      c<<-c+1
+    } 
+  })
+  return(filter_content)
+}
 # vBIC computations
-run.VEM<-function(init,counts,sigma_obs,MO,SO,W_init,Wg_init,r){
+run.VEM<-function(init,counts,sigma_obs,MO,SO,W_init,Wg_init,r,ome_init){
   p=ncol(counts); O=1:p
+  
   init=initVEM(counts = counts, initviasigma= list(init), sigma_obs=sigma_obs,r = r)
   omegainit=init$omegainit ; MHinit=init$MHinit
   alpha<-computeAlpha(omegainit[O,O], MO, SO, plot=FALSE)
@@ -205,6 +231,7 @@ run.VEM<-function(init,counts,sigma_obs,MO,SO,W_init,Wg_init,r){
   return(vem)
 }
 vec.vBIC<-function(List.vem,counts,theta, matcovar,r){
+  
   n=nrow(counts);p= ncol(counts)
   unlist(lapply(List.vem,function(vem){
     J<-True_lowBound(counts,vem$M,vem$S, theta, matcovar,vem$W, vem$Wg, vem$Pg, vem$omega )
@@ -212,44 +239,67 @@ vec.vBIC<-function(List.vem,counts,theta, matcovar,r){
     return(vBIC)
   }))
 }
+
+run.method<-function(sigma_obs,cliques,method){
+  vem=lapply(cliques, function(init){
+    run.VEM(init = init,counts=counts, sigma_obs,MO=MO, SO=SO, W_init=Winit, 
+            Wg_init=Wginit, r=r, ome_init)
+  })
+  vec.perf<-data.frame(t(sapply(vem, function(x){
+    auc=round(auc(pred = x$Pg, label = ome),4)
+    h=(p+1):(p+r)
+    PPVH=accppvtpr(x$Pg,ome,h=h,seuil=quantile(x$Pg[,h], 0.75))[5]
+    return(c(auc=auc, PPVH=PPVH))
+  })))
+  vBIC<-vec.vBIC(vem,counts,theta, matcovar, r=r)
+  best=which.max(vBIC)
+  data=computeFPN(cliques, trueClique, p) %>% 
+    mutate( vBIC=vBIC, sizes=unlist(lapply(cliques, length)),
+            auc=vec.perf$auc, PPVH=vec.perf$PPVH,method=c(method))
+  choice=data[best,]
+  return(choice)
+}
 SelectInitClique<-function(seed, B, n=200, p=14, r=1){
+  
   cat(paste0("\n seed ",seed, "\n"))
   set.seed(seed)
-  type="scale-free" ;O=1:p
+  type="scale-free" ;O=1:p;plot=FALSE
   
   missing_data<-missing_from_scratch(n,p,r,type,plot)
   counts=missing_data$Y; sigmaO= missing_data$Sigma; omega=missing_data$Omega;
-  trueClique=missing_data$TC; hidden=missing_data$H
+  trueClique=missing_data$TC[[1]]; hidden=missing_data$H
   PLNfit<-PLN(counts~1)
   MO<-PLNfit$var_par$M  ; SO<-PLNfit$var_par$S  ; theta=PLNfit$model_par$Theta ; 
   matcovar=matrix(1, n,r) ; sigma_obs=PLNfit$model_par$Sigma
-  init=initVEM(counts = counts, trueClique = trueClique,initviasigma=trueClique, sigma_obs,r = r)
+  init=initVEM(counts = counts, initviasigma = trueClique,  sigma_obs,r = r)
   Wginit= init$Wginit; Winit= init$Winit; omegainit=init$omegainit ; MHinit=init$MHinit
   ome_init=omega[c(setdiff(1:(p+r), hidden), hidden),c(setdiff(1:(p+r), hidden), hidden)]
   ome=ome_init ; diag(ome)=0
-   
+  
   #true perfs
   vem=run.VEM(init = trueClique[[1]],counts=counts, sigma_obs, MO=MO, SO=SO, 
-              W_init=Winit, Wg_init=Wginit, r=r)
+              W_init=Winit, Wg_init=Wginit, r=r, ome_init)
   truevBIC= vec.vBIC(list(vem), counts=counts, theta, matcovar, r=r)
   true.perf<-data.frame(t(sapply(list(vem), function(x){
     auc=round(auc(pred = x$Pg, label = ome),4)
-    PPVH=accppvtpr(x$Pg,ome,h=(p+1):(p+r),seuil=quantile(x$Pg[,h], 0.75))[5]
+    h=(p+1):(p+r)
+    PPVH=accppvtpr(x$Pg,ome,h=h,seuil=quantile(x$Pg[,h], 0.75))[5]
     return(c(auc=auc, PPVH=PPVH))
   })))
-
+  
   #=== MCLUST
   cliques_mclust<-mclust.init(sigma_obs, trueClique[[1]],B, n)
   vem_mclust=lapply(cliques_mclust, function(init){
-    run.VEM(init = init,counts=counts,sigma_obs, MO=MO, SO=SO, W_init=Winit, Wg_init=Wginit, r=r)
+    run.VEM(init = init,counts=counts,sigma_obs, MO=MO, SO=SO, W_init=Winit, Wg_init=Wginit, r=r,ome_init)
   })
   vec.perf<-data.frame(t(sapply(vem_mclust, function(x){
     auc=round(auc(pred = x$Pg, label = ome),4)
-    PPVH=accppvtpr(x$Pg,ome,h=(p+1):(p+r),seuil=quantile(x$Pg[,h], 0.75))[5]
+    h=(p+1):(p+r)
+    PPVH=accppvtpr(x$Pg,ome,h=h,seuil=quantile(x$Pg[,h], 0.75))[5]
     return(c(auc=auc,PPVH= PPVH))
   })))
   vBIC_mclust<-vec.vBIC(vem_mclust,counts,theta, matcovar, r=r)
-  FPN_mclust<-computeFPN(cliques_mclust, trueClique[[1]], p)
+  FPN_mclust<-computeFPN(cliques_mclust, trueClique, p)
   data=FPN_mclust %>% mutate(crit=FP+FN, crit.rank=rank(crit, ties.method = "min"),
                              vBIC=vBIC_mclust,sizes=unlist(lapply(cliques_mclust, length)),
                              auc=vec.perf$auc, PPVH=vec.perf$PPVH)
@@ -269,11 +319,12 @@ SelectInitClique<-function(seed, B, n=200, p=14, r=1){
   sPCA.Z <- FitSparsePCA(scale(MO))
   cliques_spca=c(sPCA.Y$cliques,sPCA.Z$cliques)
   vem_spca=lapply(cliques_spca, function(init){
-    run.VEM(init = init,counts=counts, sigma_obs,MO=MO, SO=SO, W_init=Winit, Wg_init=Wginit, r=r)
+    run.VEM(init = init,counts=counts, sigma_obs,MO=MO, SO=SO, W_init=Winit, Wg_init=Wginit, r=r, ome_init)
   })
   vec.perf<-data.frame(t(sapply(vem_spca, function(x){
     auc=round(auc(pred = x$Pg, label = ome),4)
-    PPVH=accppvtpr(x$Pg,ome,h=(p+1):(p+r),seuil=quantile(x$Pg[,h], 0.75))[5]
+    h=(p+1):(p+r)
+    PPVH=accppvtpr(x$Pg,ome,h=h,seuil=quantile(x$Pg[,h], 0.75))[5]
     return(c(auc=auc, PPVH=PPVH))
   })))
   vBIC_spca<-vec.vBIC(vem_spca,counts,theta, matcovar, r=r)
@@ -282,7 +333,11 @@ SelectInitClique<-function(seed, B, n=200, p=14, r=1){
             PPVH=vec.perf$PPVH,method=c("spca.Y", "spca.Z"))
   #---
   
-  choices<-rbind(spca.choice, mclust.choice , 
+  #=== varClust
+  cliques_varclust<-varClust.init(sigma_obs)
+  varclust.choice<-run.method(sigma_obs, cliques_varclust, "VarClust")
+  #---
+  choices<-rbind(spca.choice, mclust.choice , varclust.choice,
                  data.frame(FP=0,FN=0, vBIC=truevBIC,sizes=length(trueClique[[1]]), 
                             auc=true.perf$auc,PPVH=true.perf$PPVH,  method="Truth"))
   choices$seed=seed
@@ -291,9 +346,9 @@ SelectInitClique<-function(seed, B, n=200, p=14, r=1){
   return(list(choice=choices))
 }
 
-seed=1:10
+seed=1:200
 t1<-Sys.time()
-res<-mclapply(seed, function(x){ SelectInitClique(x, B=30)}, mc.cores=1)
+res<-mclapply(seed, function(x){ SelectInitClique(x, B=30)}, mc.cores=3)
 t2<-Sys.time()
 difftime(t2, t1)
 # rank.size<-unlist(lapply(res, function(x){rank(x$perf$clique.size)}))

@@ -1,0 +1,68 @@
+% Environment
+\renewcommand{\appendixname}{Annex}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{remark}{Remark}
+\renewcommand{\abstractname}{Summary}
+\newcommand{\review}[1]{\textcolor{black}{#1}}
+\newcommand{\validSR}[1]{\textcolor{black}{#1}}
+\newcommand{\questSR}[1]{\textcolor{black}{[#1]}}
+\newcommand{\newmodif}[1]{\textcolor{black}{#1}}
+\newcommand{\remove}[1]{\textcolor{gray}{#1}}
+\newcommand\independent{\protect\mathpalette{\protect\independenT}{\perp}}
+\newcommand{\STAB}[1]{\begin{tabular}{@{}c@{}}#1\end{tabular}}
+
+% Functions
+\def\independenT#1#2{\mathrel{\rlap{$#1#2$}\mkern2mu{#1#2}}}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\Esp}{\mathbb{E}}
+\DeclareMathOperator*{\Var}{\mathbb{V}}
+\DeclareMathOperator*{\Cov}{\mathbb{C}\text{ov}}
+\DeclareMathOperator*{\prob}{\mathds{P}}
+\DeclareMathOperator*{\probt}{\widetilde{\mathds{P}}}
+
+% Notations pairs
+\newcommand\jk{{jk}}
+
+% Notations cal
+\newcommand\Ccal{\mathcal{C}}
+\newcommand\Ncal{\mathcal{N}}
+\newcommand\Pcal{\mathcal{P}}
+\newcommand\Tcal{\mathcal{T}}
+\newcommand\mt{\widetilde{m}}
+\newcommand\St{\widetilde{S}}
+\newcommand\mbt{\widetilde{\bf m}}
+\newcommand\Sbt{\widetilde{\bf S}}
+
+% Notations bf
+\newcommand\gammab{{\boldsymbol{\gamma}}}
+\newcommand\betab{{\boldsymbol{\beta}}}
+\newcommand\thetab{{\boldsymbol{\theta}}}
+\newcommand\Sigmab{{\boldsymbol{\Sigma}}}
+\newcommand\cst{\text{cst}}
+\newcommand\Ob{{\bf O}}
+\newcommand\Hb{{\bf H}}
+\newcommand\Mb{{\bf M}}
+\newcommand\Qb{{\bf Q}}
+\newcommand\Wb{{\bf W}}
+\newcommand\Xb{{\bf X}}
+\newcommand\xb{{\bf x}}
+\newcommand\Yb{{\bf Y}}
+\newcommand\Zb{{\bf Z}}
+\newcommand\zb{{\bf z}}
+
+
+
+% Notations tilde
+\newcommand\Pt{\widetilde{P}}
+\newcommand\pt{\widetilde{p}}
+\newcommand\et{\widetilde{\mathds{E}}}
+\newcommand\e{{\mathds{E}}}
+% TikZ
+\newcommand{\nodesize}{1em}
+\newcommand{\edgeunit}{4*\nodesize}
+\tikzstyle{covariate}=[draw, rectangle, minimum width=\nodesize, minimum height=\nodesize, inner sep=0, color=black]
+\tikzstyle{covmiss}=[draw, minimum width=\nodesize, minimum height=\nodesize, inner sep=0, color=gray, text=gray]
+\tikzstyle{observed}=[draw, circle, minimum width=\nodesize, inner sep=0, color=black]
+\tikzstyle{edge}=[-, line width=1pt, color=black]
+\tikzstyle{edgemiss}=[-, line width=1pt, dashed, color=gray]

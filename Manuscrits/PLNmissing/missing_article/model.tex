@@ -1,0 +1,38 @@
+\section{Model}
+
+\paragraph{Poisson log-normal model.} 
+We begin with a reminder on the Poisson log-normal model (PLN) model with the example of abundance data. The abundances of $p$ species sampled on $n$ sites are gathered in the marix $n \times p$ $\Ybf$ where $Y_ {ij}$ is the abundance of species $j$ at site $i$, and $\Ybf_i $ is the abundance vector sampled on site $i$ ($i^{\text{th}}$ row of $\Ybf$). A covariate vector $\xbf_i $ of size $d$ is measured on each site $i$ and all covariates are gathered in matrix $n \times d$ $\boldsymbol X$. The PLN model states that a (latent) Gaussien vector $\Zbf_i$ of size $p$ is associated to each site:
+\begin{equation} \label{eq:PLN-Z}
+\{\Zbf_i\}_{1 \leq i \leq n} \text{ iid}, \qquad 
+\Zbf_1 \sim \Ncal_p(\zerobf, \Omegabf^{-1}),
+\end{equation}
+sites are thus assumed to be independent. All latent vectors $\Zbf_i$ are gathered in a matrix $n \times p$ written $\Zbf$. The PLN model further assumes that species abundances in all sites are conditionnally independent, and their distribution depend on the environment and the associated latent variable as follows:
+\begin{equation} \label{eq:PLN-Y.Z}
+\{Y_{ij}\}_{1 \leq i \leq n, 1 \leq j \leq p} \mid \Zbf \text{ iid}, \qquad 
+Y_{ij} \mid \Zbf \sim \Pcal\left(\exp(o_{ij} + \xbf_i^\intercal \thetabf_j + Z_{ij})\right),
+\end{equation}
+where $o_{ij}$ is a known offest term which accounts for sampling effort. The vector $d \times 1$ of regresison coefficients $\thetabf_j$ describes the environment effect $\xbf_i$ on species $j$. The dependence between the species abundances is entirely controlled by the latent dependency structure encoded in $\Omegabf$.
+
+\paragraph{Sparse dependency structure.} Network inference generally relies on the hypothesis that few species are directly dependent on one another, meaning that the underlying graphical model is sparse. A way to foster such sparsity is to impose to the precision matrix $\Omegabf$ to be faithful to a spanning tree $T$ (thus $\Zbf_1 \sim \Ncal_p(\zerobf, \Omegabf_T^{-1})$ where non-nul terms of $\Omegabf_T$ correspond to $T$ edges). However this hypothesis is very restrictive  as it allows only $p-1$ links among $p$ species \citep{ChowLiu}. A more flexible approach consists in assuming that the latent vectors are drawn from a mixture of Gaussian laws, each faithful to a tree $T$:
+\begin{equation} \label{eq:mixt-Z}
+\Zbf_1 \sim \sum_{T \in \Tcal_p} \pi_T \Ncal_p(\zerobf, \Omegabf_T^{-1}),
+\end{equation}
+where $\Tcal_p$ is the space of spanning trees with $p$ nodes.
+Assuming furthermore that the law on trees $\{\pi_T\}_{T \in \Tcal_p}$ can be written as a product on the edges:
+\begin{equation} \label{eq:prob-T}
+\pi_T = \left. \prod_{(j, k) \in T} \beta_{jk} \right/ B, \qquad
+B = \sum_{T \in \Tcal_p} \prod_{(j, k) \in T} \beta_{jk},
+\end{equation}
+then the inference of such model is accessible from a computational point of view thanks to the Matrix tree theorem, which allows to compute a quantity of the form of ^$B$ in  $O(p^3)$ \citep{matrixtree,MeilaJaak,kirshner}. The probability of a tree is then proportional to the product of its edges weights $\{\beta_{jk}\}_{(j,k)\in T}$.
+
+\paragraph{Introducing missing actors.} 
+
+Assuming $r$ missing actors in the model, the latent vector $\Zbf_i$ associated to site $i$ is in fact of size $(p+r)$ and can be decomposed in $\Zbf_i^\intercal = [\Zbf_{Oi}^\intercal, \Zbf_{Hi}^\intercal]^\intercal$ where $\Zbf_{Oi}$ is of size $p$ and correspond to observed species and $\Zbf_{Hi}$ is of size $r$ and correspond to missing actors (species or others). The model then states that
+
+ \begin{enumerate}[($i$)]
+\item  Abundance vectors $\Ybf_i$ of the  $p$ observed species are distributed according to \eqref{eq:PLN-Y.Z}, replacing $\Zbf$ with $\Zbf_O$,
+\item   $\Zbf_i$ is distributed according to the mixture descrbied by\eqref{eq:mixt-Z} and \eqref{eq:prob-T} but with Gaussians of dimension $(p+r)$, and trees drawn from $\Tcal_{p+r}$.
+\end{enumerate}
+Figure \ref{MG}b) gives the graphical model associated to this model. Observed data $\Ybf$ are independent from the tree  $T$ conditionnally on latent covariates $\Zbf=(\Zbf_O,\Zbf_H)$, and their condiitonal distribution only depends on $\Zbf_O$. Thus $\Zbf_O$ is the latent part associated to observed data while no observed data is directly linked to the   $\Zbf_H$ part.
+
+Finally, the original PLN model only concerns covariates $\Ybf$ and $\Zbf_O$. The use of a dependency structure with mixture of trees allows a sparse and efficient inference, and missing actors are accounted for in covariate $\Zbf_H$.

@@ -1,0 +1,99 @@
+\documentclass[a4paper,11pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb,amsthm,mathrsfs,amsfonts,dsfont,bm} 
+\usepackage[dvipsnames,table,xcdraw]{color,xcolor}
+\usepackage{array,graphicx}
+\usepackage{hyperref}
+\usepackage{float, wrapfig}
+\usepackage{empheq}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage[toc]{appendix}
+\usepackage{enumerate}
+\usepackage{mathtools}  
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage[round, sort]{natbib}
+\usepackage{setspace}
+\usepackage[affil-it]{authblk}
+\usepackage[french,english]{babel}
+\usetikzlibrary{shapes,backgrounds,arrows,automata,snakes,shadows,positioning, mindmap}
+
+\newcommand{\edgeunit}{1.5}
+\newcommand{\nodesize}{1em}
+%\newcommand{\edgeunit}{4*\nodesize}
+\newcommand{\length}{1}
+\tikzstyle{covariate}=[draw, rectangle, minimum width=\nodesize, minimum height=\nodesize, inner sep=0, color=black]
+\tikzstyle{covmiss}=[draw, minimum width=\nodesize, minimum height=\nodesize, inner sep=0, color=gray, text=gray]
+\tikzstyle{observed}=[draw, circle, minimum width=\nodesize, inner sep=0, color=black]
+\tikzstyle{edge}=[-, line width=1pt, color=black]
+\tikzstyle{edgemiss}=[-, line width=1pt, dashed, color=gray]
+\tikzstyle{variable}=[scale=0.9,rectangle,draw=white,transform shape,fill=white,font=\Large]
+    
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\input{commands}
+\newcommand{\argmin}{\arg\!\min}
+\newcommand{\argmax}{\arg\!\max}
+\newcommand*\widefbox[1]{\fbox{\hspace{3em}#1\hspace{3em}}}
+\newcommand*\lesswidefbox[1]{\fbox{\hspace{2em}#1\hspace{2em}}}
+\newcommand{\entr}{\mathcal{H}}
+\newcommand{\betabf}{\boldsymbol{\beta}}
+\newcommand{\thetabf}{\boldsymbol{\theta}}
+\newcommand{\mubf}{\boldsymbol{\mu}}
+\newcommand{\Omegabf}{\boldsymbol{\Omega}}
+\newcommand{\Sigmabf}{\boldsymbol{\Sigma}}
+\newcommand{\zerobf}{\boldsymbol{0}}
+\newcommand{\Xbf}{\boldsymbol{X}}
+\newcommand{\xbf}{\boldsymbol{x}}
+\newcommand{\Ybf}{\boldsymbol{Y}}
+\newcommand{\Zbf}{\boldsymbol{Z}}
+\newcommand{\Sbf}{\boldsymbol{S}}
+\newcommand{\mbf}{\boldsymbol{m}}
+\newcommand\Ncal{\mathcal{N}}
+\newcommand\Pcal{\mathcal{P}}
+\newcommand\Tcal{\mathcal{T}} 
+\newcommand{\Esp}{\mathds{E}}
+\newcommand{\bound}{\mathcal{J}}
+
+\definecolor{coquelicot}{rgb}{1.0, 0.22, 0.0}
+\newcommand{\modifRM}[1]{\textcolor{coquelicot}{#1}}
+\newcommand{\modifSR}[2]{\textcolor{gray}{#1}\textcolor{blue}{#2}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\title{\textbf{Prise en compte d'un acteur manquant dans l'inférence de réseaux d'interactions d'espèces par mélange d'arbres à partir de données de comptages}}
+
+\author{Raphaëlle Momal$^1$%
+  \thanks{Electronic address: \texttt{raphaelle.momal@agroparistech.fr}; Corresponding author}, \hspace{0.3cm} Stéphane Robin$^1$, \hspace{0.3cm} Christophe Ambroise$^2$}
+\affil{1: Université Paris-Saclay, AgroParisTech, INRAE, UMR MIA-Paris, Paris, France.\\
+2: Laboratoire de Mathématiques et Modélisation d'Évry, 23 bvd de France, Évry, France}
+
+\date{\vspace{-5ex}}
+%\date{\today}
+
+\begin{document}
+\setlength{\parindent}{0ex}
+\maketitle
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ 
+
+\selectlanguage{english}
+\begin{abstract}
+Network inference is used in many areas such as genomics or ecology to infer the structure of conditional independence between covariates, based on the measures of gene expression or species abundance for example. In many experiments, it is likely that not all covariates involved in the network were actually observed. Then observed samples are drawn from a distribution where some unobserved covariates were marginalized.
+
+We introduce a generic staitstical model for network inference from abundance data with missing actor. The model includes fixed effects to take account of environmental covariates  and sampling efforts, as well as correlated random effects to encode species interactions. The correlation structure is that of a gaussian graphical model marginalized on one ore more covariates, corresponding to the missing actors. The inferred network is obtained by averaging on all spanning trees, in a computationnally efficient way.
+\paragraph{Key-words: }  graphical models, network inference, missing actor, abundance data, Variational EM algorithm, matrix tree theorem, Poisson log-Normal model
+\end{abstract}
+ 
+\input{intro.tex}
+\input{model.tex}
+\input{inference.tex}
+\input{discussion.tex}
+
+\begin{appendix}
+\newpage
+\bibliographystyle{apsrev} %tested plainnat
+%\bibliographystyle{apsrev} % tested apsrev
+\bibliography{biblio.bib}
+\end{appendix}
+\end{document}

@@ -1,0 +1,15 @@
+
+rm(list=ls()); par(mfrow=c(1, 1))
+library(mvtnorm); library(sna)
+source('Functions/FunctionsSimul.R')
+source('Functions/FunctionsMatVec.R')
+source('Functions/FunctionVarClustPCA.R')
+n = 50; p = 20; seed = 4; set.seed(seed); traceS = TRUE
+library(PLNmodels)
+load('../Data_SR/BarentsFish.Rdata')
+PLNall = PLN(Data$count ~ scale(Data$covariates))
+PLNnone = PLN(Data$count ~ 1)
+p = ncol(Data$count)
+Sall = PLNall$model_par$Sigma * nrow(Data$count)
+Snone = PLNnone$model_par$Sigma * nrow(Data$count)
+S = cov2cor(Snone)
