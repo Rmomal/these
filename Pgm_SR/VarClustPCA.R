@@ -42,17 +42,19 @@ S = cov2cor(Snone)
 # Variable clustering
 par(mfrow=c(2, 2))
 vcPCA = F_VarClustPCA(S)
+vcPCA$clustContent
 plot(vcPCA$clustPath$cost, type='b', ylab='', xlab=''); 
 plot(sum(diag(S)) - vcPCA$clustPath$height, type='b', ylim=c(0, sum(diag(S))), ylab='', xlab=''); 
 abline(h = vcPCA$lastCost, col=2)
 
 # Comparison with ClustOfVar
 library(ClustOfVar)
-HCV = hclustvar2(S)
+HCV = hclustvar(S)
 plot(HCV)
 plot(cumsum(HCV$height), type='b'); points(vcPCA$clustPath$height, col=2, type='b')
 cbind(vcPCA$clustMerge, HCV$merge)
 
+obj=cutreevar(HCV, k = 2, matsim = FALSE)
 # # Old plots
 # plot(vcPCA$clustPath$height, vcPCA$clustMat[1, ], ylim=c(0, 2*p), type='s', col=1)
 # sapply(2:p, function(j){lines(vcPCA$clustPath$height, vcPCA$clustMat[j, ], type='s', col=j)})

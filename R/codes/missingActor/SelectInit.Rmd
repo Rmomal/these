@@ -145,11 +145,11 @@ FitSparsePCA <- function(Y, q=1, alphaGrid=10^(seq(-4, 0, by=.1))){
   # Fit sparse PCA on a grid of alpha
   # Needs an estimate o Sigma: empirical variance of the rotated scores 
   #    + diagonal risidual variances (why not?)
-  n <- nrow(Y); p <- ncow(Y); alphaNb <- length(alphaGrid); 
+  n <- nrow(Y); p <- ncol(Y); alphaNb <- length(alphaGrid); 
   # Fits all sparsePCA
   sPCA <- list()
   for(a in 1:alphaNb){
-    sPCA[[a]] <- spca(Y, k=q, alpha=alphaGrid[a])
+    sPCA[[a]] <- spca(Y, k=q, alpha=alphaGrid[a], verbose=FALSE)
     sPCA[[a]]$Sigma <- cov(sPCA[[a]]$scores%*%t(sPCA[[a]]$transform))
     
     resVar <- (n-1)*apply(Y - sPCA[[a]]$scores %*% t(sPCA[[a]]$transform), 2, var)/n
@@ -179,14 +179,15 @@ FitSparsePCA <- function(Y, q=1, alphaGrid=10^(seq(-4, 0, by=.1))){
 }
 
 boot_FitSparsePCA<-function(Y, B){
-  lapply(1:B, function(x){
+  cliqueList<-lapply(1:B, function(x){
     n=nrow(Y); v=0.8; n.sample=round(0.8*n, 0)
     ech=sample(1:n,n.sample,replace = FALSE)
     Y.sample=Y[ech,]
-    c=FitSparsePCA(Y.sample)$cliques
+    c=unlist(FitSparsePCA(Y.sample)$cliques)
     return(c)
   })
-  
+  cliqueList<-unique(cliqueList)
+  return(cliqueList)
 }
 mclust.init<-function(sigma_obs, trueClique, B,n){
   List.init=vector(mode = "list")
@@ -235,12 +236,15 @@ vec.vBIC<-function(List.vem,counts,theta, matcovar,r){
   n=nrow(counts);p= ncol(counts)
   unlist(lapply(List.vem,function(vem){
     J<-True_lowBound(counts,vem$M,vem$S, theta, matcovar,vem$W, vem$Wg, vem$Pg, vem$omega )
-    vBIC<-VBIC(J,p,r=r, d=1, n=n)
+    vBIC<-VBIC(J,p,r=r, d=ncol(matcovar), n=n)
     return(vBIC)
   }))
 }
 
-run.method<-function(sigma_obs,cliques,method){
+run.method<-function(cliques,method,counts,sigma_obs,MO,SO,
+                     Wginit, Winit, MHinit,ome_init,ome,r, theta, matcovar, trueClique ){
+ 
+  p=ncol(counts)
   vem=lapply(cliques, function(init){
     run.VEM(init = init,counts=counts, sigma_obs,MO=MO, SO=SO, W_init=Winit, 
             Wg_init=Wginit, r=r, ome_init)
@@ -270,7 +274,7 @@ SelectInitClique<-function(seed, B, n=200, p=14, r=1){
   trueClique=missing_data$TC[[1]]; hidden=missing_data$H
   PLNfit<-PLN(counts~1)
   MO<-PLNfit$var_par$M  ; SO<-PLNfit$var_par$S  ; theta=PLNfit$model_par$Theta ; 
-  matcovar=matrix(1, n,r) ; sigma_obs=PLNfit$model_par$Sigma
+  matcovar=matrix(1, n,1) ; sigma_obs=PLNfit$model_par$Sigma
   init=initVEM(counts = counts, initviasigma = trueClique,  sigma_obs,r = r)
   Wginit= init$Wginit; Winit= init$Winit; omegainit=init$omegainit ; MHinit=init$MHinit
   ome_init=omega[c(setdiff(1:(p+r), hidden), hidden),c(setdiff(1:(p+r), hidden), hidden)]
@@ -288,6 +292,7 @@ SelectInitClique<-function(seed, B, n=200, p=14, r=1){
   })))
   
   #=== MCLUST
+  cat(paste0("\n ------ MCLUST ------ \n"))
   cliques_mclust<-mclust.init(sigma_obs, trueClique[[1]],B, n)
   vem_mclust=lapply(cliques_mclust, function(init){
     run.VEM(init = init,counts=counts,sigma_obs, MO=MO, SO=SO, W_init=Winit, Wg_init=Wginit, r=r,ome_init)
@@ -314,31 +319,28 @@ SelectInitClique<-function(seed, B, n=200, p=14, r=1){
   #---
   
   #=== sPCA
-  
-  sPCA.Y <- FitSparsePCA(scale(counts))
-  sPCA.Z <- FitSparsePCA(scale(MO))
-  cliques_spca=c(sPCA.Y$cliques,sPCA.Z$cliques)
-  vem_spca=lapply(cliques_spca, function(init){
-    run.VEM(init = init,counts=counts, sigma_obs,MO=MO, SO=SO, W_init=Winit, Wg_init=Wginit, r=r, ome_init)
-  })
-  vec.perf<-data.frame(t(sapply(vem_spca, function(x){
-    auc=round(auc(pred = x$Pg, label = ome),4)
-    h=(p+1):(p+r)
-    PPVH=accppvtpr(x$Pg,ome,h=h,seuil=quantile(x$Pg[,h], 0.75))[5]
-    return(c(auc=auc, PPVH=PPVH))
-  })))
-  vBIC_spca<-vec.vBIC(vem_spca,counts,theta, matcovar, r=r)
-  spca.choice= computeFPN(cliques_spca, trueClique, p) %>% 
-    mutate( vBIC=vBIC_spca, sizes=unlist(lapply(cliques_spca, length)), auc=vec.perf$auc,
-            PPVH=vec.perf$PPVH,method=c("spca.Y", "spca.Z"))
+  cat(paste0("\n ------ sPCA ------ \n"))
+  cat(paste0("\n sPCA.Y \n"))
+  cliques_spcaY <- boot_FitSparsePCA(scale(counts),B)
+    cat(paste0("\n sPCA.Z \n"))
+  cliques_spcaZ <- boot_FitSparsePCA(scale(MO),B)
+    cat(paste0("\n run sPCA.Y \n"))
+  spcaY.choice=run.method(cliques_spcaY,"spca.Y",counts,sigma_obs,MO,SO,
+                     Wginit, Winit, MHinit,ome_init,ome,r, theta, matcovar, trueClique )
+    cat(paste0("\n run sPCA.Z \n"))
+  spcaZ.choice=run.method(cliques_spcaZ,"spca.Z",counts,sigma_obs,MO,SO,
+                     Wginit, Winit, MHinit,ome_init,ome,r, theta, matcovar, trueClique )
   #---
   
   #=== varClust
+  cat(paste0("\n ------ VarClust ------ \n"))
   cliques_varclust<-varClust.init(sigma_obs)
-  varclust.choice<-run.method(sigma_obs, cliques_varclust, "VarClust")
+  cat(paste0("\n run varClust \n"))
+  varclust.choice<-run.method(cliques_varclust,"VarClust",counts,sigma_obs,MO,SO,
+                     Wginit, Winit, MHinit,ome_init,ome,r, theta, matcovar, trueClique )
   #---
-  choices<-rbind(spca.choice, mclust.choice , varclust.choice,
-                 data.frame(FP=0,FN=0, vBIC=truevBIC,sizes=length(trueClique[[1]]), 
+  choices<-rbind(spcaY.choice, spcaZ.choice, mclust.choice , varclust.choice,
+                 data.frame(FP=0,FN=0, vBIC=truevBIC,sizes=length(trueClique), 
                             auc=true.perf$auc,PPVH=true.perf$PPVH,  method="Truth"))
   choices$seed=seed
   cat(paste0("\n end choice \n"))
@@ -348,9 +350,11 @@ SelectInitClique<-function(seed, B, n=200, p=14, r=1){
 
 seed=1:200
 t1<-Sys.time()
-res<-mclapply(seed, function(x){ SelectInitClique(x, B=30)}, mc.cores=3)
+res<-mclapply(seed, function(x){ SelectInitClique(x, B=30)}, mc.cores=1)
 t2<-Sys.time()
 difftime(t2, t1)
+
+saveRDS(object = res, file = "/Users/raphaellemomal/simulations/Simu/selectInit.rds" )
 # rank.size<-unlist(lapply(res, function(x){rank(x$perf$clique.size)}))
 # rank.crit<-unlist(lapply(res, function(x){ x$perf$crit.rank}))
 # plot(rank.crit, rank.size)
@@ -359,13 +363,24 @@ difftime(t2, t1)
 
 quality<-do.call(rbind,lapply(res, function(x){x$choice}))
 
+ 
+test=quality %>% dplyr::select(-FN, -FP, -auc, -vBIC, -PPVH) %>% spread(method, sizes) %>%dplyr::select(Truth) 
+truthSizes=sort(unique(test$Truth), decreasing = FALSE)
+lapply(truthSizes, function(x){
+  which(test$Truth==x)
+})
+#filter by the number of original neighbors
+  index=which(test$Truth>2)
 # FPN
-p1<-quality %>% filter(method!="Truth") %>%  mutate(sum=FP+FN) %>% gather(key, value, -method, -sizes, -vBIC, -seed) %>%
+p1<-quality %>% filter(method!="Truth") %>%  
+  gather(key, value, -method, -sizes, -vBIC, -seed) %>%  
+   mutate(method = fct_relevel(method, 
+            "VarClust","mclust","spca.Z","mclust.min3","spca.Y")) %>% 
   ggplot(aes(as.factor(method), value, color=as.factor(key),fill=as.factor(key)))+
-  geom_boxplot(alpha=0.3, notch = TRUE) +theme_light()+labs(x="",y="",title="On 200 scale-free graphs")+
+  geom_hline(yintercept = 0.5, linetype="dashed")+
+  geom_boxplot(alpha=0.3, width=0.6) +theme_light()+labs(x="",y="",title="On 200 scale-free graphs")+
   scale_color_hp_d("",option = "Gryffindor")+
   scale_fill_hp_d("",option = "Gryffindor")
-
 # AUC PPVH
 quality %>% filter(method!="Truth") %>% gather(key, value, -method, -sizes, -vBIC, -seed,-FN, -FP) %>%
   ggplot(aes(as.factor(method), value, color=as.factor(key),fill=as.factor(key)))+
@@ -379,7 +394,7 @@ AUCranks<-t(apply(test[,-1],1,function(x){
 AUCranks %>%as_tibble() %>%  gather(key, value) %>% 
   ggplot(aes( x=value, y=..prop..,color=key, fill=key ))+
   geom_bar(position = position_dodge(),width = 0.7)+#stat="binline",bins=14, scale=0.8, draw_baseline=FALSE)
-  theme_light()+labs(x="",y="",title="vBIC ranks (max is best)")+
+  theme_light()+labs(x="",y="",title="AUC ranks (max is best)")+
   scale_color_hp_d("",option = "Ravenclaw")+ scale_fill_hp_d("",option = "Ravenclaw")
 
 # Sizes
@@ -418,6 +433,6 @@ p3<-vBICranks %>%as_tibble() %>%  gather(key, value) %>%
 
 
 plot=grid.arrange(p1, p2, p3, ncol=1)
-ggsave(filename = "selectInit_complet.png", plot = plot, path ="/Users/raphaellemomal/these/R/images/", width = 6, height = 9 )
+ggsave(filename = "selectInit_final.png", plot = p1, path ="/Users/raphaellemomal/these/R/images/", width = 7, height = 4 )
 ```
 

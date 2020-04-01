@@ -1,54 +1,54 @@
-\section{Inférence par algorithme EM Variationnel}
+\section{Variational inference}
 
-\subsection{Approximation de la vraisemblance}
- \paragraph{Vraisemblance}
- La vraisemblance jointe des données observées et cachées se factorise comme suit
+\subsection{Likelihood approximation}
+ \paragraph{Likelihood}
+ The joint likelihood of observed and hidden data factorizes as follows:
 \begin{align*}
 p(\Ybf,\Zbf,T)& = p_{\betabf}(T) \: p_{\Omegabf_T}(\Zbf \mid T) \: p_ {\thetabf}(\Ybf \mid \Zbf) \\
 % &= p(T)\: p(Z_O,Z_H \mid T) \: p(\Ybf \mid Z_O,Z_H) \\
 &= p_{\betabf}(T) \: p_{\Omegabf_T}(\Zbf_O \mid T) \: p_{\Omegabf_T}(\Zbf_H  \mid  \Zbf_O,T)  \: p_{\thetabf}(\Ybf \mid \Zbf_O)
 \end{align*} 
-en notant $\betabf$ la matrice contenant les poids des arêtes $\beta_{jk}$. Cette factorisation est suggérée par le modèle graphique donné en Figure \ref{MG}b).
-L'obtention des estimateurs du maximum de vraisemblance demanderait à évaluer la loi conditionnellle de l'ensemble des variables manquantes sachant les données observées, à savoir $p(T, \Zbf \mid \Ybf)$. 
+where$\betabf$ is the matrix containing edges weights $\beta_{jk}$. This factorization is suggested by the graphical model on Figure \ref{MG}b).  Obtaining maximum likelihood estimators implies the evaluation of the law of the hidden covariates conditional on the observed data, namely $p(T, \Zbf \mid \Ybf)$. 
 
-\paragraph{Approximation variationnelle.}
- Dans le cas présent la loi $p(T, \Zbf \mid \Ybf)$ n'a pas de forme simple et nous adoptons donc une approche variationnelle qui vise à maximiser une borne inférieure de la log-vraisemblance de données observées $\log p(\Ybf)$, à savoir
+\paragraph{Variational approximation.}
+ Here $p(T, \Zbf \mid \Ybf)$ has no simple form and we thus adopt a variational approximation which aims to miximise a lower bound of the log-likelihood of observed data $\log p(\Ybf)$, namely
 \begin{align*}
     \mathcal{J}(\Ybf; g,h)
     & = \log p(\Ybf) - KL\left[q(T,\Zbf) \middle\vert\middle\vert\ p(T,\Zbf \mid \Ybf)\right]\\
     & =\Esp_{q}\big[\log p_{\thetabf}(\Ybf\mid \Zbf_O)+ \log p_{\Omegabf_T}(\Zbf_O \mid T)\big]-\Esp_q[\log h(\Zbf_O)]  +\Esp_{q}[\log p_{\Omegabf_T}(\Zbf_H \mid \Zbf_O,T)] \\
     & \;\; +\Esp_q\big[\log p_{\betabf}(T) - \log g(T)\big]  -\Esp_q[\log h(\Zbf_H)]
 \end{align*}
- où $KL\left[q(T,\Zbf) \middle\vert\middle\vert\ p(T,\Zbf \mid \Ybf)\right]$ est la divergence de Küllback-Leibler entre la loi approchée $q(T,\Zbf)$  et leur vraie loi conditionnelle.
+ where $KL\left[q(T,\Zbf) \middle\vert\middle\vert\ p(T,\Zbf \mid \Ybf)\right]$ is the Küllback-Leibler  divergence between the approximated distribution  $q(T,\Zbf)$  et the true conditional distribution $p(T, \Zbf \mid \Ybf)$.
 
-\paragraph{Lois approchées}
-L'approximation que nous adoptons repose sur une factorisation de la loi $q$ en le produit de deux lois $h$ et $g$ portant respectivement sur $\Zbf$ et sur $T$: $ q(T,\Zbf) = g(T)h(\Zbf)$. Du fait de cette factorisation supposée, la contribution de  $\Esp_h[\log p(\Zbf\mid T)]$ ainsi que $\log p(T)$ --~seuls termes qui font intervenir $T$ dans la borne inférieure~-- prennent la forme de sommes sur les arêtes. La loi $g$ minimisant la divergence de Küllback doit donc également prendre une forme factorisable sur les arêtes, à savoir :
+\paragraph{Approximated distributions.}
+The approximation we adopt relies on factorizing $q$ in the product of two distributions $h$ et $g$ relating respectively to $\Zbf$  and $T$: 
+$$p(T,Z | \Ybf) \approx  q(Z,T) = g(T)h(Z).$$
+
+ A consequence of this hypothesis is the contributions of   $\Esp_h[\log p(\Zbf\mid T)]$ and $\log p(T)$ --~only terms involving $T$ in the lower bound~-- writing as sums on the edges. As distribution   $g$ minimizes the KL divergence, it has to factorizes on the edges as well. Hence:
 $ g(T) = \left(\prod_{kl} \widetilde{\beta}_{kl} \right) / \widetilde{B}$. \\
  
-De plus, il découle de l'indépendance des échantillons que $h$ est une loi produit : $ h(\Zbf) = \prod_i h_i(\Zbf_i)$.
-Notre approximation variationnelle consiste à supposer que chacune de ses composantes est une loi normale multivariée : $h(\Zbf_i) = \Ncal(\Zbf_i; \mbf_i, \Sbf_i)$, où $\Sbf_i$ est diagonale.
+Moreover, it follows from the independence of the samples that $h$ is a product law: $ h(\Zbf) = \prod_i h_i(\Zbf_i)$.
+Our variational approximation consists in assuming that each of its components is a multivariate Gaussian: $h(\Zbf_i) = \Ncal(\Zbf_i; \mbf_i, \Sbf_i)$, where $\Sbf_i$ is diagonal. 
 
+\subsection{Algorithm.}
 
-\subsection{Algorithme proposé.}
-
-\paragraph{Optimisation en $\thetabf$ et en $h(\Zbf_O)$.}
-Nous choisissons de tirer partie de l'algorithme VEM implémenté par \citet{CMR18,PLNnetwork} dans le package \url{PLNmodels} pour optimiser la borne inférieure $\bound(\Ybf; g,h)$. Il est en effet possible de faire apparaître dans $\bound(\Ybf; g,h)$ la borne inférieure d'un modèle PLN simple, notée $\bound_{PLN}$. On a :
+\paragraph{Optimization in $\thetabf$ and $h(\Zbf_O)$.}
+To optimize  the lower bound $\bound(\Ybf; g,h)$, we take advantage of the VEM algorithm implemented by \citet{CMR18,PLNnetwork} in package \url{PLNmodels}. It is indeed possible to write $\bound(\Ybf; g,h)$ such as the lower bound of a simple PLN model appears, denoted $\bound_{PLN}$. We can write:
 \begin{align*}
 \mathcal{J}(\Ybf; g,h) \leq & \mathcal{J}_{PLN}(\Ybf; h(\Zbf_O), \thetabf) \\
 & + \Esp_{gh}[\log p(\Zbf_H \mid \Zbf_O,T) ]+\Esp_g[\log p(T)-\log g(T)]-\Esp_h[\log h(\Zbf_H)].
 \end{align*}
-L'étape VE de l'algorithme maximise $\mathcal{J}_{PLN}$ et fournit les moments d'ordre 1 et 2 de la partie "observée" de la loi approchée $h$: $\mbf_{Oi}$ et $\Sbf_{Oi}$. Reprendre ces estimateurs pour la suite de l'optimisation permet de maximiser $\mathcal{J}(\Ybf;g,h)$ en $\thetabf$ et en partie en $h(\Zbf_O)$. Il reste une dépendance en $\Zbf_O$ dans $\Esp_{gh}[\log p(\Zbf_H \mid \Zbf_O,T) ]$, c'est donc une solution sous-optimale en $h(\Zbf_O)$.
+The VE step of the \url{PLNmodels} algorithm maximizes $\mathcal{J}_{PLN}$ and provides with moments of first and second order of the observed part of the approximate law $h$: $\mbf_{Oi}$ et $\Sbf_{Oi}$. Taking these estimators for the rest of the optimization allows to miximize $\mathcal{J}(\Ybf;g,h)$ in $\thetabf$ and partly in $h(\Zbf_O)$. There is still a dependence in $\Zbf_O$ in $\Esp_{gh}[\log p(\Zbf_H \mid \Zbf_O,T) ]$, it is therefore a sub-optimal solution in $h(\Zbf_O)$.
 
-\paragraph{Etape VE : optimisation en $g$ et $h(\Zbf_H)$.}
-L'étape VE minimise la distance entre les distributions conditionnelle et approchée :
+\paragraph{VE step: optimizing in $g$ and $h(\Zbf_H)$.}
+The VE step minimizes the divergence between the approximate and conditional distribution:
 $$  \argmin_{g,h(\Zbf_H)} KL\left(g(T)h(\Zbf) \mid\mid p(\Zbf,T\mid \Ybf)\right)$$
 
-La mise à jour des poids $\widetilde{\beta}_{jk}$ des arêtes entre deux noeuds observés (resp. un noeud observé et un noeud caché) est obtenue en annulant les termes de la distance qui dépendent des arêtes entre deux noeuds observés (resp. un noeud observé et un noeud caché). 
-La mise à jour de $h(\Zbf_H)$ est obtenue en dérivant l'expression et en reprenant les paramètres de la loi $h(\Zbf_O)$ optimisée à l'étape précédente.
-
-\paragraph{Etape M : optimisation en $\beta$ et $\Omega_T$.}
-
-L'étape M maximise la borne inférieure $\mathcal{J}(\Ybf ; g,h)$ en les paramètres de $p(\Zbf,T\mid \Ybf)$ qui n'ont pas encore été optimisés, soit en $\betabf$ et $\Omegabf_T$:
+The update of  weights $\widetilde{\beta}_{jk}$ corresponding to edges linking two observed nodes (resp. one observed and one hidden) is obtained by cancelling out the terms of the divergence depending on edges between two observed nodes (resp. one observed and one hidden).
+Derivating the expression with parameters of $h(\Zbf_O)$ previously optimized gives the update for  $h(\Zbf_H)$.
+ 
+\paragraph{M step: optimize in $\beta$ and $\Omega_T$.}
+The M step maximizes the lower bound  $\mathcal{J}(\Ybf ; g,h)$ in the parameters of $p(\Zbf,T\mid \Ybf)$ which have not yet been optimized, namely in $\betabf$ and $\Omegabf_T$:
 $$ \argmax_{\betabf, \Omegabf_T} \mathcal{J}(\Ybf ; g,h) =\argmax_{\betabf, \Omegabf_T} \left\{ \Esp_{gh} [\log (p_{\betabf}(T) p_{\Omegabf_T}(\Zbf\mid T))]\right\} $$
 
-La loi de l'arbre est mise à jour au travers de $\betabf$ grâce à la formule explicitée dans \citet{MRA20}. La mise à jour pour  $\Omegabf_T$ est la même que celle obtenue dans \citet{genvieve} concernant les éléments hors de la diagonale, en revanche la diagonale est  obtenue de manière explicite et ne nécessite pas d'optimisation numérique.
+The tree distribution is updated through  $\betabf$ using the formula detailed in  \citet{MRA20}. The update for the off-diagonal terms of   $\Omegabf_T$  is the same as in  \citet{genvieve}; the diagonal is not updated.
