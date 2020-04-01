@@ -18,7 +18,7 @@ source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
 ##### function
 
 Simu_missing<-function(p,B,N,n){
-  sapply(1:N, function(seed){
+  lapply(1:N, function(seed){
     cat(paste0("\n seed ",seed, " : "))
     T1<-Sys.time()
     set.seed(seed)
@@ -34,7 +34,7 @@ Simu_missing<-function(p,B,N,n){
     # initalisation with 1 missing actors
     init=initVEM(counts = counts, initviasigma = trueClique,  sigma_obs,r = r)
     Wginit= init$Wginit; Winit= init$Winit; omegainit=init$omegainit ; MHinit=init$MHinit
-    ome_init=omega[c(setdiff(1:(p+r), hidden), hidden),c(setdiff(1:(p+r), hidden), hidden)]
+    sorted_omega=omega[c(setdiff(1:(p+r), hidden), hidden),c(setdiff(1:(p+r), hidden), hidden)]
     
     t1<-Sys.time()
     cliques_spca <- boot_FitSparsePCA(scale(counts),B,r=r)
@@ -65,13 +65,16 @@ Simu_missing<-function(p,B,N,n){
     T2<-Sys.time()
     runtime=difftime(T2, T1)
     cat(paste0(round(runtime,3), attr(runtime, "units"),"\n"))
-    return(list(omega=ome_init,VEM_0=VEM_0,VEM_1=VEM_1,vBIC_0=vBIC_0,vBIC_1=vBIC_1,time_boots=time_boots ))
+    return(list(omega=sorted_omega,VEM_0=VEM_0,VEM_1=VEM_1,
+                vBIC_0=vBIC_0,vBIC_1=vBIC_1,time_boots=time_boots ))
   })
 }
 
 ######### run
-Sim15<-Simu_missing(p = 14, n = 200, B = 40,N = 200)
-saveRDS(Sim15, file="/Users/raphaellemomal/these/R/codes/missingActor/SimResults/Sim15.rds")
+ Sim15<-Simu_missing(p = 14, n = 200, B = 40,N = 200)
+ saveRDS(Sim15, file="/Users/raphaellemomal/these/R/codes/missingActor/SimResults/Sim15.rds")
+Sim30<-Simu_missing(p = 29, n = 200, B = 40,N = 200)
+saveRDS(Sim15, file="/Users/raphaellemomal/these/R/codes/missingActor/SimResults/Sim30.rds")
 
-
-
+#pb seed 33 avec 30 noeuds
+seed=33

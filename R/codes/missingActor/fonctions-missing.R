@@ -1011,7 +1011,7 @@ List.VEM<-function(cliqueList, counts, sigma_obs, MO,SO,r, cores){
                       return(0.3)})
     VEM<-VEMtree(counts,MO,SO,MH=MHinit,omegainit,Winit,Wginit, 
                  eps=1e-3, alpha=alpha,verbatim = FALSE,
-                 maxIter=20, plot=FALSE,vraiOm=NULL, print.hist=FALSE, filterPg=TRUE)
+                 maxIter=100, plot=FALSE,vraiOm=NULL, print.hist=FALSE, filterPg=TRUE)
     VEM$alpha<-alpha
     return(VEM)
   }, mc.cores=cores)
