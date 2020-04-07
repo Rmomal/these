@@ -60,11 +60,46 @@ PLNfit<-PLN(counts~1)
 MO<-PLNfit$var_par$M  
 SO<-PLNfit$var_par$S  
 sigma_obs=PLNfit$model_par$Sigma
+theta=PLNfit$model_par$Theta 
+matcovar=matrix(1, n,1)
+alpha<-tryCatch(expr={computeAlpha(solve(sigma_obs),default =0.3, MO, SO, plot=plot)},
+                error=function(e){message("sythetic alpha")
+                  return(0.3)})
+# clique_mclust=init.mclust((cov2cor(sigma_obs)),title="Sigma", nb.missing = r,
+#                           trueClique = trueClique,n.noise=3*p)
+# clique_mclust$init
+# plotInitMclust(res=clique_mclust,title = "")
+t1<-Sys.time()
+cliques_spca <- boot_FitSparsePCA(scale(counts),B,r=1)
+t2<-Sys.time()
+time_boots=difftime(t2, t1)
+# best VEM with 1 missing actor
+ListVEM<-List.VEM(cliqueList=cliques_spca, counts, sigma_obs, MO,SO,alpha,r=1, cores=3,maxIter=100)
+converged<-do.call(rbind,lapply(ListVEM,function(vem){
+  diffW=vem$features$diffW
+  conv=(diffW[length(diffW)]<=1e-3)}))
+if(sum(converged)!=0){
+  ListVEM=ListVEM[converged]
+} 
+vBICs<-as.numeric(vec.vBIC(ListVEM,counts,theta, matcovar,r))
+best=which.max(vBICs)
+vBIC_1<-vBICs[best]
+VEM_1<-ListVEM[[best]]
+TJ=True_lowBound(Y=counts, M=VEM_1$M,VEM_1$S,theta=theta,X=matcovar,
+              W=VEM_1$W,Wg=VEM_1$Wg,Pg=VEM_1$Pg, omega=VEM_1$omega)
+ICL_T(TJ, Pg=VEM_1$Pg, Wg=VEM_1$Wg)
+crit=criteria(ListVEM,counts=counts,theta = theta,matcovar = matcovar, r=r)
+crit%>% 
+  gather(key, value) %>% 
+  ggplot(aes(key, value, color=key, fill=key))+geom_boxplot(alpha=0.3)+
+  mytheme.dark
+crit%>%  
+  ggplot(aes(vBIC, ICLZH, color=ICLT))+geom_point()+
+ theme_light()+geom_abline()
 
-clique_mclust=init.mclust((cov2cor(sigma_obs)),title="Sigma", nb.missing = r,
-                          trueClique = trueClique,n.noise=3*p)
-clique_mclust$init
-plotInitMclust(res=clique_mclust,title = "")
+
+
+
 init=initVEM(counts = counts, trueClique = trueClique,initviasigma=clique_mclust$init, sigma_obs,r = r)
 Wginit= init$Wginit; Winit= init$Winit; omegainit=init$omegainit ; MHinit=init$MHinit
 
@@ -98,7 +133,7 @@ plotVerdict(valuesRaw, seuil)+guides(color=FALSE)
 #ggsave("precrec_missing.png", plot=p, width=8, height=4,path= "/Users/raphaellemomal/these/R/images")
 
 # lower bound check
-resVEM$lowbound %>% rowid_to_column() %>%  gather(key,value,-rowid,-parameter) %>% 
+VEM_1$lowbound %>% rowid_to_column() %>%  gather(key,value,-rowid,-parameter) %>% 
   ggplot(aes(rowid,value, group=key))+geom_point(aes(color=as.factor(parameter)), size=3)+geom_line()+
   facet_wrap(~key, scales="free")+
   labs(x="iteration",y="", title="Lower bound and components")+mytheme+

@@ -1,0 +1,91 @@
+---
+title: "Results"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+library(EMtree)
+library(PLNmodels)
+library(ggraph)
+library(tidygraph)
+library(tidyverse)
+library(mvtnorm)
+library(useful)
+library(mclust)
+library(MASS)
+library(ROCR)
+library(reshape2)#for ggimage
+library(gridExtra)
+library(kableExtra)
+library(parallel)
+library(sparsepca)
+source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
+Sim15=readRDS("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/Sim15conv.rds")
+
+```
+
+# Graphs
+nombre de noeuds, corrélations partielles et voisins des voisins
+
+```{r , echo=FALSE}
+p=14
+r=1
+h=p+r
+linksH<-data.frame(do.call(rbind,lapply(Sim15, function(seed){seed$omega[h,-h]})))
+cpH<-data.frame(do.call(rbind, lapply(Sim15,                                       function(seed){vecpartcor=-cov2cor(seed$omega)[h,-h]})))
+colnames(cpH)<-1:ncol(cpH)
+voisvois<-do.call(rbind,lapply(Sim15, function(seed){
+  vois=1*(seed$omega[h,-h]!=0)
+  di=round(diag(seed$omega)[-h],0)
+  di[vois==0]=0
+  return(di)
+}))
+misAct<-data.frame(nH=rowSums(1*(cpH!=0)), 
+                   mean.cpH=apply(cpH, 1,function(vec){mean(vec[vec!=0])}),
+                   mean.vv=apply(voisvois, 1,function(vec){mean(vec[vec!=0])}))
+# visus
+cbind(voisvois, nH=misAct$nH) %>%as_tibble() %>%  
+  ggplot(aes(as.factor(nH)))+geom_bar(width=0.5, alpha=0.9)+mytheme.dark+labs(x="nb of links to the missing actor")
+cbind(cpH , nH=misAct$nH) %>% as_tibble() %>% gather(key, value, -nH) %>% filter(value!=0) %>% 
+  ggplot(aes(value))+geom_density(alpha=0.3, color="orange",fill="orange")+mytheme+labs(x="partial corelations of links to the missing actor")
+```
+
+# Inference features
+
+```{r, echo=FALSE}
+#convergence
+converged<-data.frame(diffW=do.call(rbind,lapply(Sim15,function(seed){
+  diffW=seed$VEM_1$features$diffW
+  return(diffW[length(diffW)])})), 
+  diffOm=do.call(rbind,lapply(Sim15,function(seed){
+    diffOm=seed$VEM_1$features$diffOm
+    return(diffOm[length(diffOm)])})))
+
+converged=converged %>% as_tibble() %>% 
+  mutate(converged=ifelse(diffW<1e-3 & diffOm< 1e-3, 1, 0)) %>% kable() %>% kable_styling()
+
+#iterations 
+iter1<-do.call(rbind, lapply(Sim15,function(seed){seed$VEM_1$finalIter}))
+iter0<-do.call(rbind, lapply(Sim15,function(seed){seed$VEM_0$finalIter}))
+data.frame(iter1, iter0) %>% gather(key, value) %>%  
+  ggplot(aes(key, value, color=key, fill=key))+geom_boxplot(alpha=0.3, width=0.5)+mytheme.dark+guides(color=FALSE, fill=FALSE)+
+  labs(x="", y="iterations", title="Nb of iterations with (1) or without (0) missing actor")
+#times
+timeboots<-do.call(rbind,lapply(Sim15, function(seed){seed$time_boots}))
+time1<-do.call(rbind, lapply(Sim15,function(seed){seed$VEM_1$time}))
+time0<-do.call(rbind,  lapply(Sim15,function(seed){seed$VEM_0$time}))
+data.frame(timeboots, time1,time0) %>% gather(key, value) %>% 
+  ggplot(aes(key, value, color=key, fill=key))+geom_boxplot(alpha=0.3, width=0.5)+mytheme.dark+guides(color=FALSE, fill=FALSE)+labs(x="", y="(s)",title="running times with and without missing actor")
+
+
+#alphas
+alphas<-data.frame(alpha1=do.call(rbind,  lapply(Sim15,function(seed){seed$VEM_1$alpha})),
+                   alpha0=do.call(rbind,  lapply(Sim15,function(seed){seed$VEM_0$alpha})))
+alphas %>%  
+  ggplot(aes(alpha0,alpha1))+geom_point()+theme_light()+
+  geom_abline()
+
+```
