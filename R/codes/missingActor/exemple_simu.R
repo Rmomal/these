@@ -38,7 +38,7 @@ simu_varyr<-function(p,n,trueR,B,maxH,maxIter,seed,type,eps=1e-3,alpha=1, cores=
   set.seed(seed)
   # sim data
   missing_data<-missing_from_scratch(n,p,r=trueR,type,plot)
-  counts=missing_data$Y; omega=missing_data$Omega ;
+  counts=missing_data$Y; omega=missing_data$Omega ; hidden=missing_data$H
   if(r!=0){
     omega=omega[c(setdiff(1:(p+r), hidden), hidden),c(setdiff(1:(p+r), hidden),hidden)]
   } 
@@ -70,8 +70,8 @@ simu_varyr<-function(p,n,trueR,B,maxH,maxIter,seed,type,eps=1e-3,alpha=1, cores=
 }
 #----- exemple
 #-- simu
-p=14 ; n=200 ; r=1 ; B=20 ; maxH=2 ; seed=1 ; type="scale-free"
-sim_r1<-simu_varyr(p,n,r,B,maxH,maxIter,seed,type,eps=1e-3,alpha=1, cores=3) # en 20s
+p=14 ; n=200 ; r=1 ; B=100 ; maxH=2 ; seed=1 ; type="scale-free"
+sim_r1<-simu_varyr(p,n,r,B,maxH,maxIter,seed,type,eps=1e-3,alpha=1, cores=3) # en 30s
 
 #- valeurs
 #sim_r1$VEM_r0 contient les objets M, S, Pg, Wg, W, omega, lowbound, features et finalIter
@@ -80,7 +80,10 @@ ggimage(sim_r1$VEM_r0$Pg)
 #sim_r1$VEMr[[2]] pour deux etc.
 length(sim_r1$VEMr[[1]]) # nombre d'initialisations différentes essayées pour 1 acteur manquant
 #sim_r1$VEMr[[r]][[x]] contient les objets M, S, Pg, Wg, W, omega, lowbound, features et finalIter
-
+x=which.max(do.call(rbind,lapply(sim_r1$VEMr[[1]], function(vem) tail(vem$l$J,1))))
+ggimage(sim_r1$VEMr[[1]][[x]]$Pg)
+ome=sim_r1$TrueOmega ; diag(ome)=0
+ggimage(ome)
 #-- criteres
 crit0<- criteria(list(sim_r1$VEM_r0),sim_r1$counts,sim_r1$theta,
                  matcovar=matrix(1, nrow(sim_r1$counts),1),r=0)
