@@ -1,0 +1,192 @@
+---
+title: "ICL"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(EMtree)
+library(PLNmodels)
+library(ggraph)
+library(tidygraph)
+library(tidyverse)
+library(mvtnorm)
+library(useful)
+library(mclust)
+library(MASS)
+library(ROCR)
+library(reshape2)#for ggimage
+library(gridExtra)
+library(kableExtra)
+library(parallel)
+library(sparsepca)
+source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
+
+```
+
+
+# Comportement de la vraisemblance
+
+La borne inférieure augmente fortement avec r : 
+
+```{r, echo=FALSE}
+simr1<-readRDS("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/scale-free_seed1_r1_1-6.rds")        
+simr0<-readRDS("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/scale-free_seed1_r0_1-6.rds")        
+
+# crit0<-do.call(rbind, lapply(simr0$list.vem0, function(vem0){
+#  criteria(list(vem0),simr0$counts,simr0$theta, matcovar=matrix(1, nrow(simr0$counts),1),r=0)}))
+crit0<- criteria(list(simr0$list.vem0),simr0$counts,simr0$theta,
+                 matcovar=matrix(1, nrow(simr0$counts),1),r=0)
+critr<-do.call(rbind, lapply(seq_along(simr0$VEMr), function(r){
+  criteria(simr0$VEMr[[r]],simr0$counts,simr0$theta, matcovar=matrix(1, nrow(simr0$counts),1),r=r)
+}))
+critr0=rbind(crit0, critr)
+crit0<- criteria(list(simr1$list.vem0),simr1$counts,simr1$theta,
+                 matcovar=matrix(1, nrow(simr1$counts),1),r=0)
+critr<-do.call(rbind, lapply(seq_along(simr1$VEMr), function(r){
+  criteria(simr1$VEMr[[r]],simr1$counts,simr1$theta,  matcovar=matrix(1, nrow(simr1$counts),1),r=r)
+}))
+critr1=rbind(crit0, critr)
+critr0$true=0
+critr1$true=1
+crit=rbind(critr0,critr1)
+#----------------
+crit %>% as_tibble() %>% dplyr::select(J,r,true) %>%  ggplot(aes(as.factor(r), J, color=as.factor(r==true), fill=as.factor(r==true)))+
+  geom_boxplot(alpha=0.3)+mytheme.dark("")+
+  facet_wrap(~true, scale="free")+guides(color=FALSE,fill=FALSE)+
+  labs(x="number of missing actors",y="",title="seed=1")
+```
+
+
+Cette augmentation dépend mécaniquement de r. La borne inférieure est calculée en trois termes, le premier étant lui-même séparé en 2 termes t1 et t2 :
+
+```{r, eval=FALSE}
+LowerBound<-function(Pg ,omega, M, S, W, Wg,p){
+  n=nrow(M)
+  q=nrow(omega)
+  O=1:p ; r=q-p
+  psi=CorOmegaMatrix(omega)
+  
+  #Egh lop (Z |T)
+  t1<- 2*sum(F_Sym2Vec(n*0.5* Pg * log (psi )))+ n*0.5* sum(log(diag(omega)))  - q*n*0.5*log(2*pi)
+  t2<-(- 0.5)* sum( (Pg*omega)*(t(M)%*%M + diag(colSums(S))) )
+  T1<-t1+t2
+  # Eg log(p) - Eg log(g)
+# browser()
+  test= log(SumTree(Wg))
+  if(is.nan(test)) Wg=Wg+1
+  test= log(SumTree(W))
+  if(is.nan(test)) W=W+1
+  T2<-sum(F_Sym2Vec(Pg) * (log(F_Sym2Vec(W)) - log(F_Sym2Vec(Wg)) )) - log(SumTree(W))+ log(SumTree(Wg))
+
+  #Eh log h(Z), reste constant car omegaH fixé à 1 pour identifiabilité 
+  T3<- 0.5*sum(log(S)) + n*q*0.5*(1+log(2*pi))
+  
+  J=T1+T2+T3
+  if(is.nan(J)) browser()
+  return(c(J=J, T1=T1, T2=T2, t1=t1, t2=t2))
+}
+```
+
+
+C'est t2 qui commande T1 qui commande J :
+
+```{r, echo=FALSE}
+simr0$VEMr[[2]][[1]]$lowbound %>% rowid_to_column() %>%  gather(key,value,-rowid,-V6) %>% 
+  ggplot(aes(rowid,value, group=key))+geom_point(aes(color=as.factor(V6)), size=3)+geom_line()+
+  facet_wrap(~key, scales="free")+
+  labs(x="iteration",y="", title="Lower bound (and components)r=2, true r=0)")+mytheme+
+  scale_color_discrete("")
+```
+
+t2 vient du terme de trace dans l'expression de $E(\log p(Z \mid T)) $ :
+
+\begin{align*}
+E(\log p(Z \mid T)) &=\frac{n}{2} \sum_k \log \omega_{kk} + \frac{n}{2} \sum_{kl}P_{kl} \log \psi - \frac{1}{2}Tr(E(\Omega Z^TZ)) \\
+Tr(E(\Omega Z^TZ)) &= Tr(E_g(\Omega) E_h(Z^TZ))\\
+&=\sum_{kl} P_{kl} \omega_{kl} (M^TM+S)_{kl}
+\end{align*}
+
+Or:
+\begin{align*}
+(M^TM+S)_{kl} &= O(n)\\
+\sum_{kl} 1 &=(p+r)(p+r-1)
+\end{align*}
+
+Essai d'une correction :
+$cst1 = \frac{n}{2}(p+r)(p+r-1)$
+
+
+```{r, echo=FALSE}
+p=14;n=200
+r=0:6
+q=p+r
+n*q*(q-1)/2
+meanJ<-crit %>% as_tibble() %>% dplyr::select(J,r,true) %>%
+  group_by(r,true) %>% summarise(maxJ = max(J),medJ = median(J)) %>% 
+  mutate(cst1=n*(p+r)*(p+r-1)/2)#, cst2=2*n*(p+r-1))
+meanJ %>% gather(key, value,-r,-true) %>% 
+  ggplot(aes(r,value,color=key))+geom_point()+facet_wrap(~true)+mytheme.dark("")
+```
+
+Ne capture pas l'augmentation exponentielle des J pour les grands r.
+
+# Critère ICL
+
+L'ICL pénalise pour le nombre de paramètres, et les entropies de $T$ et de $Z_H$ :
+$$ICL(r,n) = J(Y,Z,T) - cst1 - H(T) - H(Z_H) - pen_r \frac{\log (n)}{2} $$
+où $pen_r = pd + (\frac{p(p+1)}{2} +rp+r) +(\frac{(p+r)(p+r-1)}{2} - 1)$ vient du décompte des paramètres de la régression, de $\Omega$ et des poids $\beta$, en prenant en compte que le bloc HxH de $\Omega$ est l'identité.
+
+```{r,eval=FALSE}
+ICL<-function(TrueJ, Pg,W ,S,n,r,d, omega){
+  q=ncol(S) ; p=q-r
+  H=(p+1):q
+  if(r!=0){
+    pen_ZH= 0.5*sum(log(S[,H])) + n*r*0.5*(1+log(2*pi))
+  }else{
+    pen_ZH= 0
+  }
+  P=Pg
+  pen_T=-( sum( P * log(W) ) - log(SumTree(W)) )
+  pen_r<-p*(d) + (p*(p+1)/2 +r*p)+(q*(q-1)/2 - 1) #d comprends l'intercept
+  norm=n*q*(q-1)/2
+  #browser()
+  ICL=TrueJ-norm  - (pen_T + pen_ZH+pen_r*log(n)/2)
+  return(ICL)
+}
+
+```
+
+```{r, echo=FALSE}
+
+p1<-critr0 %>%as_tibble() %>% filter(r<4) %>%  gather(key, value, -r ) %>% 
+  filter(key%in%c("ICL","J")) %>% 
+  ggplot(aes(as.factor(r), value, color=as.factor(r==0), fill=as.factor(r==0)))+
+  geom_boxplot(alpha=0.3)+mytheme.dark("")+
+  facet_wrap(~key, scale="free")+guides(color=FALSE,fill=FALSE)+
+  labs(x="number of missing actors",y="",title="seed=1, r=0")
+p2<-critr1 %>% as_tibble() %>% filter(r<4) %>%gather(key, value, -r ) %>% filter(key%in%c("ICL","J")) %>% 
+  ggplot(aes(as.factor(r), value, color=as.factor(r==1), fill=as.factor(r==1)))+
+  geom_boxplot(alpha=0.3)+mytheme.dark("")+
+  facet_wrap(~key, scale="free")+guides(color=FALSE,fill=FALSE)+
+  labs(x="number of missing actors",y="",title="seed=1, r=1")
+plot=grid.arrange(p1, p2, ncol=2)
+
+critr0 %>% as_tibble() %>% 
+  mutate(penICL = J-ICL) %>% group_by(r) %>% 
+  summarise(med.vBIC=median(vBIC),med.ICL=median(ICL),med.J=median(J),
+            med.penICL=median(penICL),maxICL=max(ICL), n=n()) %>% 
+  kable(caption="Résumé pour vrai r=0") %>% kable_styling()
+critr1 %>% as_tibble() %>% 
+  mutate(penICL = J-ICL) %>% group_by(r) %>% 
+  summarise(med.vBIC=median(vBIC),med.ICL=median(ICL),med.J=median(J),
+            med.penICL=median(penICL),maxICL=max(ICL), n=n()) %>% 
+  kable(caption="Résumé pour vrai r=1") %>% kable_styling()
+
+```
+ 
+ 

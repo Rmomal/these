@@ -117,7 +117,7 @@ plotInitMclust<-function(res, title){
 }
 # Initialization 
 missing_from_scratch<-function(n,p,r,type,plot){
-  data=data_from_scratch(type = type,p = p+r,n = n,signed = FALSE,prob = 5/p,v = 0)
+  data=data_from_scratch(type = type,p = p+r,n = n,signed = FALSE,prob = 2/p,v = 0)
   omega=data$omega
   data=generator_PLN(solve(omega),covariates = NULL,n=n)
   hidden=which(diag(omega)%in%sort(diag(omega), decreasing = TRUE)[1])[1] # on cache les r plus gros
@@ -438,7 +438,7 @@ LowerBound<-function(Pg ,omega, M, S, W, Wg,p){
   psi=CorOmegaMatrix(omega)
   
   #Egh lop (Z |T)
-  t1<- 2*sum(F_Sym2Vec(n*0.5* Pg * log (psi )))+ n*0.5* sum(log(diag(omega)))  - q*n*0.5*log(2*pi)
+  t1<- sum(F_Sym2Vec(n*0.5* Pg * log (psi )))+ n*0.5* sum(log(diag(omega)))  - q*n*0.5*log(2*pi)
   t2<-(- 0.5)* sum( (Pg*omega)*(t(M)%*%M + diag(colSums(S))) )
   T1<-t1+t2
   # Eg log(p) - Eg log(g)
@@ -448,7 +448,7 @@ LowerBound<-function(Pg ,omega, M, S, W, Wg,p){
   test= log(SumTree(W))
   if(is.nan(test)) W=W+1
   T2<-sum(F_Sym2Vec(Pg) * (log(F_Sym2Vec(W)) - log(F_Sym2Vec(Wg)) )) - log(SumTree(W))+ log(SumTree(Wg))
-  
+
   #Eh log h(Z), reste constant car omegaH fixé à 1 pour identifiabilité 
   T3<- 0.5*sum(log(S)) + n*q*0.5*(1+log(2*pi))
   
@@ -1000,7 +1000,7 @@ ICL_ZH<-function(TrueJ,S,n,r){
   ICL=TrueJ - pen_ZH
   return(ICL)
 }
-ICL<-function(TrueJ, Pg,W ,S,n,r,d){
+ICL<-function(TrueJ, Pg,W ,S,n,r,d, omega){
   q=ncol(S) ; p=q-r
   H=(p+1):q
   if(r!=0){
@@ -1010,9 +1010,10 @@ ICL<-function(TrueJ, Pg,W ,S,n,r,d){
   }
   P=Pg
   pen_T=-( sum( P * log(W) ) - log(SumTree(W)) )
-  pen_r<-p*(d) + (p*(p+1)/2 +r*p)+(q*(q-1)/2 - 1) #d comprends l'intercept
-  norm=(p*(p-1)/2+p*r)*n
-  ICL=TrueJ/(norm) - 2*(pen_ZH + pen_T )-  pen_r*log(n)/2
+  pen_r<-p*(d) + (p*(p+1)/2 +r*p+r)+(q*(q-1)/2 - 1) #d comprends l'intercept
+  norm=n*q*(q-1)/2
+  #browser()
+  ICL=TrueJ-norm  - (pen_T + pen_ZH+pen_r*log(n)/2)
   return(ICL)
 }
 
@@ -1023,7 +1024,7 @@ criteria<-function(List.vem,counts,theta, matcovar,r){
     vBIC<-VBIC(J,p,r=r, d=ncol(matcovar), n=n)
     ICLT<-ICL_T(J, vem$W,n,r)
     ICLZH<-ICL_ZH(J,vem$S, n,r)
-    ICL<-ICL(J, vem$Pg,vem$W,vem$S, n,r,d=ncol(matcovar))
+    ICL<-ICL(J, vem$Pg,vem$W,vem$S, n,r,d=ncol(matcovar), omega=vem$omega)
     res=data.frame(vBIC=vBIC, ICL=ICL,J)
     return(res)
   })
