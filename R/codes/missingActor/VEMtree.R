@@ -130,11 +130,12 @@ curve((1/(n*x))*log(D/(x^(x/2))),from=15, to=30, add=T, col="red")
 resVEM<-VEMtree(counts,MO,SO,MH=MHinit,omegainit,Winit,Wginit, 
                 eps=1e-3, alpha=alpha,
                 maxIter=20, plot=TRUE,vraiOm=ome_init,print.hist=FALSE,
-                filterPg=FALSE,filterWg=FALSE, verbatim = TRUE)
+                filterPg=FALSE,filterWg=FALSE, verbatim = TRUE,nobeta = TRUE)
 
 test=resVEM$Pg ; diag(test) = mean(F_Sym2Vec(resVEM$Pg))
 ggimage(test)
 ggimage(resVEM$Pg)
+ggimage(resVEM$omega)
 ggimage(EdgeProba(resVEM$Wg))
 ggimage(EdgeProba(resVEM$W))
 

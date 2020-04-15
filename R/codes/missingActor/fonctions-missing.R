@@ -260,16 +260,17 @@ computeWg<-function(phi,omega,W,MH,MO,S, alpha,hidden=TRUE, hist=FALSE, verbatim
   }
   M=cbind(MO,MH)
   SigmaTilde= (t(M)%*%M + diag(colSums(S)))/n
-  q=p+r
-  D=.Machine$double.xmax
-  bO=-0.5*n*(-1+mean((omega*SigmaTilde)[O,O]))
-  bOH=-0.5*n*(-1+mean((omega*SigmaTilde)[O,H]))
-  alphaO = (1/bO)*((1/(q-1))*log(D) - log(q))
-  alphaOH = (1/bOH)*((1/(q-1))*log(D) - log(q))
+  # q=p+r
+  # D=.Machine$double.xmax
+  # bO=-0.5*n*(-1+mean((omega*SigmaTilde)[O,O]))
+  # bOH=-0.5*n*(-1+mean((omega*SigmaTilde)[O,H]))
+  # alphaO = (1/bO)*((1/(q-1))*log(D) - log(q))
+  # alphaOH = (1/bOH)*((1/(q-1))*log(D) - log(q))
+  # 
+  # logWg[O,O]<-log(W[O,O])+alphaO*(n*0.5*log(phi[O,O])-0.5*n*(omega*SigmaTilde)[O,O])
+  # logWg[O,H]<-log(W[O,H])+alphaOH*(n*0.5*log(phi[O,H])-0.5*n*(omega*SigmaTilde)[O,H])
   
-  logWg[O,O]<-log(W[O,O])+alphaO*(n*0.5*log(phi[O,O])-0.5*n*(omega*SigmaTilde)[O,O])
-  logWg[O,H]<-log(W[O,H])+alphaOH*(n*0.5*log(phi[O,H])-0.5*n*(omega*SigmaTilde)[O,H])
-  
+  logWg<-log(W)+alpha*(n*0.5*log(phi)-0.5*n*(omega*SigmaTilde))
   diag(logWg) = 0
   #---
   bmax=200 ; binf=-20 ; bsup=40
@@ -280,7 +281,7 @@ computeWg<-function(phi,omega,W,MH,MO,S, alpha,hidden=TRUE, hist=FALSE, verbatim
   # }
   # 
   gammaO=F_Sym2Vec(logWg[O,O])
-  gammaO=gammaO-mean(gammaO)
+  gammaO=gammaO-mean(gammaO) 
   Wg[O,O]=exp(F_Vec2Sym(gammaO))
   # gammaO[which(gammaO>bmax)]=bmax
   # gammaO[which(gammaO<binf)]=binf
@@ -305,7 +306,9 @@ computeWg<-function(phi,omega,W,MH,MO,S, alpha,hidden=TRUE, hist=FALSE, verbatim
     Wg[H,O]<-t(Wg[O,H])
   }
   diag(Wg) = 1
-  
+ 
+  Wg=Wg/(SumTree(Wg)^(1/(p-1)))
+  diag(Wg) = 1
   if(is.na(log(SumTree(Wg))) || !is.finite(log(SumTree(Wg)))){#seuillage conditionnel
     message("conditional trim")
     browser()
@@ -475,7 +478,7 @@ LowerBound<-function(Pg ,omega, M, S, W, Wg,p){
   #Eh log h(Z), reste constant car omegaH fixé à 1 pour identifiabilité 
   T3<- (0.5*sum(log(S)) + n*q*0.5*(1+log(2*pi)))
   
- # J=alpha*T1+T2+alpha*T3
+  # J=alpha*T1+T2+alpha*T3
   J=T1+T2+T3
   if(is.nan(J)) browser()
   return(c(J=J, T1=T1, T2=T2, t1=t1, t2=t2))
@@ -862,10 +865,33 @@ Mstep<-function(M,S,Pg, omega,W,maxIter, beta.min,beta.max, plot=FALSE,eps, verb
   return(res)
 }
 
+Mstep_nobeta<-function(M,S,Pg, omega,W,verbatim=FALSE,Wg,p){
+  diffJ=(1); diff.J=c(1);  
+  maxJ=c()
+  n=nrow(S) 
+  O=1:p ; q=ncol(omega)
+  # hidden=(q!=p)
+  # if(hidden) H=(p+1):q
+  SigmaTilde = (t(M)%*%M+ diag(colSums(S)) )/ n
+  omegaDiag=diag(omega)
+  LB0=LowerBound(Pg = Pg, omega=omega, M=M, S=S,W=W, Wg=Wg,p)[1]
+  
+  omega.new=computeOffDiag(omegaDiag, SigmaTilde,p)
+  diffinvSigO= max(abs(solve(omega.new)[O,O] - SigmaTilde[O,O]))
+  # diffinvSigO= max(abs(solve(SigmaTilde[O,O])-((omega.new[O,O]-1/omega.new[H,H]*matrix(omega.new[O,H], p, length(H))%*%matrix(omega.new[H,O],length(H),p)))))
+  #if(verbatim) cat(paste0(", diffinvSigO=",round(diffinvSigO,5)))
+  omega=omega.new
+  LB1=c(LowerBound(Pg = Pg, omega=omega, M=M, S=S,W=W, Wg=Wg,p),"omega")
+  
+  
+  res=list(W=W, omega=omega, diff=diff, LB=LB1)#, finalJ=maxJ[iter]
+  return(res)
+}
+
 #===========
 VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, verbatim=TRUE,maxIter=20, 
                   plot=TRUE, eps=1e-2, alpha, vraiOm, print.hist=FALSE, filterPg=TRUE,
-                  filterWg=TRUE){
+                  filterWg=TRUE, nobeta=FALSE){
   n=nrow(MO);  p=ncol(MO);  O=1:ncol(MO);
   hidden=!is.null(MH)
   if(hidden){  
@@ -883,8 +909,8 @@ VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, verbatim=TRUE,maxIter
   Pg=matrix(0.5, ncol(W),ncol(W))
   trim=FALSE
   #&& (diffJ>=0)
-  #|| (diffOm[iter] > eps)
-  while((((diffW[iter] > eps) )  && (iter < maxIter))|| iter<1){ #(diffW[iter] > eps && diffOm[iter] > eps && iter < maxIter) || iter<1
+  #
+  while((((diffW[iter] > eps) || (diffOm[iter] > eps) )  && (iter < maxIter))|| iter<1){ #(diffW[iter] > eps && diffOm[iter] > eps && iter < maxIter) || iter<1
     
     iter=iter+1 
     if(verbatim) cat(paste0("\n Iter n°", iter))
@@ -910,17 +936,28 @@ VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, verbatim=TRUE,maxIter
     Pg=Pg.new
     
     #M
-    resM<-Mstep(M=M,S=S,Pg=Pg, omega=omega,W=W,maxIter=2, beta.min=exp(-20),beta.max=exp(20),plot=FALSE, eps=1e-3 , verbatim=FALSE,
-                Wg=Wg, p=p)
-    W.new=resM$W
     
-    diffW[iter]=abs(max(W.new-W))
-    diffWiter=diffW[iter]
-    W=W.new
-    omega.new=resM$omega
-    diffOm[iter]=abs(max(F_Sym2Vec(omega.new)-F_Sym2Vec(omega)))
-    diffOmDiag[iter]=abs(max(diag(omega.new)-diag(omega)))
-    omega=omega.new
+    if(nobeta){
+      resM<-Mstep_nobeta(M=M,S=S,Pg=Pg, omega=omega,W=W,verbatim=FALSE,Wg=Wg, p=p)
+      omega.new=resM$omega
+      diffOm[iter]=abs(max(F_Sym2Vec(omega.new)-F_Sym2Vec(omega)))
+      diffOmDiag[iter]=abs(max(diag(omega.new)-diag(omega)))
+      omega=omega.new
+      diffW[iter]= diffOm[iter]
+    }else{
+      resM<-Mstep(M=M,S=S,Pg=Pg, omega=omega,W=W,maxIter=2, beta.min=exp(-20),beta.max=exp(20),plot=FALSE, eps=1e-3 , verbatim=FALSE,
+                  Wg=Wg, p=p)
+      W.new=resM$W
+      diffW[iter]=abs(max(W.new-W))
+      diffWiter=diffW[iter]
+      W=W.new
+      omega.new=resM$omega
+      diffOm[iter]=abs(max(F_Sym2Vec(omega.new)-F_Sym2Vec(omega)))
+      diffOmDiag[iter]=abs(max(diag(omega.new)-diag(omega)))
+      omega=omega.new
+    }
+    
+    
     if(!is.null(vraiOm)){
       diffquantile[iter]=quantile(F_Sym2Vec(omega)[F_Sym2Vec(vraiOm)==1], 0.25) - quantile(F_Sym2Vec(omega)[F_Sym2Vec(vraiOm)==0], 0.75)
     }
@@ -935,9 +972,17 @@ VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, verbatim=TRUE,maxIter
   lowbound[,-ncol(lowbound)]<-apply(lowbound[,-ncol(lowbound)],2,function(x) as.numeric(as.character(x)))
   colnames(lowbound)[ncol(lowbound)] = "parameter"
   if(hidden){
-    features<-data.frame(diffMH=diffMH, diffWg=diffWg, diffPg=diffPg, diffW=diffW, diffOm=diffOm)
+    if(nobeta){
+      features<-data.frame(diffMH=diffMH, diffWg=diffWg, diffPg=diffPg,  diffOm=diffOm)
+    } else{
+      features<-data.frame(diffMH=diffMH, diffWg=diffWg, diffPg=diffPg, diffW=diffW, diffOm=diffOm)
+    }
   }else{
-    features<-data.frame(diffWg=diffWg, diffPg=diffPg, diffW=diffW, diffOm=diffOm)
+    if(nobeta){
+      features<-data.frame(diffWg=diffWg, diffPg=diffPg, diffOm=diffOm)
+    }else{
+      features<-data.frame(diffWg=diffWg, diffPg=diffPg, diffW=diffW, diffOm=diffOm)
+    }
   }
   
   if(!is.null(vraiOm)){
@@ -1086,7 +1131,7 @@ boot_FitSparsePCA<-function(Y, B,r){
     }
   })
   
-   nb_occ<-tabulate(match(cliqueList,unique(cliqueList)))
+  nb_occ<-tabulate(match(cliqueList,unique(cliqueList)))
   # if(length(nb_occ>1)!=0){
   #   cliqueList<-unique(cliqueList)[nb_occ>1]
   # }else{
@@ -1100,7 +1145,7 @@ boot_FitSparsePCA<-function(Y, B,r){
 
 List.VEM<-function(cliquesObj, counts, sigma_obs, MO,SO,r, cores,maxIter,eps){
   p=ncol(counts) ; O=1:p ; n=nrow(counts)
- # alpha=200/((p+r)*n)
+  # alpha=200/((p+r)*n)
   q=p+r
   D=.Machine$double.xmax
   alpha = (1/n)*((1/(q-1))*log(D) - log(q))
@@ -1108,7 +1153,7 @@ List.VEM<-function(cliquesObj, counts, sigma_obs, MO,SO,r, cores,maxIter,eps){
     
     #init
     c=cliquesObj$cliqueList[[num]]
- 
+    
     init=initVEM(counts = counts, initviasigma=c, sigma_obs,r = r)
     Wginit= init$Wginit; Winit= init$Winit; omegainit=init$omegainit ; MHinit=init$MHinit
     
