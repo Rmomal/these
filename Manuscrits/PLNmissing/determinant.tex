@@ -1,0 +1,43 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage[left=2cm,right=2cm,top=2cm,bottom=2cm]{geometry}
+ 
+\begin{document}
+
+\section{Inégalité d'Hadamard pour le déterminant}
+Le déterminant d'une matrice $W\in \mathcal{M}_{q,q}$ est borné par le produit des normes des colonnes :
+$$\det(W) < \prod_i ||w_i|| $$
+
+S'il existe une borne $b$ telle que $|w_{ij}|\leq b$ pour tout $i$ et $j$, alors
+$$\det(W) \leq b^q  q^{q/2} $$
+
+Le déterminant d'une matrice définie positive est majoré par le produit de ses termes diagonaux:
+$$\det(W) \leq \prod_i w_{ii} $$
+
+\section{Application au Matrix Tree}
+
+On considère $W_g$ la matrice des poids $\tilde{\beta}$, défini par :
+\begin{align*}
+\log(\tilde{\beta}_{jk})& = \log\beta_{jk} + \frac{n\alpha}{2} (\log \varphi_{jk} - \omega_{jk} \tilde{\sigma}_{jk})\\
+&= O(\alpha n)
+\end{align*}
+
+On souhaite borner le déterminant du Laplacien de $W_g$.
+
+\begin{align*}
+\det(\mathcal{L}_{uv}(W_g)) &\leq \prod_i  [\mathcal{L}_{uv}(W_g)]_{ii}\\
+&\leq \prod_{i=1}^{q-1} \sum_{i=1}^q \exp(\alpha n)\\
+& \leq (q \exp(\alpha n) )^{q-1}
+\end{align*}
+
+En notant $\Delta$ la précision machine, on souhaite donc 
+$$(q \exp(\alpha n) )^{q-1} \leq \Delta $$
+on aboutit à
+$$ \alpha \leq \frac{1}{n} \left(\frac{1}{q-1} \log \Delta - \log q \right)$$
+
+Pour q=15, $\alpha \approx 0.24$.
+\end{document}

@@ -53,7 +53,7 @@ boot_VEM0<-function(Y,MO,SO,B=40, eps,alpha=1, maxIter){
   })
   return(list.res)
 }
-simu_vary_r<-function(p,n,r,B,maxH,maxIter,seed,type,eps=1e-3,alpha=1, cores=3, plot){
+simu_vary_r<-function(p,n,r,B,maxH,maxIter,seed,type,eps=1e-3,  cores=3, plot){
   set.seed(seed)
   # sim data
   missing_data<-missing_from_scratch(n,p,r=r,type,plot)
@@ -62,26 +62,20 @@ simu_vary_r<-function(p,n,r,B,maxH,maxIter,seed,type,eps=1e-3,alpha=1, cores=3, 
   PLNfit<-PLN(counts~1, control=list(trace=0))
   MO<-PLNfit$var_par$M  ; SO<-PLNfit$var_par$S  ; 
   theta=PLNfit$model_par$Theta; sigma_obs=PLNfit$model_par$Sigma
-  # bootstrap vem with r=0
-  # cat(paste0("0 missing actors: "))
-  # t1<-Sys.time()
-  # VEM0<-boot_VEM0(Y=counts,MO,SO,B=40, eps=eps, maxIter=maxIter)
-  # t2<-Sys.time()
-  # runtime=difftime(t2,t1)
-  # cat(paste0(round(runtime,3), attr(runtime, "units"),"\n"))
+  alpha=200/((p+r)*n)
   init0=initVEM(counts , initviasigma = NULL,  sigma_obs,r = 0)
   Wginit= init0$Wginit; Winit= init0$Winit; omegainit=init0$omegainit 
   # vem with original counts
   VEM_r0<-VEMtree(counts, MO, SO, MH=NULL,ome_init = omegainit,W_init =Winit,eps=eps,
                   Wg_init =Wginit,plot = FALSE, maxIter = maxIter,print.hist = FALSE,
-                  vraiOm = NULL, alpha=alpha, verbatim=FALSE, filterPg = TRUE, 
-                  filterWg = TRUE )
+                  vraiOm = NULL, alpha=alpha, verbatim=FALSE, filterPg = FALSE, 
+                  filterWg = FALSE )
   #  vary r
   VEMr<-lapply(1:maxH, function(r){
     cat(paste0(r," missing actors: "))
     t1<-Sys.time()
-    cliques_spca <- boot_FitSparsePCA(scale(counts),B,r=r)
-    ListVEM<-List.VEM(cliqueList=cliques_spca, counts, sigma_obs, MO,SO,alpha,r=r, cores=cores,
+    cliques_spca <- boot_FitSparsePCA(scale(MO),B,r=r)
+    ListVEM<-List.VEM(cliquesObj =cliques_spca, counts, sigma_obs, MO,SO,r=r, cores=cores,
                       eps=eps,maxIter)
     t2<-Sys.time()
     runtime=difftime(t2,t1)
@@ -113,11 +107,17 @@ simr0$list.vem0[[1]]$lowbound %>% rowid_to_column() %>%  gather(key,value,-rowid
 ############
 #-- run
 seed=1; p=14 ; B=100; type="scale-free" ; n=200 ; maxIter=100
-simu_vary_r(seed=seed,B=B, n=n, p=p,r=0,maxIter=100,maxH=6, type = type, plot=FALSE)
-simu_vary_r(seed=seed,B=B, n=n, p=p,r=1,maxIter=100,maxH=6, type = type, plot=FALSE)
+t1<-Sys.time()
+simu_vary_r(seed=seed,B=B, n=n, p=p,r=0,maxIter=100,maxH=4, type = type, plot=FALSE)
+t2<-Sys.time()
+difftime(t2, t1)
+t1<-Sys.time()
+simu_vary_r(seed=seed,B=B, n=n, p=p,r=1,maxIter=100,maxH=4, type = type, plot=FALSE)
+t2<-Sys.time()
+difftime(t2, t1)
 #--
-simr1<-readRDS("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/scale-free_seed1_r1_1-6.rds")        
-simr0<-readRDS("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/scale-free_seed1_r0_1-6.rds")        
+simr1<-readRDS("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/scale-free_seed1_r1_1-4.rds")        
+simr0<-readRDS("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/scale-free_seed1_r0_1-4.rds")        
 
 # crit0<-do.call(rbind, lapply(simr0$list.vem0, function(vem0){
 #  criteria(list(vem0),simr0$counts,simr0$theta, matcovar=matrix(1, nrow(simr0$counts),1),r=0)}))
@@ -134,13 +134,81 @@ critr<-do.call(rbind, lapply(seq_along(simr1$VEMr), function(r){
 }))
 critr1=rbind(crit0, critr)
 #----------------
+# evolution du max de la borne inf avec r
+critr0$trueR=0
+critr1$trueR=1
+
+crit=rbind(critr0,critr1)
+crit %>%as_tibble() %>% dplyr::select(J,r, trueR) %>% group_by(trueR,r) %>% 
+  summarise(max=max(J)) %>% 
+  ggplot(aes(r,max,color=as.factor(trueR)))+geom_point()+geom_line()+
+  mytheme.dark("True r:")+  labs(x="r",y="max Lower Bound")
+#----------------
+# nombre d'initialisations qui ont convergé pour chaque r
+nbconv0<-data.frame(nbconv=do.call(rbind, lapply(simr0$VEMr, length)),
+                    r=1:4,trueR=0)
+nbconv1<-data.frame(nbconv=do.call(rbind, lapply(simr1$VEMr, length)),
+                    r=1:4,trueR=1)
+conv=rbind(nbconv0, nbconv1) 
+conv %>% as_tibble() %>% 
+  ggplot(aes(r,nbconv,color=as.factor(trueR),fill=as.factor(trueR)))+
+  geom_col(alpha=0.3,position = "dodge")+mytheme.dark("True r:")
+#----------------
+# nombre de trim par r
+nbtrim0<-data.frame(nbtrim=do.call(rbind, lapply(simr0$VEMr, function(r){
+  sum(do.call(rbind,lapply(r, function(vem){vem$trim })))
+})),  r=1:4,trueR=0)
+nbtrim1<-data.frame(nbtrim=do.call(rbind, lapply(simr1$VEMr, function(r){
+  sum(do.call(rbind,lapply(r, function(vem){vem$trim })))
+})),  r=1:4,trueR=1)
+trim=rbind(nbtrim0, nbtrim1) 
+trim %>% as_tibble() %>% 
+  ggplot(aes(r,nbtrim,color=as.factor(trueR),fill=as.factor(trueR)))+
+  geom_col(alpha=0.3,position = "dodge")+mytheme.dark("True r:")
+left_join(conv, trim, by=c("trueR","r")) %>% 
+  ggplot(aes(nbconv, nbtrim, color=as.factor(trueR)))+geom_abline(linetype="dashed",color="gray")+
+  geom_point(aes(shape=as.factor(r)))+geom_line()+
+  mytheme.dark("True r:")
+
+# meilleure J sans trim  
+# r=3 pour trueR=1
+data0=do.call(rbind,lapply(simr1$VEMr[[3]], function(vem){
+  data.frame(trim=vem$trim,J=tail(vem$lowbound$J,1))})) 
+data0$trueR=0
+
+# r=2 pour trueR=0, exemple y a un trim meilleur
+data1=do.call(rbind,lapply(simr0$VEMr[[2]], function(vem){
+  data.frame(trim=vem$trim,J=tail(vem$lowbound$J,1))})) 
+data1$trueR=1
+rbind(data0,data1) %>% 
+  ggplot(aes(as.factor(trueR), J, color=as.factor(trim)))+geom_boxplot()+mytheme.dark("")
+
+#----------------
+# nb_occ par r
+nbocc0<-do.call(rbind, lapply(seq_along(simr0$VEMr), function(r){
+  do.call(rbind,lapply(simr0$VEMr[[r]], function(vem){
+    data.frame(nbocc=vem$nbocc ,trim=vem$trim,J=tail(vem$lowbound$J,1),r=r)}))
+}))
+nbocc0$trueR=0
+nbocc1<-do.call(rbind, lapply(seq_along(simr1$VEMr), function(r){
+  do.call(rbind,lapply(simr1$VEMr[[r]], function(vem){
+    data.frame(nbocc=vem$nbocc ,trim=vem$trim,J=tail(vem$lowbound$J,1),r=r)}))
+}))
+nbocc1$trueR=1
+
+nbocc0 %>% ggplot(aes(nbocc,J,color=as.factor(trim)))+geom_point()+
+  facet_wrap(~r, scales="free")+mytheme.dark("")
+nbocc1 %>% ggplot(aes(nbocc,J,color=as.factor(trim)))+geom_point()+
+  facet_wrap(~r, scales="free")+mytheme.dark("")
+ 
+#----------------
 p1<-critr0 %>%as_tibble() %>% filter(r<4) %>%  gather(key, value, -r ) %>% 
-  filter(key%in%c("ICL","J")) %>% 
+  filter(key%in%c("vBIC","J")) %>% 
   ggplot(aes(as.factor(r), value, color=as.factor(r==0), fill=as.factor(r==0)))+
   geom_boxplot(alpha=0.3)+mytheme.dark("")+
   facet_wrap(~key, scale="free")+guides(color=FALSE,fill=FALSE)+
   labs(x="number of missing actors",y="",title="seed=1, r=0")
-p2<-critr1 %>% as_tibble() %>% filter(r<4) %>%gather(key, value, -r ) %>% filter(key%in%c("ICL","J")) %>% 
+p2<-critr1 %>% as_tibble() %>% filter(r<4) %>%gather(key, value, -r ) %>% filter(key%in%c("vBIC","J")) %>% 
   ggplot(aes(as.factor(r), value, color=as.factor(r==1), fill=as.factor(r==1)))+
   geom_boxplot(alpha=0.3)+mytheme.dark("")+
   facet_wrap(~key, scale="free")+guides(color=FALSE,fill=FALSE)+

@@ -48,7 +48,7 @@ misAct<-data.frame(nH=rowSums(1*(cpH!=0)),
                    mean.vv=apply(voisvois, 1,function(vec){mean(vec[vec!=0])}))
 # visus
 cbind(voisvois, nH=misAct$nH) %>%as_tibble() %>%  
-  ggplot(aes(as.factor(nH)))+geom_bar(width=0.5, alpha=0.9)+mytheme.dark+labs(x="nb of links to the missing actor")
+  ggplot(aes(as.factor(nH)))+geom_bar(width=0.5, alpha=0.9)+mytheme.dark("")+labs(x="nb of links to the missing actor")
 cbind(cpH , nH=misAct$nH) %>% as_tibble() %>% gather(key, value, -nH) %>% filter(value!=0) %>% 
   ggplot(aes(value))+geom_density(alpha=0.3, color="orange",fill="orange")+mytheme+labs(x="partial corelations of links to the missing actor")
 ```
@@ -71,14 +71,14 @@ converged=converged %>% as_tibble() %>%
 iter1<-do.call(rbind, lapply(Sim15,function(seed){seed$VEM_1$finalIter}))
 iter0<-do.call(rbind, lapply(Sim15,function(seed){seed$VEM_0$finalIter}))
 data.frame(iter1, iter0) %>% gather(key, value) %>%  
-  ggplot(aes(key, value, color=key, fill=key))+geom_boxplot(alpha=0.3, width=0.5)+mytheme.dark+guides(color=FALSE, fill=FALSE)+
+  ggplot(aes(key, value, color=key, fill=key))+geom_boxplot(alpha=0.3, width=0.5)+mytheme.dark("")+guides(color=FALSE, fill=FALSE)+
   labs(x="", y="iterations", title="Nb of iterations with (1) or without (0) missing actor")
 #times
 timeboots<-do.call(rbind,lapply(Sim15, function(seed){seed$time_boots}))
 time1<-do.call(rbind, lapply(Sim15,function(seed){seed$VEM_1$time}))
 time0<-do.call(rbind,  lapply(Sim15,function(seed){seed$VEM_0$time}))
 data.frame(timeboots, time1,time0) %>% gather(key, value) %>% 
-  ggplot(aes(key, value, color=key, fill=key))+geom_boxplot(alpha=0.3, width=0.5)+mytheme.dark+guides(color=FALSE, fill=FALSE)+labs(x="", y="(s)",title="running times with and without missing actor")
+  ggplot(aes(key, value, color=key, fill=key))+geom_boxplot(alpha=0.3, width=0.5)+mytheme.dark("")+guides(color=FALSE, fill=FALSE)+labs(x="", y="(s)",title="running times with and without missing actor")
 
 
 #alphas

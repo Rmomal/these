@@ -35,10 +35,12 @@ library(mvtnorm)
 library(useful)
 library(mclust)
 library(MASS)
+library(parallel)
 library(ROCR)
 library(reshape2)#for ggimage
 library(gridExtra)
 library(harrypotter)
+library(sparsepca)
 source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
 #source("/home/mmip/Raphaelle/these/R/codes/missingActor/fonctions-missing.R")
 
@@ -62,64 +64,86 @@ SO<-PLNfit$var_par$S
 sigma_obs=PLNfit$model_par$Sigma
 theta=PLNfit$model_par$Theta 
 matcovar=matrix(1, n,1)
-alpha<-tryCatch(expr={computeAlpha(solve(sigma_obs),default =0.3, MO, SO, plot=plot)},
-                error=function(e){message("sythetic alpha")
-                  return(0.3)})
-# clique_mclust=init.mclust((cov2cor(sigma_obs)),title="Sigma", nb.missing = r,
-#                           trueClique = trueClique,n.noise=3*p)
-# clique_mclust$init
-# plotInitMclust(res=clique_mclust,title = "")
-t1<-Sys.time()
-cliques_spca <- boot_FitSparsePCA(scale(counts),B,r=1)
-t2<-Sys.time()
-time_boots=difftime(t2, t1)
-# best VEM with 1 missing actor
-ListVEM<-List.VEM(cliqueList=cliques_spca, counts, sigma_obs, MO,SO,alpha,r=1, cores=3,maxIter=100)
-converged<-do.call(rbind,lapply(ListVEM,function(vem){
-  diffW=vem$features$diffW
-  conv=(diffW[length(diffW)]<=1e-3)}))
-if(sum(converged)!=0){
-  ListVEM=ListVEM[converged]
-} 
-vBICs<-as.numeric(vec.vBIC(ListVEM,counts,theta, matcovar,r))
-best=which.max(vBICs)
-vBIC_1<-vBICs[best]
-VEM_1<-ListVEM[[best]]
-TJ=True_lowBound(Y=counts, M=VEM_1$M,VEM_1$S,theta=theta,X=matcovar,
-              W=VEM_1$W,Wg=VEM_1$Wg,Pg=VEM_1$Pg, omega=VEM_1$omega)
-ICL_T(TJ, Pg=VEM_1$Pg, Wg=VEM_1$Wg)
-crit=criteria(ListVEM,counts=counts,theta = theta,matcovar = matcovar, r=r)
-crit%>% 
-  gather(key, value) %>% 
-  ggplot(aes(key, value, color=key, fill=key))+geom_boxplot(alpha=0.3)+
-  mytheme.dark
-crit%>%  
-  ggplot(aes(vBIC, ICLZH, color=ICLT))+geom_point()+
- theme_light()+geom_abline()
-
-
-
-
-init=initVEM(counts = counts, trueClique = trueClique,initviasigma=clique_mclust$init, sigma_obs,r = r)
-Wginit= init$Wginit; Winit= init$Winit; omegainit=init$omegainit ; MHinit=init$MHinit
-
+order_sigma<-sigma_obs[c(trueClique[[1]],setdiff(1:p,trueClique[[1]])),
+                       c(trueClique[[1]],setdiff(1:p,trueClique[[1]]))]
+ggimage(order_sigma)
+ggimage(solve(order_sigma))
 plot(sigmaO ,sigma_obs)
 ome_init=omega[c(setdiff(1:(p+r), hidden), hidden),c(setdiff(1:(p+r), hidden), hidden)]
 ome=ome_init ; diag(ome)=0
 
-computeFPN(res = clique_mclust,trueClique = trueClique)
+
+# alpha<-tryCatch(expr={computeAlpha(solve(sigma_obs),default =0.3, MO, SO, plot=plot)},
+#                 error=function(e){message("sythetic alpha")
+#                   return(0.3)})
+# clique_mclust=init.mclust((cov2cor(sigma_obs)),title="Sigma", nb.missing = r,
+#                           trueClique = trueClique,n.noise=1)
+# clique_mclust$init
+# plotInitMclust(res=clique_mclust,title = "")
+
+
+cliques_spca <- boot_FitSparsePCA(scale(MO),100,r=1)
+
+# best VEM with 1 missing actor
+ListVEM<-List.VEM(cliqueList=cliques_spca, counts, sigma_obs, MO,SO,r=1,eps=1e-3, cores=3,maxIter=100)
+
+vBICs<-(criteria(ListVEM,counts,theta, matcovar,r))
+vBICs$J
+best=which.max(vBICs$J)
+VEM_1<-ListVEM[[best]]
+computeFPN(VEM_1$clique,trueClique = trueClique[[1]],p=p) 
+VEM_1$lowbound %>% rowid_to_column() %>%  gather(key,value,-rowid,-V6) %>% 
+  ggplot(aes(rowid,value, group=key))+geom_point(aes(color=as.factor(V6)), size=3)+geom_line()+
+  facet_wrap(~key, scales="free")+
+  labs(x="iteration",y="", title="Lower bound and components")+mytheme+
+  scale_color_discrete("")
+plotVEM(VEM_1$Pg,ome,r=1, 0.5)
+ 
+# TJ=True_lowBound(Y=counts, M=VEM_1$M,VEM_1$S,theta=theta,X=matcovar,
+#               W=VEM_1$W,Wg=VEM_1$Wg,Pg=VEM_1$Pg, omega=VEM_1$omega)
+# ICL_T(TJ, Pg=VEM_1$Pg, Wg=VEM_1$Wg)
+# crit=criteria(ListVEM,counts=counts,theta = theta,matcovar = matcovar, r=r)
+# crit%>%
+#   gather(key, value) %>%
+#   ggplot(aes(key, value, color=key, fill=key))+geom_boxplot(alpha=0.3)+
+#   mytheme.dark("")
+
+
 ####################
 #-----  VEM
 # find alpha on the observed part of the initial "non beta" quantities needed to compute the beta tilde
-alpha<-computeAlpha(omegainit[O,O], MO, SO)
-resVEMfilter<-VEMtree(counts,MO,SO,MH=MHinit,omegainit,Winit,Wginit, 
+# alpha<-computeAlpha(omegainit[O,O], MO, SO)
+# alpha=1
+init=initVEM(counts = counts,initviasigma=cliques_spca$cliqueList[[4]], sigma_obs,r = r) 
+Wginit= init$Wginit; Winit= init$Winit; omegainit=init$omegainit ; MHinit=init$MHinit
+test=omegainit ;diag(test)=0
+ggimage(test)
+
+q=p+r
+D=.Machine$double.xmax
+D=1e+200
+alpha = (1/n)*((1/(q-1))*log(D) - log(q))
+alpha2=(1/(n*q))*log(D/(q^(q/2)))
+curve((1/n)*((1/(x-1))*log(D) - log(x)),from=15, to=30)
+curve((1/(n*x))*log(D/(x^(x/2))),from=15, to=30, add=T, col="red")
+
+resVEM<-VEMtree(counts,MO,SO,MH=MHinit,omegainit,Winit,Wginit, 
                 eps=1e-3, alpha=alpha,
-                maxIter=20, plot=TRUE,vraiOm=ome_init, condTrack=FALSE,print.hist=FALSE,
-                filterPg=TRUE)
+                maxIter=20, plot=TRUE,vraiOm=ome_init,print.hist=FALSE,
+                filterPg=FALSE,filterWg=FALSE, verbatim = TRUE)
+
+test=resVEM$Pg ; diag(test) = mean(F_Sym2Vec(resVEM$Pg))
+ggimage(test)
+ggimage(resVEM$Pg)
+ggimage(EdgeProba(resVEM$Wg))
+ggimage(EdgeProba(resVEM$W))
+
+ggimage(ome)
+
 resVEMraw<-VEMtree(counts,MO,SO,MH=MHinit,omegainit,Winit,Wginit, 
-                      eps=1e-3, alpha=alpha,
-                      maxIter=20, plot=TRUE,vraiOm=ome_init, condTrack=FALSE,print.hist=FALSE,
-                      filterPg=FALSE)
+                   eps=1e-3, alpha=alpha,
+                   maxIter=2, plot=TRUE,vraiOm=ome_init, condTrack=FALSE,print.hist=FALSE,
+                   filterPg=FALSE)
 features=resVEMfilter$features
 plotVEM(resVEMfilter$Pg,ome,r=1,seuil=0.5)
 plotVEM(resVEMraw$Pg,ome,r=1,seuil=0.5)
@@ -133,8 +157,8 @@ plotVerdict(valuesRaw, seuil)+guides(color=FALSE)
 #ggsave("precrec_missing.png", plot=p, width=8, height=4,path= "/Users/raphaellemomal/these/R/images")
 
 # lower bound check
-VEM_1$lowbound %>% rowid_to_column() %>%  gather(key,value,-rowid,-parameter) %>% 
-  ggplot(aes(rowid,value, group=key))+geom_point(aes(color=as.factor(parameter)), size=3)+geom_line()+
+ListVEM[[1]]$lowbound %>% rowid_to_column() %>%  gather(key,value,-rowid,-V6) %>% 
+  ggplot(aes(rowid,value, group=key))+geom_point(aes(color=as.factor(V6)), size=3)+geom_line()+
   facet_wrap(~key, scales="free")+
   labs(x="iteration",y="", title="Lower bound and components")+mytheme+
   scale_color_discrete("")

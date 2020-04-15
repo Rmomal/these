@@ -21,7 +21,7 @@ r=5 ; H=(p+1):(p+r)
 cliques_spcaY5 <- boot_FitSparsePCA(scale(counts),B, r=r)
 tic()
 ListVEM5<-List.VEM(cliqueList=cliques_spcaY5, counts, sigma_obs, MO,SO,alpha,r=r,maxIter = 100,
-                   cores=3)
+                   cores=3, eps = 1e-3)
 toc() # 60.981s sur 3 coeurs avec B=100 (50 pour B=50)
 converged<-do.call(rbind,lapply(ListVEM5,function(vem){
   diffW=vem$features$diffW
@@ -30,14 +30,14 @@ if(sum(converged)!=0){
   ListVEM5=ListVEM5[converged]
 }
 # test
-best=which.max(crit5$vBIC)
-VEM_5<-ListVEM5[[best]]
+# best=which.max(crit5$vBIC)
+# VEM_5<-ListVEM5[[best]]
 #------ r=4
 r=4 ; H=(p+1):(p+r)
 cliques_spcaY4 <- boot_FitSparsePCA(scale(counts),B, r=r)
 tic()
 ListVEM4<-List.VEM(cliqueList=cliques_spcaY4, counts, sigma_obs, MO,SO,alpha,r=r,maxIter = 100,
-                   cores=3)
+                   cores=3, eps = 1e-3)
 toc() # 60.981s sur 3 coeurs avec B=100 (50 pour B=50)
 converged<-do.call(rbind,lapply(ListVEM4,function(vem){
   diffW=vem$features$diffW
@@ -46,14 +46,14 @@ if(sum(converged)!=0){
   ListVEM4=ListVEM4[converged]
 }
 #test
-best=which.max(crit4$vBIC)
-VEM_4<-ListVEM4[[best]]
+# best=which.max(crit4$vBIC)
+# VEM_4<-ListVEM4[[best]]
 #------ r=3
 r=3 ; H=(p+1):(p+r)
 cliques_spcaY3 <- boot_FitSparsePCA(scale(counts),B, r=r)
 tic()
 ListVEM3<-List.VEM(cliqueList=cliques_spcaY3, counts, sigma_obs, MO,SO,alpha,r=r,maxIter = 100,
-                   cores=3)
+                   cores=3, eps = 1e-3)
 toc() # 228.9s sur 3 coeurs avec B=100 (50 pour B=50)
 converged<-do.call(rbind,lapply(ListVEM3,function(vem){
   diffW=vem$features$diffW
@@ -65,7 +65,8 @@ if(sum(converged)!=0){
 r=2 ; H=(p+1):(p+r)
 cliques_spcaY2 <- boot_FitSparsePCA(scale(counts),B, r=r)
 tic()
-ListVEM2<-List.VEM(cliqueList=cliques_spcaY2, counts, sigma_obs, MO,SO,alpha,r=r,maxIter = 100, cores=3)
+ListVEM2<-List.VEM(cliqueList=cliques_spcaY2, counts, sigma_obs, MO,SO,alpha,r=r,
+                   maxIter = 100, cores=3, eps = 1e-3)
 toc() # 183.9s sur 3 coeurs avec B=100 (50 pour B=50)
 converged<-do.call(rbind,lapply(ListVEM2,function(vem){
   diffW=vem$features$diffW
@@ -77,7 +78,8 @@ if(sum(converged)!=0){
 r=1 ;
 cliques_spcaY1 <- boot_FitSparsePCA(scale(counts),B, r=r)
 tic()
-ListVEM1<-List.VEM(cliqueList=cliques_spcaY1, counts, sigma_obs, MO,SO,alpha,r=r,maxIter = 100, cores=3)
+ListVEM1<-List.VEM(cliqueList=cliques_spcaY1, counts, sigma_obs, MO,SO,alpha,
+                   r=r,maxIter = 100, cores=3, eps = 1e-3)
 toc() # 62s with 3 cores et B=100
 converged<-do.call(rbind,lapply(ListVEM1,function(vem){
   diffW=vem$features$diffW
@@ -100,7 +102,7 @@ init0=initVEM(counts = counts, initviasigma = NULL,  sigma_obs,r = 0)
 Wginit= init0$Wginit; Winit= init0$Winit; omegainit=init0$omegainit 
 VEM_0<-VEMtree(counts, MO, SO, MH=NULL,ome_init = omegainit,W_init =Winit,eps=1e-4,
                Wg_init =Wginit,plot = TRUE, maxIter = 100,print.hist = FALSE,
-               vraiOm = NULL, alpha=alpha, verbatim=FALSE , filterPg = FALSE,filterWg = TRUE)
+               vraiOm = NULL, alpha=alpha, verbatim=FALSE , filterPg = TRUE,filterWg = TRUE)
 # lower bound check
 VEM_5$lowbound %>% rowid_to_column() %>%  gather(key,value,-rowid,-parameter) %>%
   ggplot(aes(rowid,value, group=key))+geom_point(aes(color=as.factor(parameter)), size=3)+geom_line()+
@@ -139,14 +141,14 @@ crit3<-criteria(ListVEM3,counts=counts,theta = theta,matcovar = matcovar, r=3)
 crit4<-criteria(ListVEM4,counts=counts,theta = theta,matcovar = matcovar, r=4)
 crit5<-criteria(ListVEM5,counts=counts,theta = theta,matcovar = matcovar, r=5)
 # 36, 24, 20, 13, 16 : tailles des listes de 1 à 5
-crit=rbind(crit0,crit1, crit2, crit3, crit4, crit5)
+crit=rbind(crit0,crit1, crit2, crit3, crit4)
 plot=crit %>% gather(key, value, -r) %>% 
-  ggplot(aes(as.factor(r), value, color=key, fill=key))+geom_point(alpha=0.3)+
-  facet_wrap(~key)+mytheme.dark+
+  ggplot(aes(as.factor(r), value, color=key, fill=key))+geom_boxplot(alpha=0.3)+
+  facet_wrap(~key, scales="free")+mytheme.dark("")+
   labs(x="number of missing actors",y="values",title="Crit from boot.sPCA (B=100, alpha=1, eps=1e-4, kept only converged)")
  
-ggsave(filename = "Bad_Fatala_crit_B100.png", plot = plot,
-       path ="/Users/raphaellemomal/these/R/images/", width = 6, height = 5)
+ggsave(filename = "Bad_Fatala_ICL_B100.png", plot = plot,
+       path ="/Users/raphaellemomal/these/R/images/", width = 7, height = 3)
 
 best1=which.max(vBICs1)
 best2=which.max(vBICs2)

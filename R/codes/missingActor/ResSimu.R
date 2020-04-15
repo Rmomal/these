@@ -1,34 +1,63 @@
 
 #Sim15=readRDS("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/Sim15.rds")
 # object de taille 6*200 , chaque ligne est une liste de taille 200 contenant le paramètre en question
+library(ggbeeswarm)
+library(ggridges)
 source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
-Sim15=readRDS("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/Sim15conv.rds")
-
+Sim15=readRDS("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/Sim15_r1_200SF.rds")
+p=14 ; r=1
+H=p+r
 #-------------------
 # general processing
 #times
 timeboots<-mean(do.call(rbind,lapply(Sim15, function(seed){seed$time_boots})))
 time1<-mean(do.call(rbind, lapply(Sim15,function(seed){seed$VEM_1$time})))
-time0<-mean(do.call(rbind,  lapply(Sim15,function(seed){seed$VEM_0$time})))
-#alphas
-alphas<-data.frame(alpha1=do.call(rbind,  lapply(Sim15,function(seed){seed$VEM_1$alpha})),
-                   alpha0=do.call(rbind,  lapply(Sim15,function(seed){seed$VEM_0$alpha})))
-alphas %>% mutate(mean.cpH=misAct$mean.cpH) %>% 
-  ggplot(aes(alpha0,alpha1, color=mean.cpH))+geom_point()+theme_light()+
-  geom_abline()
+
 # links of missing actor
-linksH<-data.frame(do.call(rbind,lapply(Sim15, function(seed){seed$omega[15,-15]})))
-cpH<-data.frame(do.call(rbind,lapply(Sim15, function(seed){vecpartcor=-cov2cor(seed$omega)[15,-15]})))
+linksH<-data.frame(do.call(rbind,lapply(Sim15, function(seed){seed$omega[H,-H]})))
+cpH<-data.frame(do.call(rbind,lapply(Sim15, function(seed){vecpartcor=-cov2cor(seed$omega)[H,-H]})))
 colnames(cpH)<-1:ncol(cpH)
 voisvois<-do.call(rbind,lapply(Sim15, function(seed){
-  vois=1*(seed$omega[15,-15]!=0)
-  di=round(diag(seed$omega)[-15],0)
-  di[vois==0]=0
+  vois=1*(seed$omega[H,-H]!=0) # vect size 14 1 vois 0 pas vois
+  di=round(diag(seed$omega)[-H],0) # degré des 14 premiers noeuds
+  di[vois==0]=0 # mise à zéro des degré des non voisins de H
   return(di)
 }))
+
+voisMaxDeg<-do.call(rbind,lapply(Sim15, function(seed){
+  #faudrait mise à zero de ceux qui ne sont pas voisin d'un voisin de H
+  index.vois=which(seed$omega[H,-H]!=0)
+  vecmax<-rep(0,H-1)
+  sapply(index.vois, function(vois){
+    if(round(diag(seed$omega)[vois],0)>1){
+      vv=setdiff(which(seed$omega[vois,-H]!=0),vois) # vecteur des noeuds voisins de vois à part H
+      maxDeg=round(max(diag(seed$omega)[vv]),0)
+      vecmax[vois]<<-maxDeg
+    }
+  })
+  return(vecmax)
+}))
+voisBetween<-do.call(rbind,lapply(Sim15, function(seed){
+  between=draw_network(seed$omega)$graph_data %>% activate(nodes) %>% as_tibble() %>% select(btw)
+  between=between$btw/max(between$btw)
+  between[seed$omega[H,-H]==0] = 0
+  between=between[-H]
+  return(between)
+}))
+
+Hbtw<-do.call(rbind,lapply(Sim15, function(seed){
+  between=draw_network(seed$omega)$graph_data %>% activate(nodes) %>% as_tibble() %>% select(btw)
+  betweenH=between$btw[H]
+  return(betweenH)
+}))
+
 misAct<-data.frame(nH=rowSums(1*(cpH!=0)), 
                    mean.cpH=apply(cpH, 1,function(vec){mean(vec[vec!=0])}),
-                   mean.vv=apply(voisvois, 1,function(vec){mean(vec[vec!=0])}))
+                   mean.vv=apply(voisvois, 1,function(vec){mean(vec[vec!=0])}),
+                   max.maxDeg=apply(voisMaxDeg, 1,function(vec){max(vec[vec!=0])}), 
+                   mean.maxDeg=apply(voisMaxDeg, 1,function(vec){mean(vec[vec!=0])}), 
+                   mean.btw=apply(voisBetween, 1,function(vec){mean(vec[vec!=0])}),
+                   btwH=Hbtw)
 
 
 # omega conditioning
@@ -39,13 +68,14 @@ cond.omgraph<-do.call(rbind, lapply(Sim15, function(seed){
 cond.siginf<-do.call(rbind, lapply(Sim15, function(seed){
   M=seed$VEM_1$M
   S=seed$VEM_1$S
+  n=nrow(M)
   SigmaTilde = (t(M)%*%M+ diag(colSums(S)) )/ n
   lambda=svd(solve(SigmaTilde))$d
   cond=min(abs(lambda)/max(abs(lambda)))
   return(cond)}))
 cond.sigobs<-do.call(rbind, lapply(Sim15, function(seed){
-  M=seed$VEM_1$M[,-15]
-  S=seed$VEM_1$S[,-15]
+  M=seed$VEM_1$M[,-H]
+  S=seed$VEM_1$S[,-H]; n=nrow(M)
   SigmaTilde = (t(M)%*%M+ diag(colSums(S)) )/ n
   lambda=svd(solve(SigmaTilde))$d
   cond=min(abs(lambda)/max(abs(lambda)))
@@ -57,103 +87,156 @@ cond.ominf<-do.call(rbind, lapply(Sim15, function(seed){
   cond=min(abs(lambda)/max(abs(lambda)))
   return(cond)}))
 
-# vBIC
-vBICs<-data.frame(vBIC0=do.call(rbind,lapply(Sim15,function(seed){seed$vBIC_0})),
-                  vBIC1=do.call(rbind,lapply(Sim15,function(seed){seed$vBIC_1})))%>%
-  as_tibble() %>% 
-  mutate(best=ifelse(vBIC1>vBIC0,"vBIC1","vBIC0"))
 
 # inference results
-PgH<-data.frame(Pg=do.call(rbind,lapply(Sim15, function(seed){seed$VEM_1$Pg[15,-15]})))
+PgH<-data.frame(Pg=do.call(rbind,lapply(Sim15, function(seed){seed$VEM_1$Pg[H,-H]})))
 colnames(PgH)<-1:ncol(PgH)
 qual<-data.frame(do.call(rbind, lapply(Sim15, function(seed){
   Pg=seed$VEM_1$Pg
   ome=seed$omega
   diag(ome)=0
   auc=round(auc(pred = Pg, label = ome),4) 
-  vec=accppvtpr(Pg,ome,h=15,seuil=0.5)
+  vec=accppvtpr(Pg,ome,h=H,seuil=0.5)
   return(c(auc=auc, vec))
 }))) %>% as_tibble() %>% mutate(seed=1:200)
 colnames(qual)=c("auc","Acc","AccH","AccO","PPV","PPVH","PPVO","TPR","TPRH","TPRO","seed")
+
+
+#ZH MH
+rebuild<-do.call(rbind,lapply(Sim15, function(seed){
+  ZH<-seed$ZH
+  MH<-seed$VEM_1$M[,H]
+  abs(cor(ZH, MH))
+}))
+qual$rebuild=rebuild[,1]
+
+# Convergence
+
+convergence<-data.frame(iter=do.call(rbind,lapply(Sim15,function(seed){
+  iter=seed$VEM_1$finalIter })), 
+  nbconv=do.call(rbind,lapply(Sim15,function(seed){
+    nbconv=seed$nbconv })))
+
+
 ################
 # Detection
 #------------
 # l'acteur manquant est détecté 100% du temps
-vBICs %>% ggplot(aes(vBIC0,vBIC1))+geom_point()+mytheme+
-  geom_abline()+coord_cartesian(ylim=c(-17000,-7000))+
-  labs(title="Missing actor was always detected")
+# vBICs %>% ggplot(aes(vBIC0,vBIC1))+geom_point()+mytheme+
+#   geom_abline()+coord_cartesian(ylim=c(-17000,-7000))+
+#   labs(title="Missing actor was always detected")
+# 
 
 
-vBICs %>%mutate(diff=vBIC1-vBIC0) %>% 
-  ggplot(aes(y=log(diff), x=" "))+geom_beeswarm()+mytheme+
-  labs(title="Missing actor was always detected", x="",y="log(vBIC1-vBIC0)")+
-  coord_cartesian(y=c(5,log(8000)))
-
-#------------
-# Convergence
-
-converged<-data.frame(diffW=do.call(rbind,lapply(Sim15,function(seed){
-  diffW=seed$VEM_1$features$diffW
-  return(diffW[length(diffW)])})), 
-  diffOm=do.call(rbind,lapply(Sim15,function(seed){
-    diffOm=seed$VEM_1$features$diffOm
-    return(diffOm[length(diffOm)])})))
-
-converged=converged %>% as_tibble() %>% 
-  mutate(converged=ifelse(diffW<1e-3 & diffOm< 1e-3, 1, 0))
 ################
 # Quality
 #------------
 # Graph total
-qual %>% filter(auc>0.5)
-# qual %>% gather(key, value,-seed) %>%
-#   mutate(key = fct_reorder(key, value, .fun='median')) %>%
-#   ggplot(aes(key, value, color=key))+geom_boxplot()+theme_light()+guides(color=FALSE)
-qual %>% gather(key, value,-seed)  %>%
+
+qual %>% gather(key, value,-seed, -rebuild,-auc)  %>%
   mutate(key = fct_reorder(key, value, .fun='median')) %>%
-  ggplot(aes( value,key, color=key, fill=key))+geom_density_ridges(alpha=0.3)+theme_light()+guides(color=FALSE, fill=FALSE)
-# qual %>%
-#   ggplot(aes( PPVH,TPRH))+geom_point()+theme_light()+guides(color=FALSE, fill=FALSE)
+  mutate(type=substr(key,1,3)) %>% 
+  ggplot(aes( value,key, color=key, fill=key))+
+  geom_density_ridges(alpha=0.3)+theme_light()+guides(color=FALSE, fill=FALSE)+
+  facet_wrap(~type)
+
 
 # PPVH a deux modes : pourquoi ?
-data=cbind(qual, misAct, alphas,converged, cond.omgraph,cond.ominf,cond.sigobs, cond.siginf)  %>%
-  mutate(bad=as.factor(ifelse(PPVH<=0.5, 1, 0)))
+data=cbind(qual, misAct,convergence, cond.omgraph,cond.ominf, cond.siginf)  %>%
+  mutate(bad=as.factor(ifelse(PPVH<=0.5, "<0.5", ">0.5"))) %>% as_tibble()
 
-data %>% filter(!is.na(bad))  %>% mutate(ldiffW=log(diffW)) %>% 
-  dplyr::select(mean.cpH,mean.vv,alpha1,nH,cond.omgraph, cond.ominf,cond.sigobs,
-                cond.siginf,ldiffW,bad) %>% 
+data %>%as_tibble() %>%  filter(!is.na(bad))   %>% 
+  dplyr::select(mean.cpH,mean.vv,nH,iter,nbconv,bad) %>% 
   gather(key, value,-bad) %>% 
   ggplot(aes(bad,value, color=key, fill=key))+
-  geom_boxplot(alpha=0.3, width=0.5)+theme_light()+facet_wrap(~key, scales = "free", nrow=4)+
-  guides(color=FALSE, fill=FALSE)+labs(x="PPVH < 0.5")
+  geom_boxplot(alpha=0.3, width=0.5)+theme_light()+facet_wrap(~key, scales = "free", nrow=2)+
+  guides(color=FALSE, fill=FALSE)+labs(x="PPVH")
 
-data %>% ggplot(aes(auc, mean.cpH, color=bad))+geom_point()+mytheme.dark
+data %>%as_tibble() %>%  filter(!is.na(bad))   %>% 
+  dplyr::select(max.maxDeg, mean.btw,btwH,nH,bad) %>% 
+  gather(key, value,-bad) %>% 
+  ggplot(aes(bad,value, color=key, fill=key))+
+  geom_boxplot(alpha=0.3, width=0.5)+mytheme.dark("")+facet_wrap(~key, scales = "free", nrow=1)+
+  guides(color=FALSE, fill=FALSE)+labs(x="PPVH")
+
+data %>%as_tibble() %>%  filter(!is.na(bad))   %>% 
+  dplyr::select(mean.maxDeg,nH,bad) %>%  
+  ggplot(aes(bad,mean.maxDeg, color=as.factor(nH), fill=as.factor(nH)))+
+  geom_boxplot(alpha=0.3, width=0.5)+theme_light()+facet_wrap(~nH, nrow=1)+
+  guides(color=FALSE, fill=FALSE)+labs(x="PPVH")
+# ça c'est intéressant
+data %>%as_tibble() %>%  filter(!is.na(bad))   %>% 
+  dplyr::select(btwH,mean.btw,nH,bad) %>%  
+  ggplot(aes(bad,mean.btw, color=as.factor(nH), fill=as.factor(nH)))+
+  geom_boxplot(alpha=0.3, width=0.5)+theme_light()+facet_wrap(~nH, nrow=1)+
+  guides(color=FALSE, fill=FALSE)+labs(x="PPVH")
+
+
+data %>%as_tibble() %>%  
+  dplyr::select(nH,btwH) %>%
+  ggplot(aes(nH,btwH/nH))+geom_point()+mytheme.dark("") 
+
+data %>% ggplot(aes(TPRH, PPVH,color=(mean.maxDeg)))+geom_point()+theme_light()
+data %>% ggplot(aes(TPRH, (nH)))+geom_point()+theme_light()
+data %>% ggplot(aes(auc, mean.cpH, color=bad))+geom_point()+mytheme.dark("")
+data %>% ggplot(aes(auc, mean.cpH, color=btwH))+geom_point()+theme_light()
 data %>% filter(!is.na(bad)) %>%  ggplot(aes(as.factor(nH), mean.cpH, color=bad))+
-  geom_point()+mytheme.dark+facet_wrap(~bad)
+  geom_point()+mytheme.dark("")+facet_wrap(~bad)
 
-# étudier les qualités en fonction de converged
-# effet de la non convergence sur les performances
+
+data %>%  
+  ggplot(aes(as.factor(nH), PPVH, color=as.factor(nH), fill=as.factor(nH)))+
+  geom_boxplot(alpha=0.3)+ theme_light()+guides(color=FALSE, fill=FALSE)
+
+#effet du conditionnement du graph de départ sur PPVH est un biais du nombre de nH
+# data %>% as_tibble() %>% 
+#   ggplot(aes(cond.omgraph, PPVH, color=as.factor(nH), fill=as.factor(nH)))+
+#   geom_point(alpha=0.3)+ theme_light()+guides(color=FALSE, fill=FALSE)
+# 
+# data %>% as_tibble() %>% 
+#   ggplot(aes(bad,cond.omgraph))+
+#   geom_boxplot(alpha=0.3)+ theme_light()+guides(color=FALSE, fill=FALSE)+facet_wrap(~nH)
+
+# effet de nH sur PPVH
+data %>% as_tibble() %>% 
+  ggplot(aes(nH, PPVH, color=as.factor(nH), fill=as.factor(nH)))+
+  geom_point(alpha=0.3)+ theme_light()+guides(color=FALSE, fill=FALSE)
+
+data %>% as_tibble() %>% 
+  ggplot(aes(bad,nH  ))+
+  geom_boxplot(alpha=0.3)+ theme_light()+guides(color=FALSE, fill=FALSE)
+# effet mean.vv sur PPVH
 data %>% 
-  dplyr::select(converged, auc, Acc, AccH, AccO, PPV, PPVH, PPVO, TPR, TPRO,TPRH) %>% 
-  gather(key, value,-converged) %>% 
-  ggplot(aes(as.factor(converged),value, color=key, fill=key))+
-  geom_boxplot(alpha=0.3, width=0.5)+theme_light()+facet_wrap(~key, scales = "free", nrow=4)+
-  guides(color=FALSE, fill=FALSE)+labs(x="converged")
+  ggplot(aes(bad,mean.vv))+geom_boxplot()+mytheme.dark("")+facet_wrap(~nH)
 
-# pourquoi la non-convergence
-data  %>% 
-  dplyr::select(mean.cpH,mean.vv,alpha1,nH,cond.omgraph,cond.sigobs,
-                converged) %>% 
-  gather(key, value,-converged) %>% 
-  ggplot(aes(as.factor(converged),value, color=key, fill=key))+
-  geom_boxplot(alpha=0.3, width=0.5)+theme_light()+facet_wrap(~key, scales = "free", nrow=4)+
-  guides(color=FALSE, fill=FALSE)+labs(x="PPVH < 0.5")
+# valeurs de mean.cpH difficilement interprétable
+data %>% as_tibble() %>% 
+  ggplot(aes(mean.cpH, PPVH, color=as.factor(nH), fill=as.factor(nH)))+
+  geom_point(alpha=0.3)+ theme_light()+guides(color=FALSE, fill=FALSE)
+data %>% as_tibble() %>% 
+  ggplot(aes(bad, abs(mean.cpH), color=as.factor(nH), fill=as.factor(nH)))+
+  geom_boxplot(alpha=0.3)+ theme_light()+guides(color=FALSE, fill=FALSE)
 
-qual %>%  
-  ggplot(aes(PPVH, TPRO, color=TPRH))+geom_point()+theme_light()+guides(color=FALSE)
+# PPVH et rebuild
+data %>% as_tibble() %>% 
+  ggplot(aes( PPVH,rebuild, color=as.factor(nH), fill=as.factor(nH)))+
+  geom_abline(linetype="dashed", color="gray")+
+  geom_hline(yintercept = 0.6, linetype="dashed",color="gray")+
+  geom_point(alpha=0.4)+ theme_light()+guides(color=FALSE, fill=FALSE)+facet_wrap(~nH)
 
-qual %>%  
-  ggplot(aes((PPVH), auc, color=as.factor(PPVH)))+geom_boxplot()+theme_light()+guides(color=FALSE)
+# PPVH et mean.btw
+data %>% as_tibble() %>% 
+  ggplot(aes( PPVH,mean.btw, color=as.factor(nH), fill=as.factor(nH)))+
+  geom_point(alpha=0.3)+ theme_light()+guides(color=FALSE, fill=FALSE)+facet_wrap(~nH)
+
+# iter, une vraie info
+data %>% as_tibble() %>% 
+  ggplot(aes( PPVH,iter, color=as.factor(nH), fill=as.factor(nH)))+
+  geom_point(alpha=0.3)+ theme_light()+guides(color=FALSE, fill=FALSE)+facet_wrap(~nH)
+
+# certains auc <0.5, pourquoi
+data=cbind(qual, misAct,convergence, cond.omgraph,cond.ominf, cond.siginf)  %>%
+  mutate(bad=as.factor(ifelse(auc<=0.5, "auc<0.5", "auc>0.5")))
 
 #------------
 # par arêtes
@@ -164,16 +247,18 @@ tmp4<-t(voisvois) %>% as_tibble() %>% gather(key4, vv)%>% mutate(seed4=as.numeri
 
 probInf<-cbind(tmp1, tmp2, tmp3, tmp4) %>% dplyr::select(seed, prob, cpH,vv, neigb)%>% 
   as_tibble() 
-alpha2<-cbind(alphas, misAct) %>% as_tibble() %>%  mutate(seed=1:nrow(alphas))
-join=left_join(probInf, alpha2, by="seed")
+datanH<-data.frame(nH=misAct$nH,seed=1:200)
+join<-left_join(probInf,datanH, by="seed")
 join %>% 
   ggplot(aes(prob,as.factor(neigb), color=as.factor(neigb), fill=as.factor(neigb)))+
-  geom_density_ridges(alpha=0.3)+mytheme.dark+guides(color=FALSE, fill=FALSE)+
+  geom_density_ridges(alpha=0.3)+mytheme.dark("")+guides(color=FALSE, fill=FALSE)+
   facet_wrap(~nH)
 join %>% 
   ggplot(aes(prob,as.factor(vv), color=as.factor(vv), fill=as.factor(vv)))+
-  geom_density_ridges(alpha=0.3)+mytheme.dark+guides(color=FALSE, fill=FALSE)+
+  geom_density_ridges(alpha=0.3)+mytheme.dark("")+guides(color=FALSE, fill=FALSE)+
   facet_wrap(~nH)
+
+
 # beaucoup de voisins non trouvés
 join %>% filter(neigb==1) %>% 
   ggplot(aes(prob,(nH),  color=as.factor(vv)))+geom_point()+theme_light()
@@ -233,3 +318,4 @@ alphas %>%
 
 vem=Sim15_r0[[1]]
 True_lowBound<-function(Y, M,S,theta,X, W, Wg, Pg, omega)
+  
