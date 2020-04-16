@@ -2,15 +2,12 @@
 
 rm(list=ls()); par(mfrow=c(1, 1), pch=20)
 library(PLNmodels); library(EMtree); library(LITree); library(mvtnorm)
-source("/home/robin/RECHERCHE/RESEAUX/R-Momal/these/R/codes/missingActor/fonctions-missing.R")
+# source("/home/robin/RECHERCHE/RESEAUX/R-Momal/these/R/codes/missingActor/fonctions-missing.R")
+source("/home/robin/RECHERCHE/RESEAUX/R-Momal/these/R/codes/missingActor/fonctions-missing-SR.R")
+# source("/home/robin/RECHERCHE/RESEAUX/R-Momal/these/R/codes/missingActor/fonctions-missing-14-04-20.R")
 
-# Barents data
-dataDir <- '../Data_SR/'; dataName <- 'BarentsFish_Group'
-load(paste0(dataDir, dataName, '.Rdata'))
-Y <- Data$count; n <- nrow(Y); p <- ncol(Y); d <- ncol(Data$covariates) 
-logYfact <- sum(lgamma(Y+1)); log2pi <- log(2*acos(-1))
-
-# Function
+################################################################################
+# Functions
 F_Crit <- function(Y, X, theta, Sigma, Omega=solve(Sigma), M, S, beta=NULL, betat=NULL, Pt=EdgeProba(betat)){
    # Y=Y; X=X; theta=t(pln$model_par$Theta); Sigma=pln$model_par$Sigma; M=pln$var_par$M; S=pln$var_par$S
    n <- nrow(Y); p <- ncol(Y); q <- ncol(M); r <- q-p; d <- ncol(X)
@@ -21,9 +18,9 @@ F_Crit <- function(Y, X, theta, Sigma, Omega=solve(Sigma), M, S, beta=NULL, beta
       # T
       EqLogpT <- HqT <- dfT <- 0
       # Z
-      EqLogpZ <- -n*log(det(Sigma))/2 - sum((t(M)%*%M+diag(colSums(S))) * Omega)/2 - n*q*log2pi/2
+      EqLogpZ <- -n*log(det(Sigma))/2 - sum((t(M)%*%M+diag(colSums(S))) * Omega)/2 - n*p*log2pi/2
       dfZ <- p*(p+1)/2
-      HqZ <- sum(log(S))/2 + n*q*(1+log2pi)/2
+      HqZ <- sum(log(S))/2 + n*p*(1+log2pi)/2
    }else{ # EM tree or miss
       # T
       EqLogpT <- sum(Pt*log(beta + (beta==0)))/2 - log(SumTree(beta))
@@ -37,40 +34,86 @@ F_Crit <- function(Y, X, theta, Sigma, Omega=solve(Sigma), M, S, beta=NULL, beta
       HqZ <- sum(log(S))/2 + n*q*(1+log2pi)/2
    }
    EqLogpTZY <- EqLogpT + EqLogpZ + EqLogpY
-   JZ <- EqLogpZ+HqZ
+   JT <- EqLogpT + HqT
+   JZ <- EqLogpZ + HqZ
    HqTZ <- HqT + HqZ
-   JY <- EqLogpTZY + HqTZ
+   JTZY <- EqLogpTZY + HqTZ
    pBIC <- (dfT+dfZ+dfY)*log(n)/2
-   return(list(d=d, r=r, EqLogpT=EqLogpT, EqLogpZ=EqLogpZ, EqLogpY=EqLogpY, dfT=dfT, dfZ=dfZ, dfY=dfY, HqT=HqT, HqZ=HqZ, 
-               EqLogpTZY=EqLogpTZY, JZ=JZ, HqTZ=HqTZ, JY=JY, 
-               pBIC=pBIC, BIC=JY-pBIC, ICLT=EqLogpTZY-HqT, ICLZ=EqLogpTZY-HqZ, ICLTZ=EqLogpTZY-HqTZ))
+   # pBIC <- dfZ*n/q*log(n)*2 + dfY*log(n)/2
+   return(list(d=d, r=r, 
+               EqLogpT=EqLogpT, EqLogpZ=EqLogpZ, EqLogpY=EqLogpY, 
+               dfT=dfT, dfZ=dfZ, dfY=dfY, HqT=HqT, HqZ=HqZ, 
+               JT=JT, JZ=JZ, EqLogpTZY=EqLogpTZY, HqTZ=HqTZ, JTZ=JT+JZ, JTZY=JTZY, 
+               pBIC=pBIC, BIC=JTZY-pBIC, ICLT=EqLogpTZY-HqT, ICLZ=EqLogpTZY-HqZ, ICLTZ=EqLogpTZY-HqTZ))
+}
+F_PlotSlopeCrit <- function(pen, crit, r, d, title=''){
+   # pen=critEmMiss$pBIC; crit=critEmMiss$JTZY; r=critEmMiss$r; d=critEmMiss$d; title=''
+   reg <- t(sapply(1:max(d), function(dd){lm(crit[which(d==dd)] ~ pen[which(d==dd)])$coef}))
+   plot(pen, crit, col=d, pch=1+r, main=title)
+   sapply(1:max(d), function(dd){
+      abline(reg[dd, 1], reg[dd, 2], col=dd, lwd=2)
+      # yLeg <- min(crit)+(max(d):1)/(max(d)+1)*(max(crit)-min(crit))
+      # text(min(pen[which(d==dd)]), yLeg[dd], round(reg[dd, 2], 1), col=dd, cex=1, pos=3)
+      xLeg <- min(pen)+(1:max(d))/(max(d)+1)*(max(pen)-min(pen))
+      text(xLeg[dd], max(crit), round(reg[dd, 2], 1), col=dd, cex=1, pos=1)
+   })
 }
 
+################################################################################
+# Data
+# Barents data
+dataDir <- '../Data_SR/'; dataName <- 'BarentsFish_Group'
+load(paste0(dataDir, dataName, '.Rdata'))
+Y <- Data$count; 
+# Y <- Data$count[, 1:round(ncol(Y)/2)]; dataName <- paste0(dataName, '_1stHalf')
+# Y <- Data$count[, (round(ncol(Y)/2)+1):ncol(Y)]; dataName <- paste0(dataName, '_2ndHalf')
+
+# # Fake Barents
+# seed <- 1; set.seed(seed); fakeName <- paste0('fakeSeed', seed, '-', dataName)
+# if(!file.exists(paste0(dataDir, fakeName, '.Rdata'))){
+#    load(paste0(dataDir, dataName, '-plnList.Rdata'))
+#    pln <- plnList[[1]]; X <- XList[[1]]
+#    Z <- rmvnorm(nrow(X), sigma=diag(diag(pln$model_par$Sigma)))
+#    mu <- X%*%t(pln$model_par$Theta) + Z
+#    Y <- matrix(rpois(prod(dim(Z)), exp(mu)), nrow(Z), ncol(Z))
+#    Data <- list(count=Y, covariates=Data$covariates)
+#    save(Data, file=paste0(dataDir, fakeName, '.Rdata'))
+# }
+# dataName <- fakeName 
+# load(paste0(dataDir, dataName, '.Rdata')); Y <- Data$count; 
+# plot(mu, log(1+Y)); abline(0, 1)
+
+# Dimensions
+n <- nrow(Y); p <- ncol(Y); dMax <- 1+ncol(Data$covariates) 
+rMax <- 3; logYfact <- sum(lgamma(Y+1)); log2pi <- log(2*acos(-1))
+
+################################################################################
 # PLN fit
 if(!file.exists(paste0(dataDir, dataName, '-plnList.Rdata'))){
-   XList <- sapply(0:d, function(h){X <- matrix(1, nrow(Y), 1); if(h>0){X <- cbind(X, Data$covariates[, 1:h])}; return(X)})
-   plnList <- sapply(0:d, function(h){PLN(Y ~ -1+XList[[1+h]])})
+   XList <- sapply(1:dMax, function(d){X <- matrix(1, nrow(Y), 1); if(d>1){X <- cbind(X, Data$covariates[, 1:(d-1)])}; return(X)})
+   plnList <- sapply(1:dMax, function(d){PLN(Y ~ -1+XList[[d]])})
    save(XList, plnList, file=paste0(dataDir, dataName, '-plnList.Rdata'))
 }
 load(paste0(dataDir, dataName, '-plnList.Rdata'))
 
 # PLN crit
-critPln <- t(sapply(0:d, function(h){ # h <- 2
-   pln <- plnList[[1+h]]; X <- XList[[1+h]]
+critPln <- t(sapply(1:dMax, function(d){ # d <- 1
+   pln <- plnList[[d]]; X <- XList[[d]]
    F_Crit(Y=Y, X=X, theta=t(pln$model_par$Theta), Sigma=pln$model_par$Sigma, M=pln$var_par$M, S=pln$var_par$S)
-   }))
+}))
 
+################################################################################
 # EMtree fit
-if(!file.exists(paste0(dataDir, dataName, '-emTreeList.Rdata'))){
+if(!file.exists(paste0(dataDir, dataName, '-emTreeList-r', rMax, '.Rdata'))){
    emTreeList <- list()
-   sapply(0:d, function(h){emTreeList[[1+h]] <<- EMtree(plnList[[1+h]])})
-   save(emTreeList, file=paste0(dataDir, dataName, '-emTreeList.Rdata'))
+   sapply(1:dMax, function(d){emTreeList[[d]] <<- EMtree(plnList[[d]])})
+   save(emTreeList, file=paste0(dataDir, dataName, '-emTreeList-r', rMax, '.Rdata'))
 }
-load(paste0(dataDir, dataName, '-emTreeList.Rdata'))
+load(paste0(dataDir, dataName, '-emTreeList-r', rMax, '.Rdata'))
 
 # EMtree crit
-critEmTree <- t(sapply(0:d, function(h){ # h <- 2
-   pln <- plnList[[1+h]]; emTree <- emTreeList[[1+h]]; X <- XList[[1+h]]
+critEmTree <- t(sapply(1:dMax, function(d){ # d <- 2
+   pln <- plnList[[d]]; emTree <- emTreeList[[d]]; X <- XList[[d]]
    Sigma <- pln$model_par$Sigma; beta <- emTree$edges_weight
    logPsi <- -log(1 - cov2cor(Sigma)^2 + (cov2cor(Sigma)==1))/2
    betat <- beta * exp(n*logPsi)
@@ -78,73 +121,130 @@ critEmTree <- t(sapply(0:d, function(h){ # h <- 2
           beta=beta, betat=betat)
 }))
 
+################################################################################
 # EMmiss fit
-rMax <- 2; 
-if(!file.exists(paste0(dataDir, dataName, '-emMissList.Rdata'))){
+noBeta = FALSE
+if(!file.exists(paste0(dataDir, dataName, '-emMissList-r', rMax, '.Rdata'))){
    library(tidyverse); library(useful); library(MASS); library(reshape2); library(parallel); library(sparsepca)
    eps <- 1e-3; alpha <- 1; cores <- 3; plot <- FALSE; maxIter <- 100; B <- 1
    emMissList <- list()
-   for(h in 0:d){ # h <- 1
-      emMissList[[1+h]] <- list()
-      MO <-plnList[[1+h]]$var_par$M ; SO <- plnList[[1+h]]$var_par$S; 
-      theta <- plnList[[1+h]]$model_par$Theta; SigmaO <- plnList[[1+h]]$model_par$Sigma
+   for(d in 1:dMax){ # d <- 1
+      emMissList[[d]] <- list()
+      MO <-plnList[[d]]$var_par$M ; SO <- plnList[[d]]$var_par$S; 
+      theta <- plnList[[d]]$model_par$Theta; SigmaO <- plnList[[d]]$model_par$Sigma
       #initialize 
       cat('\n init \n')
       init0 = initVEM(Y, initviasigma=NULL, SigmaO, r=0)
       Wginit= init0$Wginit; Winit= init0$Winit; Omegainit=init0$omegainit 
       # vem r 0
-      cat('\n', c(h, 0), '\n')
-      emMissList[[1+h]]$VEM[[1]]
+      cat('\n', c(d, 0), '\n')
+      emMissList[[d]]$VEM[[1]]
       VEM0 <-VEMtree(Y, MO, SO, MH=NULL, ome_init=Omegainit, W_init=Winit, eps=eps,
                      Wg_init=Wginit, plot=plot, maxIter=maxIter, print.hist=FALSE,
                      vraiOm=NULL, alpha=alpha, verbatim=FALSE, filterPg=TRUE, 
-                     filterWg=TRUE)
-      emMissList[[1+h]]$VEM0 <- VEM0
+                     filterWg=TRUE, nobeta=noBeta)
+      emMissList[[d]]$VEM0 <- VEM0
       #  vary r
       VEMr<-lapply(1:rMax, function(r){
-         cat('\n', c(h, r), '\n')
+         cat('\n', c(d, r), '\n')
          cat(paste0(r," missing actors: "))
          cliques_spca <- boot_FitSparsePCA(scale(Y),B,r=r)
          ListVEM <- List.VEM(cliqueList=cliques_spca, Y, SigmaO, MO, SO, alpha, r=r, cores=cores,
-                             eps=eps, maxIter)
+                             eps=eps, maxIter, nobeta=noBeta)
          return(ListVEM)
       })
-      emMissList[[1+h]]$VEMr <- VEMr
+      emMissList[[d]]$VEMr <- VEMr
    }
-   save(emMissList, file=paste0(dataDir, dataName, '-emMissList.Rdata'))
+   save(emMissList, file=paste0(dataDir, dataName, '-emMissList-r', rMax, '.Rdata'))
 }
-load(paste0(dataDir, dataName, '-emMissList.Rdata'))
+load(paste0(dataDir, dataName, '-emMissList-r', rMax, '.Rdata'))
 
 # Reshape EmMiss fit
-for(h in 0:d){ # h <- 1
-   emMissList[[1+h]]$VEM <- list()
-   emMissList[[1+h]]$VEM[[1]] <- emMissList[[1+h]]$VEM0
-   for(r in 1:rMax){cat(r, ''); emMissList[[1+h]]$VEM[[1+r]] <- emMissList[[1+h]]$VEMr[[r]][[1]]}
+for(d in 1:dMax){ # d <- 1
+   emMissList[[d]]$VEM <- list()
+   emMissList[[d]]$VEM[[1]] <- emMissList[[d]]$VEM0
+   for(r in 1:rMax){cat(r, ''); emMissList[[d]]$VEM[[1+r]] <- emMissList[[d]]$VEMr[[r]][[1]]}
 }
 
 # EMmiss crit
 critEmMiss <- c()
-invisible(t(sapply(0:d, function(h){ # h <- 2
-   pln <- plnList[[1+h]]; X <- XList[[1+h]]; emMiss <- emMissList[[1+h]]
+invisible(t(sapply(1:dMax, function(d){ # d <- 2
+   pln <- plnList[[d]]; X <- XList[[d]]; emMiss <- emMissList[[d]]
    sapply(0:rMax, function(r){ # r <- 1
       vem <- emMiss$VEM[[1+r]]; 
       crit <- unlist(F_Crit(Y=Y, X=X, theta=t(pln$model_par$Theta), Sigma=NULL, Omega=vem$omega, M=vem$M, S=vem$S, 
-                            beta=vem$W, betat=vem$Wg, Pt=EdgeProba(vem$W)))
+                            beta=vem$W, betat=vem$Wg))
       crit <- unlist(c(crit, vem$lowbound[nrow(vem$lowbound), ]))
       critEmMiss <<- rbind(critEmMiss, crit)
    })
 })))
 
-# critEmMiss <- critOrg
+################################################################################
+# Results
+# Comp parms EmTree / EmMiss
+par(mfrow=c(dMax, 5), mex=.6)
+# par(mfrow=c(3, 2), mex=.6)
+t(sapply(1:dMax, function(d){ # d <- 1
+   pln <- plnList[[d]]; X <- XList[[d]]; emTree <- emTreeList[[d]]; emMiss <- emMissList[[d]]$VEM0
+   Sigma <- pln$model_par$Sigma; logPsi <- -log(1 - cov2cor(Sigma)^2 + (cov2cor(Sigma)==1))/2;
+   # beta
+   betaTree <- emTree$edges_weight; betaMiss <- emMiss$W
+   betatTree <- betaTree * exp(n*logPsi)
+   betatMiss <- emMiss$Wg
+   logBetaTree <- log(betaTree) - log(SumTree(betaTree))/(p-1) + log((p-1)) 
+   logBetatTree <- log(betatTree) - log(SumTree(betatTree))/(p-1) + log((p-1)) 
+   logBetaMiss <- log(betaMiss) - log(SumTree(betaMiss))/(p-1) + log((p-1)) 
+   logBetatMiss <- log(betatMiss) - log(SumTree(betatMiss))/(p-1) + log((p-1)) 
+   c(SumTree(exp(logBetaTree)), SumTree(exp(logBetatTree)), SumTree(exp(logBetaMiss)), SumTree(exp(logBetatMiss)))
+   plot(logBetatTree, logBetatMiss, col=2, xlab='tree', ylab='miss', main=paste0('beta: d=', d)); abline(a=0, b=1, v=0)
+   points(logBetaTree, logBetaMiss, col=1)
+   points(logBetatTree-logBetaTree, logBetatMiss-logBetaMiss, col=4)
+   # M
+   plot(pln$var_par$M, emMiss$M, xlab='tree', ylab='miss', main=paste0('M: d=', d)); abline(a=0, b=1, v=0)
+   # S
+   plot(pln$var_par$S, emMiss$S, xlab='tree', ylab='miss', main=paste0('S: d=', d)); abline(a=0, b=1, v=0)
+   # Omega
+   colMat <- matrix(1, p, p); diag(colMat) <- 2
+   plot(solve(Sigma), emMiss$omega, col=colMat, xlab='tree', ylab='miss', main=paste0('Omega: d=', d)); abline(a=0, b=1, h=0, v=0)
+   # Z.hat * Omega
+   colMat <- matrix(1, p, p); diag(colMat) <- 2
+   SShatTree <- (t(pln$var_par$M)%*%pln$var_par$M+diag(colSums(pln$var_par$S)))
+   SShatMiss <- (t(emMiss$M)%*%emMiss$M+diag(colSums(emMiss$S)))
+   plot(SShatTree*solve(Sigma), SShatMiss*emMiss$omega, col=colMat, xlab='tree', ylab='miss', main=paste0('SS*Omega: d=', d)); abline(a=0, b=1, h=0, v=0)
+   # # Sigma
+   # colMat <- matrix(1, p, p); diag(colMat) <- 2
+   # plot((Sigma), (solve(emMiss$omega)), col=colMat, xlab='tree', ylab='miss', main=paste0('Sigma: d=', d)); abline(a=0, b=1, h=0, v=0)
+}))
+
+# Check RM / SR
 critEmMiss <- as.data.frame(critEmMiss)
-critEmMiss$klT <- critEmMiss$EqLogpT + critEmMiss$HqT 
-print(critEmMiss[, c('d', 'r', 'EqLogpT', 'HqT', 'T2', 'klT', 'JY', 'J')])
-critEmMiss$JZ <- critEmMiss$EqLogpZ + critEmMiss$HqZ 
+print(critEmMiss[, c('d', 'r', 'EqLogpT', 'HqT', 'T2', 'JT', 'JTZY', 'J')])
 critEmMiss$T3 <- critEmMiss$J - critEmMiss$T1 - critEmMiss$T2 
 critEmMiss$T13 <- critEmMiss$T1 + critEmMiss$T3 
 print(critEmMiss[, c('d', 'r', 'EqLogpZ', 'HqZ', 'JZ', 'T1', 'T3', 'T13')])
-critEmMiss$JTZ <- critEmMiss$EqLogpT + critEmMiss$HqT + critEmMiss$EqLogpZ + critEmMiss$HqZ 
 print(critEmMiss[, c('d', 'r', 'EqLogpT', 'EqLogpZ', 'EqLogpY', 'HqT', 'HqZ', 'JTZ', 'J')])
-# print(critEmMiss[1:6, c('d', 'r', 'EqLogpT', 'EqLogpZ.T', 'EqLogpY.Z', 'HqT', 'HqZ')])
-# modeSelEmMiss <- critEmMiss[, c('d', 'r', 'EqLogpTZY', 'HqTZ', 'J', 'pBIC', 'BIC', 'ICL')]
-# print(modeSelEmMiss)
+
+critEmMiss$ICLT <- critEmMiss$BIC - critEmMiss$HqT
+critEmMiss$ICLZ <- critEmMiss$BIC - critEmMiss$HqZ
+critEmMiss$ICLTZ <- critEmMiss$BIC - critEmMiss$HqTZ
+critEmMiss$q <- p + critEmMiss$r
+critEmMiss$cardT <- (critEmMiss$q-2) * log(critEmMiss$q)
+
+varList <- c('d', 'r', 'EqLogpT', 'HqT', 'JT', 'EqLogpZ', 'HqZ', 'JZ', 'EqLogpY', 'JTZY', 'JTZ') #, 'pBIC', 'BIC', 'ICLTZ')
+critEmMiss[, varList]
+critEmMiss[which(critEmMiss$r==0), varList]
+critEmTree[, varList]
+critPln[, varList]
+
+par(mfrow=c(2, 2))
+F_PlotSlopeCrit(n*critEmMiss$q*log(critEmMiss$q), critEmMiss$JZ, critEmMiss$r, critEmMiss$d)
+
+
+
+par(mfrow=c(3, 2), mex=.6)
+F_PlotSlopeCrit(critEmMiss$pBIC, critEmMiss$JTZY, critEmMiss$r, critEmMiss$d)
+F_PlotSlopeCrit(critEmMiss$pBIC, critEmMiss$JTZ, critEmMiss$r, critEmMiss$d)
+F_PlotSlopeCrit(critEmMiss$pBIC, critEmMiss$JZ, critEmMiss$r, critEmMiss$d)
+F_PlotSlopeCrit(critEmMiss$pBIC+critEmMiss$cardT, critEmMiss$JTZY, critEmMiss$r, critEmMiss$d)
+F_PlotSlopeCrit(critEmMiss$pBIC+critEmMiss$cardT, critEmMiss$JTZ, critEmMiss$r, critEmMiss$d)
+F_PlotSlopeCrit(critEmMiss$pBIC+critEmMiss$cardT, critEmMiss$JZ, critEmMiss$r, critEmMiss$d)
