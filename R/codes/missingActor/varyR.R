@@ -53,7 +53,7 @@ boot_VEM0<-function(Y,MO,SO,B=40, eps,alpha=1, maxIter){
   })
   return(list.res)
 }
-simu_vary_r<-function(p,n,r,B,maxH,maxIter,seed,type,eps=1e-3,  cores=3, plot){
+simu_vary_r<-function(p,n,r,B,maxH,maxIter,alpha,seed,type,eps=1e-3,nobeta=FALSE, cores=3, plot){
   set.seed(seed)
   # sim data
   missing_data<-missing_from_scratch(n,p,r=r,type,plot)
@@ -62,21 +62,19 @@ simu_vary_r<-function(p,n,r,B,maxH,maxIter,seed,type,eps=1e-3,  cores=3, plot){
   PLNfit<-PLN(counts~1, control=list(trace=0))
   MO<-PLNfit$var_par$M  ; SO<-PLNfit$var_par$S  ; 
   theta=PLNfit$model_par$Theta; sigma_obs=PLNfit$model_par$Sigma
-  alpha=200/((p+r)*n)
   init0=initVEM(counts , initviasigma = NULL,  sigma_obs,r = 0)
   Wginit= init0$Wginit; Winit= init0$Winit; omegainit=init0$omegainit 
   # vem with original counts
   VEM_r0<-VEMtree(counts, MO, SO, MH=NULL,ome_init = omegainit,W_init =Winit,eps=eps,
                   Wg_init =Wginit,plot = FALSE, maxIter = maxIter,print.hist = FALSE,
-                  vraiOm = NULL, alpha=alpha, verbatim=FALSE, filterPg = FALSE, 
-                  filterWg = FALSE )
+                    alpha=alpha, verbatim=FALSE, filterWg = FALSE, nobeta=nobeta )
   #  vary r
   VEMr<-lapply(1:maxH, function(r){
     cat(paste0(r," missing actors: "))
     t1<-Sys.time()
     cliques_spca <- boot_FitSparsePCA(scale(MO),B,r=r)
-    ListVEM<-List.VEM(cliquesObj =cliques_spca, counts, sigma_obs, MO,SO,r=r, cores=cores,
-                      eps=eps,maxIter)
+    ListVEM<-List.VEM(cliquesObj =cliques_spca, counts, sigma_obs, MO,SO,r=r,alpha=alpha, cores=cores,
+                      eps=eps,maxIter, nobeta=nobeta)
     t2<-Sys.time()
     runtime=difftime(t2,t1)
     cat(paste0(round(runtime,3), attr(runtime, "units"),"\n"))
@@ -106,13 +104,17 @@ simr0$list.vem0[[1]]$lowbound %>% rowid_to_column() %>%  gather(key,value,-rowid
 
 ############
 #-- run
+q=p+r
+D=.Machine$double.xmax
+alpha = (1/n)*((1/(q-1))*log(D) - log(q))
+
 seed=1; p=14 ; B=100; type="scale-free" ; n=200 ; maxIter=100
 t1<-Sys.time()
-simu_vary_r(seed=seed,B=B, n=n, p=p,r=0,maxIter=100,maxH=4, type = type, plot=FALSE)
+simu_vary_r(seed=seed,B=B, n=n, p=p,r=0,alpha=1,maxIter=100,maxH=4, type = type,nobeta=FALSE, plot=FALSE )
 t2<-Sys.time()
 difftime(t2, t1)
 t1<-Sys.time()
-simu_vary_r(seed=seed,B=B, n=n, p=p,r=1,maxIter=100,maxH=4, type = type, plot=FALSE)
+simu_vary_r(seed=seed,B=B, n=n, p=p,r=1,alpha=1,maxIter=100,maxH=4, type = type, nobeta=FALSE, plot=FALSE)
 t2<-Sys.time()
 difftime(t2, t1)
 #--
@@ -139,10 +141,14 @@ critr0$trueR=0
 critr1$trueR=1
 
 crit=rbind(critr0,critr1)
-crit %>%as_tibble() %>% dplyr::select(J,r, trueR) %>% group_by(trueR,r) %>% 
+plot=crit %>%as_tibble() %>% dplyr::select(J,r, trueR) %>% group_by(trueR,r) %>% 
   summarise(max=max(J)) %>% 
   ggplot(aes(r,max,color=as.factor(trueR)))+geom_point()+geom_line()+
   mytheme.dark("True r:")+  labs(x="r",y="max Lower Bound")
+
+ggsave(filename = "EvolMaxJ_r.png", plot = plot,
+       path ="/Users/raphaellemomal/these/R/images/", width = 4, height = 3)
+
 #----------------
 # nombre d'initialisations qui ont convergé pour chaque r
 nbconv0<-data.frame(nbconv=do.call(rbind, lapply(simr0$VEMr, length)),

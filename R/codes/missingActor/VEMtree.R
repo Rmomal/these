@@ -114,26 +114,23 @@ plotVEM(VEM_1$Pg,ome,r=1, 0.5)
 # find alpha on the observed part of the initial "non beta" quantities needed to compute the beta tilde
 # alpha<-computeAlpha(omegainit[O,O], MO, SO)
 # alpha=1
-init=initVEM(counts = counts,initviasigma=cliques_spca$cliqueList[[4]], sigma_obs,r = r) 
+init=initVEM(counts = counts,initviasigma=cliques_spca$cliqueList[[4]], sigma_obs,r = r) #cliques_spca$cliqueList[[4]]
 Wginit= init$Wginit; Winit= init$Winit; omegainit=init$omegainit ; MHinit=init$MHinit
 test=omegainit ;diag(test)=0
 ggimage(test)
 
 q=p+r
 D=.Machine$double.xmax
-D=1e+200
+ 
 alpha = (1/n)*((1/(q-1))*log(D) - log(q))
 alpha2=(1/(n*q))*log(D/(q^(q/2)))
 curve((1/n)*((1/(x-1))*log(D) - log(x)),from=15, to=30)
 curve((1/(n*x))*log(D/(x^(x/2))),from=15, to=30, add=T, col="red")
 
-resVEM<-VEMtree(counts,MO,SO,MH=MHinit,omegainit,Winit,Wginit, 
-                eps=1e-3, alpha=alpha,
-                maxIter=20, plot=TRUE,vraiOm=ome_init,print.hist=FALSE,
-                filterPg=FALSE,filterWg=FALSE, verbatim = TRUE,nobeta = TRUE)
+resVEM<-VEMtree(counts,MO,SO,MH=MHinit,omegainit,Winit,Wginit, eps=1e-3, alpha=1, maxIter=50,
+                plot=TRUE,print.hist=FALSE, filterWg=FALSE, verbatim = TRUE,nobeta = FALSE)
 
-test=resVEM$Pg ; diag(test) = mean(F_Sym2Vec(resVEM$Pg))
-ggimage(test)
+resVEM$features
 ggimage(resVEM$Pg)
 ggimage(resVEM$omega)
 ggimage(EdgeProba(resVEM$Wg))
@@ -141,20 +138,16 @@ ggimage(EdgeProba(resVEM$W))
 
 ggimage(ome)
 
-resVEMraw<-VEMtree(counts,MO,SO,MH=MHinit,omegainit,Winit,Wginit, 
-                   eps=1e-3, alpha=alpha,
-                   maxIter=2, plot=TRUE,vraiOm=ome_init, condTrack=FALSE,print.hist=FALSE,
-                   filterPg=FALSE)
-features=resVEMfilter$features
+ 
+ 
 plotVEM(resVEMfilter$Pg,ome,r=1,seuil=0.5)
-plotVEM(resVEMraw$Pg,ome,r=1,seuil=0.5)
+ 
 valuesRaw=courbes_seuil(probs = resVEMraw$Pg,omega = ome,h = 15,seq_seuil = seq(0,1,0.02))
-valuesFilter=courbes_seuil(probs = resVEMfilter$Pg,omega = ome,h = 15,seq_seuil = seq(0,1,0.02))
 valuesRaw %>% mutate(crit = PPV+TPR) %>% filter(crit==max(crit, na.rm=TRUE)) %>%
   summarise(mins=min(seuil), maxs=max(seuil), PPV=max(PPV), PPVO=max(PPVO),PPVH=max(PPVH), 
             TPR=max(TPR),TPRO=max(TPRO),TPRH=max(TPRH))
 plotVerdict(valuesFilter, seuil)+guides(color=FALSE)
-plotVerdict(valuesRaw, seuil)+guides(color=FALSE)
+ 
 #ggsave("precrec_missing.png", plot=p, width=8, height=4,path= "/Users/raphaellemomal/these/R/images")
 
 # lower bound check

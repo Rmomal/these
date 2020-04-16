@@ -1,3 +1,4 @@
+
 library(rcdd)
 pivot.fractional <- function(A, trace=FALSE, inverse=TRUE) {
   A<-d2q(as.matrix(A))
@@ -60,12 +61,65 @@ inverse.fractional<-function(A){
   q2d(A.inv)
 }
 
-det.fractional<-function(A){
+
+# Attention ne marche que pour les matrices définies positives
+det.fractional<-function(A,log=TRUE){
+  
   factors<-pivot.fractional(A,trace=FALSE,inverse=FALSE)$det.factors
-  det.A<-qprod(factors)
-  determinant <-q2d(det.A)
-  if (determinant > .Machine$double.xmax)
-    determinant <- .Machine$double.xmax 
-  if (determinant < .Machine$double.xmin)
-    determinant <- .Machine$double.xmin
-  return(determinant)}
+  if(log){
+    output<-sum(log(abs(q2d(factors))))
+  }else{
+    output <-q2d(qprod(factors))
+  }  
+  if(output > .Machine$double.xmax){
+    warning("prec. machine max atteinte")
+    output <- .Machine$double.xmax 
+    }
+  
+  if(output < .Machine$double.xmin){
+    warning("prec. machine min atteinte")
+    output <- .Machine$double.xmin
+    }
+  return(output)
+}
+
+
+# #passe
+# set.seed(0)
+# A<-matrix(rnorm(400)*1e+10,20,20)
+# diag(A)<-colSums(A)+1
+# print(d<-det(A))
+# print(log(d))
+# det.fractional(A,log=FALSE)
+# det.fractional(A)
+# 
+# #passe pas
+# set.seed(0)
+# A<-matrix(rnorm(400)*1e+30,20,20)
+# diag(A)<-colSums(A)+1
+# print(d<-det(A))
+# print(log(d))
+# det.fractional(A,log=FALSE)
+# det.fractional(A)
+
+
+
+x <- function(i){
+  if (i < 10) warning("A warning")
+  i
+}
+
+tt <- tryCatch(x(5),error=function(e) e, warning=function(w) w)
+
+tt2 <- tryCatch(x(15),error=function(e) e, warning=function(w) w)
+
+tt
+## <simpleWarning in x(5): A warning>
+
+tt2
+## [1] 15
+
+if(is(tt,"warning")) print("KOOKOO")
+## [1] "KOOKOO"
+
+if(is(tt2,"warning")) print("KOOKOO")
