@@ -145,7 +145,7 @@ if(!file.exists(paste0(dataDir, dataName, '-emMissList-r', rMax, '.Rdata'))){
       D=.Machine$double.xmax
       alpha = (1/n)*((1/(q-1))*log(D) - log(q))
       VEM0 <-VEMtree(Y, MO, SO, MH=NULL, ome_init=Omegainit, W_init=Winit, eps=eps,
-                     Wg_init=Wginit, plot=TRUE, maxIter=maxIter, print.hist=FALSE,
+                     Wg_init=Wginit, plot=FALSE, maxIter=maxIter, print.hist=FALSE,
                      alpha=alpha, verbatim=FALSE,   nobeta=noBeta)
       emMissList[[d]]$VEM0 <- VEM0
       #  vary r
