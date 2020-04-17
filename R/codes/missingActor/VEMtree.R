@@ -82,7 +82,7 @@ ome=ome_init ; diag(ome)=0
 # plotInitMclust(res=clique_mclust,title = "")
 
 
-cliques_spca <- boot_FitSparsePCA(scale(MO),100,r=1)
+cliques_spca <- boot_FitSparsePCA(scale(MO),100,r=2, cores=1)
 
 # best VEM with 1 missing actor
 ListVEM<-List.VEM(cliqueList=cliques_spca, counts, sigma_obs, MO,SO,r=1,eps=1e-3, cores=3,maxIter=100)
@@ -114,34 +114,36 @@ plotVEM(VEM_1$Pg,ome,r=1, 0.5)
 # find alpha on the observed part of the initial "non beta" quantities needed to compute the beta tilde
 # alpha<-computeAlpha(omegainit[O,O], MO, SO)
 # alpha=1
-init=initVEM(counts = counts,initviasigma=cliques_spca$cliqueList[[4]], sigma_obs,r = r) #cliques_spca$cliqueList[[4]]
+init=initVEM(counts = counts,initviasigma=cliques_spca$cliqueList[[1]], sigma_obs,r = 2) #cliques_spca$cliqueList[[4]]
 Wginit= init$Wginit; Winit= init$Winit; omegainit=init$omegainit ; MHinit=init$MHinit
 test=omegainit ;diag(test)=0
 ggimage(test)
-
+r=2
 q=p+r
 D=.Machine$double.xmax
  
 alpha = (1/n)*((1/(q-1))*log(D) - log(q))
-alpha2=(1/(n*q))*log(D/(q^(q/2)))
-curve((1/n)*((1/(x-1))*log(D) - log(x)),from=15, to=30)
-curve((1/(n*x))*log(D/(x^(x/2))),from=15, to=30, add=T, col="red")
+#alpha2=(1/(n*q))*log(D/(q^(q/2)))
+# curve((1/n)*((1/(x-1))*log(D) - log(x)),from=15, to=30)
+# curve((1/(n*x))*log(D/(x^(x/2))),from=15, to=30, add=T, col="red")
 
-resVEM<-VEMtree(counts,MO,SO,MH=MHinit,omegainit,Winit,Wginit, eps=1e-3, alpha=alpha, maxIter=15,
-                plot=TRUE,print.hist=FALSE, filterWg=FALSE, verbatim = TRUE,nobeta = FALSE)
+resVEM<-VEMtree(counts,MO,SO,MH=MHinit,omegainit,Winit,Wginit, eps=1e-5, alpha=alpha, 
+                maxIter=100, plot=TRUE,print.hist=FALSE, verbatim = TRUE,nobeta = TRUE)
 
-resVEM$features
+plotVEM(resVEM$Pg,ome,r=1,seuil=0.5)
 ggimage(resVEM$Pg)
+resVEM$features
+g1<-ggimage(resVEM$Pg)+labs(title="après la bosse")
+g2<-ggimage(resVEM$Pg)+labs(title="avant la bosse")
 ggimage(resVEM$omega)
 ggimage(EdgeProba(resVEM$Wg))
 ggimage(EdgeProba(resVEM$W))
 
-ggimage(ome)
+g3<-ggimage(ome)+labs(title="vérité")
 
+grid.arrange(g2, g1, g3, nrow=1)
  
- 
-plotVEM(resVEMfilter$Pg,ome,r=1,seuil=0.5)
- 
+
 valuesRaw=courbes_seuil(probs = resVEMraw$Pg,omega = ome,h = 15,seq_seuil = seq(0,1,0.02))
 valuesRaw %>% mutate(crit = PPV+TPR) %>% filter(crit==max(crit, na.rm=TRUE)) %>%
   summarise(mins=min(seuil), maxs=max(seuil), PPV=max(PPV), PPVO=max(PPVO),PPVH=max(PPVH), 
