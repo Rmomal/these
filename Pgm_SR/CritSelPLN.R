@@ -1,15 +1,16 @@
 # Model selection for PLN tree-shaped models
 
 rm(list=ls()); par(mfrow=c(1, 1), pch=20)
-library(PLNmodels); library(EMtree); library(LITree); library(mvtnorm)
-# source("/home/robin/RECHERCHE/RESEAUX/R-Momal/these/R/codes/missingActor/fonctions-missing.R")
-source("/home/robin/RECHERCHE/RESEAUX/R-Momal/these/R/codes/missingActor/fonctions-missing-SR.R")
+library(PLNmodels); library(EMtree); library(LITree); library(mvtnorm); library(ggplot2)
+source("/home/robin/RECHERCHE/RESEAUX/R-Momal/these/R/codes/missingActor/fonctions-missing.R")
+# source("/home/robin/RECHERCHE/RESEAUX/R-Momal/these/R/codes/missingActor/fonctions-missing-SR.R")
 # source("/home/robin/RECHERCHE/RESEAUX/R-Momal/these/R/codes/missingActor/fonctions-missing-14-04-20.R")
 
 ################################################################################
 # Functions
 F_Crit <- function(Y, X, theta, Sigma, Omega=solve(Sigma), M, S, beta=NULL, betat=NULL, Pt=EdgeProba(betat)){
-   # Y=Y; X=X; theta=t(pln$model_par$Theta); Sigma=pln$model_par$Sigma; M=pln$var_par$M; S=pln$var_par$S
+   # Y=Y; X=X; theta=t(pln$model_par$Theta); 
+   # Omega=vem$omega; M=vem$M; S=vem$S; beta=vem$W; betat=vem$Wg
    n <- nrow(Y); p <- ncol(Y); q <- ncol(M); r <- q-p; d <- ncol(X)
    # Y
    EqLogpY <- -sum(exp(X%*%theta + M[, 1:p] + S[, 1:p]/2)) + sum(Y*(X%*%theta + M[, 1:p])) - logYfact
@@ -18,7 +19,8 @@ F_Crit <- function(Y, X, theta, Sigma, Omega=solve(Sigma), M, S, beta=NULL, beta
       # T
       EqLogpT <- HqT <- dfT <- 0
       # Z
-      EqLogpZ <- -n*log(det(Sigma))/2 - sum((t(M)%*%M+diag(colSums(S))) * Omega)/2 - n*p*log2pi/2
+      EqSS  <- t(M)%*%M + diag(colSums(S))
+      EqLogpZ <- -n*log(det(Sigma))/2 - sum(EqSS * Omega)/2 - n*p*log2pi/2
       dfZ <- p*(p+1)/2
       HqZ <- sum(log(S))/2 + n*p*(1+log2pi)/2
    }else{ # EM tree or miss
@@ -27,9 +29,9 @@ F_Crit <- function(Y, X, theta, Sigma, Omega=solve(Sigma), M, S, beta=NULL, beta
       dfT <- q*(q-1)/2 - 1
       HqT <- -sum(Pt*log(betat + (betat==0)))/2 + log(SumTree(betat))
       # Z
-      logPsi <- log(1 - cov2cor(Omega)^2 + (cov2cor(Omega)==1))/2
-      EqLogpZ <- n*sum(log(diag(Omega)))/2 + n*sum(Pt*logPsi)/2 - 
-         sum(Pt * (t(M)%*%M+diag(colSums(S))) * Omega)/2 - n*q*log2pi/2
+      logDetOmega <- sum(log(diag(Omega))) + sum(log(1 - cov2cor(Omega)^2 + (cov2cor(Omega)==1)))/2
+      EqSS  <- t(M)%*%M + diag(colSums(S))
+      EqLogpZ <- n*logDetOmega/2 - sum(diag(EqSS * Omega)) / 2 - sum(Pt * EqSS * Omega)/2 - n*q*log2pi/2
       dfZ <- q*(q+1)/2
       HqZ <- sum(log(S))/2 + n*q*(1+log2pi)/2
    }
@@ -62,8 +64,7 @@ F_PlotSlopeCrit <- function(pen, crit, r, d, title=''){
 ################################################################################
 # Data
 # Barents data
-dataDir <- '../Data_SR/'
-#dataDir <- '/Users/raphaellemomal/these/Data_SR/'; dataName <- 'BarentsFish_Group'
+dataDir <- '../Data_SR/'; dataName <- 'BarentsFish_Group'
 load(paste0(dataDir, dataName, '.Rdata'))
 Y <- Data$count; 
 # Y <- Data$count[, 1:round(ncol(Y)/2)]; dataName <- paste0(dataName, '_1stHalf')
@@ -125,7 +126,6 @@ critEmTree <- t(sapply(1:dMax, function(d){ # d <- 2
 ################################################################################
 # EMmiss fit
 noBeta = FALSE
-
 if(!file.exists(paste0(dataDir, dataName, '-emMissList-r', rMax, '.Rdata'))){
    library(tidyverse); library(useful); library(MASS); library(reshape2); library(parallel); library(sparsepca)
    eps <- 1e-3; alpha <- 1; cores <- 3; plot <- FALSE; maxIter <- 100; B <- 1
@@ -141,20 +141,20 @@ if(!file.exists(paste0(dataDir, dataName, '-emMissList-r', rMax, '.Rdata'))){
       # vem r 0
       cat('\n', c(d, 0), '\n')
       emMissList[[d]]$VEM[[1]]
-      q=p+r
       D=.Machine$double.xmax
-      alpha = (1/n)*((1/(q-1))*log(D) - log(q))
+      qMax=p+rMax
+      alpha = (1/n)*((1/(qMax-1))*log(D) - log(qMax))
       VEM0 <-VEMtree(Y, MO, SO, MH=NULL, ome_init=Omegainit, W_init=Winit, eps=eps,
                      Wg_init=Wginit, plot=FALSE, maxIter=maxIter, print.hist=FALSE,
-                     alpha=alpha, verbatim=FALSE,   nobeta=noBeta)
+                     alpha=alpha, verbatim=FALSE, nobeta=noBeta)
       emMissList[[d]]$VEM0 <- VEM0
       #  vary r
-      VEMr<-lapply(1:rMax, function(r){
+      VEMr<-lapply(1:rMax, function(r){ # r <- 1
          cat('\n', c(d, r), '\n')
          cat(paste0(r," missing actors: "))
          cliques_spca <- boot_FitSparsePCA(scale(Y),B,r=r)
          ListVEM <- List.VEM(cliquesObj=cliques_spca, Y, SigmaO, MO, SO,  r=r, cores=1,
-                             eps=eps, maxIter=maxIter,  nobeta=noBeta)
+                             eps=eps, maxIter=maxIter, alpha=alpha, nobeta=noBeta)
          return(ListVEM)
       })
       emMissList[[d]]$VEMr <- VEMr
@@ -231,20 +231,21 @@ print(critEmMiss[, c('d', 'r', 'EqLogpT', 'EqLogpZ', 'EqLogpY', 'HqT', 'HqZ', 'J
 critEmMiss$ICLT <- critEmMiss$BIC - critEmMiss$HqT
 critEmMiss$ICLZ <- critEmMiss$BIC - critEmMiss$HqZ
 critEmMiss$ICLTZ <- critEmMiss$BIC - critEmMiss$HqTZ
-critEmMiss$q <- p + critEmMiss$r
-critEmMiss$cardT <- (critEmMiss$q-2) * log(critEmMiss$q)
-
-varList <- c('d', 'r', 'EqLogpT', 'HqT', 'JT', 'EqLogpZ', 'HqZ', 'JZ', 'EqLogpY', 'JTZY', 'JTZ') #, 'pBIC', 'BIC', 'ICLTZ')
-critEmMiss[, varList]
-critEmMiss[which(critEmMiss$r==0), varList]
-critEmTree[, varList]
-critPln[, varList]
-
-par(mfrow=c(2, 2))
-F_PlotSlopeCrit(n*critEmMiss$q*log(critEmMiss$q), critEmMiss$JZ, critEmMiss$r, critEmMiss$d)
-
-
-
+critEmMiss[, c('d', 'r', 'EqLogpT', 'EqLogpZ', 'EqLogpY', 'HqT', 'HqZ', 'JT', 'JZ', 'JTZY', 'BIC', 'ICLT', 'ICLZ', 'ICLTZ')]
+# critEmMiss$q <- p + critEmMiss$r
+# critEmMiss$cardT <- (critEmMiss$q-2) * log(critEmMiss$q)
+# 
+# varList <- c('d', 'r', 'EqLogpT', 'HqT', 'JT', 'EqLogpZ', 'HqZ', 'JZ', 'EqLogpY', 'JTZY', 'JTZ') #, 'pBIC', 'BIC', 'ICLTZ')
+# critEmMiss[, varList]
+# critEmMiss[which(critEmMiss$r==0), varList]
+# critEmTree[, varList]
+# critPln[, varList]
+# 
+# par(mfrow=c(2, 2))
+# F_PlotSlopeCrit(n*critEmMiss$q*log(critEmMiss$q), critEmMiss$JZ, critEmMiss$r, critEmMiss$d)
+# 
+# 
+# 
 par(mfrow=c(3, 2), mex=.6)
 F_PlotSlopeCrit(critEmMiss$pBIC, critEmMiss$JTZY, critEmMiss$r, critEmMiss$d)
 F_PlotSlopeCrit(critEmMiss$pBIC, critEmMiss$JTZ, critEmMiss$r, critEmMiss$d)
