@@ -301,7 +301,7 @@ computeWg<-function(phi,omega,W,MH,MO,S, alpha,hidden=TRUE, hist=FALSE, verbatim
   SigmaTilde= (t(M)%*%M + diag(colSums(S)))/n
   
   ## update
-  logWg<-log(W)+alpha*(n*0.25*log(phi)-0.5*n*(omega*SigmaTilde))
+  logWg<-log(W)+alpha*(n*0.25*log(phi+(phi==0))-0.5*n*(omega*SigmaTilde))
   diag(logWg) = 0
   #--- centrage O
   gammaO=F_Sym2Vec(logWg[O,O])
@@ -349,7 +349,7 @@ CorOmegaMatrix<-function(omega){
            )
          })
   
-  CorOmega[abs(CorOmega)<1e-14]<-1e-14
+  #CorOmega[abs(CorOmega)<1e-14]<-1e-14
   return(CorOmega)
 }
 
@@ -422,7 +422,7 @@ LowerBound<-function(Pg ,omega, M, S, W, Wg,p){
   if(hidden) H=(p+1):q
   
   #Egh lop (Z |T)
-  t1<- sum(F_Sym2Vec(n*0.5* Pg * log (psi)))
+  t1<- sum(F_Sym2Vec(n*0.5* Pg * log (psi+(psi==0))))
   t2<-(- 0.5)* sum( ((Pg+diag(q))*omega)*(t(M)%*%M + diag(colSums(S))) ) 
   t3<- n*0.5* sum(log(diag(omega)))  - q*n*0.5*log(2*pi)
   T1<-t1+t2+t3
