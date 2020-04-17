@@ -739,7 +739,7 @@ Mstep_nobeta<-function(M,S,Pg, omega,W,verbatim=FALSE,Wg,p){
 
 #===========
 VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, maxIter=20,eps=1e-2, alpha,
-                  verbatim=TRUE, plot=TRUE, print.hist=FALSE, filterWg=FALSE, nobeta=FALSE){
+                  verbatim=TRUE, plot=FALSE, print.hist=FALSE, filterWg=FALSE, nobeta=FALSE){
   n=nrow(MO);  p=ncol(MO);  O=1:ncol(MO); trim=FALSE
   hidden=!is.null(MH)
   if(hidden){  
