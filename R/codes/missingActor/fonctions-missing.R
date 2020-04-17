@@ -690,10 +690,10 @@ Mstep<-function(M,S,Pg, omega,W, beta.min,beta.max, plot=FALSE,eps, verbatim=FAL
   if(hidden) H=(p+1):q
   SigmaTilde = (t(M)%*%M+ diag(colSums(S)) )/ n
   # if(iterVEM==1){
-     omegaDiag=1/diag(SigmaTilde)
+     #omegaDiag=1/diag(SigmaTilde)
   # }else{
   # 
-    #omegaDiag=diag(omega)
+    omegaDiag=diag(omega)
   # }
   #omegaDiag=diag(omega)
   #LB0=LowerBound(Pg = Pg, omega=omega, M=M, S=S,W=W, Wg=Wg,p)[1]
