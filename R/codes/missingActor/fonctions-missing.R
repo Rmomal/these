@@ -432,7 +432,7 @@ LowerBound<-function(Pg ,omega, M, S, W, Wg,p){
   if(!is.finite(T2)) browser()
   
   #Eh log h(Z), reste constant car omegaH fixé à 1 pour identifiabilité 
-  T3<- (0.5*sum(log(S)) + n*q*0.5*(1+log(2*pi)))
+  T3<- (0.5*sum(log(diag(t(M)%*%M + diag(colSums(S))))) + n*q*0.5*(1+log(2*pi)))
  
   J=T1+T2+T3
   if(is.nan(J)) browser()
@@ -908,9 +908,6 @@ criteria<-function(List.vem,counts,theta, matcovar,r){
 List.VEM<-function(cliquesObj, counts, sigma_obs, MO,SO,r,alpha, cores,maxIter,eps, nobeta){
   p=ncol(counts) ; O=1:p ; n=nrow(counts)
   # alpha=200/((p+r)*n)
-  q=p+r
-  D=.Machine$double.xmax
-  alpha = (1/n)*((1/(q-1))*log(D) - log(q))
   #--- run all initialisations with parallel computation
   list<-mclapply(seq_along(cliquesObj$cliqueList), function(num){
     #init
@@ -920,7 +917,7 @@ List.VEM<-function(cliquesObj, counts, sigma_obs, MO,SO,r,alpha, cores,maxIter,e
     #run VEMtree
  
     VEM<-VEMtree(counts,MO,SO,MH=MHinit,omegainit,Winit,Wginit, eps=eps, alpha=alpha,maxIter=maxIter, 
-                 verbatim = FALSE,,  print.hist=FALSE, filterWg = FALSE, nobeta=nobeta)
+                 verbatim = FALSE,  print.hist=FALSE, filterWg = FALSE, nobeta=nobeta)
     VEM$clique=c
     VEM$nbocc=cliquesObj$nb_occ[num]
     return(VEM)
