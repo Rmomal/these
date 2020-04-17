@@ -917,7 +917,7 @@ List.VEM<-function(cliquesObj, counts, sigma_obs, MO,SO,r,alpha, cores,maxIter,e
     #run VEMtree
  
     VEM<-VEMtree(counts,MO,SO,MH=MHinit,omegainit,Winit,Wginit, eps=eps, alpha=alpha,maxIter=maxIter, 
-                 verbatim = FALSE, plot=TRUE, print.hist=FALSE, filterWg = FALSE, nobeta=nobeta)
+                 verbatim = FALSE, print.hist=FALSE, filterWg = FALSE, nobeta=nobeta)
     VEM$clique=c
     VEM$nbocc=cliquesObj$nb_occ[num]
     return(VEM)
