@@ -417,12 +417,12 @@ computeOmegaOH<-function(omegaDiag,SigmaTilde,p){
 
 LowerBound<-function(Pg ,omega, M, S, W, Wg,p){
   n=nrow(M) ; q=nrow(omega) ; O=1:p ; r=q-p
-  psi=CorOmegaMatrix(omega)
+  phi=CorOmegaMatrix(omega)
   hidden = (q!=p)
   if(hidden) H=(p+1):q
   
   #Egh lop (Z |T)
-  t1<- sum(F_Sym2Vec(n*0.5* Pg * log (psi+(psi==0))))
+  t1<- sum(F_Sym2Vec(n*0.5* Pg * log (phi+(phi==0))))
   t2<-(- 0.5)* sum( ((Pg+diag(q))*omega)*(t(M)%*%M + diag(colSums(S))) ) 
   t3<- n*0.5* sum(log(diag(omega)))  - q*n*0.5*log(2*pi)
   T1<-t1+t2+t3
@@ -458,10 +458,10 @@ F_Sym2Vec <- function(A.mat){
 EMtree_corZ<-function(CovZ,n,  maxIter=30, cond.tol=1e-10, verbatim=FALSE, plot=FALSE){
   CorZ=cov2cor(CovZ)
   p = ncol(CorZ)
-  alpha.psi = Psi_alpha(CorZ, n, cond.tol=cond.tol)
-  psi = alpha.psi$psi
+  alpha.phi = Psi_alpha(CorZ, n, cond.tol=cond.tol)
+  phi = alpha.phi$phi
   beta.unif = matrix(1, p, p); diag(beta.unif) = 0; beta.unif = beta.unif / sum(beta.unif)
-  FitEM = FitBetaStatic(beta.init=beta.unif, psi=psi, maxIter = maxIter,
+  FitEM = FitBetaStatic(beta.init=beta.unif, phi=phi, maxIter = maxIter,
                         verbatim=verbatim, plot=plot)
   return(FitEM)
 }
