@@ -458,10 +458,10 @@ F_Sym2Vec <- function(A.mat){
 EMtree_corZ<-function(CovZ,n,  maxIter=30, cond.tol=1e-10, verbatim=FALSE, plot=FALSE){
   CorZ=cov2cor(CovZ)
   p = ncol(CorZ)
-  alpha.phi = Psi_alpha(CorZ, n, cond.tol=cond.tol)
-  phi = alpha.phi$phi
+  alpha.psi = Psi_alpha(CorZ, n, cond.tol=cond.tol)
+  psi = alpha.psi$psi
   beta.unif = matrix(1, p, p); diag(beta.unif) = 0; beta.unif = beta.unif / sum(beta.unif)
-  FitEM = FitBetaStatic(beta.init=beta.unif, phi=phi, maxIter = maxIter,
+  FitEM = FitBetaStatic(beta.init=beta.unif, psi=psi, maxIter = maxIter,
                         verbatim=verbatim, plot=plot)
   return(FitEM)
 }
