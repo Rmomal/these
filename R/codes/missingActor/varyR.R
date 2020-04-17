@@ -69,7 +69,7 @@ simu_vary_r<-function(p,n,r,B,maxH,maxIter,alpha,seed,type,eps=1e-3,nobeta=FALSE
                   Wg_init =Wginit,plot = FALSE, maxIter = maxIter,print.hist = FALSE,
                     alpha=alpha, verbatim=FALSE, filterWg = FALSE, nobeta=nobeta )
   #  vary r
-  VEMr<-lapply(1:maxH, function(r){
+  VEMr<-lapply(2, function(r){
     cat(paste0(r," missing actors: "))
     t1<-Sys.time()
     cliques_spca <- boot_FitSparsePCA(scale(MO),B,r=r)
@@ -96,7 +96,7 @@ simu_vary_r<-function(p,n,r,B,maxH,maxIter,alpha,seed,type,eps=1e-3,nobeta=FALSE
 # })
 # length((cliques_spca6))
 # 
-simr0$list.vem0[[1]]$lowbound %>% rowid_to_column() %>%  gather(key,value,-rowid,-V6) %>%
+`scale-free_seed1_r0_1-2`[[2]]$lowbound %>% rowid_to_column() %>%  gather(key,value,-rowid,-V6) %>%
   ggplot(aes(rowid,value, group=key))+geom_point(aes(color=as.factor(V6)), size=3)+geom_line()+
   facet_wrap(~key, scales="free")+
   labs(x="iteration",y="", title="Lower bound and components")+mytheme+
@@ -110,7 +110,7 @@ alpha = (1/n)*((1/(q-1))*log(D) - log(q))
 
 seed=1; p=14 ; B=100; type="scale-free" ; n=200 ; maxIter=100
 t1<-Sys.time()
-simu_vary_r(seed=seed,B=B, n=n, p=p,r=0,alpha=1,maxIter=100,maxH=4, type = type,nobeta=FALSE, plot=FALSE )
+simu_vary_r(seed=seed,B=B, n=n, p=p,r=0,alpha=1,maxIter=100,maxH=2, type = type,nobeta=FALSE, plot=FALSE )
 t2<-Sys.time()
 difftime(t2, t1)
 t1<-Sys.time()
@@ -219,7 +219,7 @@ p2<-critr1 %>% as_tibble() %>% filter(r<4) %>%gather(key, value, -r ) %>% filter
   geom_boxplot(alpha=0.3)+mytheme.dark("")+
   facet_wrap(~key, scale="free")+guides(color=FALSE,fill=FALSE)+
   labs(x="number of missing actors",y="",title="seed=1, r=1")
-plot=grid.arrange(p1, p2, ncol=2)
+grid.arrange(p1, p2, ncol=2)
 #----------------
 stat=critr1 %>% as_tibble() %>% 
   mutate(penICL = J-ICL) %>% group_by(r) %>% 

@@ -62,7 +62,8 @@ F_PlotSlopeCrit <- function(pen, crit, r, d, title=''){
 ################################################################################
 # Data
 # Barents data
-dataDir <- '../Data_SR/'; dataName <- 'BarentsFish_Group'
+dataDir <- '../Data_SR/'
+#dataDir <- '/Users/raphaellemomal/these/Data_SR/'; dataName <- 'BarentsFish_Group'
 load(paste0(dataDir, dataName, '.Rdata'))
 Y <- Data$count; 
 # Y <- Data$count[, 1:round(ncol(Y)/2)]; dataName <- paste0(dataName, '_1stHalf')
@@ -124,6 +125,7 @@ critEmTree <- t(sapply(1:dMax, function(d){ # d <- 2
 ################################################################################
 # EMmiss fit
 noBeta = FALSE
+
 if(!file.exists(paste0(dataDir, dataName, '-emMissList-r', rMax, '.Rdata'))){
    library(tidyverse); library(useful); library(MASS); library(reshape2); library(parallel); library(sparsepca)
    eps <- 1e-3; alpha <- 1; cores <- 3; plot <- FALSE; maxIter <- 100; B <- 1
@@ -139,18 +141,20 @@ if(!file.exists(paste0(dataDir, dataName, '-emMissList-r', rMax, '.Rdata'))){
       # vem r 0
       cat('\n', c(d, 0), '\n')
       emMissList[[d]]$VEM[[1]]
+      q=p+r
+      D=.Machine$double.xmax
+      alpha = (1/n)*((1/(q-1))*log(D) - log(q))
       VEM0 <-VEMtree(Y, MO, SO, MH=NULL, ome_init=Omegainit, W_init=Winit, eps=eps,
-                     Wg_init=Wginit, plot=plot, maxIter=maxIter, print.hist=FALSE,
-                     vraiOm=NULL, alpha=alpha, verbatim=FALSE, filterPg=TRUE, 
-                     filterWg=TRUE, nobeta=noBeta)
+                     Wg_init=Wginit, plot=TRUE, maxIter=maxIter, print.hist=FALSE,
+                     alpha=alpha, verbatim=FALSE,   nobeta=noBeta)
       emMissList[[d]]$VEM0 <- VEM0
       #  vary r
       VEMr<-lapply(1:rMax, function(r){
          cat('\n', c(d, r), '\n')
          cat(paste0(r," missing actors: "))
          cliques_spca <- boot_FitSparsePCA(scale(Y),B,r=r)
-         ListVEM <- List.VEM(cliqueList=cliques_spca, Y, SigmaO, MO, SO, alpha, r=r, cores=cores,
-                             eps=eps, maxIter, nobeta=noBeta)
+         ListVEM <- List.VEM(cliquesObj=cliques_spca, Y, SigmaO, MO, SO,  r=r, cores=1,
+                             eps=eps, maxIter=maxIter,  nobeta=noBeta)
          return(ListVEM)
       })
       emMissList[[d]]$VEMr <- VEMr

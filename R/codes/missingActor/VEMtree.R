@@ -127,7 +127,7 @@ alpha2=(1/(n*q))*log(D/(q^(q/2)))
 curve((1/n)*((1/(x-1))*log(D) - log(x)),from=15, to=30)
 curve((1/(n*x))*log(D/(x^(x/2))),from=15, to=30, add=T, col="red")
 
-resVEM<-VEMtree(counts,MO,SO,MH=MHinit,omegainit,Winit,Wginit, eps=1e-3, alpha=1, maxIter=50,
+resVEM<-VEMtree(counts,MO,SO,MH=MHinit,omegainit,Winit,Wginit, eps=1e-3, alpha=alpha, maxIter=15,
                 plot=TRUE,print.hist=FALSE, filterWg=FALSE, verbatim = TRUE,nobeta = FALSE)
 
 resVEM$features

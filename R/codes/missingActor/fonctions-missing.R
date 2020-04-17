@@ -301,7 +301,7 @@ computeWg<-function(phi,omega,W,MH,MO,S, alpha,hidden=TRUE, hist=FALSE, verbatim
   SigmaTilde= (t(M)%*%M + diag(colSums(S)))/n
   
   ## update
-  logWg<-log(W)+alpha*(n*0.5*log(phi)-0.5*n*(omega*SigmaTilde))
+  logWg<-log(W)+alpha*(n*0.25*log(phi)-0.5*n*(omega*SigmaTilde))
   diag(logWg) = 0
   #--- centrage O
   gammaO=F_Sym2Vec(logWg[O,O])
@@ -319,10 +319,16 @@ computeWg<-function(phi,omega,W,MH,MO,S, alpha,hidden=TRUE, hist=FALSE, verbatim
     Wg[H,O]<-t(Wg[O,H])
   }
   #--- trimming
+  
+  if(hist){
+    hist(gammaO, breaks=20)
+    hist(gammaOH, breaks=20)
+  }
   q99=quantile(Wg[O,O],0.99)
   Wg[Wg>min(bsup,q99)]<-min(bsup,q99)
   Wg[Wg<binf]<-binf
   trim=TRUE
+ if(hidden) Wg[H,H]=0
   diag(Wg)=0
   
   return(list(Wg=Wg,trim=trim))
@@ -368,7 +374,9 @@ computeOffDiag<-function(omegaDiag,SigmaTilde,p){
   #   SigmaTilde[O,H]<-2*SigmaTilde[O,H]
   #   SigmaTilde[H,O]<-2*SigmaTilde[H,O]
   # }
+  
   omega=matrix(0,q,q)
+  #omegaDiag=1/diag(SigmaTilde)
   sapply(1:(q-1),
          function(j){
            sapply((j+1):q,
@@ -414,9 +422,10 @@ LowerBound<-function(Pg ,omega, M, S, W, Wg,p){
   if(hidden) H=(p+1):q
   
   #Egh lop (Z |T)
-  t1<- sum(F_Sym2Vec(n*0.5* Pg * log (psi)))+ n*0.5* sum(log(diag(omega)))  - q*n*0.5*log(2*pi)
+  t1<- sum(F_Sym2Vec(n*0.5* Pg * log (psi)))
   t2<-(- 0.5)* sum( ((Pg+diag(q))*omega)*(t(M)%*%M + diag(colSums(S))) ) 
-  T1<-t1+t2
+  t3<- n*0.5* sum(log(diag(omega)))  - q*n*0.5*log(2*pi)
+  T1<-t1+t2+t3
   
   # Eglog(p) - Eg log(g)
   T2<-sum(F_Sym2Vec(Pg) * (log(F_Sym2Vec(W)+(F_Sym2Vec(W)==0)) - log(F_Sym2Vec(Wg)+(F_Sym2Vec(Wg)==0)) )) - logSumTree(W)$det+ logSumTree(Wg)$det
@@ -424,10 +433,10 @@ LowerBound<-function(Pg ,omega, M, S, W, Wg,p){
   
   #Eh log h(Z), reste constant car omegaH fixé à 1 pour identifiabilité 
   T3<- (0.5*sum(log(S)) + n*q*0.5*(1+log(2*pi)))
-  
+ 
   J=T1+T2+T3
   if(is.nan(J)) browser()
-  return(c(J=J, T1=T1, T2=T2, t1=t1, t2=t2))
+  return(c(J=J, T1=T1, T2=T2, t1=t1, t2=t2,t3=t3, T3=T3))
 }
 
 
@@ -627,7 +636,8 @@ VE<-function(MO,SO,SH,omega,W,Wg,MH,Pg,maxIter,minIter,eps, alpha,beta.min=exp(-
   hidden=(ncol(omega)!=ncol(MO))
   if(hidden){
     H=(p+1):ncol(omega);r=length(H)
-    SH <-matrix(1/(diag(omega)[H]),n,r, byrow = TRUE)
+    #SH <-matrix(1/(diag(omega)[H]),n,r, byrow = TRUE)
+    SH <-matrix(1,n,r)
     S<-cbind(SO,SH)# all SHi have same solution, depending only on Mstep
     M=cbind(MO,MH) 
   }else{
@@ -674,30 +684,38 @@ VE<-function(MO,SO,SH,omega,W,Wg,MH,Pg,maxIter,minIter,eps, alpha,beta.min=exp(-
 }
 
 #===========
-Mstep<-function(M,S,Pg, omega,W, beta.min,beta.max, plot=FALSE,eps, verbatim=FALSE,Wg,p){
-  n=nrow(S)  ; O=1:p ; q=ncol(omega) ; iter=0 ; diff=1
+Mstep<-function(M,S,Pg, omega,W, beta.min,beta.max, plot=FALSE,eps, verbatim=FALSE,Wg,p, iterVEM){
+  n=nrow(S)  ; O=1:p ; q=ncol(omega) ; iterM=0 ; diff=1
   hidden=(q!=p)
   if(hidden) H=(p+1):q
   SigmaTilde = (t(M)%*%M+ diag(colSums(S)) )/ n
-  omegaDiag=diag(omega)
-  LB0=LowerBound(Pg = Pg, omega=omega, M=M, S=S,W=W, Wg=Wg,p)[1]
+  # if(iterVEM==1){
+    # omegaDiag=1/diag(SigmaTilde)
+  # }else{
+  # 
+    omegaDiag=diag(omega)
+  # }
+  #omegaDiag=diag(omega)
+  #LB0=LowerBound(Pg = Pg, omega=omega, M=M, S=S,W=W, Wg=Wg,p)[1]
   
   #--- Omega
+ 
   omega.new=computeOffDiag(omegaDiag, SigmaTilde,p)
   omega=omega.new
   LB1=c(LowerBound(Pg = Pg, omega=omega, M=M, S=S,W=W, Wg=Wg,p),"omega")
-  phi=CorOmegaMatrix(omega)  
+  
   #diffinvSigO= max(abs(solve(omega.new)[O,O] - SigmaTilde[O,O]))
   # diffinvSigO= max(abs(solve(SigmaTilde[O,O])-((omega.new[O,O]-1/omega.new[H,H]*matrix(omega.new[O,H], p, length(H))%*%matrix(omega.new[H,O],length(H),p)))))
   #if(verbatim) cat(paste0(", diffinvSigO=",round(diffinvSigO,5)))
   
   #--- Beta
-  while((diff>eps) & (iter <= 2)){
-    iter=iter+1
+  while((diff>eps) & (iterM <= 2)){
+    iterM=iterM+1
     Mei=Meila(W)  # the reason for the while
     W.new= Pg/(Mei)  
     W.new[which(W.new> beta.max)] = beta.max
     W.new[which(W.new< beta.min)] = beta.min
+   if(hidden) W.new[H,H]=0
     diag(W.new)=0
     diff=max(abs(F_Sym2Vec(W.new)-F_Sym2Vec(W)))
     W=W.new
@@ -727,15 +745,22 @@ VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, maxIter=20,eps=1e-2, 
   if(hidden){  
     H=(p+1):ncol(ome_init);r=length(H)
     SH=matrix(1,nrow=n,ncol=r)
+    M=cbind(MO,MH) ; S=cbind(SO, SH)
   }else{
     r=0
     SH= NULL
+    M=MO ; S=SO
   }
   omega=ome_init;  W=W_init;  Wg=Wg_init; Pg=matrix(0.5, ncol(W),ncol(W)) 
   iter=0 ; lowbound=list()
   diffW=c();diffOm=c();diffWg=c();diffPg=c();diffMH=c(); diffquantile=c()
   diffWiter=1 ; diffJ=1 ; J=c(0)
   t1=Sys.time()
+ 
+  # SigmaTilde=(t(M)%*%M + diag(colSums(S)))/n
+  # omegaDiag = 1/diag(SigmaTilde)
+  # omega=computeOffDiag(omegaDiag,SigmaTilde,p)
+
   #&& (diffJ>=0)
   while((((diffW[iter] > eps) || (diffOm[iter] > eps) )  && (iter < maxIter))|| iter<1){ 
     iter=iter+1 
@@ -767,13 +792,15 @@ VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, maxIter=20,eps=1e-2, 
       omega=omega.new
       diffW[iter]= diffOm[iter]
     }else{
-      resM<-Mstep(M=M,S=S,Pg=Pg, omega=omega,W=W, beta.min=exp(-20),beta.max=exp(20),plot=FALSE, eps=1e-3 ,Wg=Wg, p=p)
+      resM<-Mstep(M=M,S=S,Pg=Pg, omega=omega,W=W, beta.min=exp(-20),beta.max=exp(20),plot=FALSE, eps=1e-3 ,Wg=Wg, p=p, 
+                  iterVEM=iter)
       W.new=resM$W
       diffW[iter]=abs(max(W.new-W))
       diffWiter=diffW[iter]
       W=W.new
       omega.new=resM$omega
       diffOm[iter]=abs(max(F_Sym2Vec(omega.new)-F_Sym2Vec(omega)))
+      
       omega=omega.new
     }
     lowbound[[iter]] = rbind( resVE$LB, resM$LB) 
@@ -891,8 +918,9 @@ List.VEM<-function(cliquesObj, counts, sigma_obs, MO,SO,r,alpha, cores,maxIter,e
     init=initVEM(counts = counts, initviasigma=c, sigma_obs,r = r)
     Wginit= init$Wginit; Winit= init$Winit; omegainit=init$omegainit ; MHinit=init$MHinit
     #run VEMtree
+ 
     VEM<-VEMtree(counts,MO,SO,MH=MHinit,omegainit,Winit,Wginit, eps=eps, alpha=alpha,maxIter=maxIter, 
-                 verbatim = FALSE,  plot=FALSE,  print.hist=FALSE, filterWg = FALSE, nobeta=nobeta)
+                 verbatim = FALSE,,  print.hist=FALSE, filterWg = FALSE, nobeta=nobeta)
     VEM$clique=c
     VEM$nbocc=cliquesObj$nb_occ[num]
     return(VEM)
