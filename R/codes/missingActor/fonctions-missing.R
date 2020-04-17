@@ -432,7 +432,7 @@ LowerBound<-function(Pg ,omega, M, S, W, Wg,p){
   if(!is.finite(T2)) browser()
   
   #Eh log h(Z), reste constant car omegaH fixé à 1 pour identifiabilité 
-  T3<- (0.5*sum(log(diag(t(M)%*%M + diag(colSums(S))))) + n*q*0.5*(1+log(2*pi)))
+  T3<- (0.5*sum(log(S))) + n*q*0.5*(1+log(2*pi))
  
   J=T1+T2+T3
   if(is.nan(J)) browser()
@@ -690,10 +690,10 @@ Mstep<-function(M,S,Pg, omega,W, beta.min,beta.max, plot=FALSE,eps, verbatim=FAL
   if(hidden) H=(p+1):q
   SigmaTilde = (t(M)%*%M+ diag(colSums(S)) )/ n
   # if(iterVEM==1){
-    # omegaDiag=1/diag(SigmaTilde)
+     omegaDiag=1/diag(SigmaTilde)
   # }else{
   # 
-    omegaDiag=diag(omega)
+    #omegaDiag=diag(omega)
   # }
   #omegaDiag=diag(omega)
   #LB0=LowerBound(Pg = Pg, omega=omega, M=M, S=S,W=W, Wg=Wg,p)[1]
@@ -917,7 +917,7 @@ List.VEM<-function(cliquesObj, counts, sigma_obs, MO,SO,r,alpha, cores,maxIter,e
     #run VEMtree
  
     VEM<-VEMtree(counts,MO,SO,MH=MHinit,omegainit,Winit,Wginit, eps=eps, alpha=alpha,maxIter=maxIter, 
-                 verbatim = FALSE,  print.hist=FALSE, filterWg = FALSE, nobeta=nobeta)
+                 verbatim = FALSE, plot=TRUE, print.hist=FALSE, filterWg = FALSE, nobeta=nobeta)
     VEM$clique=c
     VEM$nbocc=cliquesObj$nb_occ[num]
     return(VEM)
