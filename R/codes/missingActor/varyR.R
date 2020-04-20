@@ -60,7 +60,7 @@ simu_vary_r<-function(p,n,r,B,maxH,maxIter,alpha,seed,type,eps=1e-3,nobeta=FALSE
   counts=missing_data$Y; omega=missing_data$Omega
   # Observed parameters
   PLNfit<-PLN(counts~1, control=list(trace=0))
-  MO<-PLNfit$var_par$M  ; SO<-PLNfit$var_par$S  ; 
+  MO<-PLNfit$var_par$M  ; SO<-PLNfit$var_par$S ; 
   theta=PLNfit$model_par$Theta; sigma_obs=PLNfit$model_par$Sigma
   init0=initVEM(counts , initviasigma = NULL,  sigma_obs,r = 0)
   Wginit= init0$Wginit; Winit= init0$Winit; omegainit=init0$omegainit 
@@ -72,7 +72,7 @@ simu_vary_r<-function(p,n,r,B,maxH,maxIter,alpha,seed,type,eps=1e-3,nobeta=FALSE
   VEMr<-lapply(2, function(r){
     cat(paste0(r," missing actors: "))
     t1<-Sys.time()
-    cliques_spca <- boot_FitSparsePCA(scale(MO),B,r=r)
+    cliques_spca <- boot_FitSparsePCA(scale(MO),B,r=r,cores=cores)
     ListVEM<-List.VEM(cliquesObj =cliques_spca, counts, sigma_obs, MO,SO,r=r,alpha=alpha, cores=cores,
                       eps=eps,maxIter, nobeta=nobeta)
     t2<-Sys.time()
@@ -108,7 +108,7 @@ q=p+r
 D=.Machine$double.xmax
 alpha = (1/n)*((1/(q-1))*log(D) - log(q))
 
-seed=1; p=14 ; B=100; type="scale-free" ; n=200 ; maxIter=100
+seed=1; p=14 ; B=1; type="scale-free" ; n=200 ; maxIter=100
 t1<-Sys.time()
 simu_vary_r(seed=seed,B=B, n=n, p=p,r=0,alpha=1,maxIter=100,maxH=2, type = type,nobeta=FALSE, plot=FALSE )
 t2<-Sys.time()

@@ -82,7 +82,7 @@ ome=ome_init ; diag(ome)=0
 # plotInitMclust(res=clique_mclust,title = "")
 
 
-cliques_spca <- boot_FitSparsePCA(scale(MO),100,r=2, cores=1)
+cliques_spca <- boot_FitSparsePCA(scale(MO),100,r=1, cores=1)
 
 # best VEM with 1 missing actor
 ListVEM<-List.VEM(cliqueList=cliques_spca, counts, sigma_obs, MO,SO,r=1,eps=1e-3, cores=3,maxIter=100)
@@ -114,7 +114,7 @@ plotVEM(VEM_1$Pg,ome,r=1, 0.5)
 # find alpha on the observed part of the initial "non beta" quantities needed to compute the beta tilde
 # alpha<-computeAlpha(omegainit[O,O], MO, SO)
 # alpha=1
-init=initVEM(counts = counts,initviasigma=cliques_spca$cliqueList[[1]], sigma_obs,r = 2) #cliques_spca$cliqueList[[4]]
+init=initVEM(counts = counts,initviasigma=trueClique, sigma_obs,r = 1) #cliques_spca$cliqueList[[4]]
 Wginit= init$Wginit; Winit= init$Winit; omegainit=init$omegainit ; MHinit=init$MHinit
 test=omegainit ;diag(test)=0
 ggimage(test)
@@ -127,8 +127,8 @@ alpha = (1/n)*((1/(q-1))*log(D) - log(q))
 # curve((1/n)*((1/(x-1))*log(D) - log(x)),from=15, to=30)
 # curve((1/(n*x))*log(D/(x^(x/2))),from=15, to=30, add=T, col="red")
 
-resVEM<-VEMtree(counts,MO,SO,MH=MHinit,omegainit,Winit,Wginit, eps=1e-5, alpha=alpha, 
-                maxIter=100, plot=TRUE,print.hist=FALSE, verbatim = TRUE,nobeta = TRUE)
+resVEM<-VEMtree(counts,MO,SO,MH=MHinit,omegainit,Winit,Wginit, eps=1e-3, alpha=alpha, 
+                maxIter=50, plot=TRUE,print.hist=FALSE,filterWg=TRUE, verbatim = TRUE,nobeta = FALSE)
 
 plotVEM(resVEM$Pg,ome,r=1,seuil=0.5)
 ggimage(resVEM$Pg)
