@@ -70,55 +70,55 @@ FitSparsePCA <- function(Y, r=1, alphaGrid=10^(seq(-4, 0, by=.1))){
   # Fit sparse PCA on a grid of alpha
   # Needs an estimate o Sigma: empirical variance of the rotated scores 
   #    + diagonal risidual variances (why not?)
-  n <- nrow(Y); p <- ncol(Y); alphaNb <- length(alphaGrid); 
-  # Fits all sparsePCA
-  sPCA <- list()
-  for(a in 1:alphaNb){
-    sPCA[[a]] <- spca(Y, k=r, alpha=alphaGrid[a], verbose=FALSE)
-    sPCA[[a]]$Sigma <- cov(sPCA[[a]]$scores%*%t(sPCA[[a]]$transform))
+  n <- nrow(Y); p <- ncol(Y); alphaNb <- length(alphaGrid); nbDifferentH=-1
+  while(nbDifferentH!=r){
+    # Fits all sparsePCA
+    sPCA <- list()
+    for(a in 1:alphaNb){
+      sPCA[[a]] <- spca(Y, k=r, alpha=alphaGrid[a], verbose=FALSE)
+      sPCA[[a]]$Sigma <- cov(sPCA[[a]]$scores%*%t(sPCA[[a]]$transform))
+      
+      resVar <- (n-1)*apply(Y - sPCA[[a]]$scores %*% t(sPCA[[a]]$transform), 2, var)/n
+      sPCA[[a]]$Sigma <- sPCA[[a]]$Sigma  + diag(resVar)
+      sPCA[[a]]$df <- 1 + sum(sPCA[[a]]$loadings!=0)
+      sPCA[[a]]$loglik <- sum(dmvnorm((Y), sigma=sPCA[[a]]$Sigma, log=TRUE))
+      sPCA[[a]]$bic <- sPCA[[a]]$loglik - log(n)*sPCA[[a]]$df/2
+    }
+    #2 neighbors minimum
+    df<-unlist(lapply(sPCA, function(sPca){sPca$df}))
     
-    resVar <- (n-1)*apply(Y - sPCA[[a]]$scores %*% t(sPCA[[a]]$transform), 2, var)/n
-    sPCA[[a]]$Sigma <- sPCA[[a]]$Sigma  + diag(resVar)
-    sPCA[[a]]$df <- 1 + sum(sPCA[[a]]$loadings!=0)
-    sPCA[[a]]$loglik <- sum(dmvnorm((Y), sigma=sPCA[[a]]$Sigma, log=TRUE))
-    sPCA[[a]]$bic <- sPCA[[a]]$loglik - log(n)*sPCA[[a]]$df/2
+    good<-do.call(rbind,lapply(sPCA, function(spca){
+      vec_col<-apply(spca$loadings, 2,function(col){
+        sum(col!=0)>1})
+      return(sum(vec_col)==r)
+    }))
+    # Selects alpha via pseudo-BIC
+    loglik <- unlist(lapply(sPCA, function(sPca){sPca$loglik}))
+    bic <- unlist(lapply(sPCA, function(sPca){sPca$bic}))
+    aOpt <- which.max(bic[good])
+    # Find the cliques
+    alphaOpt <- alphaGrid[aOpt]
+    sPcaOpt <- sPCA[[aOpt]]
+    sPcaOpt$loadings
+    cliques <- list(); 
+    sapply(1:ncol(sPcaOpt$loadings), function(j){
+      cliques[[j]] <<- which(sPcaOpt$loadings[, j]!=0)
+    })
+    nbDifferentH<-length(unique(cliques))
   }
-  #2 neighbors minimum
-  df<-unlist(lapply(sPCA, function(sPca){sPca$df}))
-  
-  good<-do.call(rbind,lapply(sPCA, function(spca){
-    vec_col<-apply(spca$loadings, 2,function(col){
-      sum(col!=0)>1})
-    return(sum(vec_col)==r)
-  }))
-  # Selects alpha via pseudo-BIC
-  loglik <- unlist(lapply(sPCA, function(sPca){sPca$loglik}))
-  bic <- unlist(lapply(sPCA, function(sPca){sPca$bic}))
-  aOpt <- which.max(bic[good])
-  # Find the cliques
-  alphaOpt <- alphaGrid[aOpt]
-  sPcaOpt <- sPCA[[aOpt]]
-  sPcaOpt$loadings
-  cliques <- list(); 
-  sapply(1:ncol(sPcaOpt$loadings), function(j){
-    cliques[[j]] <<- which(sPcaOpt$loadings[, j]!=0)
-  })
   return(list(sPcaOpt=sPcaOpt, alphaGrid=alphaGrid, alphaOpt=alphaOpt, 
               loglik=loglik, bic=bic, cliques=cliques))
 }
 
 boot_FitSparsePCA<-function(Y, B,r, cores=3){
-  cliqueList<-list() ; a=1
-  mclapply(1:B, function(x){
+  cliqueList<-mclapply(1:B, function(x){
     n=nrow(Y); v=0.8; n.sample=round(0.8*n, 0)
     ech=sample(1:n,n.sample,replace = FALSE)
     Y.sample=Y[ech,]
     c=FitSparsePCA(Y.sample,r=r)$cliques
-    if(length(unique(c))==r){
-      cliqueList[[a]] <<- c
-      a<<-a+1
-    }
+    return(c)
   }, mc.cores=cores)
+  
   nb_occ<-tabulate(match(cliqueList,unique(cliqueList)))
   cliqueList<-unique(cliqueList)
   return(list(cliqueList=cliqueList,nb_occ=nb_occ) )
@@ -262,11 +262,11 @@ computeAlpha<-function(omegainitO,default=0.6, MO, SO, plot=TRUE){
 # VE step
 
 computeWg<-function(phi,omega,W,MH,MO,S, alpha,hidden=TRUE, hist=FALSE, verbatim=FALSE ){
-  p=ncol(MO); O = 1:p ; n=nrow(MO) ;  binf=exp(-20) ; bsup=exp(30)
+  p=ncol(MO); q=ncol(omega); O = 1:p ; n=nrow(MO) ;  binf=exp(-20) ; bsup=exp(30)
   Wg<-matrix(0,ncol(omega),ncol(omega))
   logWg<-matrix(0,ncol(omega),ncol(omega))
   if(hidden){ r=ncol(MH)
-  H = (p+1):(p+r)  
+  H = (p+1):q  
   M=cbind(MO,MH)
   }else{ r=0 
   M=MO}
@@ -306,7 +306,9 @@ computeWg<-function(phi,omega,W,MH,MO,S, alpha,hidden=TRUE, hist=FALSE, verbatim
   Wg[phi==0]=0
   if(hidden) Wg[H,H]=0
   diag(Wg)=0
-  
+  norm1=10^(round(log10(min(Wg[Wg!=0]))-(-15))) #division maximale pour ne pas tuer les poids les plus petits
+  norm2=max(10^(round(log10(max(Wg))-1)),1)
+  Wg=Wg/(min(norm1, norm2))
   return(list(Wg=Wg ))
 }
 
@@ -413,7 +415,7 @@ EMtree_corZ<-function(CovZ,n,  maxIter=30, cond.tol=1e-10, verbatim=FALSE, plot=
                         verbatim=verbatim, plot=plot)
   return(FitEM)
 }
-EdgeProba <- function(W, verbatim=FALSE, p.min=1e-30){
+EdgeProba <- function(W, verbatim=FALSE, p.min=1e-16){
   logWcum = logSumTree(W)$det
   if(!isSymmetric(W))  cat('Pb: W non symmetric!')
   p = nrow(W); P = matrix(0, p, p)
@@ -427,7 +429,7 @@ EdgeProba <- function(W, verbatim=FALSE, p.min=1e-30){
                     P[j, k] <<- P[k, j]
                   })
          })
-  if(sum(is.na(P))!= 0) browser()
+  # if(sum(is.na(P))!= 0) browser()
   if(length(which(P<p.min))!=0){
     
     P[which(P<p.min)]= 0
@@ -609,15 +611,24 @@ VE<-function(MO,SO,SH,omega,W,Wg,MH,Pg,eps, alpha, filterWg=FALSE,plot=FALSE,ver
   
   #--- Wg
   compWg= computeWg(phi,omega,W,MH,MO,S=S,alpha,hidden=hidden, hist=hist, verbatim=verbatim)  
+  
   Wg.new = compWg$Wg
-  Pg.new = EdgeProba(Wg.new)
+  if(sum(colSums(Wg.new)==0)!=0) browser()
+  Pg.new = suppressWarnings( EdgeProba(Wg.new))
+  # if(sum(is.na(Pg.new))!= 0){# si pb pas de pb
+  #   message("NaNs in Pg")
+  #   Wg.new=Wg
+  #   Pg.new=Pg
+  # }
+  
   LB2=LowerBound(Pg = Pg.new, omega=omega, M=M, S=S,W=W, Wg=Wg.new,p)
   if(filterWg){ 
     bool=as.numeric(LB2[1])>as.numeric(LB1[1])
-    if(bool){
+    if(bool ){
       Wg=Wg.new
       Pg=Pg.new
-    }else{LB2=LowerBound(Pg = Pg, omega=omega, M=M, S=S,W=W, Wg=Wg,p)}
+    }else{message("no Wg update")
+      LB2=LowerBound(Pg = Pg, omega=omega, M=M, S=S,W=W, Wg=Wg,p)}
   }else{
     Wg=Wg.new
     Pg=Pg.new}
@@ -666,13 +677,18 @@ Mstep<-function(M,S,Pg, omega,W, plot=FALSE,eps, verbatim=FALSE,Wg,p){
   #  iterM=iterM+1
   for(i in 1:2){
     Mei=Meila(W)  # the reason for the while
-    W.new= Pg/(Mei) 
-    if(length(which(W.new< 1e-30))!=0){
-      
-      W.new[which(W.new< 1e-30)] = 0 # pas de bmax
+    W.new= Pg/(Mei)
+    if(length(which(W.new< 1e-16))!=0){
+      W.new[W.new< 1e-16] = 0 # pas de bmax
     }
     if(hidden) W.new[H,H]=0
     diag(W.new)=0
+    #if(is.na(logSumTree(W.new)$det )){
+    norm1=10^(round(log10(min(W[W!=0]))-(-15))) #division maximale pour ne pas tuer les poids les plus petits
+    norm2=max(10^(round(log10(max(W))-1)),1)
+    
+    W.new=W.new/(min(norm1, norm2))
+    #}
     # diff=max(abs(F_Sym2Vec(W.new)-F_Sym2Vec(W)))
     W=W.new
     # }
@@ -718,9 +734,10 @@ VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, maxIter=20,eps=1e-2, 
   diffW=c();diffOm=c();diffWg=c();diffPg=c();diffJ=c();diffOmDiag=c(0);diffMH=c(); diffquantile=c() ;diffPhi<-c(); J<-c()
   diffWiter=1 ; diffJ=1 ; J=c(0)
   t1=Sys.time()
-  
-  while(( ((diffW[iter] > eps) || (diffOm[iter] > eps) ) && (diffJ >0) && (iter < maxIter))|| iter<2){ 
+  #
+  while( ((diffW[iter] > eps) || (diffOm[iter] > eps))  && (iter < maxIter) || iter<2){ 
     iter=iter+1 
+    # if(iter==28) browser()
     if(verbatim) cat(paste0("\n Iter n°", iter))
     #--- VE
     resVE<-VE(MO=MO,SO=SO,SH=SH,omega=omega,W=W,Wg=Wg,MH=MH,Pg=Pg,eps=1e-3,verbatim=verbatim,
@@ -728,7 +745,7 @@ VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, maxIter=20,eps=1e-2, 
     M=resVE$Hmeans 
     S=resVE$Hvar 
     Pg.new=resVE$Gprobs
-    Wg.new=resVE$Gweights
+    Wg.new=resVE$Gweights 
     if(hidden){ 
       SH<-matrix(S[,H],n,r)
       MH.new<-matrix(M[,H],n,r)
@@ -764,6 +781,7 @@ VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, maxIter=20,eps=1e-2, 
     }
     
     diffJ=Jiter - tail(J,1)
+    
     J<-c(J, Jiter)
     lowbound[[iter]] = rbind( resVE$LB, resM$LB) 
   }
@@ -771,12 +789,12 @@ VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, maxIter=20,eps=1e-2, 
   lowbound[,-ncol(lowbound)]<-apply(lowbound[,-ncol(lowbound)],2,function(x) as.numeric(as.character(x)))
   colnames(lowbound)[ncol(lowbound)] = "parameter"
   if(hidden){
-    if(nobeta){ features<-data.frame(diffPg=diffPg, diffOm=diffOm, diffOmDiag=diffOmDiag)
-    }else{ features<-data.frame(diffPg=diffPg, diffW=diffW, diffOm=diffOm, diffOmDiag=diffOmDiag)
+    if(nobeta){ features<-data.frame(diffPg=diffPg, diffOm=diffOm, diffWg=diffWg)
+    }else{ features<-data.frame(diffPg=diffPg, diffW=diffW, diffOm=diffOm, diffWg=diffWg)
     }
   }else{
-    if(nobeta){ features<-data.frame(diffPg=diffPg,  diffOm=diffOm, diffOmDiag=diffOmDiag)
-    }else{ features<-data.frame(diffPg=diffPg, diffW=diffW, diffOm=diffOm, diffOmDiag=diffOmDiag)
+    if(nobeta){ features<-data.frame(diffPg=diffPg,  diffOm=diffOm, diffWg=diffWg)
+    }else{ features<-data.frame(diffPg=diffPg, diffW=diffW, diffOm=diffOm, diffWg=diffWg)
     }
   }
   t2=Sys.time()
@@ -869,7 +887,7 @@ criteria<-function(List.vem,counts,theta, matcovar,r){
 
 List.VEM<-function(cliquesObj, counts, sigma_obs, MO,SO,r,alpha, cores,maxIter,eps, nobeta){
   p=ncol(counts) ; O=1:p ; n=nrow(counts)
-  # alpha=200/((p+r)*n)
+  
   #--- run all initialisations with parallel computation
   list<-mclapply(seq_along(cliquesObj$cliqueList), function(num){
     #init
@@ -877,9 +895,8 @@ List.VEM<-function(cliquesObj, counts, sigma_obs, MO,SO,r,alpha, cores,maxIter,e
     init=initVEM(counts = counts, initviasigma=c, sigma_obs,r = r)
     Wginit= init$Wginit; Winit= init$Winit; omegainit=init$omegainit ; MHinit=init$MHinit
     #run VEMtree
-    
     VEM<-VEMtree(counts,MO,SO,MH=MHinit,omegainit,Winit,Wginit, eps=eps, alpha=alpha,maxIter=maxIter, 
-                 verbatim = FALSE, print.hist=FALSE, filterWg = FALSE, nobeta=nobeta)
+                 verbatim = TRUE, print.hist=FALSE, filterWg = TRUE, nobeta=nobeta)
     VEM$clique=c
     VEM$nbocc=cliquesObj$nb_occ[num]
     return(VEM)
@@ -896,9 +913,18 @@ List.VEM<-function(cliquesObj, counts, sigma_obs, MO,SO,r,alpha, cores,maxIter,e
 
 
 logSumTree<-function(W){
-  mat=Laplacian(W)[-1, -1]
+  if(sum(colSums(W)==0 )==0){
+    mat=Laplacian(W)[-1, -1]
+  }else{
+    index=which(colSums(W)==0)
+    mat=Laplacian(W)[-index, -index]
+  }
   trim=FALSE
   output=log(det(mat))
-  if(is.na(output) || !is.finite(output)) trim=TRUE
+  if(is.na(output) || !is.finite(output)){
+    message("exact det")
+    trim=TRUE
+    output=  det.fractional(mat, log=TRUE) # exact computation
+  }
   return(list(det=output,trim=trim))
 }

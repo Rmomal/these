@@ -34,26 +34,29 @@ source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
 #   })
 #   return(list.res)
 # }
-boot_VEM0<-function(Y,MO,SO,B=40, eps,alpha=1, maxIter){
-  list.res<-lapply(1:B, function(x){
-    n=nrow(Y); v=0.8; n.sample=round(0.8*n, 0)
-    ech=sample(1:n,n.sample,replace = FALSE)
-    Y.sample=Y[ech,]
-    # bootstrap initialisation of omega, W and Wg
-    PLNfit=PLN(Y.sample~1, control=list(trace=0))
-    sigma_obs=PLNfit$model_par$Sigma
-    init0=initVEM(counts = Y.sample, initviasigma = NULL,  sigma_obs,r = 0)
-    Wginit= init0$Wginit; Winit= init0$Winit; omegainit=init0$omegainit 
-    # vem with original counts
-    VEM_r0<-VEMtree(Y, MO, SO, MH=NULL,ome_init = omegainit,W_init =Winit,eps=eps,
-                    Wg_init =Wginit,plot = FALSE, maxIter = maxIter,print.hist = FALSE,
-                    vraiOm = NULL, alpha=alpha, verbatim=FALSE, filterPg = TRUE, 
-                    filterWg = TRUE )
-    return(VEM_r0)
-  })
-  return(list.res)
-}
-simu_vary_r<-function(p,n,r,B,maxH,maxIter,alpha,seed,type,eps=1e-3,nobeta=FALSE, cores=3, plot){
+# boot_VEM0<-function(Y,MO,SO,B=40, eps,alpha=1, maxIter){
+#   list.res<-lapply(1:B, function(x){
+#     n=nrow(Y); v=0.8; n.sample=round(0.8*n, 0)
+#     ech=sample(1:n,n.sample,replace = FALSE)
+#     Y.sample=Y[ech,]
+#     # bootstrap initialisation of omega, W and Wg
+#     PLNfit=PLN(Y.sample~1, control=list(trace=0))
+#     sigma_obs=PLNfit$model_par$Sigma
+#     init0=initVEM(counts = Y.sample, initviasigma = NULL,  sigma_obs,r = 0)
+#     Wginit= init0$Wginit; Winit= init0$Winit; omegainit=init0$omegainit 
+#     # vem with original counts
+#     VEM_r0<-VEMtree(Y, MO, SO, MH=NULL,ome_init = omegainit,W_init =Winit,eps=eps,
+#                     Wg_init =Wginit,plot = FALSE, maxIter = maxIter,print.hist = FALSE,
+#                     vraiOm = NULL, alpha=alpha, verbatim=FALSE, filterPg = TRUE, 
+#                     filterWg = TRUE )
+#     return(VEM_r0)
+#   })
+#   return(list.res)
+# }
+simu_vary_r<-function(p,n,r,B,rMax,maxIter,seed,type,eps=1e-3,nobeta=FALSE, cores=3, plot){
+  q=p+rMax
+  D=.Machine$double.xmax
+  alpha = (1/n)*((1/(q-1))*log(D) - log(q)) # même alpha pour tous les r
   set.seed(seed)
   # sim data
   missing_data<-missing_from_scratch(n,p,r=r,type,plot)
@@ -67,12 +70,14 @@ simu_vary_r<-function(p,n,r,B,maxH,maxIter,alpha,seed,type,eps=1e-3,nobeta=FALSE
   # vem with original counts
   VEM_r0<-VEMtree(counts, MO, SO, MH=NULL,ome_init = omegainit,W_init =Winit,eps=eps,
                   Wg_init =Wginit,plot = FALSE, maxIter = maxIter,print.hist = FALSE,
-                    alpha=alpha, verbatim=FALSE, filterWg = FALSE, nobeta=nobeta )
+                    alpha=alpha, verbatim=FALSE, filterWg = TRUE, nobeta=nobeta )
+
   #  vary r
-  VEMr<-lapply(2, function(r){
+  VEMr<-lapply(2:rMax, function(r){
     cat(paste0(r," missing actors: "))
     t1<-Sys.time()
-    cliques_spca <- boot_FitSparsePCA(scale(MO),B,r=r,cores=cores)
+    cliques_spca <- boot_FitSparsePCA(scale(MO),B,r=r,cores=3)
+ 
     ListVEM<-List.VEM(cliquesObj =cliques_spca, counts, sigma_obs, MO,SO,r=r,alpha=alpha, cores=cores,
                       eps=eps,maxIter, nobeta=nobeta)
     t2<-Sys.time()
@@ -82,7 +87,7 @@ simu_vary_r<-function(p,n,r,B,maxH,maxIter,alpha,seed,type,eps=1e-3,nobeta=FALSE
   })
   saveRDS(list(list.vem0=VEM_r0, VEMr=VEMr, counts=counts, theta=theta),
           file=paste0("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/",type,"_seed",
-                      seed,"_r",r,"_1-",maxH ,".rds") )       
+                      seed,"_r",r,"_1-",rMax ,".rds") )       
 }
 # cliques_spca6 <- boot_FitSparsePCA(scale(counts),100,r=6)
 # init=initVEM(counts = counts, initviasigma=cliques_spca6[[1]], sigma_obs,r = 6)
@@ -96,21 +101,18 @@ simu_vary_r<-function(p,n,r,B,maxH,maxIter,alpha,seed,type,eps=1e-3,nobeta=FALSE
 # })
 # length((cliques_spca6))
 # 
-`scale-free_seed1_r0_1-2`[[2]]$lowbound %>% rowid_to_column() %>%  gather(key,value,-rowid,-V6) %>%
-  ggplot(aes(rowid,value, group=key))+geom_point(aes(color=as.factor(V6)), size=3)+geom_line()+
-  facet_wrap(~key, scales="free")+
-  labs(x="iteration",y="", title="Lower bound and components")+mytheme+
-  scale_color_discrete("")
+# `scale-free_seed1_r0_1-2`[[2]]$lowbound %>% rowid_to_column() %>%  gather(key,value,-rowid,-V6) %>%
+#   ggplot(aes(rowid,value, group=key))+geom_point(aes(color=as.factor(V6)), size=3)+geom_line()+
+#   facet_wrap(~key, scales="free")+
+#   labs(x="iteration",y="", title="Lower bound and components")+mytheme+
+#   scale_color_discrete("")
 
 ############
 #-- run
-q=p+r
-D=.Machine$double.xmax
-alpha = (1/n)*((1/(q-1))*log(D) - log(q))
-
-seed=1; p=14 ; B=1; type="scale-free" ; n=200 ; maxIter=100
+seed=1; p=14 ; B=100; type="scale-free" ; n=200 ; maxIter=100
 t1<-Sys.time()
-simu_vary_r(seed=seed,B=B, n=n, p=p,r=0,alpha=1,maxIter=100,maxH=2, type = type,nobeta=FALSE, plot=FALSE )
+simu_vary_r(seed=seed,B=B, n=n, p=p,r=0,maxIter=200,rMax=4, 
+            type = type,nobeta=FALSE, plot=FALSE, cores=3)
 t2<-Sys.time()
 difftime(t2, t1)
 t1<-Sys.time()

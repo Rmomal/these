@@ -45,7 +45,7 @@ source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
 #source("/home/mmip/Raphaelle/these/R/codes/missingActor/fonctions-missing.R")
 
 # simu parameters
-set.seed(7)
+set.seed(1)
 n=200 ;p=14;r=1;type="scale-free";plot=TRUE
 O=1:p
 ################
@@ -82,10 +82,12 @@ ome=ome_init ; diag(ome)=0
 # plotInitMclust(res=clique_mclust,title = "")
 
 
-cliques_spca <- boot_FitSparsePCA(scale(MO),100,r=1, cores=1)
+cliques_spca <- boot_FitSparsePCA(scale(MO),100,r=3, cores=3)
 
 # best VEM with 1 missing actor
-ListVEM<-List.VEM(cliqueList=cliques_spca, counts, sigma_obs, MO,SO,r=1,eps=1e-3, cores=3,maxIter=100)
+ListVEM<-List.VEM(cliquesObj=cliques_spca, counts, sigma_obs, 
+                  MO,SO,r=1,eps=1e-2, maxIter=100, alpha = alpha,cores=1,
+                  nobeta = FALSE)
 
 vBICs<-(criteria(ListVEM,counts,theta, matcovar,r))
 vBICs$J
@@ -114,11 +116,11 @@ plotVEM(VEM_1$Pg,ome,r=1, 0.5)
 # find alpha on the observed part of the initial "non beta" quantities needed to compute the beta tilde
 # alpha<-computeAlpha(omegainit[O,O], MO, SO)
 # alpha=1
-init=initVEM(counts = counts,initviasigma=trueClique, sigma_obs,r = 1) #cliques_spca$cliqueList[[4]]
+init=initVEM(counts = counts,initviasigma=cliques_spca$cliqueList[[1]], sigma_obs,r = 3) #cliques_spca$cliqueList[[4]]
 Wginit= init$Wginit; Winit= init$Winit; omegainit=init$omegainit ; MHinit=init$MHinit
 test=omegainit ;diag(test)=0
-ggimage(test)
-r=2
+ 
+r=3
 q=p+r
 D=.Machine$double.xmax
  
@@ -133,6 +135,7 @@ resVEM<-VEMtree(counts,MO,SO,MH=MHinit,omegainit,Winit,Wginit, eps=1e-3, alpha=a
 plotVEM(resVEM$Pg,ome,r=1,seuil=0.5)
 ggimage(resVEM$Pg)
 resVEM$features
+resVEM$lowbound
 g1<-ggimage(resVEM$Pg)+labs(title="après la bosse")
 g2<-ggimage(resVEM$Pg)+labs(title="avant la bosse")
 ggimage(resVEM$omega)

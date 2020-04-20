@@ -101,25 +101,25 @@ det.fractional<-function(A,log=TRUE){
 # print(log(d))
 # det.fractional(A,log=FALSE)
 # det.fractional(A)
-
-
-
-x <- function(i){
-  if (i < 10) warning("A warning")
-  i
-}
-
-tt <- tryCatch(x(5),error=function(e) e, warning=function(w) w)
-
-tt2 <- tryCatch(x(15),error=function(e) e, warning=function(w) w)
-
-tt
-## <simpleWarning in x(5): A warning>
-
-tt2
-## [1] 15
-
-if(is(tt,"warning")) print("KOOKOO")
-## [1] "KOOKOO"
-
-if(is(tt2,"warning")) print("KOOKOO")
+# 
+# 
+# 
+# x <- function(i){
+#   if (i < 10) warning("A warning")
+#   i
+# }
+# 
+# tt <- tryCatch(x(5),error=function(e) e, warning=function(w) w)
+# 
+# tt2 <- tryCatch(x(15),error=function(e) e, warning=function(w) w)
+# 
+# tt
+# ## <simpleWarning in x(5): A warning>
+# 
+# tt2
+# ## [1] 15
+# 
+# if(is(tt,"warning")) print("KOOKOO")
+# ## [1] "KOOKOO"
+# 
+# if(is(tt2,"warning")) print("KOOKOO")
