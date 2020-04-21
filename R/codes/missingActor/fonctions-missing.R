@@ -613,7 +613,7 @@ VE<-function(MO,SO,SH,omega,W,Wg,MH,Pg,eps, alpha, filterWg=FALSE,plot=FALSE,ver
   compWg= computeWg(phi,omega,W,MH,MO,S=S,alpha,hidden=hidden, hist=hist, verbatim=verbatim)  
   
   Wg.new = compWg$Wg
-  if(sum(colSums(Wg.new)==0)!=0) browser()
+  #if(sum(colSums(Wg.new)==0)!=0) browser()
   Pg.new = suppressWarnings( EdgeProba(Wg.new))
   # if(sum(is.na(Pg.new))!= 0){# si pb pas de pb
   #   message("NaNs in Pg")
@@ -644,7 +644,7 @@ VE<-function(MO,SO,SH,omega,W,Wg,MH,Pg,eps, alpha, filterWg=FALSE,plot=FALSE,ver
 }
 
 #===========
-Mstep<-function(M,S,Pg, omega,W, plot=FALSE,eps, verbatim=FALSE,Wg,p){
+Mstep<-function(M,S,Pg, omega,W, plot=FALSE,eps, verbatim=FALSE,Wg,p, iterVEM){
   n=nrow(S)  ; O=1:p ; q=ncol(omega) ; iterM=0 ; diff=1
   hidden=(q!=p)
   if(hidden) H=(p+1):q
@@ -660,32 +660,52 @@ Mstep<-function(M,S,Pg, omega,W, plot=FALSE,eps, verbatim=FALSE,Wg,p){
     omega2=computeOffDiag(omDiag2, SigmaTilde,p)
     
   }
+  
   LB11=LowerBound(Pg = Pg, omega=omega1, M=M, S=S,W=W, Wg=Wg,p)
   LB12=LowerBound(Pg = Pg, omega=omega2, M=M, S=S,W=W, Wg=Wg,p)
-  if(as.numeric(LB11[1])>as.numeric(LB12[1])){
-    
-    message("no diag")
-    omega=omega1
-    LB1=c(LB11,"omega")
+  
+  if(iterVEM>3 || !hidden  ){
+    if(as.numeric(LB11[1])>as.numeric(LB12[1])){
+      message("no diag")
+      omega=omega1
+      LB1=c(LB11,"omega")
+    }else{
+      omega=omega2
+      LB1=c(LB12,"omega")}
   }else{
     omega=omega2
-    LB1=c(LB12,"omega")}
+    LB1=c(LB12,"omega")
+  }
   
   
   #--- Beta
   #  while((diff>eps) && (iterM <= 2)){
   #  iterM=iterM+1
   for(i in 1:2){
-    Mei=Meila(W)  # the reason for the while
-    W.new= Pg/(Mei)
+    Mei=Meila(W)
+    if(sum(!is.finite(F_Sym2Vec(Meila(W))))!=0 ||  sum(F_Sym2Vec(Meila(W))<=0)!=0){
+      Wtest=W*100
+      if( sum(F_Sym2Vec(Meila(Wtest))==0)==0){
+        Mei=Meila(Wtest)
+      }else{
+        Mei = Mei+1e-14
+      }
+    }
+    # c=0.1
+    # while(min(eigen(Laplacian(W)[-1,-1])$values)<0){
+    #   W=W+diag(c,ncol(W))
+    #   c=c*1.1
+    # }
+    W.new= Pg/(Mei )
+    if(sum(!is.finite(F_Sym2Vec(W.new)))) browser()
     if(length(which(W.new< 1e-16))!=0){
       W.new[W.new< 1e-16] = 0 # pas de bmax
     }
     if(hidden) W.new[H,H]=0
     diag(W.new)=0
     #if(is.na(logSumTree(W.new)$det )){
-    norm1=10^(round(log10(min(W[W!=0]))-(-15))) #division maximale pour ne pas tuer les poids les plus petits
-    norm2=max(10^(round(log10(max(W))-1)),1)
+    norm1=10^(round(log10(min(W[W!=0]))-(-14))) #division maximale pour ne pas tuer les poids les plus petits
+    norm2=max(10^(round(log10(max(W))-2)),1)
     
     W.new=W.new/(min(norm1, norm2))
     #}
@@ -721,8 +741,8 @@ VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, maxIter=20,eps=1e-2, 
   hidden=!is.null(MH)
   if(hidden){  
     H=(p+1):ncol(ome_init);r=length(H)
-    #  SH=matrix(1,nrow=n,ncol=r)
-    SH <-matrix(1/(diag(omega)[H]),n,r, byrow = TRUE)
+    SH=matrix(1,nrow=n,ncol=r)
+    #   SH <-matrix(1/(diag(omega)[H]),n,r, byrow = TRUE)
     M=cbind(MO,MH) ; S=cbind(SO, SH)
   }else{
     r=0
@@ -734,8 +754,8 @@ VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, maxIter=20,eps=1e-2, 
   diffW=c();diffOm=c();diffWg=c();diffPg=c();diffJ=c();diffOmDiag=c(0);diffMH=c(); diffquantile=c() ;diffPhi<-c(); J<-c()
   diffWiter=1 ; diffJ=1 ; J=c(0)
   t1=Sys.time()
-  #
-  while( ((diffW[iter] > eps) || (diffOm[iter] > eps))  && (iter < maxIter) || iter<2){ 
+  #(diffW[iter] > eps) || (diffOm[iter] > eps)
+  while( (diffJ>eps)  && (iter < maxIter) || iter<2){ 
     iter=iter+1 
     # if(iter==28) browser()
     if(verbatim) cat(paste0("\n Iter n°", iter))
@@ -767,7 +787,8 @@ VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, maxIter=20,eps=1e-2, 
       diffW[iter]= diffOm[iter]
       Jiter=as.numeric(tail(resM$LB[1],1))
     }else{
-      resM<-Mstep(M=M,S=S,Pg=Pg, omega=omega,W=W,plot=FALSE, eps=1e-3 ,Wg=Wg, p=p)
+      resM<-Mstep(M=M,S=S,Pg=Pg, omega=omega,W=W,plot=FALSE, eps=1e-3 ,Wg=Wg, p=p,
+                  iterVEM=iter)
       W.new=resM$W
       #diffW[iter]=abs(max(log(W.new+(W.new==0))-log(W+(W==0))))
       diffW[iter]=abs(max(W.new-W))
@@ -902,27 +923,41 @@ List.VEM<-function(cliquesObj, counts, sigma_obs, MO,SO,r,alpha, cores,maxIter,e
     return(VEM)
   }, mc.cores=cores)
   #--- keep only converged vems
-  converged<-do.call(rbind,lapply(list,function(vem){
-    diffW=vem$features$diffW
-    conv=(diffW[length(diffW)]<=eps)}))
-  if(sum(converged)!=0){
-    list=list[converged]
-  } 
+  # converged<-do.call(rbind,lapply(list,function(vem){
+  #   diffW=vem$features$diffW
+  #   conv=(diffW[length(diffW)]<=eps)}))
+  # if(sum(converged)!=0){
+  #   list=list[converged]
+  # } 
   return(list)
 }
 
 
 logSumTree<-function(W){
   if(sum(colSums(W)==0 )==0){
-    mat=Laplacian(W)[-1, -1]
+    sums=apply(W,2,function(x){ sum(x!=0)})
+    suspects_paires=which(sums==1)
+    if(length(suspects_paires)<2){
+      index=1
+    }else{
+      mate=sapply(suspects_paires, function(suspect){
+        which(W[,suspect]!=0)
+      })
+      if(length(intersect(mate, suspects_paires))!=0){
+        index=intersect(mate, suspects_paires)[1]
+      }else{
+        index=1
+      }
+    }
   }else{
     index=which(colSums(W)==0)
-    mat=Laplacian(W)[-index, -index]
   }
+  mat=Laplacian(W)[-index, -index]
   trim=FALSE
-  output=log(det(mat))
-  if(is.na(output) || !is.finite(output)){
-    message("exact det")
+  output=suppressWarnings(log(det(mat)))
+  if(!is.finite(output)){
+    if(det(mat)<0) message("exact det na")
+    if(!is.finite(det(mat))) message("exact det inf")
     trim=TRUE
     output=  det.fractional(mat, log=TRUE) # exact computation
   }

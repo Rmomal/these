@@ -82,25 +82,32 @@ ome=ome_init ; diag(ome)=0
 # plotInitMclust(res=clique_mclust,title = "")
 
 
-cliques_spca <- boot_FitSparsePCA(scale(MO),100,r=3, cores=3)
+cliques_spca <- boot_FitSparsePCA(scale(MO),100,r=1, cores=3)
 
 # best VEM with 1 missing actor
+p=14 ;n=200
+r=3
+q=p+r
+D=.Machine$double.xmax
+alpha = (1/n)*((1/(q-1))*log(D) - log(q))
 ListVEM<-List.VEM(cliquesObj=cliques_spca, counts, sigma_obs, 
-                  MO,SO,r=1,eps=1e-2, maxIter=100, alpha = alpha,cores=1,
+                  MO,SO,r=3,eps=1e-3, maxIter=200, alpha = alpha,cores=1,
                   nobeta = FALSE)
 
 vBICs<-(criteria(ListVEM,counts,theta, matcovar,r))
 vBICs$J
+hist(vBICs$J, breaks=10)
 best=which.max(vBICs$J)
 VEM_1<-ListVEM[[best]]
 computeFPN(VEM_1$clique,trueClique = trueClique[[1]],p=p) 
-VEM_1$lowbound %>% rowid_to_column() %>%  gather(key,value,-rowid,-V6) %>% 
-  ggplot(aes(rowid,value, group=key))+geom_point(aes(color=as.factor(V6)), size=3)+geom_line()+
+VEM_1$lowbound %>% rowid_to_column() %>%  gather(key,value,-rowid,-parameter) %>% 
+  ggplot(aes(rowid,value, group=key))+geom_point(aes(color=as.factor(parameter)), size=3)+geom_line()+
   facet_wrap(~key, scales="free")+
   labs(x="iteration",y="", title="Lower bound and components")+mytheme+
   scale_color_discrete("")
 plotVEM(VEM_1$Pg,ome,r=1, 0.5)
- 
+VEM_1$clique
+trueClique
 # TJ=True_lowBound(Y=counts, M=VEM_1$M,VEM_1$S,theta=theta,X=matcovar,
 #               W=VEM_1$W,Wg=VEM_1$Wg,Pg=VEM_1$Pg, omega=VEM_1$omega)
 # ICL_T(TJ, Pg=VEM_1$Pg, Wg=VEM_1$Wg)
@@ -116,26 +123,29 @@ plotVEM(VEM_1$Pg,ome,r=1, 0.5)
 # find alpha on the observed part of the initial "non beta" quantities needed to compute the beta tilde
 # alpha<-computeAlpha(omegainit[O,O], MO, SO)
 # alpha=1
-init=initVEM(counts = counts,initviasigma=cliques_spca$cliqueList[[1]], sigma_obs,r = 3) #cliques_spca$cliqueList[[4]]
+init=initVEM(counts = counts,initviasigma=cliques_spca$cliqueList[[2]], sigma_obs,r = 1) #cliques_spca$cliqueList[[4]]
 Wginit= init$Wginit; Winit= init$Winit; omegainit=init$omegainit ; MHinit=init$MHinit
 test=omegainit ;diag(test)=0
- 
-r=3
+ p=14 ;n=200
+r=4
 q=p+r
 D=.Machine$double.xmax
- 
+D = 1e+100
 alpha = (1/n)*((1/(q-1))*log(D) - log(q))
-#alpha2=(1/(n*q))*log(D/(q^(q/2)))
+alpha2=(1/(n*q))*log(D/(q^(q/2)))
+((q-1)*(n*alpha+log(q)))
+((q-1)*(n*0.1+log(q)))
 # curve((1/n)*((1/(x-1))*log(D) - log(x)),from=15, to=30)
 # curve((1/(n*x))*log(D/(x^(x/2))),from=15, to=30, add=T, col="red")
 
-resVEM<-VEMtree(counts,MO,SO,MH=MHinit,omegainit,Winit,Wginit, eps=1e-3, alpha=alpha, 
-                maxIter=50, plot=TRUE,print.hist=FALSE,filterWg=TRUE, verbatim = TRUE,nobeta = FALSE)
+resVEM<-VEMtree(counts,MO,SO,MH=MHinit,omegainit,Winit,Wginit, eps=1e-3, alpha=0.1, 
+                maxIter=200, plot=TRUE,print.hist=FALSE,filterWg=TRUE,
+                verbatim = TRUE,nobeta = FALSE)
 
 plotVEM(resVEM$Pg,ome,r=1,seuil=0.5)
 ggimage(resVEM$Pg)
-resVEM$features
-resVEM$lowbound
+tail(resVEM$features)
+tail(resVEM$lowbound)
 g1<-ggimage(resVEM$Pg)+labs(title="après la bosse")
 g2<-ggimage(resVEM$Pg)+labs(title="avant la bosse")
 ggimage(resVEM$omega)
