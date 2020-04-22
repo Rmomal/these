@@ -55,29 +55,44 @@ pivot.fractional <- function(A, trace=FALSE, inverse=TRUE) {
               A.inv=A.inv))
 }
 
+
+
+
+logprod<-function(factors){
+  # Get numerator and denominators
+  list.of.frac<-stringr::str_split(factors,"/")
+  nd<-matrix(unlist(lapply(list.of.frac,function(x){
+    if (length(x)>1) {c(x[[1]], x[[2]])} else { c(x[[1]], 1)}})),nrow=2)
+  nd<-qabs(nd)
+  nd[1,]<-nd[1,order(stringr::str_length(nd[1,]))]
+  nd[2,]<-nd[2,order(stringr::str_length(nd[2,]))]
+  return( sum(log(abs( q2d(qdq(sort(nd[1,]), sort(nd[2,])) )))))
+}
+
+
+
 inverse.fractional<-function(A){
   A.inv<-pivot.fractional(A,trace=FALSE,inverse=TRUE)$A.inv
-  print(A.inv) # A commenter
-  q2d(A.inv)
+  return(q2d(A.inv))
 }
 
 
 # Attention ne marche que pour les matrices définies positives
 det.fractional<-function(A,log=TRUE){
   
-  factors<-pivot.fractional(A,trace=FALSE,inverse=FALSE)$det.factors
+ factors<-pivot.fractional(A,trace=FALSE,inverse=FALSE)$det.factors
   if(log){
     output<-sum(log(abs(q2d(factors))))
   }else{
     output <-q2d(qprod(factors))
   }  
-  if(output > .Machine$double.xmax){
-    warning("prec. machine max atteinte")
+  if(output >= .Machine$double.xmax){
+    warning("machine precision reached ! \n")
     output <- .Machine$double.xmax 
     }
   
-  if(output < .Machine$double.xmin){
-    warning("prec. machine min atteinte")
+  if(output <= .Machine$double.xmin){
+    warning("machine precision reached ! \n")
     output <- .Machine$double.xmin
     }
   return(output)
