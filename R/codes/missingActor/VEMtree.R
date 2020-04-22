@@ -45,7 +45,7 @@ source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
 #source("/home/mmip/Raphaelle/these/R/codes/missingActor/fonctions-missing.R")
 
 # simu parameters
-set.seed(1)
+set.seed(19)
 n=200 ;p=14;r=1;type="scale-free";plot=TRUE
 O=1:p
 ################
@@ -86,12 +86,12 @@ cliques_spca <- boot_FitSparsePCA(scale(MO),100,r=1, cores=3)
 
 # best VEM with 1 missing actor
 p=14 ;n=200
-r=3
+r=1
 q=p+r
 D=.Machine$double.xmax
 alpha = (1/n)*((1/(q-1))*log(D) - log(q))
 ListVEM<-List.VEM(cliquesObj=cliques_spca, counts, sigma_obs, 
-                  MO,SO,r=3,eps=1e-3, maxIter=200, alpha = alpha,cores=1,
+                  MO,SO,r=1,eps=1e-3, maxIter=200, alpha = 0.1,cores=1,
                   nobeta = FALSE)
 
 vBICs<-(criteria(ListVEM,counts,theta, matcovar,r))
@@ -123,7 +123,7 @@ trueClique
 # find alpha on the observed part of the initial "non beta" quantities needed to compute the beta tilde
 # alpha<-computeAlpha(omegainit[O,O], MO, SO)
 # alpha=1
-init=initVEM(counts = counts,initviasigma=cliques_spca$cliqueList[[2]], sigma_obs,r = 1) #cliques_spca$cliqueList[[4]]
+init=initVEM(counts = counts,initviasigma=cliques_spca$cliqueList[[1]], sigma_obs,r = 1) #cliques_spca$cliqueList[[4]]
 Wginit= init$Wginit; Winit= init$Winit; omegainit=init$omegainit ; MHinit=init$MHinit
 test=omegainit ;diag(test)=0
  p=14 ;n=200
@@ -139,12 +139,13 @@ alpha2=(1/(n*q))*log(D/(q^(q/2)))
 # curve((1/(n*x))*log(D/(x^(x/2))),from=15, to=30, add=T, col="red")
 
 resVEM<-VEMtree(counts,MO,SO,MH=MHinit,omegainit,Winit,Wginit, eps=1e-3, alpha=0.1, 
-                maxIter=200, plot=TRUE,print.hist=FALSE,filterWg=TRUE,
+                maxIter=100, plot=TRUE,print.hist=FALSE,filterWg=TRUE,
                 verbatim = TRUE,nobeta = FALSE)
-
+tail(resVEM$lowbound$J,1)
+LowerBound(resVEM$Pg, resVEM$omega,resVEM$M,resVEM$S,resVEM$W,resVEM$Wg,p)[1]
 plotVEM(resVEM$Pg,ome,r=1,seuil=0.5)
 ggimage(resVEM$Pg)
-tail(resVEM$features)
+(resVEM$features)
 tail(resVEM$lowbound)
 g1<-ggimage(resVEM$Pg)+labs(title="après la bosse")
 g2<-ggimage(resVEM$Pg)+labs(title="avant la bosse")

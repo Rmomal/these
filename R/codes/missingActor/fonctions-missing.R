@@ -752,10 +752,10 @@ VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, maxIter=20,eps=1e-2, 
   omega=ome_init;  W=W_init;  Wg=Wg_init; Pg=matrix(0.5, ncol(W),ncol(W)) 
   iter=0 ; lowbound=list()
   diffW=c();diffOm=c();diffWg=c();diffPg=c();diffJ=c();diffOmDiag=c(0);diffMH=c(); diffquantile=c() ;diffPhi<-c(); J<-c()
-  diffWiter=1 ; diffJ=1 ; J=c(0)
+  diffWiter=1 ; diffJ=1 ; J=c()
   t1=Sys.time()
-  #(diffW[iter] > eps) || (diffOm[iter] > eps)
-  while( (diffJ>eps)  && (iter < maxIter) || iter<2){ 
+  #diffJ>eps
+  while( ((diffW[iter] > eps) || (diffOm[iter] > eps)) && (diffJ>eps)  && (iter < maxIter) || iter<2){ 
     iter=iter+1 
     # if(iter==28) browser()
     if(verbatim) cat(paste0("\n Iter n°", iter))
@@ -800,12 +800,34 @@ VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, maxIter=20,eps=1e-2, 
       omega=omega.new
       Jiter=as.numeric(tail(resM$LB[,1],1))
     }
+    lowbound[[iter]] = rbind( resVE$LB, resM$LB)
     
     diffJ=Jiter - tail(J,1)
-    
     J<-c(J, Jiter)
-    lowbound[[iter]] = rbind( resVE$LB, resM$LB) 
   }
+  ########################
+  resVE<-VE(MO=MO,SO=SO,SH=SH,omega=omega,W=W,Wg=Wg,MH=MH,Pg=Pg,eps=1e-3,verbatim=verbatim,
+            alpha=alpha,filterWg=filterWg, plot=FALSE, hist=print.hist)
+  M=resVE$Hmeans 
+  S=resVE$Hvar 
+  Pg=resVE$Gprobs
+  Wg=resVE$Gweights 
+  if(hidden){ 
+    SH<-matrix(S[,H],n,r)
+    MH<-matrix(M[,H],n,r)
+  }
+  #--- M
+  if(nobeta){
+    resM<-Mstep_nobeta(M=M,S=S,Pg=Pg, omega=omega,W=W,Wg=Wg, p=p)
+    omega=resM$omega
+  }else{
+    resM<-Mstep(M=M,S=S,Pg=Pg, omega=omega,W=W,plot=FALSE, eps=1e-3 ,Wg=Wg, p=p, iterVEM=iter)
+    W=resM$W
+    omega=resM$omega
+  }
+  ##########################
+ 
+  lowbound[[iter+1]] = rbind( resVE$LB, resM$LB) 
   lowbound=data.frame(do.call(rbind,lowbound))
   lowbound[,-ncol(lowbound)]<-apply(lowbound[,-ncol(lowbound)],2,function(x) as.numeric(as.character(x)))
   colnames(lowbound)[ncol(lowbound)] = "parameter"
@@ -893,7 +915,8 @@ ICL<-function(TrueJ, Pg,Wg ,S,n,r,d, omega){
 criteria<-function(List.vem,counts,theta, matcovar,r){
   n=nrow(counts);p= ncol(counts)
   data<-lapply(List.vem,function(vem){
-    J<-True_lowBound(counts,vem$M,vem$S, theta, matcovar,vem$W, vem$Wg, vem$Pg, vem$omega )
+    J<-True_lowBound(counts,vem$M,vem$S, theta, matcovar,vem$W, vem$Wg, 
+                     vem$Pg, vem$omega )
     vBIC<-VBIC(J,p,r=r, d=ncol(matcovar), n=n)
     ICLT<-ICL_T(J, vem$Wg,vem$Pg,n,r)
     ICLZH<-ICL_ZH(J,vem$S, n,r)
@@ -958,8 +981,13 @@ logSumTree<-function(W){
   if(!is.finite(output)){
     if(det(mat)<0) message("exact det na")
     if(!is.finite(det(mat))) message("exact det inf")
-    trim=TRUE
-    output=  det.fractional(mat, log=TRUE) # exact computation
+    output=  tryCatch({det.fractional(mat, log=TRUE)},# exact computation
+                      error=function(e){ # if error, trim matrix 
+                        trim=TRUE
+                        W=W/10
+                        W[W<1e-16]=0
+                        output=log(det(Laplacian(W)[-1,-1]))
+                        return(output)}, finally={})
   }
   return(list(det=output,trim=trim))
 }
