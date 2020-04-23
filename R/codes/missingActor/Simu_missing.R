@@ -18,7 +18,7 @@ source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
 ##### function
 
 Simu_missing<-function(p,B,N,n,cores,r, maxIter, eps){
-  lapply(112:N, function(seed){
+  lapply(1:N, function(seed){
     cat(paste0("\n seed ",seed, " : "))
     T1<-Sys.time()
     set.seed(seed)
@@ -67,7 +67,7 @@ Simu_missing<-function(p,B,N,n,cores,r, maxIter, eps){
 
 ######### run
 t1<-Sys.time()
-Sim15<-Simu_missing(p = 14, n = 200, B = 100,N =200, cores=1,eps=1e-3,r=1,maxIter=200)
+Sim15<-Simu_missing(p = 14, n = 200, B = 100,N =200, cores=3,eps=1e-3,r=1,maxIter=200)
 t2<-Sys.time()
 difftime(t2,t1)
 saveRDS(Sim15, file="/Users/raphaellemomal/these/R/codes/missingActor/SimResults/Sim15_r1_200SF.rds")

@@ -438,7 +438,24 @@ EdgeProba <- function(W, verbatim=FALSE, p.min=1e-16){
   diag(P)=0
   return(P)
 }
-
+Kirshner <- function(W){
+  # W = squared weight matrix
+  # Kirshner (07) formulas
+  # W = beta.unif*phi
+  p = nrow(W)
+  L = Laplacian(W)[-1, -1]
+  if(!is.finite(sum(L))) browser()
+  # Leigen = eigen(L)
+  # Q = (Leigen$vectors) %*% diag(1/Leigen$values) %*% t(Leigen$vectors)
+  Q = inverse.fractional(L)
+  Q = rbind(c(0, diag(Q)),
+            cbind(diag(Q), (diag(Q)%o%rep(1, p-1) + rep(1, p-1)%o%diag(Q) - 2*Q)))
+  Q = .5*(Q + t(Q))
+  P = W * Q
+  P = .5*(P + t(P))
+  return(P)
+}
+ 
 generator_PLN<-function(Sigma,covariates=NULL, n=50){
   # ajout d'une constante, par rapport à EMtree::generator_PLN
   p<-ncol(Sigma)
@@ -614,7 +631,9 @@ VE<-function(MO,SO,SH,omega,W,Wg,MH,Pg,eps, alpha, filterWg=FALSE,plot=FALSE,ver
   
   Wg.new = compWg$Wg
   #if(sum(colSums(Wg.new)==0)!=0) browser()
-  Pg.new = suppressWarnings( EdgeProba(Wg.new))
+ # Pg.new = suppressWarnings( EdgeProba(Wg.new))
+ 
+  Pg.new=(Kirshner(Wg.new))
   # if(sum(is.na(Pg.new))!= 0){# si pb pas de pb
   #   message("NaNs in Pg")
   #   Wg.new=Wg
@@ -977,17 +996,24 @@ logSumTree<-function(W){
   }
   mat=Laplacian(W)[-index, -index]
   trim=FALSE
-  output=suppressWarnings(log(det(mat)))
-  if(!is.finite(output)){
-    if(det(mat)<0) message("exact det na")
-    if(!is.finite(det(mat))) message("exact det inf")
-    output=  tryCatch({det.fractional(mat, log=TRUE)},# exact computation
-                      error=function(e){ # if error, trim matrix 
-                        trim=TRUE
-                        W=W/10
-                        W[W<1e-16]=0
-                        output=log(det(Laplacian(W)[-1,-1]))
-                        return(output)}, finally={})
-  }
+  #output=suppressWarnings(log(det(mat)))
+  output=tryCatch({det.fractional(mat, log=TRUE)},# exact computation
+                  error=function(e){ # if error, trim matrix 
+                    trim=TRUE
+                    W=W/10
+                    W[W<1e-16]=0
+                    output=log(det(Laplacian(W)[-1,-1]))
+                    return(output)}, finally={})
+  # if(!is.finite(output)){
+  #   if(det(mat)<0) message("exact det na")
+  #   if(!is.finite(det(mat))) message("exact det inf")
+  #   output=  tryCatch({det.fractional(mat, log=TRUE)},# exact computation
+  #                     error=function(e){ # if error, trim matrix 
+  #                       trim=TRUE
+  #                       W=W/10
+  #                       W[W<1e-16]=0
+  #                       output=log(det(Laplacian(W)[-1,-1]))
+  #                       return(output)}, finally={})
+  # }
   return(list(det=output,trim=trim))
 }

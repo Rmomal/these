@@ -1,0 +1,199 @@
+---
+title: "Results"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(EMtree)
+library(ggraph)
+library(tidygraph)
+library(tidyverse)
+library(useful)
+library(parallel)
+library(ROCR)
+library(ggridges)
+library(reshape2)#for ggimage
+library(gridExtra)
+library(harrypotter)
+library(kableExtra)
+source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
+source("/Users/raphaellemomal/these/R/codes/missingActor/feat_misAct.R")
+
+#"#4F5BD5",
+pal<-c("#008080","#FA7E1E","#D62976")
+mytheme.dark <-function(legend){list= list(theme_light(), #scale_color_hp(legend,option="Ravenclaw", discrete=TRUE, begin=0.1 ), #scale_fill_hp(legend,option="Ravenclaw", discrete=TRUE, begin=0.1 ),
+                                           theme(strip.background=element_rect(fill="gray50",colour ="gray50"),
+                                                 plot.title = element_text(hjust = 0.5)),
+                                           scale_color_manual(legend, values=pal),
+                                           scale_fill_manual(legend, values=pal))
+return(list)}
+
+# data
+H=15
+simus=list()
+
+simus=lapply(1:200, function(seed){
+  readRDS(paste0(
+    "/Users/raphaellemomal/these/R/codes/missingActor/SimResults/15nodes_1r/SF_seed",seed,".rds"))
+  })
+```
+
+
+# Graphs générés
+
+La table misAct rassemble des charactéristiques calculées sur chacun des graphes générées. 
+
+- nH : nombre de voisins de l'acteur manquant
+- mean.cpH : moyenne des corrélations partielles sortantes de l'acteur manquant
+- mean.vv : nombre moyen de voisins des voisins de l'acteur manquant
+- max.maxDeg : degré maximal parmi les voisins des voisins de l'acteur manquant
+- mean.maxDeg : moyenne des degrés maximaux des voisins de voisins de l'acteur manquant
+- mean.btw : moyenne des betweenness des voisins de l'acteur manquant
+- btwH : betweenness de l'acteur manquant.
+
+```{r, cache=TRUE}
+misAct=build_misAct(simus, H=15)
+misAct[1:5,] %>% kable %>% kable_styling()
+```
+
+
+
+Les résultats sont résumés en regroupant les graphes par l'influence de leur acteur manquant :
+
+- minor : l'acteur manquant est lié à moins du tiers des noeuds ($nH<5$)
+- medium : l'acteur manquant est lié à entre le tiers et la moitié des noeuds ( $5 \leq nH < 7$)
+- major : l'acteur manquant est lié à plus de la moitié des noeuds ($nH \geq 7$)
+
+
+```{r}
+misAct=misAct %>% mutate(influence=unlist(purrr::map(nH, function(x){
+    if(x<5) res="minor"
+    if(x>=5 & x<7) res="medium"
+    if(x>=7) res="major"
+    return(res)})))
+
+misAct %>% group_by(influence) %>% summarise(count=n())%>% kable %>% kable_styling()
+```
+
+
+# Convergence de VEMtree
+
+Tous les VEMtree ont convergé, mais pas de la même manière. L'algo VEMtree a trois critères d'arrêt :
+
+- W et Omega convergent,
+- la borne inférieure converge,
+- maxIter a été atteint.
+
+Donc VEMtree peut s'être arrêté du fait de la borne inf indépendemment de la convergence sur les paramètres W et Omega. Dans ce qui suit, on voit que maxIter (qui vaut 200) n'a jamais été atteint, et que lorsque c'est la convergence de J qui permet l'arrêt de l'algorithme, Omega a convergé mais pas W.
+
+```{r}
+ 
+# nb de stops par J au lieu des paramètres : 
+stopJ=do.call(rbind, lapply(simus, function(graine){
+  diffW = tail(graine$VEM_1$features$diffW,1)
+  diffOm = tail(graine$VEM_1$features$diffOm,1)
+  return(diffW>1e-3 || diffOm>1e-3)
+}))
+nb.stopJ = sum(stopJ)
+# nb.stopJ = 145
+# est-ce qu'on était loin de eps pour W et Om quand J a stoppé ?
+diffOm=do.call(rbind, lapply(simus, function(graineJ){
+  diffOm = tail(graineJ$VEM_1$features$diffOm,1)
+}))
+sum(diffOm[which(stopJ)]<1e-3) # en fait tous les Omega ont convergé
+diffW=do.call(rbind, lapply(simus, function(graineJ){
+  diffW = tail(graineJ$VEM_1$features$diffW,1)
+}))
+hist(log(diffW[which(stopJ)]), main="log(diffW) quand diffW>eps", xlab="", ylab="",
+     col="#FA7E1E", border=FALSE)
+sum(diffW[which(stopJ)]>0.1) # 79
+weird.conv = which(do.call(rbind, lapply(simus, function(graine){
+  diffW = tail(graine$VEM_1$features$diffW,1)
+  return(diffW > 1e-3)
+})))
+# donc divergence des poids W pour 40% des graines
+data.frame(diffW= diffW, diffOm= diffOm, nH=misAct$nH) %>% as_tibble() %>% 
+  group_by(nH) %>% summarise(count=n(), noWconv = sum(diffW>1e-3), prop=round(100*noWconv/count, 1)) %>% kable() %>% kable_styling()
+
+weird.iter=do.call(rbind, lapply(simus[weird.conv], function(graine){
+  graine$VEM_1$finalIter
+})) # longue queue : entre 13 et 135, mean=41.5 sd = 25
+good.iter=do.call(rbind, lapply(simus[-weird.conv], function(graine){
+  graine$VEM_1$finalIter
+})) # entre 12 et 180, mean = 32.5, sd = 18, (31 et 12.5 si on enlève la valeur extrême)
+data.frame(iter = rbind(weird.iter, good.iter), 
+           Wconv = as.factor(rep(c(0,1),c(length(weird.iter),length(good.iter))) ) )%>% 
+  ggplot(aes(Wconv, iter, color=Wconv))+geom_boxplot()+mytheme.dark("W converged")
+
+```
+
+# Qualité d'inférence
+
+## Réseau et position de l'acteur manquant
+
+La qualité d'inférence est évaluée avec l'AUC, la PPV (TP/(TP+FP)) et le TPR (TP/(TP+FN)) des arêtes incluant l'acteur manquant, notés PPVH et TPRH. Ces valeurs sont calculées pour chaque graphes, et les proportion de valeurs supérieures à 0.8 sont mises en liens avec le nombre de voisins nH de l'acteur manquant.
+
+```{r}
+Qual<-data.frame(auc=do.call(rbind, lapply(simus, function(seed){
+  Pg=seed$VEM_1$Pg
+  ome=seed$omega
+  diag(ome)=0
+  auc=round(auc(pred = Pg, label = ome),4)
+  return(auc)
+})),ppvh=do.call(rbind, lapply(simus, function(seed){
+  Pg=seed$VEM_1$Pg ;ome=seed$omega ;diag(ome)=0 ;H=15
+  ppvh=accppvtpr(Pg,ome,h=H,seuil=0.5)[5]
+  return(ppvh)
+})),tprh=do.call(rbind, lapply(simus, function(seed){
+  Pg=seed$VEM_1$Pg ;ome=seed$omega ; diag(ome)=0 ; H=15
+  ppvh=accppvtpr(Pg,ome,h=H,seuil=0.5)[8]
+  return(ppvh)
+})), seed = 1:200) %>% as_tibble() %>% mutate(noWconv =(1*(seed %in% weird.conv)), nH = misAct$nH,influence=misAct$influence)
+ 
+Qual %>% group_by(nH) %>% summarise( count=n(),auc.prop80 = round(sum(auc>0.8)*100/count, 1), pvh.prop80 = round(sum(ppvh>0.8)*100/count, 1))%>% kable() %>% kable_styling()
+
+Qual %>% group_by(influence) %>% 
+  summarise(count=n(), med.auc=round(median(auc), 2),
+                              auc.prop80 = round(sum(auc>0.8)*100/count, 1),noWconv.prop=round(sum(noWconv)*100/count, 1))%>% 
+  kable() %>% kable_styling()
+
+Qual %>% group_by(influence) %>% summarise( count=n(), med.ppvh=round(median(ppvh),2), med.tprh=round(median(tprh),2), ppvh.prop80 = round(sum(ppvh>0.8)*100/count, 1),tprh.prop80 = round(sum(tprh>0.8)*100/count, 1))%>% 
+  kable() %>% kable_styling()
+
+Qual %>% gather(key, value, -nH, -noWconv, -influence, -seed) %>% 
+  ggplot(aes(key, value, color=key, fill=key))+geom_boxplot(alpha=0.3)+
+  facet_grid(~as.factor(influence))+mytheme.dark("")+
+  labs(x="", y="", title="Inference quality and influence of the missing actor")
+
+
+```
+
+## Reconstruction de l'acteur manquant
+
+La reconstruction de l'acteur manquant est évaluée par la corrélation entre le vecteur latent gaussien d'origine $Z_H$, et le vecteur des moyennes inférées $M_H$.
+
+```{r}
+cor_ZHMH=do.call(rbind, lapply(simus, function(graine){
+  ZH=graine$ZH
+  MH = graine$VEM_1$M[,H]
+  return(cor(ZH, MH))
+}))
+data=data.frame(corZM=abs(cor_ZHMH), nH=misAct$nH, influence=misAct$influence) 
+data%>% 
+  group_by(influence) %>% summarize(med.cor=round(median(corZM),2), prop50 = round(100*sum(corZM>0.5)/n(),1)) %>% kable() %>% kable_styling()
+
+data %>% ggplot(aes(corZM, color=influence, fill=influence))+
+  geom_histogram(alpha=0.3)+facet_wrap(~influence, scales="free_y")+mytheme.dark("")+
+  guides(color=FALSE, fill=FALSE)+labs(x="",y="", title="Absolute correlation between initial ZH and estimated MH")
+
+```
+
+# Conclusion
+
+Pour une influence importante de l'acteur manquant, VEMtree permet d'inférer correctement à la fois le réseau et la position de l'acteur manquant dans le réseau avec une qualité d'environ 70% en médiane à la fois pour l'auc et la ppvh, ainsi que de reconstruire les valeurs de l'acteur manquant par site avec des corrélations de plus de 75% en médiane.
+
+Pour 40% des graphes, l'arrêt de l'algorithme n'a pas nécessité la convergence de W et la dernière différence sur W observée était supérieure à 0.1. Ceci ne semble pas influer la qualité de l'estimation.
