@@ -108,26 +108,26 @@ sum(diffOm[which(stopJ)]<1e-3) # en fait tous les Omega ont convergé
 diffW=do.call(rbind, lapply(simus, function(graineJ){
   diffW = tail(graineJ$VEM_1$features$diffW,1)
 }))
-hist(log(diffW[which(stopJ)]), main="log(diffW) quand diffW>eps", xlab="", ylab="",
-     col="#FA7E1E", border=FALSE)
-sum(diffW[which(stopJ)]>0.1) # 79
-weird.conv = which(do.call(rbind, lapply(simus, function(graine){
-  diffW = tail(graine$VEM_1$features$diffW,1)
-  return(diffW > 1e-3)
-})))
-# donc divergence des poids W pour 40% des graines
-data.frame(diffW= diffW, diffOm= diffOm, nH=misAct$nH) %>% as_tibble() %>% 
-  group_by(nH) %>% summarise(count=n(), noWconv = sum(diffW>1e-3), prop=round(100*noWconv/count, 1)) %>% kable() %>% kable_styling()
-
-weird.iter=do.call(rbind, lapply(simus[weird.conv], function(graine){
-  graine$VEM_1$finalIter
-})) # longue queue : entre 13 et 135, mean=41.5 sd = 25
-good.iter=do.call(rbind, lapply(simus[-weird.conv], function(graine){
-  graine$VEM_1$finalIter
-})) # entre 12 et 180, mean = 32.5, sd = 18, (31 et 12.5 si on enlève la valeur extrême)
-data.frame(iter = rbind(weird.iter, good.iter), 
-           Wconv = as.factor(rep(c(0,1),c(length(weird.iter),length(good.iter))) ) )%>% 
-  ggplot(aes(Wconv, iter, color=Wconv))+geom_boxplot()+mytheme.dark("W converged")
+# hist(log(diffW[which(stopJ)]), main="log(diffW) quand diffW>eps", xlab="", ylab="",
+#      col="#FA7E1E", border=FALSE)
+# sum(diffW[which(stopJ)]>0.1) # 79
+# weird.conv = which(do.call(rbind, lapply(simus, function(graine){
+#   diffW = tail(graine$VEM_1$features$diffW,1)
+#   return(diffW > 1e-3)
+# })))
+# # donc divergence des poids W pour 40% des graines
+# data.frame(diffW= diffW, diffOm= diffOm, nH=misAct$nH) %>% as_tibble() %>% 
+#   group_by(nH) %>% summarise(count=n(), noWconv = sum(diffW>1e-3), prop=round(100*noWconv/count, 1)) %>% kable() %>% kable_styling()
+# 
+# weird.iter=do.call(rbind, lapply(simus[weird.conv], function(graine){
+#   graine$VEM_1$finalIter
+# })) # longue queue : entre 13 et 135, mean=41.5 sd = 25
+# good.iter=do.call(rbind, lapply(simus[-weird.conv], function(graine){
+#   graine$VEM_1$finalIter
+# })) # entre 12 et 180, mean = 32.5, sd = 18, (31 et 12.5 si on enlève la valeur extrême)
+# data.frame(iter = rbind(weird.iter, good.iter), 
+#            Wconv = as.factor(rep(c(0,1),c(length(weird.iter),length(good.iter))) ) )%>% 
+#   ggplot(aes(Wconv, iter, color=Wconv))+geom_boxplot()+mytheme.dark("W converged")
 
 ```
 
@@ -152,19 +152,20 @@ Qual<-data.frame(auc=do.call(rbind, lapply(simus, function(seed){
   Pg=seed$VEM_1$Pg ;ome=seed$omega ; diag(ome)=0 ; H=15
   ppvh=accppvtpr(Pg,ome,h=H,seuil=0.5)[8]
   return(ppvh)
-})), seed = 1:200) %>% as_tibble() %>% mutate(noWconv =(1*(seed %in% weird.conv)), nH = misAct$nH,influence=misAct$influence)
+})), seed = 1:200) %>% as_tibble() %>% mutate( nH =misAct$nH,
+                                               influence=misAct$influence)
  
 Qual %>% group_by(nH) %>% summarise( count=n(),auc.prop80 = round(sum(auc>0.8)*100/count, 1), pvh.prop80 = round(sum(ppvh>0.8)*100/count, 1))%>% kable() %>% kable_styling()
 
 Qual %>% group_by(influence) %>% 
   summarise(count=n(), med.auc=round(median(auc), 2),
-                              auc.prop80 = round(sum(auc>0.8)*100/count, 1),noWconv.prop=round(sum(noWconv)*100/count, 1))%>% 
+                              auc.prop80 = round(sum(auc>0.8)*100/count, 1))%>% 
   kable() %>% kable_styling()
 
 Qual %>% group_by(influence) %>% summarise( count=n(), med.ppvh=round(median(ppvh),2), med.tprh=round(median(tprh),2), ppvh.prop80 = round(sum(ppvh>0.8)*100/count, 1),tprh.prop80 = round(sum(tprh>0.8)*100/count, 1))%>% 
   kable() %>% kable_styling()
 
-Qual %>% gather(key, value, -nH, -noWconv, -influence, -seed) %>% 
+Qual %>% gather(key, value, -nH,  -influence, -seed) %>% 
   ggplot(aes(key, value, color=key, fill=key))+geom_boxplot(alpha=0.3)+
   facet_grid(~as.factor(influence))+mytheme.dark("")+
   labs(x="", y="", title="Inference quality and influence of the missing actor")
@@ -182,18 +183,42 @@ cor_ZHMH=do.call(rbind, lapply(simus, function(graine){
   MH = graine$VEM_1$M[,H]
   return(cor(ZH, MH))
 }))
-data=data.frame(corZM=abs(cor_ZHMH), nH=misAct$nH, influence=misAct$influence) 
-data%>% 
+datacor=data.frame(corZM=abs(cor_ZHMH), nH=misAct$nH, influence=misAct$influence) 
+datacor%>% 
   group_by(influence) %>% summarize(med.cor=round(median(corZM),2), prop50 = round(100*sum(corZM>0.5)/n(),1)) %>% kable() %>% kable_styling()
 
-data %>% ggplot(aes(corZM, color=influence, fill=influence))+
+datacor %>% ggplot(aes(corZM, color=influence, fill=influence))+
   geom_histogram(alpha=0.3)+facet_wrap(~influence, scales="free_y")+mytheme.dark("")+
   guides(color=FALSE, fill=FALSE)+labs(x="",y="", title="Absolute correlation between initial ZH and estimated MH")
 
+```
+
+
+# Bornes inférieures
+
+```{r}
+bornesJ=do.call(rbind, lapply(simus, function(graine){
+  tail(graine$VEM_1$lowbound$J,1)
+}))
+
+datacor %>% mutate(goodcor=ifelse(corZM>0.5,"cor>0.5","cor<0.5"),
+                   borneJ = bornesJ) %>% 
+  ggplot(aes(borneJ, color=goodcor,fill=goodcor))+
+  geom_histogram(alpha=0.3)+mytheme.dark("")+facet_wrap(~influence)
+
+datacor %>% mutate(goodcor=ifelse(corZM>0.5,"cor>0.5","cor<0.5"),
+                   borneJ = bornesJ) %>% 
+  ggplot(aes(borneJ, color=influence,fill=influence))+
+  geom_histogram(alpha=0.3)+mytheme.dark("")+facet_grid(goodcor~influence)
+
+datacor %>% mutate(goodcor=ifelse(corZM>0.5,"cor>0.5","cor<0.5"),
+                    nH=misAct$nH) %>% 
+  ggplot(aes(nH, color=influence,fill=influence))+
+  geom_histogram(alpha=0.3)+mytheme.dark("")+facet_grid(goodcor~influence, scales="free_x")
 ```
 
 # Conclusion
 
 Pour une influence importante de l'acteur manquant, VEMtree permet d'inférer correctement à la fois le réseau et la position de l'acteur manquant dans le réseau avec une qualité d'environ 70% en médiane à la fois pour l'auc et la ppvh, ainsi que de reconstruire les valeurs de l'acteur manquant par site avec des corrélations de plus de 75% en médiane.
 
-Pour 40% des graphes, l'arrêt de l'algorithme n'a pas nécessité la convergence de W et la dernière différence sur W observée était supérieure à 0.1. Ceci ne semble pas influer la qualité de l'estimation.
+ 

@@ -72,6 +72,7 @@ logprod<-function(factors){
 
 
 inverse.fractional<-function(A){
+ 
   A.inv<-pivot.fractional(A,trace=FALSE,inverse=TRUE)$A.inv
   return(q2d(A.inv))
 }
@@ -98,3 +99,9 @@ det.fractional<-function(A,log=TRUE){
   return(output)
 }
 
+#ne pas charger gmp
+inverse.gmp<-function(A){
+  p<-ncol(A)
+  A.inv<-matrix(as.double(solve(gmp::as.bigq(A))),p,p)
+  return(A.inv)
+}

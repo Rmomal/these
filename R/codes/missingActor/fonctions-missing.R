@@ -447,7 +447,8 @@ Kirshner <- function(W){
   if(!is.finite(sum(L))) browser()
   # Leigen = eigen(L)
   # Q = (Leigen$vectors) %*% diag(1/Leigen$values) %*% t(Leigen$vectors)
-  Q = inverse.fractional(L)
+  # Q = inverse.fractional(L)
+  Q = inverse.gmp(L)
   Q = rbind(c(0, diag(Q)),
             cbind(diag(Q), (diag(Q)%o%rep(1, p-1) + rep(1, p-1)%o%diag(Q) - 2*Q)))
   Q = .5*(Q + t(Q))
@@ -455,7 +456,7 @@ Kirshner <- function(W){
   P = .5*(P + t(P))
   return(P)
 }
- 
+
 generator_PLN<-function(Sigma,covariates=NULL, n=50){
   # ajout d'une constante, par rapport à EMtree::generator_PLN
   p<-ncol(Sigma)
@@ -594,7 +595,7 @@ plotVerdict<-function(values,colonne){
     ggplot(aes(TPR,PPV,color=status))+
     geom_rect(aes(xmin=0.5, xmax=1, ymin=0.5, ymax=1), fill="gray90", color="gray90",alpha=0.1)+
     geom_point()+  geom_line()+
-    facet_wrap(~status)+mytheme.dark+
+    facet_wrap(~status)+mytheme.dark("")+
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 }
 

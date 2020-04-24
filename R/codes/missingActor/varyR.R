@@ -56,7 +56,7 @@ source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
 simu_vary_r<-function(p,n,r,B,rMax,maxIter,seed,type,eps=1e-3,nobeta=FALSE, cores=3, plot){
   # q=p+rMax
   # D=.Machine$double.xmax
-  # alpha = (1/n)*((1/(q-1))*log(D) - log(q)) # même alpha pour tous les r
+  # alpha = (1/n)*((1/(q-1))*log(D) - 0.5*log(q*(q-1)))
   alpha=0.1
   set.seed(seed)
   # sim data
@@ -74,7 +74,7 @@ simu_vary_r<-function(p,n,r,B,rMax,maxIter,seed,type,eps=1e-3,nobeta=FALSE, core
                     alpha=alpha, verbatim=FALSE, filterWg = TRUE, nobeta=nobeta )
 
   #  vary r
-  VEMr<-lapply(1:rMax, function(r){
+  VEMr<-lapply(2:rMax, function(r){
     cat(paste0(r," missing actors: "))
     t1<-Sys.time()
     cliques_spca <- boot_FitSparsePCA(scale(MO),B,r=r,cores=3)
@@ -113,12 +113,12 @@ simu_vary_r<-function(p,n,r,B,rMax,maxIter,seed,type,eps=1e-3,nobeta=FALSE, core
 seed=1; p=14 ; B=100; type="scale-free" ; n=200 
 t1<-Sys.time()
 simu_vary_r(seed=seed,B=B, n=n, p=p,r=0,maxIter=200,rMax=4, 
-            type = type,nobeta=FALSE, plot=FALSE , cores=1)
+            type = type,nobeta=FALSE, plot=FALSE , cores=3)
 t2<-Sys.time()
 difftime(t2, t1)
 t1<-Sys.time()
 simu_vary_r(seed=seed,B=B, n=n, p=p,r=1,maxIter=200,
-            rMax=4, type = type, nobeta=FALSE, plot=FALSE, cores=1)
+            rMax=4, type = type, nobeta=FALSE, plot=FALSE, cores=3)
 t2<-Sys.time()
 difftime(t2, t1)
 #--

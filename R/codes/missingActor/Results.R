@@ -79,6 +79,8 @@ weird.conv = which(do.call(rbind, lapply(simus, function(graine){
   return(diffW > 0.1)
 })))
 # donc divergence des poids W pour 40% des graines
+data.frame(diffW= diffW, diffOm= diffOm, nH=misAct$nH) %>% as_tibble() %>% 
+  group_by(nH) %>% summarise(count=n(), noWconv = sum(diffW>1), prop=noWconv/count)
 # iter des convergences bizarres :
 weird.iter=do.call(rbind, lapply(simus[weird.conv], function(graine){
   graine$VEM_1$finalIter
@@ -113,7 +115,7 @@ AUC_O<-data.frame(auc0=do.call(rbind, lapply(simus, function(seed){
   return(auc)
 })), seed = 1:200) %>% as_tibble() 
 
-left_join(AUC, AUC_O, by="seed")%>% gather(key, value, -seed, -Wconv) %>% 
+left_join(AUC, AUC_O, by="seed")%>% gather(key, value, -seed, -Wconv, - nH) %>% 
   ggplot(aes(y=key, x=value, color=key, fill=key))+geom_density_ridges(alpha=0.3)+
   theme_light() # la bosse vient de la partie OH
 AUC$nH = misAct$nH
@@ -142,6 +144,17 @@ AUC %>% mutate(major=as.factor(nH>6)) %>%
   ggplot(aes(y=major, x=auc, color=major, fill=major))+geom_density_ridges(alpha=0.3)+
   geom_vline(xintercept = 0.5, linetype="dashed")+
   theme_light()
+
+data=data.frame(ppvh=PPVH$ppvh, auc=AUC$auc, nH=misAct$nH) %>%
+  gather(key, value, -nH)%>%
+  mutate(influence=unlist(purrr::map(nH, function(x){
+    if(x<5) res="minor"
+    if(x>=5 & x<7) res="medium"
+    if(x>=7) res="major"
+    return(res)}))) %>% as_tibble()
+data %>% group_by(influence) %>% summarise(count=n())
+ggplot(data,aes(key, value, color=key, fille=key))+geom_boxplot(alpha=0.3)+
+  facet_grid(~as.factor(influence))+theme_light()
 
 weird.auc=which(AUC$auc < 0.5 & AUC$nH >6)
 bad=intersect(weird.conv, weird.auc)
