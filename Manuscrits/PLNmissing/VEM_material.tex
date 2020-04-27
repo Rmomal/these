@@ -187,9 +187,7 @@ p(\Ybf,Z,T)& = p(T) \: p(Z|T) \: p(\Ybf|Z) \\
 Here $p(T,\Zbf \mid \Ybf)$ is untractable. We adopt a variational approximation aiming to maximise a lower bound of the log-likelihood of observed data $\log p(\Ybf)$, namely  
 \begin{align*}
     \mathcal{J}(\Ybf; g,h)
-    & = \log p(\Ybf) - KL\left[q(T,\Zbf) \middle\vert\middle\vert\ p(T,\Zbf \mid \Ybf)\right]\\
-    & =\Esp_{q}\big[\log p_{\thetabf}(\Ybf\mid \Zbf_O)+ \log p_{\Omegabf_T}(\Zbf_O \mid T)\big]-\Esp_q[\log h(\Zbf_O)]  +\Esp_{q}[\log p_{\Omegabf_T}(\Zbf_H \mid \Zbf_O,T)] \\
-    & \;\; +\Esp_q\big[\log p_{\betabf}(T) - \log g(T)\big]  -\Esp_q[\log h(\Zbf_H)]
+    & = \log p(\Ybf) - KL\left[q(T,\Zbf) \middle\vert\middle\vert\ p(T,\Zbf \mid \Ybf)\right]
 \end{align*}
 Where KL is the Küllback-Leibler divergence. The approximation we adopt relies on factorizing $q$ in the product of two distributions $h$ et $g$ relating respectively to $\Zbf$  and $T$: 
 $$p(T,Z | \Ybf) \approx  q(Z,T) = g(T)h(Z).$$
@@ -211,8 +209,10 @@ Starting with the two hidden layers of our model, the lower bound writes:
 &= \Esp_{gh} [\log p(\Ybf,\Zbf,T)] + \entr[g(T)] + \entr[h(\Zbf)]\\
 &= \Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T)p_\theta(\Ybf\mid \Zbf))] + \entr[g(T)] + \entr[h(\Zbf)]
 \end{align*}
+\subsection{Optimizing in $\theta$ and $h(\Zbf_O)$:}
+\citet{CMR18} compute the lower bound of a VEM for the PLN, which we write $\mathcal{J}_{PLN}$. This lower bound appears in our computation as well.
 
-Adding modelization of unobserved covariates:
+Let's seperate observed and unobserved latent variables:
 \begin{align*}
 \mathcal{J}(\Ybf; g,h)&= \Esp_{gh}[\log p(T)  p(\Zbf_H| \Zbf_O,T) p(\Zbf_O|T)p(\Ybf|\Zbf_O)] + \entr[g(T)] +\entr[h(\Zbf_H,\Zbf_O)]
 \end{align*}
@@ -243,8 +243,7 @@ Finally we obtain:
 & \;\; + \Esp_{gh}[\log p(\Zbf_H | \Zbf_O,T) ]+\Esp_g[\log p(T)] +\entr[g(T)]-\Esp_h[\log h(\Zbf_H\mid \Zbf_O)]&\text{: New}\label{lowerbound}
 \end{align}\\
 
-\subsection{Optimizing in $\theta$ and $h(\Zbf_O)$:}
-\citet{CMR18} compute the lower bound of a VEM for the PLN, which we write $\mathcal{J}_{PLN}$. This lower bound appears in our computation as well. Let's first detail the following quantity:
+Let's then detail the following quantity:
 \begin{align*}
 \Esp_{gh}[\log p(\Zbf_O|T)] &=  \Esp_{gh} \left[\frac{n}{2} \log |\Omega_{Tm}| - \frac{1}{2} \sum_i \Zbf_{Oi}\Omega_{Tm} \Zbf_{Oi}^\intercal  \right]\\
 &= \frac{n}{2} \Esp_g [\log |\Omega_{Tm}|] - \frac{1}{2} \Esp_{gh}\left[Tr\left( \Zbf_O^\intercal \Zbf_O \Omega_{Tm}\right)\right].
@@ -253,29 +252,37 @@ Finally we obtain:
 The expectation in $gh$ is separable thanks to the independance hypothesis:
 \begin{align*}
 \Esp_{gh}[\log p(\Zbf_O|T)] &=\frac{n}{2} \Esp_g [\log |\Omega_{Tm}|] - \frac{1}{2}  Tr\left(\Esp_h [\Zbf_O^\intercal \Zbf_O ]\; \Esp_g[\Omega_{Tm}]\right)\\
-&=\frac{n}{2} \Esp_g [\log |\Omega_{Tm}|] - \frac{1}{2}<\Esp_h [\Zbf_OZ_O^\intercal ], \underbrace{\Esp_g [\Omega_{Tm}]}_{\overline{\Omega_{Tm}}}> .
+&=\frac{n}{2} \Esp_g [\log |\Omega_{Tm}|] - \frac{1}{2}<\Esp_h [\Zbf_OZ_O^\intercal ], \Esp_g [\Omega_{Tm}]> .
 \end{align*}
-We note $\Esp_g [\Omega_{Tm}] = \overline{\Omega_{Tm}}$, which is a $p\times p$ matrix of expected covariance over the whole spanning-tree space. Introducing the quantity  $\log |\overline{\Omega_{Tm}}| $ in the PLN-like terms of Eq.~(\ref{lowerbound}), the lower bound of the VEM of PLN $\mathcal{J}_{PLN}$ appears:
+$\Esp_g [\Omega_{Tm}]$ is a $p\times p$ matrix of expected covariance over the whole spanning-tree space. Introducing the quantity  $\log |\Esp_g [\Omega_{Tm}]| $ in the PLN-like terms of Eq.~(\ref{lowerbound}), the lower bound of the VEM of PLN $\mathcal{J}_{PLN}$ appears:
 \begin{align*}
 &\Esp_{gh}[\log p(\Zbf_O | T)] +\Esp_h[\log p(\Ybf|\Zbf_O)]+ \entr[h(\Zbf_O)]\\
-& =\underbrace{\frac{n}{2} \log |\overline{\Omega_{Tm}}| - \frac{1}{2}<\Esp_h [\Zbf_OZ_O^\intercal ], \overline{\Omega_{Tm}}> + \Esp_{h}[\log p(\Ybf|\Zbf_O)] + \entr[h(\Zbf_O)]}_{\mathcal{J}_{PLN}\text{ with } \widetilde{\Sigma} = \overline{\Omega_{Tm}}} + \underbrace{\frac{n}{2}\left( \Esp_g[\log|\Omega_{Tm}|] - \log|\overline{\Omega_{Tm}}|\right)}_{\leq 0}
+& =\underbrace{\frac{n}{2} \log |\Esp_g [\Omega_{Tm}]| - \frac{1}{2}<\Esp_h [\Zbf_OZ_O^\intercal ], \Esp_g [\Omega_{Tm}]> + \Esp_{h}[\log p(\Ybf|\Zbf_O)] + \entr[h(\Zbf_O)]}_{\mathcal{J}_{PLN}\text{ with } \widetilde{\Sigma} = \Esp_g [\Omega_{Tm}]} \\
+& \;\;\;+  \frac{n}{2}\left( \Esp_g[\log|\Omega_{Tm}|] - \log|\Esp_g [\Omega_{Tm}]|\right)
 \end{align*}
 
 
-The second brace is a negative quantity, because the log determinent is a concave function. Jensen's inequality gives:
-$$\log |\Esp_g[\Omega_{Tm}]| \geq \Esp_g [\log |\Omega_{Tm}|]$$
+%The second line is a negative quantity, because the log determinent is a concave function. Jensen's inequality gives:
+%$$\log |\Esp_g[\Omega_{Tm}]| \geq \Esp_g [\log |\Omega_{Tm}|]$$
 %$$ \Esp[Z_jZ_k] = -\partial_{\omega_{jk}}( \log |\Omega_{TO}| )$$
-Therefore, $$\Esp_{gh}[\log p(\Zbf_O | T)] +\Esp_h[\log p(\Ybf|\Zbf_O)]+ \entr[h(\Zbf_O)] \leq \mathcal{J}_{PLN}$$\\
+%Therefore,
+ $$\Esp_{gh}[\log p(\Zbf_O | T)] +\Esp_h[\log p(\Ybf|\Zbf_O)]+ \entr[h(\Zbf_O)] = \mathcal{J}_{PLN} - \frac{n}{2}\left( \Esp_g[\log|\Omega_{Tm}|] - \log|\Esp_g [\Omega_{Tm}]|\right)$$
+ $$ \argmax_{\theta, h(\Zbf_O)} \big\{\Esp_{gh}[\log p(\Zbf_O | T)] +\Esp_h[\log p(\Ybf|\Zbf_O)]+ \entr[h(\Zbf_O)]\big\} = \argmax_{\theta, h(\Zbf_O)} \big\{ \mathcal{J}_{PLN} \big\}$$
+
+The VE step of PLNmodels VEM algorithm maximizes $\mathcal{J}_{PLN}$ and gives estimates of $\Zbf_O$ moments of order 1 and 2, so we have easy access to $\widetilde{m}_O$ and $\widetilde{S}_O$. Using $\mathcal{J}_{PLN}$ maximizes  $\mathcal{J}(\Ybf;g,h)$ in $\theta$, and only partly in $h(\Zbf_O)$ as not all terms depending on $h(\Zbf_O)$ are in $\mathcal{J}_{PLN}$, so the proposed solution is sub-optimal. After maximizing $\mathcal{J}_{PLN}$ in $h_O$, this density is considered constant and written $h_O^*$.  
+
+We can then rewrite the lower bound as follow:
 \begin{align*}
-\mathcal{J}_{h}(\Ybf; g,h)&= \mathcal{J}_{PLN}+\frac{n}{2}\left(\Esp_g[\log|\Omega_{Tm}|] - \log|\overline{\Omega_{Tm}}|\right)\\
+\mathcal{J}(\Ybf; g,h)&= \mathcal{J}_{PLN}+\frac{n}{2}\left(\Esp_g[\log|\Omega_{Tm}|] - \log|\overline{\Omega_{Tm}}|\right)\\
 &\;+ \Esp_{gh}[\log p(\Zbf_H | \Zbf_O,T) ]+\Esp_g[\log p(T)] +\entr[g(T)]-\Esp_h[\log h(\Zbf_H\mid \Zbf_O)]
 \end{align*}
-The "VE" step of PLNmodels algorithm maximizes $\mathcal{J}_{PLN}$ and gives estimates of $\Zbf_O$ moments of order 1 and 2. So we have easy access to $\widetilde{m}_O, \widetilde{S}_O, \widetilde{\overline{\Omega_{Tm}}}$, which maximize part of $\mathcal{J}(\Ybf;g,h)$ in $h(\Zbf_O)$.  \\
+
+ 
 
 Remarks:
 \begin{itemize}
 \item Here it shows that assuming a tree structure for the latent layer of parameters $\Zbf$ reveals an average precision matrix over all the precision matrices of possible trees. Recall that these matrices only differ in the position of their zero entries.
-\item Not all terms depending on $h(\Zbf_O)$ are in $\mathcal{J}_{PLN}$, so the proposed solution is sub-optimal. After maximizing $\mathcal{J}_{PLN}$ in $h_O$, this density is considered constant and written $h_O^*$.  
+
 \end{itemize}
 
 

@@ -84,18 +84,28 @@ det.fractional<-function(A,log=TRUE){
  factors<-pivot.fractional(A,trace=FALSE,inverse=FALSE)$det.factors
   if(log){
     output<-sum(log(abs(q2d(factors))))
+    if(output >= log(.Machine$double.xmax)){
+      warning("logmax machine precision reached ! \n")
+      output <- log(.Machine$double.xmax )
+    }
+    
+    if(output <= log(.Machine$double.xmin)){
+      warning("logmin machine precision reached ! \n")
+      output <- log(.Machine$double.xmin)
+    }
   }else{
-    output <-q2d(qprod(factors))
-  }  
-  if(output >= .Machine$double.xmax){
-    warning("machine precision reached ! \n")
+    output <-q2d(qprod(factors)) 
+    if(output >= .Machine$double.xmax){
+    warning("max machine precision reached ! \n")
     output <- .Machine$double.xmax 
     }
   
   if(output <= .Machine$double.xmin){
-    warning("machine precision reached ! \n")
+    warning("min machine precision reached ! \n")
     output <- .Machine$double.xmin
     }
+  }  
+ 
   return(output)
 }
 

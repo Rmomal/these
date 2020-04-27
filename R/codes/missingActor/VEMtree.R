@@ -45,7 +45,7 @@ source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
 #source("/home/mmip/Raphaelle/these/R/codes/missingActor/fonctions-missing.R")
 
 # simu parameters
-set.seed(1)
+set.seed(19)
 n=200 ;p=14;r=1;type="scale-free";plot=TRUE
 O=1:p
 ################
@@ -71,7 +71,7 @@ ggimage(solve(order_sigma))
 plot(sigmaO ,sigma_obs)
 ome_init=omega[c(setdiff(1:(p+r), hidden), hidden),c(setdiff(1:(p+r), hidden), hidden)]
 ome=ome_init ; diag(ome)=0
-
+ggimage(ome)
 
 # alpha<-tryCatch(expr={computeAlpha(solve(sigma_obs),default =0.3, MO, SO, plot=plot)},
 #                 error=function(e){message("sythetic alpha")
@@ -82,30 +82,77 @@ ome=ome_init ; diag(ome)=0
 # plotInitMclust(res=clique_mclust,title = "")
 
 
-cliques_spca <- boot_FitSparsePCA(scale(MO),100,r=2, cores=3)
+cliques_spca <- boot_FitSparsePCA(scale(MO),100,r=1, cores=3)
 
 # best VEM with 1 missing actor
-# p=14 ;n=200
-# r=1
-# q=p+r
-# D=.Machine$double.xmax
-# alpha = (1/n)*((1/(q-1))*log(D) - log(q))
-# ListVEM<-List.VEM(cliquesObj=cliques_spca, counts, sigma_obs, 
-#                   MO,SO,r=1,eps=1e-3, maxIter=200, alpha = 0.1,cores=1,
-#                   nobeta = FALSE)
-# 
+
+ListVEM<-List.VEM(cliquesObj=cliques_spca, counts, sigma_obs,
+                  MO,SO,r=1,eps=1e-3, maxIter=200, alpha = 0.1,cores=3,
+                  nobeta = FALSE)
+goodPrec=!do.call(rbind,lapply(ListVEM, function(x) x$max.prec))
+J=do.call(rbind,lapply(ListVEM, function(vem){tail(vem$lowbound$J,1)}))
+maxJ_good=which(J==max(J[J<min(J[!goodPrec])]))
+
+
+auc=do.call(rbind, lapply(ListVEM, function(vem){
+  Pg=vem$Pg
+  auc=round(auc(pred = Pg, label = ome),4)
+}))
+ppvh=do.call(rbind, lapply(ListVEM, function(vem){
+  Pg=vem$Pg
+  ppvh=accppvtpr(Pg,ome,h=15,seuil=0.5)[5]
+}))  
+ICL<-do.call(rbind, lapply(ListVEM, function(vem){
+  J=tail(vem$lowbound$J,1)
+  Wg=vem$Wg
+  Pg=Kirshner(Wg)
+  pen_T=-( sum( Pg * log(Wg+(Wg==0)) ) - logSumTree(Wg)$det) 
+  ICL = J-pen_T
+  return(ICL)
+}))
+data= data.frame(goodPrec, J,ICL, auc,ppvh) 
+data%>% 
+  group_by(goodPrec) %>%  summarise(maxJ=max(J), mean.auc=mean(auc),
+                                    mean.ppvh=mean(ppvh),
+                                    indexmaxJ = which.max(J),
+                                    indexmaxICL = which.max(ICL))
+VEM_1=ListVEM[[maxJ_good]]
+maxJ_good=which(!goodPrec)[which.max(ICL[!goodPrec])]
+data=data %>% mutate(penT = -ICL + J)
+# data1=data
+ data1=data
+data %>% ggplot(aes(auc,J, color=goodPrec))+geom_point()+mytheme.dark("")
+data %>% ggplot(aes(ppvh,ICL, color=goodPrec))+geom_point()+mytheme.dark("")
+data %>% ggplot(aes(ppvh,J, color=goodPrec))+geom_point()+mytheme.dark("")
+data %>% ggplot(aes(ICL,J,color=auc>0.6, shape=goodPrec))+geom_point(size=3)+
+  mytheme.dark("auc>0.6")+geom_abline()
+data19 %>% ggplot(aes(ppvh,auc, color=goodPrec))+geom_point()+mytheme.dark("")
+data19 %>% ggplot(aes(auc,(penT), color=goodPrec))+geom_point()+mytheme.dark("")
+
+
+data1 %>% ggplot(aes(auc,ICL, color=goodPrec))+geom_point()+mytheme.dark("")
+data1 %>% ggplot(aes(ppvh,ICL, color=goodPrec))+geom_point()+mytheme.dark("")
+data1 %>% ggplot(aes(auc,J, color=goodPrec))+geom_point()+mytheme.dark("")
+data1 %>% ggplot(aes(ICL,J,color=auc>0.6, shape=goodPrec))+geom_point(size=3)+
+  mytheme.dark("auc>0.6")+geom_abline()
+data1 %>% ggplot(aes(ppvh,auc, color=goodPrec))+geom_point()+mytheme.dark("")
+  data1 %>% ggplot(aes(auc,(penT), color=goodPrec))+geom_point()+mytheme.dark("")
+  
+  # sélectionner le premier modèle sans problème nimériques dont la J
+  # est inférieure au plus petit J des modèles qui ont eu un pb numérique ?
+  
 # vBICs<-(criteria(ListVEM,counts,theta, matcovar,r))
 # vBICs$J
 # hist(vBICs$J, breaks=10)
 # best=which.max(vBICs$J)
 # VEM_1<-ListVEM[[best]]
 # computeFPN(VEM_1$clique,trueClique = trueClique[[1]],p=p) 
-# VEM_1$lowbound %>% rowid_to_column() %>%  gather(key,value,-rowid,-parameter) %>% 
-#   ggplot(aes(rowid,value, group=key))+geom_point(aes(color=as.factor(parameter)), size=3)+geom_line()+
-#   facet_wrap(~key, scales="free")+
-#   labs(x="iteration",y="", title="Lower bound and components")+mytheme+
-#   scale_color_discrete("")
-# plotVEM(VEM_1$Pg,ome,r=1, 0.5)
+VEM_1$lowbound %>% rowid_to_column() %>%  gather(key,value,-rowid,-parameter) %>%
+  ggplot(aes(rowid,value, group=key))+geom_point(aes(color=as.factor(parameter)), size=3)+geom_line()+
+  facet_wrap(~key, scales="free")+
+  labs(x="iteration",y="", title="Lower bound and components")+mytheme+
+  scale_color_discrete("")
+ plotVEM(VEM_1$Pg,ome,r=1, 0.5)
 # VEM_1$clique
 # trueClique
 # TJ=True_lowBound(Y=counts, M=VEM_1$M,VEM_1$S,theta=theta,X=matcovar,
@@ -123,26 +170,39 @@ cliques_spca <- boot_FitSparsePCA(scale(MO),100,r=2, cores=3)
 # find alpha on the observed part of the initial "non beta" quantities needed to compute the beta tilde
 # alpha<-computeAlpha(omegainit[O,O], MO, SO)
 # alpha=1
-init=initVEM(counts = counts,initviasigma=trueClique, sigma_obs,r = 1) #cliques_spca$cliqueList[[4]]
+cliques_spca$cliqueList[[12]]
+init=initVEM(counts = counts,initviasigma=cliques_spca$cliqueList[[12]], sigma_obs,r = 1) #cliques_spca$cliqueList[[4]]
 Wginit= init$Wginit; Winit= init$Winit; omegainit=init$omegainit ; MHinit=init$MHinit
 test=omegainit ;diag(test)=0
  
 r=2
 q=p+r
 D=.Machine$double.xmax
- 
+borne = D/(sqrt(q*(q-1)))
+0.9*log(borne)*borne^(0.9)-borne
+2*log(log(borne))/n
 alpha = (1/n)*((1/(q-1))*log(D) - log(q))
 alpha = (1/n)*((1/(q-1))*log(D) - 0.5*log(q*(q-1)))
+2*0.9*log(borne)/n
+2*log(borne)/n
+
+(1/n)*log(D^(1/(q-1))/sqrt(q*(q-1)))
+f<-function(u){}
+optim(par=1,fn =u*exp(u)-borne )
 # alpha=(1/(n*q))*log(D/(q^(q/2)))
 # curve((1/n)*((1/(x-1))*log(D) - log(x)),from=15, to=30)
 # curve((1/(n*x))*log(D/(x^(x/2))),from=15, to=30, add=T, col="red")
 # curve( (1/n)*((1/(x-1))*log(D) - 0.5*log(x*(x-1))),from=15, to=30, add=T, col="blue")
+alpha=borne*2/n
 
-resVEM<-VEMtree(counts,MO,SO,MH=MHinit,omegainit,Winit,Wginit, eps=1e-3, alpha=0.1, 
-                maxIter=40, plot=TRUE,print.hist=FALSE,filterWg=TRUE,
-                verbatim = TRUE,nobeta = FALSE)
+
+resVEM<-VEMtree(counts,MO,SO,MH=MHinit,omegainit,Winit,Wginit, eps=1e-3, 
+                alpha=0.1, 
+                maxIter=50, plot=TRUE,print.hist=FALSE,filterWg=FALSE,
+                verbatim = TRUE,nobeta = FALSE, filterDiag = FALSE)
+#18s inverse fractional
+#16s inverse gmp
 tail(resVEM$lowbound$J,1)
-LowerBound(resVEM$Pg, resVEM$omega,resVEM$M,resVEM$S,resVEM$W,resVEM$Wg,p)[1]
 plotVEM(resVEM$Pg,ome,r=1,seuil=0.5)
 ggimage(resVEM$Pg)
 (resVEM$features)

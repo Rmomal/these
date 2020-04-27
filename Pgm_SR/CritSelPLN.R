@@ -71,10 +71,11 @@ F_PlotSlopeCrit <- function(pen, crit, r, d, title='', reg=TRUE){
 ################################################################################
 # Data
 # Barents data
-dataDir <- '../Data_SR/'; dataName <- 'BarentsFish_Group'
+dataDir <- '/Users/raphaellemomal/these/Data_SR/'; dataName <- 'BarentsFish_Group'
 load(paste0(dataDir, dataName, '.Rdata'))
 Y <- Data$count; 
-Y <- Data$count[, which(order(colSums(Y), decreasing=TRUE) <= 10)]; dataName <- paste0(dataName, '_largest10')
+#Y <- Data$count[, which(order(colSums(Y), decreasing=TRUE) <= 10)];
+#dataName <- paste0(dataName, '_largest10')
 # Y <- Data$count[, 1:round(ncol(Y)/2)]; dataName <- paste0(dataName, '_1stHalf')
 # Y <- Data$count[, (round(ncol(Y)/2)+1):ncol(Y)]; dataName <- paste0(dataName, '_2ndHalf')
 
@@ -155,7 +156,8 @@ if(!file.exists(paste0(dataDir, dataName, '-emMissList-r', rMax, '.Rdata'))){
       alpha = 1/sqrt(n)
       VEM0 <-VEMtree(Y, MO, SO, MH=NULL, ome_init=Omegainit, W_init=Winit, eps=eps,
                      Wg_init=Wginit, plot=FALSE, maxIter=maxIter, print.hist=FALSE,
-                     alpha=alpha, verbatim=FALSE, nobeta=noBeta)
+                     alpha=alpha, verbatim=FALSE,filterWg = FALSE, filterDiag = FALSE,
+                     nobeta=noBeta)
       emMissList[[d]]$VEM0 <- VEM0
       #  vary r
       VEMr<-lapply(1:rMax, function(r){ # r <- 1
@@ -164,7 +166,7 @@ if(!file.exists(paste0(dataDir, dataName, '-emMissList-r', rMax, '.Rdata'))){
          cliques_spca <- boot_FitSparsePCA(scale(Y),B,r=r)
          ListVEM <- List.VEM(cliquesObj=cliques_spca, Y, SigmaO, MO, SO,  r=r, cores=cores,
                              eps=eps, maxIter=maxIter, alpha=alpha, nobeta=noBeta)
-         print(sapply(1:length(ListVEM), function(b){ListVEM[[b]]$finalIter}))
+         #print(sapply(1:length(ListVEM), function(b){ListVEM[[b]]$finalIter}))
          lowBound <- sapply(1:length(ListVEM), function(b){ListVEM[[b]]$lowbound$J[length(ListVEM[[b]]$lowbound$J)]})
          # lowBound2 <- sapply(1:length(ListVEM), function(b){ # b <- 3
          #    LowerBound(Pg=ListVEM[[b]]$Pg, omega=ListVEM[[b]]$omega, M=ListVEM[[b]]$M, S=ListVEM[[b]]$S, 
@@ -208,39 +210,39 @@ critEmMiss$ICLTZ <- critEmMiss$BIC - critEmMiss$HqTZ
 # ################################################################################
 # # Results
 # # Comp parms EmTree / EmMiss
-# par(mfrow=c(dMax, 5), mex=.6)
-# # par(mfrow=c(3, 2), mex=.6)
-# t(sapply(1:dMax, function(d){ # d <- 1
-#    pln <- plnList[[d]]; X <- XList[[d]]; emTree <- emTreeList[[d]]; emMiss <- emMissList[[d]]$VEM0
-#    Sigma <- pln$model_par$Sigma; logPhi <- -log(1 - cov2cor(Sigma)^2 + (cov2cor(Sigma)==1))/2;
-#    # beta
-#    betaTree <- emTree$edges_weight; betaMiss <- emMiss$W
-#    betatTree <- betaTree * exp(n*logPhi)
-#    betatMiss <- emMiss$Wg
-#    logBetaTree <- log(betaTree) - log(SumTree(betaTree))/(p-1) + log((p-1)) 
-#    logBetatTree <- log(betatTree) - log(SumTree(betatTree))/(p-1) + log((p-1)) 
-#    logBetaMiss <- log(betaMiss) - log(SumTree(betaMiss))/(p-1) + log((p-1)) 
-#    logBetatMiss <- log(betatMiss) - log(SumTree(betatMiss))/(p-1) + log((p-1)) 
-#    c(SumTree(exp(logBetaTree)), SumTree(exp(logBetatTree)), SumTree(exp(logBetaMiss)), SumTree(exp(logBetatMiss)))
-#    plot(logBetatTree, logBetatMiss, col=2, xlab='tree', ylab='miss', main=paste0('beta: d=', d)); abline(a=0, b=1, v=0)
-#    points(logBetaTree, logBetaMiss, col=1)
-#    points(logBetatTree-logBetaTree, logBetatMiss-logBetaMiss, col=4)
-#    # M
-#    plot(pln$var_par$M, emMiss$M, xlab='tree', ylab='miss', main=paste0('M: d=', d)); abline(a=0, b=1, v=0)
-#    # S
-#    plot(pln$var_par$S, emMiss$S, xlab='tree', ylab='miss', main=paste0('S: d=', d)); abline(a=0, b=1, v=0)
-#    # Omega
-#    colMat <- matrix(1, p, p); diag(colMat) <- 2
-#    plot(solve(Sigma), emMiss$omega, col=colMat, xlab='tree', ylab='miss', main=paste0('Omega: d=', d)); abline(a=0, b=1, h=0, v=0)
-#    # Z.hat * Omega
-#    colMat <- matrix(1, p, p); diag(colMat) <- 2
-#    SShatTree <- (t(pln$var_par$M)%*%pln$var_par$M+diag(colSums(pln$var_par$S)))
-#    SShatMiss <- (t(emMiss$M)%*%emMiss$M+diag(colSums(emMiss$S)))
-#    plot(SShatTree*solve(Sigma), SShatMiss*emMiss$omega, col=colMat, xlab='tree', ylab='miss', main=paste0('SS*Omega: d=', d)); abline(a=0, b=1, h=0, v=0)
-#    # # Sigma
-#    # colMat <- matrix(1, p, p); diag(colMat) <- 2
-#    # plot((Sigma), (solve(emMiss$omega)), col=colMat, xlab='tree', ylab='miss', main=paste0('Sigma: d=', d)); abline(a=0, b=1, h=0, v=0)
-# }))
+par(mfrow=c(dMax, 5), mex=.6)
+# par(mfrow=c(3, 2), mex=.6)
+t(sapply(1:dMax, function(d){ # d <- 1
+   pln <- plnList[[d]]; X <- XList[[d]]; emTree <- emTreeList[[d]]; emMiss <- emMissList[[d]]$VEM0
+   Sigma <- pln$model_par$Sigma; logPhi <- -log(1 - cov2cor(Sigma)^2 + (cov2cor(Sigma)==1))/2;
+   # beta
+   betaTree <- emTree$edges_weight; betaMiss <- emMiss$W
+   betatTree <- betaTree * exp(n*logPhi)
+   betatMiss <- emMiss$Wg
+   logBetaTree <- log(betaTree) - log(SumTree(betaTree))/(p-1) + log((p-1))
+   logBetatTree <- log(betatTree) - log(SumTree(betatTree))/(p-1) + log((p-1))
+   logBetaMiss <- log(betaMiss) - log(SumTree(betaMiss))/(p-1) + log((p-1))
+   logBetatMiss <- log(betatMiss) - log(SumTree(betatMiss))/(p-1) + log((p-1))
+   c(SumTree(exp(logBetaTree)), SumTree(exp(logBetatTree)), SumTree(exp(logBetaMiss)), SumTree(exp(logBetatMiss)))
+   plot(logBetatTree, logBetatMiss, col=2, xlab='tree', ylab='miss', main=paste0('beta: d=', d)); abline(a=0, b=1, v=0)
+   points(logBetaTree, logBetaMiss, col=1)
+   points(logBetatTree-logBetaTree, logBetatMiss-logBetaMiss, col=4)
+   # M
+   plot(pln$var_par$M, emMiss$M, xlab='tree', ylab='miss', main=paste0('M: d=', d)); abline(a=0, b=1, v=0)
+   # S
+   plot(pln$var_par$S, emMiss$S, xlab='tree', ylab='miss', main=paste0('S: d=', d)); abline(a=0, b=1, v=0)
+   # Omega
+   colMat <- matrix(1, p, p); diag(colMat) <- 2
+   plot(solve(Sigma), emMiss$omega, col=colMat, xlab='tree', ylab='miss', main=paste0('Omega: d=', d)); abline(a=0, b=1, h=0, v=0)
+   # Z.hat * Omega
+   colMat <- matrix(1, p, p); diag(colMat) <- 2
+   SShatTree <- (t(pln$var_par$M)%*%pln$var_par$M+diag(colSums(pln$var_par$S)))
+   SShatMiss <- (t(emMiss$M)%*%emMiss$M+diag(colSums(emMiss$S)))
+   plot(SShatTree*solve(Sigma), SShatMiss*emMiss$omega, col=colMat, xlab='tree', ylab='miss', main=paste0('SS*Omega: d=', d)); abline(a=0, b=1, h=0, v=0)
+   # # Sigma
+   # colMat <- matrix(1, p, p); diag(colMat) <- 2
+   # plot((Sigma), (solve(emMiss$omega)), col=colMat, xlab='tree', ylab='miss', main=paste0('Sigma: d=', d)); abline(a=0, b=1, h=0, v=0)
+}))
 
 # # Check RM / SR
 # print(critEmMiss[, c('d', 'r', 'EqLogpT', 'HqT', 'T2', 'JT', 'JTZY', 'J')])
@@ -267,3 +269,4 @@ F_PlotSlopeCrit(critEmMiss$r, critEmMiss$JTZY, critEmMiss$r, critEmMiss$d, reg=F
 F_PlotSlopeCrit(critEmMiss$r, critEmMiss$BIC, critEmMiss$r, critEmMiss$d, reg=FALSE)
 F_PlotSlopeCrit(critEmMiss$r, critEmMiss$ICLT, critEmMiss$r, critEmMiss$d, reg=FALSE)
 F_PlotSlopeCrit(critEmMiss$r, critEmMiss$ICLTZ, critEmMiss$r, critEmMiss$d, reg=FALSE)
+

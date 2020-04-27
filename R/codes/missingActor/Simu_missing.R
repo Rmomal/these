@@ -14,11 +14,12 @@ library(kableExtra)
 library(parallel)
 library(sparsepca)
 source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
+source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-exactDet.R")
 
 ##### function
 
 Simu_missing<-function(p,B,N,n,cores,r, maxIter, eps){
-  lapply(1:N, function(seed){
+  lapply(363:N, function(seed){
     cat(paste0("\n seed ",seed, " : "))
     T1<-Sys.time()
     set.seed(seed)
@@ -45,21 +46,34 @@ Simu_missing<-function(p,B,N,n,cores,r, maxIter, eps){
     time_boots=difftime(t2, t1)
     # best VEM with 1 missing actor
     ListVEM<-List.VEM(cliquesObj =cliques_spca, counts, sigma_obs, MO,SO,r=1,alpha=0.1,
-                        eps=eps,maxIter=maxIter, nobeta=FALSE, cores=cores)
-    vecJ<-do.call(rbind,lapply(ListVEM, function(vem){tail(vem$lowbound$J,1)}))
-    VEM_1=ListVEM[[which.max(vecJ)]]
+                      eps=eps,maxIter=maxIter, nobeta=FALSE, cores=cores)
+    
+    goodPrec=!do.call(rbind,lapply(ListVEM, function(x) x$max.prec))
+    J=do.call(rbind,lapply(ListVEM, function(vem){tail(vem$lowbound$J,1)}))
+    
+    if(sum(goodPrec)!=0){
+      if(sum(J<min(J[!goodPrec]))!=0){
+        maxJ_good=which(J==max(J[J<min(J[!goodPrec])])) 
+      }else{
+        maxJ_good = which(J==max(J[goodPrec]))
+      }
+    }else{
+      maxJ_good = which.max(J)
+    } 
+    
+    VEM_1=ListVEM[[maxJ_good]]
     
     ############
     nbinit=length(ListVEM)
- 
+    
     #---- end
     
     T2<-Sys.time()
     runtime=difftime(T2, T1)
     cat(paste0("\nseed ", seed," in ",round(runtime,3), attr(runtime, "units"),"\n"))
     Sim=list(omega=sorted_omega,ZH=ZH,VEM_1=VEM_1,time_boots=time_boots, nbinit=nbinit )
-    saveRDS(Sim, file=paste0("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/15nodes_1r/SF_seed",
-                        seed,".rds"))
+    saveRDS(Sim, file=paste0("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/15nodes_1r_400/SF_seed",
+                             seed,".rds"))
     
     return(Sim)
   })
@@ -67,7 +81,7 @@ Simu_missing<-function(p,B,N,n,cores,r, maxIter, eps){
 
 ######### run
 t1<-Sys.time()
-Sim15<-Simu_missing(p = 14, n = 200, B = 100,N =200, cores=3,eps=1e-3,r=1,maxIter=200)
+Sim15<-Simu_missing(p = 14, n = 200, B = 100,N =400, cores=3,eps=1e-3,r=1,maxIter=200)
 t2<-Sys.time()
 difftime(t2,t1)
 saveRDS(Sim15, file="/Users/raphaellemomal/these/R/codes/missingActor/SimResults/Sim15_r1_200SF.rds")
