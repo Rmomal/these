@@ -325,6 +325,7 @@ CorOmegaMatrix<-function(omega){
                   }
            )
          })
+  CorOmega[abs(CorOmega)>0 & abs(CorOmega)<1e-15]<-1e-15
   return(CorOmega)
 }
 
@@ -462,7 +463,7 @@ Kirshner <- function(W){
     index=which(colSums(W)==0)
   }
   L = Laplacian(W)[-index,-index]
-  if(!is.finite(sum(L))) browser()
+ # if(!is.finite(sum(L))) browser()
   # Leigen = eigen(L)
   # Q = (Leigen$vectors) %*% diag(1/Leigen$values) %*% t(Leigen$vectors)
  #  Q = inverse.fractional(L)
@@ -517,6 +518,24 @@ generator_param<-function(G,signed=FALSE,v=0){
 #rewrite data from scratch
 library(huge)
 library(Matrix)
+#qu'il se taise
+generator_graph<-function(p = 20, graph = "tree", prob = 0.1, dens=0.3, r=5){
+  theta = matrix(0, p, p)
+  if (graph == "cluster") {
+    theta<-SimCluster(p,3,dens,r)
+  }
+  if (graph == "scale-free") {
+    theta = huge.generator(d=p,graph="scale-free", verbose=FALSE)$theta
+    
+  }
+  if(graph=="tree"){
+    theta<-SpannTree(p)
+  }
+  if(graph=="erdos"){
+    theta<- erdos(p=p,prob=prob)
+  }
+  return(theta = Matrix(theta, sparse = TRUE))
+}
 data_from_scratch<-function(type, p=20,n=50, r=5, covariates=NULL, prob=log(p)/p,
                             dens=log(p)/p, signed=FALSE,v=0,draw=FALSE){
   graph<- generator_graph(graph=type,p=p,prob=prob,dens=dens,r=r)
@@ -640,7 +659,7 @@ VE<-function(MO,SO,SH,omega,W,Wg,MH,Pg,logSTW,logSTWg,eps, alpha, filterWg=FALSE
   #--- MH 
   if(hidden){
     MH.new<- (-MO) %*% (Pg[O,H] * omega[O,H])/diag(omega)[H]
-    if(sum(MH.new!=0)==0) browser()
+    #if(sum(MH.new!=0)==0) browser()
     MH=MH.new
     M=cbind(MO,MH)
     LB1=c(LowerBound(Pg = Pg, omega=omega, M=M, S=S,W=W, Wg=Wg,p, logSTW=logSTW,logSTWg=logSTWg),"MH")
@@ -657,6 +676,7 @@ VE<-function(MO,SO,SH,omega,W,Wg,MH,Pg,logSTW,logSTWg,eps, alpha, filterWg=FALSE
   logSTWg.new=logSTWg.tot$det
   max.prec=logSTWg.tot$max.prec
   Pg.new=Kirshner(Wg.new)
+
   # if(sum(is.na(Pg.new))!= 0){# si pb pas de pb
   #   message("NaNs in Pg")
   #   Wg.new=Wg
@@ -699,10 +719,10 @@ Mstep<-function(M,S,Pg, omega,W,logSTW,logSTWg, plot=FALSE,eps, verbatim=FALSE,W
   for(i in 1:2){
     omDiag1 <- diag(omega) # omegaH bouge aussi
     omega1=computeOffDiag(omDiag1, SigmaTilde,p)
-    
+    #if(sum(omega1[O,H]!=0)==0) browser()
     omDiag2 <- omegaDiag(Pg,omega2,SigmaTilde) # omegaH bouge aussi
     omega2=computeOffDiag(omDiag2, SigmaTilde,p)
-    
+    #if(sum(omega2[O,H]!=0)==0) browser()
   }
  
   LB11=LowerBound(Pg = Pg, omega=omega1, M=M, S=S,W=W, Wg=Wg,p,logSTW=logSTW,logSTWg=logSTWg)
@@ -725,7 +745,7 @@ Mstep<-function(M,S,Pg, omega,W,logSTW,logSTWg, plot=FALSE,eps, verbatim=FALSE,W
     LB1=c(LB12,"omega")
   }
   
-  
+
   #--- Beta
   #  while((diff>eps) && (iterM <= 2)){
   #  iterM=iterM+1
@@ -745,7 +765,7 @@ Mstep<-function(M,S,Pg, omega,W,logSTW,logSTWg, plot=FALSE,eps, verbatim=FALSE,W
     #   c=c*1.1
     # }
     W.new= Pg/(Mei )
-    if(sum(!is.finite(F_Sym2Vec(W.new)))) browser()
+   # if(sum(!is.finite(F_Sym2Vec(W.new)))) browser()
     if(length(which(W.new< 1e-16))!=0){
       W.new[W.new< 1e-16] = 0 # pas de bmax
     }
@@ -1003,7 +1023,8 @@ List.VEM<-function(cliquesObj, counts, sigma_obs, MO,SO,r,alpha, cores,maxIter,e
     Wginit= init$Wginit; Winit= init$Winit; omegainit=init$omegainit ; MHinit=init$MHinit
     #run VEMtree
     VEM<-VEMtree(counts,MO,SO,MH=MHinit,omegainit,Winit,Wginit, eps=eps, alpha=alpha,maxIter=maxIter, 
-                 verbatim = TRUE, print.hist=FALSE, filterWg = FALSE, filterDiag = FALSE, nobeta=nobeta)
+                 verbatim = TRUE, print.hist=FALSE, filterWg = TRUE, 
+                 filterDiag = TRUE, nobeta=nobeta)
     VEM$clique=c
     VEM$nbocc=cliquesObj$nb_occ[num]
     return(VEM)

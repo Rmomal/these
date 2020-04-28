@@ -19,7 +19,7 @@ source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-exactDet.R")
 ##### function
 
 Simu_missing<-function(p,B,N,n,cores,r, maxIter, eps){
-  lapply(363:N, function(seed){
+  lapply(142:N, function(seed){
     cat(paste0("\n seed ",seed, " : "))
     T1<-Sys.time()
     set.seed(seed)
@@ -51,16 +51,16 @@ Simu_missing<-function(p,B,N,n,cores,r, maxIter, eps){
     goodPrec=!do.call(rbind,lapply(ListVEM, function(x) x$max.prec))
     J=do.call(rbind,lapply(ListVEM, function(vem){tail(vem$lowbound$J,1)}))
     
-    if(sum(goodPrec)!=0){
-      if(sum(J<min(J[!goodPrec]))!=0){
-        maxJ_good=which(J==max(J[J<min(J[!goodPrec])])) 
-      }else{
-        maxJ_good = which(J==max(J[goodPrec]))
-      }
-    }else{
-      maxJ_good = which.max(J)
-    } 
-    
+    # if(sum(goodPrec)!=0){ # tri spécifique si filtreWg est FALSE
+    #   if(sum(J<min(J[!goodPrec]))!=0){
+    #     maxJ_good=which(J==max(J[J<min(J[!goodPrec])])) 
+    #   }else{
+    #     maxJ_good = which(J==max(J[goodPrec]))
+    #   }
+    # }else{
+    #   maxJ_good = which.max(J)
+    # } 
+    maJ_good=which.max(J)
     VEM_1=ListVEM[[maxJ_good]]
     
     ############
@@ -72,7 +72,7 @@ Simu_missing<-function(p,B,N,n,cores,r, maxIter, eps){
     runtime=difftime(T2, T1)
     cat(paste0("\nseed ", seed," in ",round(runtime,3), attr(runtime, "units"),"\n"))
     Sim=list(omega=sorted_omega,ZH=ZH,VEM_1=VEM_1,time_boots=time_boots, nbinit=nbinit )
-    saveRDS(Sim, file=paste0("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/15nodes_1r_400/SF_seed",
+    saveRDS(Sim, file=paste0("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/15nodes_1r_400_filtreWg/SF_seed",
                              seed,".rds"))
     
     return(Sim)

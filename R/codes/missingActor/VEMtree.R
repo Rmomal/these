@@ -186,9 +186,15 @@ alpha = (1/n)*((1/(q-1))*log(D) - 0.5*log(q*(q-1)))
 2*0.9*log(borne)/n
 2*log(borne)/n
 
+q=17
 (1/n)*log(D^(1/(q-1))/sqrt(q*(q-1)))
-f<-function(u){}
-optim(par=1,fn =u*exp(u)-borne )
+f<-function(u,q){u*exp(u)-D^(1/(q-1))/sqrt(q*(q-1))} # f est monotone croissante
+fprim=function(u,q){
+  exp(u)*(u-1)-u*D^(1/(q-1))/sqrt(q*(q-1))
+}
+minimum=optimize(fprim, c(0,100),maximum = FALSE, q=17) # max 3 missing actors
+alpha_sup=minimum$minimum/n
+ 
 # alpha=(1/(n*q))*log(D/(q^(q/2)))
 # curve((1/n)*((1/(x-1))*log(D) - log(x)),from=15, to=30)
 # curve((1/(n*x))*log(D/(x^(x/2))),from=15, to=30, add=T, col="red")

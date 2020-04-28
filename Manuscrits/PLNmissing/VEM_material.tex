@@ -9,7 +9,7 @@
 \usepackage[round, sort]{natbib}
 \usepackage{tikz}
 \usepackage{mathtools}  
-\mathtoolsset{showonlyrefs}  
+%\mathtoolsset{showonlyrefs}  
 \usetikzlibrary{shapes,backgrounds,arrows,automata,snakes,shadows,positioning, mindmap}
 
 %%%%% Commands
@@ -65,36 +65,36 @@
 \tableofcontents
 \newpage
 Previously:
-$$ p(Y,Z,T) = p(T)p(Z|T)p(\Ybf|Z)$$
-$$ \Esp(\log p(\Ybf,Z,T)|\Ybf) \approx \sum_{1 \leq j < k \leq p} P_{jk} \log\left(\beta_{jk} \hat{\psi}_{jk}\right) - \log B + cst$$
+$$ p(\Ybf,\Zbf,T) = p(T)p(\Zbf|T)p(\Ybf|\Zbf)$$
+$$ \Esp(\log p(\Ybf,\Zbf,T)|\Ybf) \approx \sum_{1 \leq j < k \leq p} P_{jk} \log\left(\beta_{jk} \hat{\psi}_{jk}\right) - \log B + cst$$
 
 Now adding a hidden layer of unobserved data, indexed by H:
 
-$$ p(\Ybf,Z_O,Z_H,T)$$
+$$ p(\Ybf,\Zbf_O,\Zbf_H,T)$$
 \section{PLNmissing peculiarities:}
 
 \subsection{Model}
 
 $$\left\{\begin{array}{rl}
 T & \sim\prod_{jk \in T} \beta_{jk}/B \\\\
-Z|T& \sim\mathcal{N}(0,\Sigma_T)\\\\
-\Ybf|Z&\sim\mathcal{P}( \exp( Z+...) )
+\Zbf|T& \sim\mathcal{N}(0,\Sigma_T)\\\\
+\Ybf|\Zbf&\sim\mathcal{P}( \exp( \Xbf\theta^\intercal + \Zbf) )
 \end{array} \right.$$
 
 \paragraph{Dimensions:}
-The model is build on matrices $\Ybf$ and $Z$ with the following dimensions:\\
+The model is build on matrices $\Ybf$ and $\Zbf$ with the following dimensions:\\
 $\Ybf$: $n\times p$\\
-$Z_O$: $n\times p$\\
-$Z_H$: $n\times r$
+$\Zbf_O$: $n\times p$\\
+$\Zbf_H$: $n\times r$
 
 
-\paragraph{Underlying dependencies:} This diagram is the graphical model behind the model, it describes the variables direct denpendencies and how data is simulated. Here, a tree $T$ is first drawn, which controls the dependency structure of parameters $Z = (Z_O,Z_H)$. Count data $\Ybf$ is drawn from a distribution depending only on observed parameters $Z_O$.
+\paragraph{Underlying dependencies:} This diagram is the graphical model behind the model, it describes the variables direct denpendencies and how data is simulated. Here, a tree $T$ is first drawn, which controls the dependency structure of parameters $\Zbf = (\Zbf_O,\Zbf_H)$. Count data $\Ybf$ is drawn from a distribution depending only on observed parameters $\Zbf_O$.
 \begin{center}
 	\begin{tikzpicture}	
       \tikzstyle{every edge}=[-,>=stealth',shorten >=1pt,auto,thin,draw]
 		\node[observed] (A1) at (0.625*\edgeunit, 2*\edgeunit) {$T$};
-		\node[observed] (A2) at (0*\edgeunit, 1*\edgeunit) {$Z_O$};
-		\node[observed] (A3) at (1.25*\edgeunit, 1*\edgeunit) {$Z_H$};
+		\node[observed] (A2) at (0*\edgeunit, 1*\edgeunit) {$\Zbf_O$};
+		\node[observed] (A3) at (1.25*\edgeunit, 1*\edgeunit) {$\Zbf_H$};
 		\node[observed] (A4) at (0*\edgeunit, 0*\edgeunit) {$\Ybf$};
 		\path (A1) edge [] (A2)
         (A1) edge [] (A3)
@@ -104,14 +104,15 @@ $Z_H$: $n\times r$
 \end{center}
 
 \subsection{Distributions}
+\label{distrib}
 \paragraph{Marginals}
 The complete vector of underlying parameters $Z$ follows a mixture of Gaussian laws on the space of all existing spanning trees.
 \begin{align*}
-(Z_O,Z_H) &\sim \sum_{T \in \mathcal{T}} p(T) \mathcal{N}(0,\Sigma_T) \\
+(\Zbf_O,\Zbf_H) &\sim \sum_{T \in \mathcal{T}} p(T) \mathcal{N}(0,\Sigma_T) \\
 \end{align*}
 
 \paragraph{Conditional on T:}
-Conditionally on the dependency structure $T$, $Z$ is a centered Gaussian variable, with covariance matrix $\Sigma_T$ defined by block:
+Conditionally on the dependency structure $T$, $\Zbf$ is a centered Gaussian variable, with covariance matrix $\Sigma_T$ defined by block:
 \[
  \Sigma=
   \left( {\begin{array}{cc}
@@ -125,50 +126,38 @@ Conditionally on the dependency structure $T$, $Z$ is a centered Gaussian variab
   \]\\
 This results in the following distributions:
 \begin{align*}
-(Z_O,Z_H)|T & \sim\mathcal{N}(0,\Sigma_T)\\
-Z_O|T & \sim\mathcal{N}(0,\Omega_{Tm}^{-1})\\
-Z_H|T & \sim\mathcal{N}(0,\Omega_{Tm_H}^{-1})
+(\Zbf_O,\Zbf_H)|T & \sim\mathcal{N}(0,\Sigma_T)\\
+\Zbf_O|T & \sim\mathcal{N}(0,\Omega_{Tm}^{-1})\\
 \end{align*}
-With $ \Omega_{Tm} =\Sigma_{TO}^{-1} =  \Omega_{TO} - \Omega_{TOH}\Omega_{TH}^{-1}\Omega_{THO}$, and $\Omega_{Tm_H} = \Sigma_{TH}^{-1} = \Omega_{TH} - \Omega_{THO} \Omega_{TO}^{-1} \Omega_{TOH}$. This comes from the Schur's complement which is recalled here:
+With $ \Omega_{Tm} =\Sigma_{TO}^{-1} =  \Omega_{TO} - \Omega_{TOH}\Omega_{TH}^{-1}\Omega_{THO}$. This comes from the Schur's complement which is recalled in appendix.\\
 
+A result from Lauritzen states that Gaussian precision matrices which are faithful to different trees will only differ in the position of their zero entries, meaning that any trees sharing  an edge will also share the same value in their precision matrix. Let's define $\Omega$ such as $$\forall T_a \in \{T \in\mathcal{T} / kl \in T \}, \Omega_{T_a}[k,l] =  \Omega [k,l].$$ Let's also define $I_T$ the binary matrix with diagonal one indicating the  edges presence in tree $T$ : $I_T=(\mathds{1}_{kl \in T} + \mathds{1}_{k=l})_{kl}$. Then we can write :
+$$\forall T\in \mathcal{T}, \;\;\; \Omega_T = I_T \odot \Omega $$
 
-\begin{align*}
- \Sigma_T=
+For identifiability reasons, two hidden nodes cannot be linked with each. The $H$ bloc of $\Omega_T$ should thus be diagonal , and we get: 
+\[
+ \Omega_T=
   \left( {\begin{array}{cc}
-  \Omega_{TO} &  \Omega_{TOH}\\\\
-  \Omega_{THO} & \Omega_{TH}
-  \end{array} } \right)^{-1} &=
-  \left( {\begin{array}{cc}
-  \Sigma_{TO} =( \Omega_{TO} - \Omega_{THO}\Omega_{TH}^{-1}\Omega_{TOH})^{-1} &  - \Sigma_{TO} \Omega_{TOH}\Omega_{TH}^{-1}\\\\
- -\Omega_{TH}^{-1}\Omega_{THO}\Sigma_{TO} & \Omega_{TH}^{-1}+\Omega_{TH}^{-1}\Omega_{TOH}\Sigma_{TO}\Omega_{THO}\Omega_{TH}^{-1}
-  \end{array} } \right)\\\\
-  &=   \left( {\begin{array}{cc}
-   \Omega_{TO}^{-1}+\Omega_{TO}^{-1}\Omega_{TOH}\Sigma_{TH}\Omega_{THO}\Omega_{TO}^{-1} & -\Omega_{TO}^{-1}\Omega_{TOH}\Sigma_{TH} \\\\
-    -\Sigma_{TH}\Omega_{THO}\Omega_{TO}^{-1}&  \Sigma_{TH}= (\Omega_{TH} - \Omega_{THO}\Omega_{TO}^{-1}\Omega_{TOH})^{-1} 
-   \end{array} } \right)
-\end{align*}
+ (I_T \odot \Omega)_O &  (I_T \odot \Omega)_{OH}\\\\
+ (I_T \odot \Omega)_{HO} &   \Omega_H 
+  \end{array} } \right) \]\\
   
-
-
+  Note that the diagonal of $\Omega_T$ do not depend on $T$.
+  
 \paragraph{Conditional on observed data:\\}
 
 
-As $Z_O$ decouples $Z_H$ and $\Ybf$, we will never need $Z_H|\Ybf$:
-$$ p(Z|\Ybf) = p(Z_O,Z_H | \Ybf) = p(Z_H|Z_O) \: p(Z_O|\Ybf) $$
+As $\Zbf_O$ decouples $\Zbf_H$ and $\Ybf$, we will never need $\Zbf_H|\Ybf$:
+$$ p(\Zbf|\Ybf) = p(\Zbf_O,\Zbf_H | \Ybf) = p(\Zbf_H|\Zbf_O) \: p(Z_O|\Ybf) $$
 
 
 
-Model for the hidden part: $$Z_H|Z_O,T \sim \mathcal{N}(\mu_{H|O,T}, \Omega_{H}^{-1})$$ 
 
-\begin{itemize}
-\item In a precision matrix of a multivariate Gaussian, the conditional bloc is the marginal bloc:  $\Omega_{TH|O}^{-1} = \Sigma_{TH} -\Sigma_{THO}\Sigma_{TO}^{-1}\Sigma_{TOH} = \Omega_{TH}^{-1}$. Moreover the H block of $\Omega_T$ is diagonal as imposed by identifiability conditions (two hidden nodes cannot be linked with each other), and diagonal terms are assumed to not depend on tree $T$. Hence $\Omega_{TH|O}^{-1}=\Omega_{H}^{-1}$.
+ In a precision matrix of a multivariate Gaussian, the conditional bloc is the marginal bloc:  $\Omega_{TH|O}^{-1} = \Sigma_{TH} -\Sigma_{THO}\Sigma_{TO}^{-1}\Sigma_{TOH} = \Omega_{TH}^{-1} =\Omega_{H}^{-1}$. Therefore the conditional distribution of the unobserved latent vectors given the latent observed ones is as follows: $$\Zbf_H|\Zbf_O,T \sim \mathcal{N}(\mu_{H|O,T}, \Omega_{H}^{-1})$$ 
 
-\item let's $Z_{Oi}$ denote a realization of $\mathcal{N}(0,\Sigma_{TO}) $.\\
- Then $\displaystyle  \mu_{H|Oi,T} = \Sigma_{THO}\Sigma_{TO}^{-1}(Z_{Oi}-\underbrace{\mu_{Z_Oi|T}}_{0}) 
- = -\Omega_{TH}^{-1}\Omega_{THO} \: Z_{Oi}
-$\\
-\end{itemize}
-
+  Let's $\Zbf_{Oi}$ denote a realization of $\mathcal{N}(0,\Sigma_{TO}) $. Then $\displaystyle  \mu_{H|Oi,T} = \Sigma_{THO}\Sigma_{TO}^{-1}(\Zbf_{Oi}-\underbrace{\mu_{\Zbf_Oi|T}}_{0}) 
+ = -\Omega_{TH}^{-1}\Omega_{THO} \: \Zbf_{Oi}
+$ 
 
 
 \section{Variational EM inference}
@@ -189,17 +178,18 @@ Here $p(T,\Zbf \mid \Ybf)$ is untractable. We adopt a variational approximation 
     \mathcal{J}(\Ybf; g,h)
     & = \log p(\Ybf) - KL\left[q(T,\Zbf) \middle\vert\middle\vert\ p(T,\Zbf \mid \Ybf)\right]
 \end{align*}
-Where KL is the Küllback-Leibler divergence. The approximation we adopt relies on factorizing $q$ in the product of two distributions $h$ et $g$ relating respectively to $\Zbf$  and $T$: 
+Where KL is the Küllback-Leibler divergence. The approximation we adopt relies on factorizing $q$ in the product of two distributions $h$ and $g$ relating respectively to $\Zbf$  and $T$: 
 $$p(T,Z | \Ybf) \approx  q(Z,T) = g(T)h(Z).$$
 
- A consequence of this hypothesis is the contributions of   $\Esp_h[\log p(\Zbf\mid T)]$ and $\log p(T)$ --~only terms involving $T$ in the lower bound~-- writing as sums on the edges. As distribution   $g$ minimizes the KL divergence, it has to factorizes on the edges as well. Hence:
+ A consequence of this hypothesis is the contributions of   $\Esp_h[\log p(\Zbf\mid T)]$ and $\log p(T)$ --~only terms involving $T$ in the lower bound~-- writing as sums on the edges. As distribution   $g$ minimizes the KL divergence, it has to factorizes on the edges as well and hence:
 $ g(T) = \left(\prod_{kl} \widetilde{\beta}_{kl} \right) / \widetilde{B}$. \\
  
 Moreover, it follows from the independence of the samples that $h$ is a product law: $ h(\Zbf) = \prod_i h_i(\Zbf_i)$.
-Our variational approximation consists in assuming that each of its components is a multivariate Gaussian: $h(\Zbf_i) = \Ncal(\Zbf_i; \mbf_i, \Sbf_i)$, where $\Sbf_i$ is diagonal. More precisely:  $ h(Z_i) =  \mathcal{N}(m_i,S_i)$ , where $S_i$ is diagonal with diagonal $(s_{i1}^2, ... , s_{i(p+r)}^2)$, meaning that $Z_H$ and $Z_O$ are independant. Marginals are written $h_O$  and  $h_H$. $S=\sum_i S_i$  and $ M =  [m_i]_{1 \leq i \leq (p+r)}$ (so $\Esp_h[Z_{\cdot k}^\intercal Z_{\cdot k}] = \sum_i s_{ik} + m_{\cdot k}^\intercal m_{\cdot k}$). $S$ is also diagonal and its H and O blocs are denoted $S_H$ and $S_O$. 
+Our variational approximation consists in assuming that each of its components is a multivariate Gaussian: $h(\Zbf_i) = \Ncal(\Zbf_i; \mbf_i, \Sbf_i)$, where $\Sbf_i$ is diagonal. More precisely:  $ h(Z_i) =  \mathcal{N}(m_i,S_i)$ , where $S_i$ is diagonal with diagonal $(s_{i1}^2, ... , s_{i(p+r)}^2)$, meaning that $\Zbf_H$ and $\Zbf_O$ are independent under distribution $h$. Marginals are written $h_O$  and  $h_H$. $S=\sum_i S_i$  and $ M =  [m_i]_{1 \leq i \leq (p+r)}$ (so $\Esp_h[Z_{\cdot k}^\intercal Z_{\cdot k}] = \sum_i s_{ik} + m_{\cdot k}^\intercal m_{\cdot k}$). $S$ is also diagonal and its H and O blocs are denoted $S_H$ and $S_O$. In the following, the $n\times p $ and $n\times r $ matrices $M_O$ and  $M_H$ compile all vectors of means $\mbf_i$ corresponding respectively to observed and hidden latent vectors ; $M_O$ and  $M_H$ are gathered in matrix $M= (M_O | M_H)$.
 
-In the following we use the scalar product on the matrix space defined with the trace operator as: 
-$$  Tr(A^\intercal B) = <A,B> .$$
+\textcolor{red}{SH is fixed}
+%In the following we use the scalar product on the matrix space defined with the trace operator as: 
+%$$  Tr(A^\intercal B) = <A,B> .$$
 \paragraph{Lower bound:}
 Starting with the two hidden layers of our model, the lower bound writes:
 \begin{align*}
@@ -207,169 +197,131 @@ Starting with the two hidden layers of our model, the lower bound writes:
 &= \log p(\Ybf) - \Esp_{gh}[\log( g(T) h(\Zbf)) - \log p(\Zbf,T\mid \Ybf) ]\\
 &= \log p(\Ybf) - \Esp_{gh}[\log g(T) + \log h(\Zbf) ] + \Esp_{gh}[\log p(\Ybf,\Zbf,T)] - \Esp_{gh}[\log p(\Ybf)]\\
 &= \Esp_{gh} [\log p(\Ybf,\Zbf,T)] + \entr[g(T)] + \entr[h(\Zbf)]\\
-&= \Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T)p_\theta(\Ybf\mid \Zbf))] + \entr[g(T)] + \entr[h(\Zbf)]
+&= \Esp_{gh} [\log (p_\beta(T)p_{\Omega}(\Zbf\mid T)p_\theta(\Ybf\mid \Zbf))] + \entr[g_{\widetilde{\beta}}(T)] + \entr[h_{M,S}(\Zbf)]
 \end{align*}
-\subsection{Optimizing in $\theta$ and $h(\Zbf_O)$:}
-\citet{CMR18} compute the lower bound of a VEM for the PLN, which we write $\mathcal{J}_{PLN}$. This lower bound appears in our computation as well.
 
-Let's seperate observed and unobserved latent variables:
+Thus the model's parameters are $\Phi = (\beta, \Omega, \theta, \widetilde{\beta},M,S)$.
+\subsection{Optimizing in $\theta$ and $h(\Zbf_O)$:}
+\citet{CMR18} compute the lower bound of a VEM for the original PLN, which we write $\mathcal{J}_{PLN}$,  in the R package \textit{PLNmodels}. It is possible to use $\mathcal{J}_{PLN}$ in our computation as well, the following shows how.
+
+Let's first separate observed and unobserved latent variables:
 \begin{align*}
 \mathcal{J}(\Ybf; g,h)&= \Esp_{gh}[\log p(T)  p(\Zbf_H| \Zbf_O,T) p(\Zbf_O|T)p(\Ybf|\Zbf_O)] + \entr[g(T)] +\entr[h(\Zbf_H,\Zbf_O)]
 \end{align*}
 
- We develop the entropy of the complete $\Zbf$ vector, to make the entropy of the fully observed part appear:
+ We develop the entropy of the complete $\Zbf$ vector, to make the entropy of $\Zbf_O$ appear. $\Zbf_O$ and $\Zbf_H$ being independant under the $h$ distribution, we have:
 \begin{align*}
-\entr[h(\Zbf_H,\Zbf_O)] &= -\Esp_h[\log h(\Zbf_H,\Zbf_O)]\\
-&=-\Esp_h[\log h(\Zbf_H\mid \Zbf_O) h(\Zbf_O)]\\
-&=\entr[h(\Zbf_O)] -\Esp_h[\log h(\Zbf_H\mid \Zbf_O)]
+\entr[h(\Zbf_H,\Zbf_O)] &= -\Esp_h[\log h(\Zbf_H,\Zbf_O)] =-\Esp_h[\log h(\Zbf_H)] - \Esp_h[\log \Zbf_O)]\\
+&=\entr[h(\Zbf_O)] +\entr[h(\Zbf_H)]
 \end{align*}
 
-Now using the hypothesis of independence of $g$ and $h$, we can obtain quantities with seperate dependencies:
-
-\begin{align*}
-\mathcal{J}(\Ybf; g,h)&=   \Esp_{gh}[\log p(\Zbf_H | \Zbf_O,T)  p(\Zbf_O | T)] +\Esp_g[\log p(T)] + \Esp_h[\log p(\Ybf|\Zbf_O)]-\Esp_h[\log h(\Zbf_H\mid \Zbf_O)]&\\
-& \;\; + \entr[g(T)] +\entr[h(\Zbf_O)] 
-\end{align*}
-
-
-
-
-%Property of Shannon entropy : $\entr(X,\Ybf) = \entr(X) + \entr(\Ybf|X)$
-
-Finally we obtain:
-
+Now using the hypothesis of independence of $g$ and $h$, we can obtain quantities with separate dependencies:
 \begin{align}
-\mathcal{J}(\Ybf; g,h)&=  \Esp_{gh}[\log p(\Zbf_O | T)] +\Esp_h[\log p(\Ybf|\Zbf_O)]+\entr[h(\Zbf_O)]& \text{: PLN like} \nonumber\\
-& \;\; + \Esp_{gh}[\log p(\Zbf_H | \Zbf_O,T) ]+\Esp_g[\log p(T)] +\entr[g(T)]-\Esp_h[\log h(\Zbf_H\mid \Zbf_O)]&\text{: New}\label{lowerbound}
-\end{align}\\
+\mathcal{J}(\Ybf; g,h)&=  \Esp_{gh}[\log p(\Zbf_O | T)] +\Esp_h[\log p(\Ybf|\Zbf_O)]+\entr[h(\Zbf_O)]  \label{PLNlike}\\
+& \;\; + \Esp_{gh}[\log p(\Zbf_H | \Zbf_O,T) ]+\Esp_g[\log p(T)] +\entr[g(T)]+\entr[h(\Zbf_H)] \label{new}
+\end{align}
 
-Let's then detail the following quantity:
+Let's then detail the first term of the lower bound:
 \begin{align*}
 \Esp_{gh}[\log p(\Zbf_O|T)] &=  \Esp_{gh} \left[\frac{n}{2} \log |\Omega_{Tm}| - \frac{1}{2} \sum_i \Zbf_{Oi}\Omega_{Tm} \Zbf_{Oi}^\intercal  \right]\\
 &= \frac{n}{2} \Esp_g [\log |\Omega_{Tm}|] - \frac{1}{2} \Esp_{gh}\left[Tr\left( \Zbf_O^\intercal \Zbf_O \Omega_{Tm}\right)\right].
 \end{align*}
 
-The expectation in $gh$ is separable thanks to the independance hypothesis:
+The expectation in $gh$ is again separable thanks to the independence hypothesis. As the trace is a linear operation we obtain:
 \begin{align*}
-\Esp_{gh}[\log p(\Zbf_O|T)] &=\frac{n}{2} \Esp_g [\log |\Omega_{Tm}|] - \frac{1}{2}  Tr\left(\Esp_h [\Zbf_O^\intercal \Zbf_O ]\; \Esp_g[\Omega_{Tm}]\right)\\
-&=\frac{n}{2} \Esp_g [\log |\Omega_{Tm}|] - \frac{1}{2}<\Esp_h [\Zbf_OZ_O^\intercal ], \Esp_g [\Omega_{Tm}]> .
+\Esp_{gh}[\log p(\Zbf_O|T)] &=\frac{n}{2} \Esp_g [\log |\Omega_{Tm}|] - \frac{1}{2}  Tr\left(\Esp_h [\Zbf_O^\intercal \Zbf_O ]\; \Esp_g[\Omega_{Tm}]\right) 
 \end{align*}
-$\Esp_g [\Omega_{Tm}]$ is a $p\times p$ matrix of expected covariance over the whole spanning-tree space. Introducing the quantity  $\log |\Esp_g [\Omega_{Tm}]| $ in the PLN-like terms of Eq.~(\ref{lowerbound}), the lower bound of the VEM of PLN $\mathcal{J}_{PLN}$ appears:
+$\Esp_g [\Omega_{Tm}]$ is a $p\times p$ matrix of expected inverse covariance over the whole spanning-tree space. Introducing the quantity  $\log |\Esp_g [\Omega_{Tm}]| $ in part (\ref{PLNlike}) of $\mathcal{J}(\Ybf; g,h)$:
 \begin{align*}
 &\Esp_{gh}[\log p(\Zbf_O | T)] +\Esp_h[\log p(\Ybf|\Zbf_O)]+ \entr[h(\Zbf_O)]\\
-& =\underbrace{\frac{n}{2} \log |\Esp_g [\Omega_{Tm}]| - \frac{1}{2}<\Esp_h [\Zbf_OZ_O^\intercal ], \Esp_g [\Omega_{Tm}]> + \Esp_{h}[\log p(\Ybf|\Zbf_O)] + \entr[h(\Zbf_O)]}_{\mathcal{J}_{PLN}\text{ with } \widetilde{\Sigma} = \Esp_g [\Omega_{Tm}]} \\
+& =\ \frac{n}{2} \log |\Esp_g [\Omega_{Tm}]| - \frac{1}{2}Tr\left(\Esp_h [\Zbf_O^\intercal \Zbf_O ]\; \Esp_g[\Omega_{Tm}]\right)+ \Esp_{h}[\log p(\Ybf|\Zbf_O)] + \entr[h(\Zbf_O)]\\
 & \;\;\;+  \frac{n}{2}\left( \Esp_g[\log|\Omega_{Tm}|] - \log|\Esp_g [\Omega_{Tm}]|\right)
 \end{align*}
-
-
 %The second line is a negative quantity, because the log determinent is a concave function. Jensen's inequality gives:
 %$$\log |\Esp_g[\Omega_{Tm}]| \geq \Esp_g [\log |\Omega_{Tm}|]$$
 %$$ \Esp[Z_jZ_k] = -\partial_{\omega_{jk}}( \log |\Omega_{TO}| )$$
 %Therefore,
+Assuming $\Esp_g [\Omega_{Tm}]$ is an inverse variance covariance matrix for $\Zbf_O$, the lower bound $\mathcal{J}_{PLN}$ appears:
  $$\Esp_{gh}[\log p(\Zbf_O | T)] +\Esp_h[\log p(\Ybf|\Zbf_O)]+ \entr[h(\Zbf_O)] = \mathcal{J}_{PLN} - \frac{n}{2}\left( \Esp_g[\log|\Omega_{Tm}|] - \log|\Esp_g [\Omega_{Tm}]|\right)$$
- $$ \argmax_{\theta, h(\Zbf_O)} \big\{\Esp_{gh}[\log p(\Zbf_O | T)] +\Esp_h[\log p(\Ybf|\Zbf_O)]+ \entr[h(\Zbf_O)]\big\} = \argmax_{\theta, h(\Zbf_O)} \big\{ \mathcal{J}_{PLN} \big\}$$
+ 
+As the last term do not depend either on $\theta$ or $h(\Zbf_O)$, we finally obtain that
+ $$ \argmax_{\theta, h(\Zbf_O)} \big\{\Esp_{gh}[\log p(\Zbf_O | T)] +\Esp_h[\log p(\Ybf|\Zbf_O)]+ \entr[h(\Zbf_O)]\big\} = \argmax_{\theta, h(\Zbf_O)} \big\{ \mathcal{J}_{PLN} \big\}.$$
 
-The VE step of PLNmodels VEM algorithm maximizes $\mathcal{J}_{PLN}$ and gives estimates of $\Zbf_O$ moments of order 1 and 2, so we have easy access to $\widetilde{m}_O$ and $\widetilde{S}_O$. Using $\mathcal{J}_{PLN}$ maximizes  $\mathcal{J}(\Ybf;g,h)$ in $\theta$, and only partly in $h(\Zbf_O)$ as not all terms depending on $h(\Zbf_O)$ are in $\mathcal{J}_{PLN}$, so the proposed solution is sub-optimal. After maximizing $\mathcal{J}_{PLN}$ in $h_O$, this density is considered constant and written $h_O^*$.  
+The VE step of PLNmodels VEM algorithm maximizes $\mathcal{J}_{PLN}$ and gives estimates of $\Zbf_O$ moments of order 1 and 2, so we have easy access to estimates $\widetilde{M}_O$ and $\widetilde{S}_O$. As there are still some dependence in $h(\Zbf_O)$ in part (\ref{new}) of $\mathcal{J}(\Ybf; g,h)$, using $\argmax_{\theta, h(\Zbf_O)} \big\{ \mathcal{J}_{PLN} \big\}$ maximizes  $\mathcal{J}(\Ybf;g,h)$ in $\theta$, and only partly in $h(\Zbf_O)$. Therefore   the proposed solution is sub-optimal. \\
 
-We can then rewrite the lower bound as follow:
+After maximizing part (\ref{PLNlike}) of $\mathcal{J}(\Ybf; g,h)$ in $h_O$, this density is considered constant and written $h_O^*$.  We can then write the partly optimized  lower bound as follows:
 \begin{align*}
-\mathcal{J}(\Ybf; g,h)&= \mathcal{J}_{PLN}+\frac{n}{2}\left(\Esp_g[\log|\Omega_{Tm}|] - \log|\overline{\Omega_{Tm}}|\right)\\
-&\;+ \Esp_{gh}[\log p(\Zbf_H | \Zbf_O,T) ]+\Esp_g[\log p(T)] +\entr[g(T)]-\Esp_h[\log h(\Zbf_H\mid \Zbf_O)]
+\mathcal{J}_{h_O^*}(\Ybf; g,h)&= \Esp_{h_O^*}[\log p(\Ybf \mid \Zbf_O)] - \Esp_{h_O^*}[\log h(\Zbf)] + \Esp_{gh}[\log p(\Zbf \mid T)] + \Esp_g \big[\log p(T) - \log g(T) \big]
 \end{align*}
 
- 
+ Note that $\Esp_{h_O^*}[\log h(\Zbf)]$ is now completely optimized in $h$, as it is a Gaussian entropy therefore only depending on its variance, and that $S_H$ is considered constant for identifiability reasons.
 
-Remarks:
-\begin{itemize}
-\item Here it shows that assuming a tree structure for the latent layer of parameters $\Zbf$ reveals an average precision matrix over all the precision matrices of possible trees. Recall that these matrices only differ in the position of their zero entries.
+\paragraph{About $\Esp_g [\Omega_{Tm}]$:}
+Here it shows that assuming a tree structure for the latent layer of parameters $\Zbf$ reveals an average precision matrix over all the precision matrices of possible trees.  Recalling the writing of $\Omega_T$ of sub-section \ref{distrib}, we have that
+ \begin{align*}
+ \Esp_g [\Omega_{T}] & = \Esp_g [I_T \odot \Omega ] = \Esp_g [I_T] \odot \Omega \\
+ &= P_g\odot \Omega
+ \end{align*}
 
-\end{itemize}
+Where $P_g$ is the matrix of edge probabilities under the $g$ distribution. For a specific edge $kl$, we indeed have that $\Esp_g [I_T[k,l]] = \Esp_g [\mathds{1}_{kl \in T}] =  \sum_{\substack{T\in \mathcal{T}\\ kl \in T } }g(T) = P_g[k,l]$.
 
+The lower bound of \cite{CMR18} normally involves $\Sigma_O^{-1}$. Thus using it in our context yields the following approximation:
+$$\Sigma_O^{-1} \approx \Esp_g[\Omega_{Tm}] = (P_g \odot \Omega_m)[O,O] $$
 
-
-
+\textcolor{red}{Study $\Delta =\Sigma_O^{-1} -   (P_g \odot \Omega_m)[O,O]$ }
 \subsection{VE step: optimizing in $g$ and $h(\Zbf_H)$}
 The VE step minimizes the Küllback-Leibler divergence between the approximated and the aimed distributions :
 
-$$  \argmin_{g,h(\Zbf_H)} KL\left(g(T)h(\Zbf) || p(\Zbf,T|\Ybf)\right)$$
+$$  \argmin_{g,h(\Zbf_H)} KL\left(g(T)h(\Zbf) \mid\mid p(\Zbf,T|\Ybf)\right)$$
 
 
 \begin{align*}
-KL\left(g(T)h(\Zbf) || p(\Zbf,T|\Ybf)\right) &= \Esp_{gh}\left[\log g(T)h(\Zbf) - \log p(\Zbf,T\mid \Ybf) \right]\\
+KL\left(g(T)h(\Zbf) \mid\mid  p(\Zbf,T|\Ybf)\right) &= \Esp_{gh}\left[\log g(T)h(\Zbf) - \log p(\Zbf,T\mid \Ybf) \right]\\
 &= \Esp_{gh}\left[\log g(T)h(\Zbf) - \log p(\Ybf,\Zbf,T) + \log p(\Ybf)  \right]\\
-&= \Esp_{gh}\left[\log g(T)+ \log h(\Zbf) - \log (p(T)p(\Zbf\mid T) p(\Ybf\mid \Zbf)) + \log p(\Ybf)  \right]\\
-&=\Esp_{gh}\left[\log g(T) + \log h(\Zbf_O)+ \log h(\Zbf_H|\Zbf_O) - \log p(T)- \log p(\Zbf_H|\Zbf_O,T)\right. \\
-& \;\;\;- \log p(\Zbf_O|T)- \log p(\Ybf|\Zbf_O)+ \log p(\Ybf) )\left. \right]
+&= \Esp_{gh}\left[\log g(T)+ \log h(\Zbf) - \log (p(T)p(\Zbf\mid T) p(\Ybf\mid \Zbf_O)) + \log p(\Ybf)  \right]\\
+&= -\Esp_{gh}[\log p(\Zbf \mid T) ] - \Esp_g[\log p(T) - \log g(T)] - \entr[h(\Zbf)]\\
+& \;\;\;\; -\Esp_h[\log p(\Ybf \mid \Zbf_O)] +\log p(\Ybf) 
 \end{align*}
-The aim is to minimize with respect to distributions $g$ and $h(\Zbf_H)$. As distributions $p(\Ybf)$, $p(\Ybf\mid \Zbf_O)$ and $h(\Zbf_O)$ do not depend on them, we obtain:
-\begin{align*}
-\argmin_{g,h(\Zbf_H)} KL  &=\argmin_{g,h(\Zbf_H)} \Big\{ \Esp_{gh}\big[\log g(T) + \log h(\Zbf_H|\Zbf_O) - \log p(T)- \log p(\Zbf_H|\Zbf_O,T)-\log p(\Zbf_O|T) \big]\Big\}
-\end{align*}
-Under distribution $h$, $\Zbf_H$ and $\Zbf_O$ are independent, so $h(\Zbf_H\mid \Zbf_O) = h(\Zbf_H)$. Finally using the partly optimal distribution $h_O^*$ for $h(\Zbf_o)$, we obtain:
-
-\begin{empheq}[box=\widefbox]{align*}
-\argmin_{g,h(\Zbf_H)} KL  &=\argmin_{g,h(\Zbf_H)}  \Big\{- \Esp_{gh}[ p(\Zbf_H|\Zbf_O,T)] - \Esp_{gh_O^*}[\log p(\Zbf_O|T)] + \Esp_g\big[\log g(T)-\log p(T)\big]\\
-& \hspace{2.5cm} + \Esp_h[\log h(\Zbf_H)]  \Big\}
-\end{empheq}
-
-\subsubsection{Details of  $-\Esp_{gh}[\log p(\Zbf_H | \Zbf_O,T) ]$}
-Recalling $\mu_{H|Oi,T} = -\Omega_H^{-1}\Omega_{THO}\Zbf_{Oi} ^\intercal $ and that $\Omega_H$ is constrained to be diagonal and indenpendent of $T$ for identifiability, we have:
-\begin{align*}
-\log p(\Zbf_H\mid \Zbf_O,T) &= \frac{n}{2} \log |\Omega_H| -\frac{1}{2} \sum_i (\Zbf_{Hi}-\mu_{H|Oi,T}^\intercal )\Omega_H(\Zbf_{Hi}-\mu_{H|Oi,T}^\intercal )^\intercal \\
-&= \frac{n}{2} \log |\Omega_H| -\frac{1}{2} \sum_i \left(\Zbf_{Hi}\Omega_HZ_{Hi}^\intercal  + \mu_{H|Oi,T}^\intercal \Omega_H\mu_{H|Oi,T} - 2\mu_{H|Oi,T}^\intercal \Omega_HZ_{Hi} \right)\\
-&= \frac{n}{2} \log |\Omega_H| -\frac{1}{2} \sum_i \left(\Zbf_{Hi}\Omega_HZ_{Hi}^\intercal  + \Zbf_{Oi}\Omega_{TOH}\Omega_H^{-1} \Omega_{THO}\Zbf_{Oi}^\intercal + 2Z_{Oi}\Omega_{TOH}\Zbf_{Hi}^\intercal\right)\\
-&=\frac{n}{2} \log |\Omega_H| -\frac{1}{2}Tr(\Zbf_H\Omega_HZ_H^\intercal) - \frac{1}{2}Tr(\Zbf_O\Omega_{TOH}\Omega_H^{-1}\Omega_{THO}\Zbf_o^\intercal) - Tr(\Zbf_O\Omega_{TOH}\Zbf_H^\intercal)
-\end{align*}
-
-
-Now taking the expectation, and by independence of $g$ and $h$:
-\begin{align*}
-\Esp_{gh}[\log p(\Zbf_H | \Zbf_O,T) ] &=\frac{n}{2} \log |\Omega_H| -\frac{1}{2}Tr(\Esp_{gh}[\Zbf_H\Omega_HZ_H^\intercal]) - \frac{1}{2}Tr(\Esp_{gh}[\Zbf_O\Omega_{TOH}\Omega_H^{-1}\Omega_{THO}\Zbf_O^\intercal]) \\
-& \;\;\;- Tr(\Esp_{gh}[\Zbf_O\Omega_{TOH}\Zbf_H^\intercal])\\
-&=\frac{n}{2} \log |\Omega_H| -\frac{1}{2} <\Omega_H,\Esp_h[\Zbf_H^\intercal \Zbf_H]> -\frac{1}{2} <\Esp_g[\Omega_{THO}^\intercal \Omega_H^{-1}\Omega_{THO}],\Esp_{h_O^*}[\Zbf_O^\intercal \Zbf_O]> \\
-&\;\;\; -<\Esp_g[\Omega_{TOH}],\Esp_h[\Zbf_H^\intercal \Zbf_O]>
-\end{align*}\\
-
-Moreover we have :
-\[\left\{\begin{array}{ll}
-\Esp_h[\Zbf_H^\intercal \Zbf_H] &= M_H^\intercal M_H + S_H\\
-\Esp_{h_O^*}[\Zbf_O^\intercal \Zbf_O] &= \widetilde{M}_O^\intercal \widetilde{M}_ O + \widetilde{S}_ O\\
-\Esp_h[\Zbf_H^\intercal \Zbf_O] &= M_H^\intercal \widetilde{M}_O + \underbrace{S_{HO}}_{=0}
-\end{array} \right.\]
-
-Therfore, we obtain:
-
-\begin{empheq}[box=\widefbox]{align*}
--\Esp_{gh}\big[\log p(\Zbf_H\mid \Zbf_O)\big] &= -\frac{n}{2} \log |\Omega_H| + \frac{1}{2}<\Omega_H, M_H^\intercal M_H + S_H> + \frac{1}{2}<\Esp_g\big[\Omega_{TOH}\Omega_H^{-1}\Omega_{THO}\big],\widetilde{M}_O^\intercal \widetilde{M}_ O + \widetilde{S}_ O> \\
-& \;\;\;+ <\Esp_g[\Omega_{TOH}],M_H^\intercal \widetilde{M}_O>
-\end{empheq}
-
-
-
-
-\subsubsection{Detials of $-\Esp_{gh_O^*}[\log p(\Zbf_O|T)]$}
-Recall that $Z_O|T sim \mathcal{N}(0,\Omega_{Tm}^{-1})$, where $\Omega_{Tm} = \Omega_{TO} - \Omega_{TOH}\Omega_H^{-1} \Omega_{THO} $. Hence:
-\begin{align*}
-\log p(Z_O|T) &= \frac{n}{2} \log |\Omega_{Tm}| - \frac{1}{2}Tr(\Omega_{Tm}\Zbf_O^\intercal \Zbf_O)\\
-&=\frac{n}{2} \log |\Omega_{Tm}| - \frac{1}{2} Tr(\Omega_{TO}\Zbf_O^\intercal \Zbf_O) + \frac{1}{2} Tr((\Omega_{TOH}\Omega_H^{-1}\Omega_{THO}) \Zbf_O^\intercal \Zbf_O)
-\end{align*}
-Then, taking the expectation in $g$ and $h_O*$:
-\begin{align*}
- \Esp_{gh_O^*}[\log p(\Zbf_O|T)] &= \frac{n}{2} \Esp_g[\log |\Omega_{Tm}|] - \frac{1}{2} < \Esp_g[\Omega_{TO}], \Esp_{h_O^*}[ \Zbf_O^TZ_O] >  + \frac{1}{2}<\Esp_g\big[\Omega_{TOH}\Omega_H^{-1}\Omega_{THO}\big],\Esp_{h_O^*}[ \Zbf_O^TZ_O]> 
-\end{align*}
+Distributions $p(\Ybf)$ and $p(\Ybf\mid \Zbf_O)$  do not depend on distributions $g$ and $h(\Zbf_H)$. Moreover, $\entr[h(\Zbf)]$ does not need to be optimized in $h(\Zbf_H)$ as $S_H$ stays constant. We obtain:
  
-Because $\Omega_{Tm}$ is tree-structured, its determinent factorizes on the edges of $T$. More precisely as in \citet{robin2019}:
+\begin{empheq}[box=\widefbox]{align*}
+\argmin_{g,h(\Zbf_H)} KL  &=\argmin_{g,h(\Zbf_H)} \Big\{ -\Esp_{gh}[\log p(\Zbf \mid T) ] - \Esp_g[\log p(T) - \log g(T)]\Big\}
+\end{empheq}
+ 
+ During the minimization, we will use the optimized distribution $h(\Zbf_O^*) = \prod_i^n \mathcal{N}(\widetilde{\mbf}_{Oi}, \widetilde{S}_{Oi})$, its parameters being gathered in $n\times p$ matrices $\widetilde{M}_O$ and $\widetilde{S}_O$.
+ 
+\subsubsection{Details of  $\Esp_{gh}[\log p(\Zbf \mid T) ]$} 
+ $$\log p(\Zbf \mid T) = \frac{n}{2} \log |\Omega_T| - \frac{1}{2} Tr(\Omega_T \times \Zbf^\intercal \Zbf) $$
+ Taking the expectation, and by independence of $g$ and $h$:
+ $$\Esp_{gh} [\log(\Zbf \mid T)] = \frac{n}{2} \Esp_{gh} [\log | \Omega_T|] - \frac{1}{2} Tr(\Esp_g[\Omega_T] \Esp_h[\Zbf^\intercal \Zbf])$$
+ 
+\paragraph{Determinant of $\Omega_T$\\}
+Because $\Omega_{T}$ is tree-structured, its determinant factorizes on the edges of $T$. More precisely as in \citet{robin2019}:
 \begin{align*}
-|\Omega_{Tm}| &= \prod_{k\in O} \omega_{kk} \prod_{kl \in T} \frac{\omega_{kk}\omega_{ll}-\omega_{kl}^2}{\omega_{kk}\omega_{ll}}\\
-\log |\Omega_{Tm}|&= \sum_{k\in O} \log \omega_{kk} + \sum _{kl} \mathds{1}\{kl \in T\} \left[\log\frac{\omega_{kk}\omega_{ll}-\omega_{kl}^2}{\omega_{kk}\omega_{ll}}\right]\\
-\Esp_g[\log |\Omega_{Tm}|]&= \sum _{kl} P_{gkl} \log \left[\frac{\omega_{kk}\omega_{ll}-\omega_{kl}^2}{\omega_{kk}\omega_{ll}}\right] + \sum_{k\in O} \log \omega_{kk}
+|\Omega_{T}| &= \prod_{k=1}^{(p+r) }\omega_{kk} \prod_{kl \in T} \frac{\omega_{kk}\omega_{ll}-\omega_{kl}^2}{\omega_{kk}\omega_{ll}}\\
+\log |\Omega_{T}|&= \sum_{k} \log \omega_{kk} + \sum _{k<l} \mathds{1}\{kl \in T\} \left[\log\frac{\omega_{kk}\omega_{ll}-\omega_{kl}^2}{\omega_{kk}\omega_{ll}}\right]
+\end{align*}
+Each edge is only counted once in the sum on edges above. Defining $\varphi_{kl} = 1- \frac{\omega_{kl}^2}{\omega_{kk}\omega_{ll}}$ and $P_{kl} = \mathds{P}_g\{kl \in T \}$, we obtain:
+
+$$\Esp_g[\log |\Omega_{T}|]= \frac{1}{2}\sum _{kl} P_{kl} \log (\varphi_{kl}) + \sum_{k} \log \omega_{kk} $$ 
+
+\paragraph{Expectation of $\Zbf^\intercal \Zbf$\\}
+The definition of variance gives:
+\begin{align*}
+\Esp_h[\Zbf^\intercal \Zbf] &= \Esp_h[\Zbf]^\intercal \Esp_h[\Zbf] + \mathds{V}_h(\Zbf)\\
+& = M^\intercal M + S\\
+&= n \times \widetilde{\Sigma}
+\end{align*}
+So we have 
+\begin{align*}
+Tr(\Esp_g[\Omega_T] \Esp_h[\Zbf^\intercal \Zbf]) &= n \times Tr( (P\odot \Omega)\widetilde{\Sigma})
 \end{align*}
 
-Finally we obtain:
+Finally:
+
 \begin{empheq}[box=\widefbox]{align*}
-- \Esp_{gh_O^*}[\log p(\Zbf_O|T)] &= -\frac{n}{2}\sum_{k\in O} \log \omega_{kk}+\sum _{kl} P_{gkl}  \log\left(1- \frac{ \omega_{kl}^2}{\omega_{kk}\omega_{ll}}\right)^{-\frac{n}{2}} + \frac{1}{2}<\Esp_g[\Omega_{TO}],\widetilde{M}_O^\intercal \widetilde{M}_O + \widetilde{S}_O>\\
-&\;\;\; - \frac{1}{2}<\Esp_g\big[\Omega_{TOH}\Omega_H^{-1}\Omega_{THO}\big],\widetilde{M}_O^\intercal \widetilde{M}_O + \widetilde{S}_O>
-\end{empheq}
+\Esp_{gh} [\log(\Zbf \mid T)] = \frac{n}{2} \Big( \sum_{k} \log \omega_{kk}+\frac{1}{2}\sum _{kl} P_{kl} \log (\varphi_{kl}) - \sum_{kl} P_{kl} \omega_{kl} \widetilde{\sigma}_{kl} - \sum_{h \in H} \omega_{hh} \widetilde{\sigma}_{hh}\Big)
+ \end{empheq}
 
 \subsubsection{Details of $\Esp_g[\log g(T) - \log p(T)]$}
 \begin{align*}
@@ -565,15 +517,33 @@ $$D = p(d+1) + p(p-1)/2 + p(p+1)/2 $$
 if we estimate the diagonal of $\Omega$ as well.
 Now suppose we assume $r$ missing actors. The terms of the diagonals of matrices $\beta$ and $\Omega$ corresponding to missing actors are fixed. As these matrices are symmetrical,  there are $pr$ more parameters to estimate in both of them. Therefore the BIC variational lower bound for $r$ missing actors is
 $$ vBIC_r=\bound_r(\Ybf; g,h) - \frac{D+2pr}{2} \log(n)  $$
-\section{TODO}
- \begin{itemize}
- \item diagonal not fitted
- \item detail building of initialization matrix for omega
- \end{itemize}
-
+ 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 \newpage
 \bibliographystyle{apsrev} %tested plainnat
 \bibliography{bibi}
 
+\appendix
+\section{Technical material}
+\subsection{Schur's complement}
+\begin{align*}
+ \Sigma_T=
+  \left( {\begin{array}{cc}
+  \Omega_{TO} &  \Omega_{TOH}\\\\
+  \Omega_{THO} & \Omega_{TH}
+  \end{array} } \right)^{-1} &=
+  \left( {\begin{array}{cc}
+  \Sigma_{TO} =( \Omega_{TO} - \Omega_{THO}\Omega_{TH}^{-1}\Omega_{TOH})^{-1} &  - \Sigma_{TO} \Omega_{TOH}\Omega_{TH}^{-1}\\\\
+ -\Omega_{TH}^{-1}\Omega_{THO}\Sigma_{TO} & \Omega_{TH}^{-1}+\Omega_{TH}^{-1}\Omega_{TOH}\Sigma_{TO}\Omega_{THO}\Omega_{TH}^{-1}
+  \end{array} } \right)\\\\
+  &=   \left( {\begin{array}{cc}
+   \Omega_{TO}^{-1}+\Omega_{TO}^{-1}\Omega_{TOH}\Sigma_{TH}\Omega_{THO}\Omega_{TO}^{-1} & -\Omega_{TO}^{-1}\Omega_{TOH}\Sigma_{TH} \\\\
+    -\Sigma_{TH}\Omega_{THO}\Omega_{TO}^{-1}&  \Sigma_{TH}= (\Omega_{TH} - \Omega_{THO}\Omega_{TO}^{-1}\Omega_{TOH})^{-1} 
+   \end{array} } \right)
+\end{align*}
+  
+\section{Theorems}
+\subsection{Matrix Tree Theorem}
+\subsection{Meila's Lemma}
+\subsection{Kirshner's formula for edge probabilities}
 \end{document}
