@@ -15,63 +15,170 @@ library(gridExtra)
 library(harrypotter)
 library(sparsepca)
 source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
+source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-exactDet.R")
 
-#------ simu parameters
-set.seed(3)
-n=200 ;p=14;r=1;type="scale-free";plot=TRUE
-O=1:p
+
+
+J_AUC<-function(seed, p,r,B=100,cores=3,plot=FALSE,type="scale-free",n=200){
+  #------ Data simulation
+  set.seed(seed)
+  O=1:p
+  H=(p+1):(p+r)
+  missing_data<-missing_from_scratch(n,p,r,type,plot)
+  counts=missing_data$Y ; sigmaO= missing_data$Sigma ; omega=missing_data$Omega
+  trueClique=missing_data$TC ; hidden=missing_data$H
+  PLNfit<-PLN(counts~1, control=list(trace=0))
+  MO<-PLNfit$var_par$M ; SO<-PLNfit$var_par$S ; sigma_obs=PLNfit$model_par$Sigma
+  theta=PLNfit$model_par$Theta ; matcovar=matrix(1, n,1)
+  ome=omega[c(setdiff(1:(p+r), hidden), hidden),c(setdiff(1:(p+r), hidden), hidden)]
+  diag(ome)=0
+  
+  #------ cliques et VEMtee
+  cliques_spca <- boot_FitSparsePCA(scale(MO),B=B,r=1, cores=3)
+  ListVEM_filtre<-List.VEM(cliquesObj=cliques_spca, counts, sigma_obs,
+                    MO,SO,r=1,eps=1e-3, maxIter=200, alpha = 0.3,cores=cores,
+                    nobeta = FALSE, filterDiag = TRUE,filterWg=TRUE)
+  ListVEM_nofiltre<-List.VEM(cliquesObj=cliques_spca, counts, sigma_obs,
+                           MO,SO,r=1,eps=1e-3, maxIter=200, alpha = 0.3,cores=cores,
+                           nobeta = FALSE, filterDiag = FALSE,filterWg=FALSE)
+  ListVEM=c(ListVEM_filtre,ListVEM_nofiltre)
+  #------ shape des résultats
+  filtre=rep(c(TRUE,FALSE), each=length(cliques_spca$cliqueList))
+  goodPrec=!do.call(rbind,lapply(ListVEM, function(x) x$max.prec))
+  J=do.call(rbind,lapply(ListVEM, function(vem){tail(vem$lowbound$J,1)}))
+  nbocc=do.call(rbind, lapply(ListVEM, function(vem){ vem$nbocc}))
+  AUC=do.call(rbind, lapply(ListVEM, function(vem){
+    Pg=vem$Pg
+    AUC=round(auc(pred = Pg, label = ome),4) }))
+  ppvh=do.call(rbind, lapply(ListVEM, function(vem){
+    Pg=vem$Pg
+    ppvh=accppvtpr(Pg,ome,h=15,seuil=0.5)[5] }))  
+  Icl<-do.call(rbind, lapply(ListVEM, function(vem){
+    J=tail(vem$lowbound$J,1) ;Wg=vem$Wg ; Pg=vem$Pg
+    pen_T=-( sum( Pg * log(Wg+(Wg==0)) ) - logSumTree(Wg)$det) 
+    ICL = J-pen_T
+    return(ICL) }))
+  vBICs<-do.call(rbind, lapply(ListVEM, function(vem){
+    J=tail(vem$lowbound$J,1)
+    p=14;q=15;r=1;d=1
+    nbparam<-p*(d) + (p*(p+1)/2 +r*p)+(q*(q-1)/2 - 1)
+    nbparam_mixedmodel<-round(SumTree(vem$W),1)*(1+q^2)-1
+    vbic0=J- nbparam*log(n)/2
+    vbic1=J- nbparam*log(n)/2 -nbparam_mixedmodel
+    vbic2=J- (nbparam+nbparam_mixedmodel)*log(n)/2
+    return(c(vbic0=vbic0,vbic1=vbic1,vbic2=vbic2)) }))
+  Delta<-do.call(rbind, lapply(ListVEM, function(vem){
+    omega=vem$omega
+    sigmaO_inv = solve((1/n)*(t(vem$M[,O])%*%vem$M[,O]+diag(colSums(vem$S[,O]))))
+    omegaM = omega[O,O] - matrix(omega[O,H],p,r)%*%matrix(omega[H,O],r,p)/omega[H,H] # r=1
+    Delta = norm(sigmaO_inv - vem$Pg[O,O]*omegaM,type = "F")
+    return(Delta)}))
+  data= data.frame(goodPrec, J,Icl, AUC,ppvh, vBICs,Delta,filtre=filtre, index=rep(1:length(cliques_spca$cliqueList),2)) 
+  return(data)
+}
+# maxJ_good=which(J==max(J[J<min(J[!goodPrec])]))
+# maxJ=which.max(J)
+# choice=which.max(ICL[goodPrec])
+#ICL[choice]
+
+#--- experiments
+seed1<-J_AUC(seed = 1,p = 14,r=1,B=500)
+seed19<-J_AUC(seed = 19,p = 14,r=1,B=500)
  
-#------ Data simulation
-missing_data<-missing_from_scratch(n,p,r,type,plot)
-counts=missing_data$Y ;sigmaO= missing_data$Sigma;omega=missing_data$Omega
-trueClique=missing_data$TC; hidden=missing_data$H
+seed1$seed=1 ; seed19$seed=19
+seed_filtre=rbind(seed1,seed19)
+saveRDS(seed_filtre, "/Users/raphaellemomal/these/R/codes/missingActor/SimResults/seed_filtre.rds")
+#--- plots
+seed_filtre %>% ggplot(aes( AUC,J, color=(goodPrec)))+geom_point()+
+  geom_vline(xintercept = 0.5, linetype="dashed", color="gray")+
+  facet_grid(filtre~seed)+mytheme.dark("Sans précision \nmachine:")
 
-PLNfit<-PLN(counts~1)
-MO<-PLNfit$var_par$M;SO<-PLNfit$var_par$S  ;sigma_obs=PLNfit$model_par$Sigma
-theta=PLNfit$model_par$Theta ;matcovar=matrix(1, n,1)
-ome=omega[c(setdiff(1:(p+r), hidden), hidden),c(setdiff(1:(p+r), hidden), hidden)]
-diag(ome)=0
+seed_filtre %>% ggplot(aes( AUC,Delta, color=(goodPrec)))+geom_point()+
+  geom_vline(xintercept = 0.5, linetype="dashed", color="gray")+
+  facet_grid(filtre~seed)+mytheme.dark("Sans précision \nmachine:")
 
-#------ cliques et VEMtee
+seed_filtre %>% ggplot(aes( ppvh,Delta, color=(goodPrec)))+geom_point()+
+  geom_vline(xintercept = 0.5, linetype="dashed", color="gray")+
+  facet_grid(filtre~seed)+mytheme.dark("Sans précision \nmachine:")
 
-cliques_spca <- boot_FitSparsePCA(scale(MO),100,r=1, cores=3)
- 
-ListVEM<-List.VEM(cliquesObj=cliques_spca, counts, sigma_obs,
-                  MO,SO,r=1,eps=1e-3, maxIter=200, alpha = 0.1,cores=3,
-                  nobeta = FALSE)
-goodPrec=!do.call(rbind,lapply(ListVEM, function(x) x$max.prec))
-J=do.call(rbind,lapply(ListVEM, function(vem){tail(vem$lowbound$J,1)}))
-maxJ_good=which(J==max(J[J<min(J[!goodPrec])]))
-AUC=do.call(rbind, lapply(ListVEM, function(vem){
-  Pg=vem$Pg
-  AUC=round(auc(pred = Pg, label = ome),4)
-}))
-ppvh=do.call(rbind, lapply(ListVEM, function(vem){
-  Pg=vem$Pg
-  ppvh=accppvtpr(Pg,ome,h=15,seuil=0.5)[5]
-}))  
-ICL<-do.call(rbind, lapply(ListVEM, function(vem){
-  J=tail(vem$lowbound$J,1)
-  Wg=vem$Wg
-  Pg=Kirshner(Wg)
-  pen_T=-( sum( Pg * log(Wg+(Wg==0)) ) - logSumTree(Wg)$det) 
-  ICL = J-pen_T
-  return(ICL)
-}))
-data= data.frame(goodPrec, J,ICL, AUC,ppvh) 
+
+seed_filtre=seed_filtre %>% group_by(seed,filtre) %>% mutate(medDelta = quantile(Delta,0.1),
+                                                 goodDelta = Delta<medDelta) %>% 
+  ungroup()
+
+seed_filtre %>% ggplot(aes( AUC,J, color=(goodDelta)))+geom_point()+
+  geom_vline(xintercept = 0.5, linetype="dashed", color="gray")+
+  facet_grid(filtre~seed) + mytheme.dark("Delta < q10(Delta)")
+seed_filtre %>% dplyr::select(J,filtre,index,seed) %>% 
+  spread(filtre,J) %>% 
+  ggplot(aes(`FALSE`, `TRUE`))+geom_point()+facet_wrap(~seed)+geom_abline()+
+  mytheme.dark("")
+
+seed_filtre %>% dplyr::select(Delta,filtre,index,seed) %>% 
+  spread(filtre,Delta) %>% 
+  ggplot(aes(`FALSE`, `TRUE`))+geom_point()+facet_wrap(~seed)+geom_abline()+
+  mytheme.dark("")+labs(title="Delta moins élevé avec filtres",x="sans filtre", y="avec filtre")
+
+seed_filtre=seed_filtre %>% 
+  mutate(tron_vbic1=ifelse(!is.finite(vbic1),.Machine$double.xmax,vbic1))
+seed_filtre %>% ggplot(aes( AUC,tron_vbic1, color=(goodDelta)))+geom_point()+
+  geom_vline(xintercept = 0.5, linetype="dashed", color="gray")+
+  facet_grid(filtre~seed) + mytheme.dark("Delta < q10(Delta)")
+
+
+
+data   %>% filter(goodPrec) %>%   filter(ICL==max(ICL))
+data   %>%filter(J==max(J))
 data%>% 
-  group_by(goodPrec) %>%  summarise(maxJ=max(J), mean.auc=mean(auc),
+  group_by(goodPrec) %>%  summarise(maxJ=max(J), mean.auc=mean(AUC),
                                     mean.ppvh=mean(ppvh),
                                     indexmaxJ = which.max(J),
                                     indexmaxICL = which.max(ICL))
-VEM_1=ListVEM[[maxJ_good]]
-maxJ_good=which(!goodPrec)[which.max(ICL[!goodPrec])]
-data=data %>% mutate(penT = -ICL + J)
+# VEM_1=ListVEM[[maxJ_good]]
+# maxJ_good=which(!goodPrec)[which.max(ICL[!goodPrec])]
+data %>%mutate(nbocc=nbocc) %>%  
+  ggplot(aes(ppvh,J, color=as.factor(nbocc)))+geom_point()+mytheme.dark("")
 
-data %>% ggplot(aes(auc,J, color=goodPrec))+geom_point()+mytheme.dark("")
+
+
+data=data %>% mutate(penT = -ICL + J)
+data05=data
+
+data05 %>%ggplot(aes(AUC,ICL, color=goodPrec))+geom_point()+mytheme.dark("")
+data1 %>% ggplot(aes(AUC,ICL, color=goodPrec))+geom_point()+mytheme.dark("")
+data2 %>% ggplot(aes(AUC,ICL, color=goodPrec))+geom_point()+mytheme.dark("")
+data3 %>% ggplot(aes(AUC,ICL, color=goodPrec))+geom_point()+mytheme.dark("")
+data3 %>%mutate(nbocc=nbocc) %>%  
+  ggplot(aes(ppvh,J, color=(nbocc > 1 & goodPrec)))+geom_point()+mytheme.dark("")
+
+data %>% ggplot(aes(AUC,ICL, color=goodPrec))+geom_point()+mytheme.dark("")
 data %>% ggplot(aes(ppvh,ICL, color=goodPrec))+geom_point()+mytheme.dark("")
 data %>% ggplot(aes(ppvh,J, color=goodPrec))+geom_point()+mytheme.dark("")
-data %>% ggplot(aes(ICL,J,color=auc>0.6, shape=goodPrec))+geom_point()+
+data %>% ggplot(aes(ICL,J,color=AUC>0.6, shape=goodPrec))+geom_point()+
   mytheme.dark("auc>0.6")+geom_abline()
-data %>% ggplot(aes(ppvh,auc, color=goodPrec))+geom_point()+mytheme.dark("")
-data %>% ggplot(aes(auc,(penT), color=goodPrec))+geom_point()+mytheme.dark("")
+data %>% ggplot(aes(ppvh,AUC, color=goodPrec))+geom_point()+mytheme.dark("")
+data %>% ggplot(aes(AUC,(penT), color=goodPrec))+geom_point()+mytheme.dark("")
+
+
+
+#########@
+# tests locaux
+
+which(ICL>-2200)
+trueClique
+clique=cliques_spca$cliqueList[[1]]
+clique=ListVEM[[33]]$clique
+init=initVEM(counts = counts,initviasigma=clique, sigma_obs,r = 1)
+Wginit= init$Wginit; Winit= init$Winit; omegainit=init$omegainit ; MHinit=init$MHinit
+
+VEM=VEMtree(counts,MO,SO,MH=MHinit,omegainit,Winit,Wginit, eps=1e-3, 
+            alpha=0.3, 
+            maxIter=200, plot=TRUE,print.hist=FALSE,filterWg=TRUE,
+            verbatim = TRUE,nobeta = FALSE, filterDiag = TRUE)
+
+vem=ListVEM[[27]]
+plotVEM(vem$Pg,ome,r=1,seuil=0.5)
+tail(vem$lowbound$J,1)
+#-2739.929 avec alpha=0.1 et filtres, max.prec=FALSE
+#-2746.588 avec alpha=0.1 sans filtres, max.prec=TRUE
+#-3105.91 avec alpha=0.05, avec filtres, max.prec=FALSE (sans filtres passe pas)

@@ -464,8 +464,8 @@ Kirshner <- function(W){
   }
   L = Laplacian(W)[-index,-index]
  # if(!is.finite(sum(L))) browser()
-  # Leigen = eigen(L)
-  # Q = (Leigen$vectors) %*% diag(1/Leigen$values) %*% t(Leigen$vectors)
+ # Leigen = eigen(L)
+ # Q = (Leigen$vectors) %*% diag(1/Leigen$values) %*% t(Leigen$vectors)
  #  Q = inverse.fractional(L)
   Q = inverse.gmp(L)
   Q = rbind(c(0, diag(Q)),
@@ -1012,7 +1012,7 @@ criteria<-function(List.vem,counts,theta, matcovar,r){
   return(res)
 }
 
-List.VEM<-function(cliquesObj, counts, sigma_obs, MO,SO,r,alpha, cores,maxIter,eps, nobeta){
+List.VEM<-function(cliquesObj, counts, sigma_obs, MO,SO,r,alpha, cores,maxIter,eps, nobeta, filterDiag,filterWg){
   p=ncol(counts) ; O=1:p ; n=nrow(counts)
   
   #--- run all initialisations with parallel computation
@@ -1023,8 +1023,8 @@ List.VEM<-function(cliquesObj, counts, sigma_obs, MO,SO,r,alpha, cores,maxIter,e
     Wginit= init$Wginit; Winit= init$Winit; omegainit=init$omegainit ; MHinit=init$MHinit
     #run VEMtree
     VEM<-VEMtree(counts,MO,SO,MH=MHinit,omegainit,Winit,Wginit, eps=eps, alpha=alpha,maxIter=maxIter, 
-                 verbatim = TRUE, print.hist=FALSE, filterWg = TRUE, 
-                 filterDiag = TRUE, nobeta=nobeta)
+                 verbatim = TRUE, print.hist=FALSE, filterWg = filterWg, 
+                 filterDiag = filterDiag, nobeta=nobeta)
     VEM$clique=c
     VEM$nbocc=cliquesObj$nb_occ[num]
     return(VEM)

@@ -193,8 +193,10 @@ fprim=function(u,q){
   exp(u)*(u-1)-u*D^(1/(q-1))/sqrt(q*(q-1))
 }
 minimum=optimize(fprim, c(0,100),maximum = FALSE, q=17) # max 3 missing actors
-alpha_sup=minimum$minimum/n
- 
+alpha_sup=minimum$minimum*(2/0.618)/n
+f(minimum$minimum, 17)
+curve(f(x,17), from=minimum$minimum-1, to=minimum$minimum+1)
+abline(h=0)
 # alpha=(1/(n*q))*log(D/(q^(q/2)))
 # curve((1/n)*((1/(x-1))*log(D) - log(x)),from=15, to=30)
 # curve((1/(n*x))*log(D/(x^(x/2))),from=15, to=30, add=T, col="red")

@@ -1,0 +1,80 @@
+---
+title: "Comment sélectionner un modèle"
+output: 
+  html_document: 
+    theme: spacelab
+    toc: yes
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+mytheme.dark <-function(legend){list= list(theme_light(), scale_color_brewer(legend,palette="Dark2"), scale_fill_brewer(legend,palette="Dark2"),
+                                           theme(strip.background=element_rect(fill="gray50",colour ="gray50"),
+                                                 plot.title = element_text(hjust = 0.5)))
+return(list)}
+
+seed_filtre=readRDS("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/seed_filtre.rds")
+
+```
+
+Dans cet exemple on s'intéresse à la sélection de modèle pour un nombre d'acteur manquant fixé, c'est à dire choisir la meilleure initialisation parmi celles trouvées par sPCA. 
+
+B est fixé à 500, et deux cas sont comparés : un cas facile (graine 1), et un cas qui semble difficile (graine 19). 
+
+Pour chaque clique initiale, on a lancé VEMtree dans sa version basique et dans sa version GEM. L'atteinte ou non de la précision machine a été relevé pour chaque VEMtree.
+
+# Avec la borne inf
+
+
+```{r }
+seed_filtre %>% ggplot(aes( AUC,J, color=(goodPrec)))+geom_point()+
+  geom_vline(xintercept = 0.5, linetype="dashed", color="gray")+
+  facet_grid(filtre~seed)+mytheme.dark("Sans précision \nmachine:")
+```
+
+# Avec Delta
+
+Delta est la différence entre $\Sigma_O^{-1}$ et $E_g[ \Omega_{Tm}] = P\Omega_m$. Plus Delta est petit, plus l'utilisation de PLN en amont de VEMtree est juste, c'est à dire que l'approximation est de bonne qualité.
+
+```{r}
+seed_filtre %>% ggplot(aes( AUC,Delta, color=(goodPrec)))+geom_point()+
+  geom_vline(xintercept = 0.5, linetype="dashed", color="gray")+
+  facet_grid(filtre~seed)+mytheme.dark("Sans précision \nmachine:")
+
+seed_filtre %>% ggplot(aes( ppvh,Delta, color=(goodPrec)))+geom_point()+
+  geom_vline(xintercept = 0.5, linetype="dashed", color="gray")+
+  facet_grid(filtre~seed)+mytheme.dark("Sans précision \nmachine:")
+
+```
+
+Sur ces exemples Delta permet de beaucoup mieux séparer les bonnes estimations que la borne inf. Cependant choisir le modèle qui minimise Delta ne srait pas satisfaisant pour le premier exemple. On peut en revanche choisir le modèle avec la meilleure borne inf parmi ceux présentant une petite valeur de Delta.  
+
+```{r}
+seed_filtre=seed_filtre %>% group_by(seed,filtre) %>% mutate(medDelta = quantile(Delta,0.1),
+                                                 goodDelta = Delta<medDelta) %>% 
+  ungroup()
+
+seed_filtre %>% ggplot(aes( AUC,J, color=(goodDelta)))+geom_point()+
+  geom_vline(xintercept = 0.5, linetype="dashed", color="gray")+
+  facet_grid(filtre~seed) + mytheme.dark("Delta < q10(Delta)")
+```
+
+Il semble par ailleurs que le choix du VEMtre basique ou sa version GEM ait un effet sur les valeurs de Delta produites :
+
+```{r}
+
+seed_filtre %>% dplyr::select(Delta,filtre,index,seed) %>% 
+  spread(filtre,Delta) %>% 
+  ggplot(aes(`FALSE`, `TRUE`))+geom_point()+facet_wrap(~seed)+geom_abline()+
+  mytheme.dark("")+labs(title="Delta moins élevé avec filtres",x="sans filtre", y="avec filtre")
+# 
+# seed_filtre=seed_filtre %>% 
+#   mutate(tron_vbic1=ifelse(!is.finite(vbic1),.Machine$double.xmax,vbic1))
+# seed_filtre %>% ggplot(aes( AUC,tron_vbic1, color=(goodDelta)))+geom_point()+
+#   geom_vline(xintercept = 0.5, linetype="dashed", color="gray")+
+#   facet_grid(filtre~seed) + mytheme.dark("Delta < q10(Delta)")
+
+```
+ 
+ 

@@ -38,7 +38,7 @@ H=15
 simus=list()
 badseed=c()
 simus=lapply(1:400, function(seed){
-  file= paste0("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/15nodes_1r_400/SF_seed",seed,".rds")
+  file= paste0("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/15nodes_1r_400_filtreWg//SF_seed",seed,".rds")
     if(file.exists(file)){
       readRDS(file)
     }else{badseed<<-c(badseed,seed)}
@@ -59,7 +59,7 @@ La table misAct rassemble des charactéristiques calculées sur chacun des graph
 - mean.btw : moyenne des betweenness des voisins de l'acteur manquant
 - btwH : betweenness de l'acteur manquant.
 
-```{r, cache=TRUE}
+```{r, cache=FALSE}
 misAct=build_misAct(simus, H=15)
 misAct[1:5,] %>% kable %>% kable_styling()
 ```
@@ -166,7 +166,7 @@ Qual %>% group_by(influence) %>%
                               auc.prop80 = round(sum(auc>0.8)*100/count, 1))%>% 
   kable() %>% kable_styling()
 
-Qual %>% group_by(influence) %>% summarise( count=n(), med.ppvh=round(median(ppvh),2), med.tprh=round(median(tprh),2), ppvh.prop80 = round(sum(ppvh>0.8)*100/count, 1),tprh.prop80 = round(sum(tprh>0.8)*100/count, 1))%>% 
+Qual %>% group_by(influence) %>% summarise( count=n(), med.ppvh=round(median(ppvh, na.rm=TRUE),2), med.tprh=round(median(tprh),2), ppvh.prop80 = round(sum(ppvh>0.8, na.rm=TRUE)*100/count, 1),tprh.prop80 = round(sum(tprh>0.8)*100/count, 1))%>% 
   kable() %>% kable_styling()
 
 Qual %>% gather(key, value, -nH,  -influence, -seed) %>% 
@@ -186,7 +186,7 @@ Qual %>% gather(key, value, -nH,  -influence, -seed) %>%
 
 La reconstruction de l'acteur manquant est évaluée par la corrélation entre le vecteur latent gaussien d'origine $Z_H$, et le vecteur des moyennes inférées $M_H$.
 
-```{r}
+```{r, warning=FALSE}
 cor_ZHMH=do.call(rbind, lapply(simus, function(graine){
   ZH=graine$ZH
   MH = graine$VEM_1$M[,H]
@@ -205,7 +205,7 @@ datacor %>% ggplot(aes(corZM, color=influence, fill=influence))+
 
 # Bornes inférieures
 
-```{r}
+```{r, warning=FALSE}
 bornesJ=do.call(rbind, lapply(simus, function(graine){
   tail(graine$VEM_1$lowbound$J,1)
 }))
@@ -241,7 +241,12 @@ Qual %>% ggplot(aes(ICL, color=influence,fill=influence))+
   geom_histogram(alpha=0.3)+mytheme.dark("")+facet_grid(goodauc~influence)
 
 which(Qual$influence=="major" & Qual$auc<0.5)
-
+nb_occ=c(do.call(rbind, lapply(simus, function(graine){
+  graine$VEM_1$nbocc
+})))
+Qual$nb_occ=nb_occ
+Qual %>% ggplot(aes(nb_occ>1,auc, color=influence, fill=influence ))+geom_boxplot(alpha=0.3)+
+  facet_wrap(~influence)+mytheme.dark("")
 ```
 
 # Conclusion

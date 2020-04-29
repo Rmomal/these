@@ -53,11 +53,11 @@ source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
 #   })
 #   return(list.res)
 # }
-simu_vary_r<-function(p,n,r,B,rMax,maxIter,seed,type,eps=1e-3,nobeta=FALSE, cores=3, plot){
+simu_vary_r<-function(p,n,r,B,rMax,maxIter,seed,type,alpha,eps=1e-3,nobeta=FALSE, cores=3, plot){
   # q=p+rMax
   # D=.Machine$double.xmax
   # alpha = (1/n)*((1/(q-1))*log(D) - 0.5*log(q*(q-1)))
-  alpha=0.1
+ 
   set.seed(seed)
   # sim data
   missing_data<-missing_from_scratch(n,p,r=r,type,plot)
@@ -71,7 +71,7 @@ simu_vary_r<-function(p,n,r,B,rMax,maxIter,seed,type,eps=1e-3,nobeta=FALSE, core
   # vem with original counts
   VEM_r0<-VEMtree(counts, MO, SO, MH=NULL,ome_init = omegainit,W_init =Winit,eps=eps,
                   Wg_init =Wginit,plot = FALSE, maxIter = maxIter,print.hist = FALSE,
-                    alpha=alpha, verbatim=FALSE, filterWg = FALSE, filterDiag = FALSE, nobeta=nobeta )
+                    alpha=alpha, verbatim=FALSE, filterWg = TRUE, filterDiag = FALSE, nobeta=nobeta )
 
   #  vary r
   VEMr<-lapply(1:rMax, function(r){
@@ -113,12 +113,12 @@ simu_vary_r<-function(p,n,r,B,rMax,maxIter,seed,type,eps=1e-3,nobeta=FALSE, core
 seed=1; p=14 ; B=100; type="scale-free" ; n=200 
 t1<-Sys.time()
 simu_vary_r(seed=seed,B=B, n=n, p=p,r=0,maxIter=200,rMax=3, 
-            type = type,nobeta=FALSE, plot=FALSE , cores=3)
-t2<-Sys.time()
+            type = type,nobeta=FALSE, plot=FALSE , cores=3, alpha=0.1)
+ t2<-Sys.time()
 difftime(t2, t1)
 t1<-Sys.time()
 simu_vary_r(seed=seed,B=B, n=n, p=p,r=1,maxIter=200,
-            rMax=3, type = type, nobeta=FALSE, plot=FALSE, cores=3)
+            rMax=3, type = type, nobeta=FALSE, plot=FALSE, cores=3, alpha=0.1)
 t2<-Sys.time()
 difftime(t2, t1)
 #--
@@ -154,8 +154,18 @@ critr1$max.prec=c(simr1$list.vem0$max.prec, do.call(rbind, lapply(simr1$VEMr, fu
     vem$max.prec
   }))
 })))
+critr0$nbocc=c(0, do.call(rbind, lapply(simr0$VEMr, function(r){
+  do.call(rbind, lapply(r, function(vem){
+    vem$nbocc
+  }))
+})))
+critr1$nbocc=c(0, do.call(rbind, lapply(simr1$VEMr, function(r){
+  do.call(rbind, lapply(r, function(vem){
+    vem$nbocc
+  }))
+})))
 crit=rbind(critr0,critr1) %>% as_tibble()
-crit %>% ggplot(aes( J,ICL, color=max.prec))+geom_point()+geom_abline()+
+crit %>% ggplot(aes( J,ICL, color=(max.prec)))+geom_point()+geom_abline()+
   facet_grid(trueR~r)+mytheme.dark("")
 
 testAUC<-crit %>% filter(trueR==1 & r==1)
@@ -175,16 +185,11 @@ PPVH_critr<-do.call(rbind, lapply(simr1$VEMr[[1]], function(vem){
   ppvh=  accppvtpr(Pg,ome,h=15,seuil=0.5)[5]
 }))
 testAUC$ppvh=PPVH_critr
-testAUC %>% ggplot(aes(ppvh, ICL, color=max.prec))+geom_point()+mytheme.dark("")
+testAUC %>% ggplot(aes(AUC, vBIC, color=max.prec))+geom_point()+mytheme.dark("")
 
-# crit %>%as_tibble() %>% 
-#   group_by(trueR,r) %>%  summarise(max=ifelse(sum(max.prec == TRUE)!=0,max(ICL[J < min(J[max.prec==TRUE])],
-#                                            ICL[min(J[max.prec==FALSE])]),max(ICL[max.prec==FALSE])),
-#                                    min=min(ICL[max.prec==FALSE])) %>% 
-#   ggplot(aes(r,max,color=as.factor(trueR)))+geom_point()+geom_line()+
-#   mytheme.dark("True r:")+  labs(x="r",y="max Lower Bound")
-crit %>%as_tibble() %>%
-  group_by(trueR,r) %>%  summarise(max=max(ICL[max.prec==FALSE])) %>%
+ 
+crit %>%as_tibble() %>% 
+  group_by(trueR,r) %>%  summarise(max=max(ICL)) %>%
   ggplot(aes(r,max,color=as.factor(trueR)))+geom_point()+geom_line()+
   mytheme.dark("True r:")+  labs(x="r",y="max Lower Bound")
 

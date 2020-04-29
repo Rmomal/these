@@ -19,7 +19,7 @@ source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-exactDet.R")
 ##### function
 
 Simu_missing<-function(p,B,N,n,cores,r, maxIter, eps){
-  lapply(142:N, function(seed){
+  lapply(363:N, function(seed){
     cat(paste0("\n seed ",seed, " : "))
     T1<-Sys.time()
     set.seed(seed)
@@ -60,7 +60,7 @@ Simu_missing<-function(p,B,N,n,cores,r, maxIter, eps){
     # }else{
     #   maxJ_good = which.max(J)
     # } 
-    maJ_good=which.max(J)
+    maxJ_good=which.max(J)
     VEM_1=ListVEM[[maxJ_good]]
     
     ############

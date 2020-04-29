@@ -314,13 +314,19 @@ The definition of variance gives:
 \end{align*}
 So we have 
 \begin{align*}
-Tr(\Esp_g[\Omega_T] \Esp_h[\Zbf^\intercal \Zbf]) &= n \times Tr( (P\odot \Omega)\widetilde{\Sigma})
+Tr(\Esp_g[\Omega_T] \Esp_h[\Zbf^\intercal \Zbf]) &= n \times Tr( \Esp_g[\Omega_T] \; \widetilde{\Sigma})
 \end{align*}
-
+\[ \Esp_g[\Omega_T]_{kl}  = \left\{ 
+\begin{array}{cc}
+(P \odot \Omega)_{kl} & k \neq l\\
+\omega_{kk} & k = l
+\end{array}
+\right.
+\]
 Finally:
 
 \begin{empheq}[box=\widefbox]{align*}
-\Esp_{gh} [\log(\Zbf \mid T)] = \frac{n}{2} \Big( \sum_{k} \log \omega_{kk}+\frac{1}{2}\sum _{kl} P_{kl} \log (\varphi_{kl}) - \sum_{kl} P_{kl} \omega_{kl} \widetilde{\sigma}_{kl} - \sum_{h \in H} \omega_{hh} \widetilde{\sigma}_{hh}\Big)
+\Esp_{gh} [\log(\Zbf \mid T)] = \frac{n}{2} \Big( \sum_{k} \log \omega_{kk}+\frac{1}{2}\sum _{kl} P_{kl} \log (\varphi_{kl}) - \sum_{\substack{kl\\ k \neq l}} P_{kl} \omega_{kl} \widetilde{\sigma}_{kl} - \sum_{k} \omega_{kk} \widetilde{\sigma}_{kk}\Big)
  \end{empheq}
 
 \subsubsection{Details of $\Esp_g[\log g(T) - \log p(T)]$}
