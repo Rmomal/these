@@ -27,9 +27,10 @@ Pour chaque clique initiale, on a lancé VEMtree dans sa version basique et dans
 
 # Borne inf `J` {.tabset}
 
-```{r}
+```{r,echo=FALSE}
 seed_filtre %>%  group_by(seed, filtre) %>% mutate(maxJ = max(J)) %>% 
-  filter(J==maxJ) %>% dplyr::select(maxJ, AUC, ppvh) %>% kable() %>% kable_styling()
+  filter(J==maxJ) %>% dplyr::select(seed, filtre,maxJ, AUC, ppvh) %>% kable() %>% 
+  collapse_rows()%>% kable_styling()
 ```
 
 ## AUC
@@ -72,13 +73,15 @@ seed_filtre %>% ggplot(aes(ppvh, JPLN_EgOm))+geom_point()+
 
 ```{r}
 seed_filtre=seed_filtre %>% mutate(diffJPLN=JPLN_SigT-JPLN_EgOm) 
-seed_filtre %>% group_by(seed) %>% summarise(JPLN_SigT = JPLN_SigT[1]) %>% kable() %>% kable_styling()
+seed_filtre %>% group_by(seed) %>% summarise(JPLN_SigT = JPLN_SigT[1]) %>% kable()%>% 
+  collapse_rows() %>%
+  kable_styling()
 ```
 
 ## AUC
 
 ```{r} 
-seed_filtre %>% ggplot(aes(AUC, diffJPLN))+geom_point()+
+ seed_filtre %>% ggplot(aes(AUC, diffJPLN))+geom_point()+
   facet_grid(filtre~seed)+mytheme.dark("")
 ```
 
@@ -123,8 +126,8 @@ seed_filtre %>% ggplot(aes( ppvh,Delta))+geom_point()+
 ## diff_JPLN
 
 ```{r}
-seed_filtre %>% ggplot(aes( diffJPLN,Delta, color=(AUC>0.5)))+geom_point()+
-  facet_grid(filtre~seed)+mytheme.dark("AUC>0.5")
+seed_filtre %>% ggplot(aes( diffJPLN,Delta, color=(AUC>0.7 & ppvh > 0.7)))+geom_point()+
+  facet_grid(filtre~seed)+mytheme.dark("AUC>0.7\net\nPPVH>0.7")
 
 ```
 
@@ -159,12 +162,14 @@ seed_filtre %>% ggplot(aes(ppvh,Jcor))+geom_point()+
 seed_filtre=seed_filtre %>% group_by(seed,filtre) %>% mutate(qdiff = quantile(diffJPLN,0.3), gooddiff = diffJPLN<qdiff) %>%  ungroup()
 ```
 
-```{r}
-seed_filtre %>%filter(gooddiff) %>%   group_by(seed, filtre) %>% mutate(maxJ = max(J)) %>%   filter(J==maxJ) %>% dplyr::select(maxJ, AUC, ppvh) %>% kable() %>% kable_styling()
+```{r,echo=FALSE}
+seed_filtre %>%filter(gooddiff) %>%   group_by(seed, filtre) %>% mutate(maxJ = max(J)) %>%   filter(J==maxJ) %>% dplyr::select(seed, filtre,maxJ, AUC, ppvh) %>% kable()%>% 
+  collapse_rows() %>% kable_styling()
 ```
 
-```{r}
-seed_filtre %>%filter(gooddiff) %>%   group_by(seed, filtre) %>% mutate(maxJcor = max(Jcor)) %>%   filter(Jcor==maxJcor) %>% dplyr::select(maxJcor, AUC, ppvh) %>% kable() %>% kable_styling()
+```{r,echo=FALSE}
+seed_filtre %>%filter(gooddiff) %>%   group_by(seed, filtre) %>% mutate(maxJcor = max(Jcor)) %>%   filter(Jcor==maxJcor) %>% dplyr::select(seed, filtre,maxJcor, AUC, ppvh) %>% kable()%>% 
+  collapse_rows() %>% kable_styling()
 ```
 
 
@@ -190,18 +195,21 @@ seed_filtre=seed_filtre %>% group_by(seed,filtre) %>% mutate(medDelta = quantile
 
 ```
 
-```{r}
-seed_filtre %>%filter(goodDelta) %>%   group_by(seed, filtre) %>% mutate(maxJ = max(J)) %>%   filter(J==maxJ) %>% dplyr::select(maxJ, AUC, ppvh) %>% kable() %>% kable_styling()
+```{r,echo=FALSE}
+seed_filtre %>%filter(goodDelta) %>%   group_by(seed, filtre) %>% mutate(maxJ = max(J)) %>%   filter(J==maxJ) %>% dplyr::select(seed, filtre,maxJ, AUC, ppvh) %>% kable()%>% 
+  collapse_rows() %>% kable_styling()
 ```
 
-```{r}
-seed_filtre %>%filter(goodDelta) %>%   group_by(seed, filtre) %>% mutate(maxJcor = max(Jcor)) %>%   filter(Jcor==maxJcor) %>% dplyr::select(maxJcor, AUC, ppvh) %>% kable() %>% kable_styling()
+```{r,echo=FALSE}
+seed_filtre %>%filter(goodDelta) %>%   group_by(seed, filtre) %>% mutate(maxJcor = max(Jcor)) %>%   filter(Jcor==maxJcor) %>% dplyr::select(seed, filtre,maxJcor, AUC, ppvh) %>% kable() %>% 
+  collapse_rows()%>% kable_styling()
 ```
 ### AUC
 ```{r}
 seed_filtre %>% ggplot(aes( AUC,Jcor, color=(goodDelta)))+geom_point()+
   geom_vline(xintercept = 0.5, linetype="dashed", color="gray")+
   facet_grid(filtre~seed) + mytheme.dark("Delta < q10(Delta)")
+
 ```
 
 ### PPVH
