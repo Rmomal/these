@@ -25,7 +25,12 @@ B est fixé à 500, et deux cas sont comparés : un cas facile (graine 1), et un
 
 Pour chaque clique initiale, on a lancé VEMtree dans sa version basique et dans sa version GEM. L'atteinte ou non de la précision machine a été relevé pour chaque VEMtree.
 
-# Avec la borne inf {.tabset}
+# Borne inf `J` {.tabset}
+
+```{r}
+seed_filtre %>%  group_by(seed, filtre) %>% mutate(maxJ = max(J)) %>% 
+  filter(J==maxJ) %>% dplyr::select(maxJ, AUC, ppvh) %>% kable() %>% kable_styling()
+```
 
 ## AUC
 
@@ -42,14 +47,14 @@ seed_filtre %>% ggplot(aes( ppvh,J))+geom_point()+
   facet_grid(filtre~seed)+mytheme.dark("")
 ```
 
-# Avec `JPLN_Eg` {.tabset}
+#  `JPLN_Eg` {.tabset}
 
-La variable `JPLN_Eg` stocke la partie de la borne inf de PLN évaluée avec l'espérance sous $g$ de $\Omega_{Tm}$ au lieu de $\Sigma_O^{-1}$, soit $JPLN_{Eg} = \frac{n}{2} (\log |E_g[\Omega_{Tm}]| - Tr(\Sigma_OE_g[\Omega_{Tm}))$.
+La variable `JPLN_Eg` stocke la partie de la borne inf de PLN évaluée avec l'espérance sous $g$ de $\Omega_{Tm}$ au lieu de $\Sigma_O^{-1}$, soit $JPLN_{Eg} = \frac{n}{2} (\log |E_g[\Omega_{Tm}]| - Tr(E_h[Z^T Z]E_g[\Omega_{Tm}))$.
 
 ## AUC
 
 ```{r}
-seed_filtre %>% ggplot(aes(AUC, part_EspgOm))+geom_point()+
+seed_filtre %>% ggplot(aes(AUC, JPLN_EgOm))+geom_point()+
   geom_vline(xintercept = 0.5, linetype="dashed", color="gray")+
   facet_grid(filtre~seed)+mytheme.dark("")+labs(y="JPLN_Eg")
 ```
@@ -57,24 +62,23 @@ seed_filtre %>% ggplot(aes(AUC, part_EspgOm))+geom_point()+
 ## PPVH
 
 ```{r}
-seed_filtre %>% ggplot(aes(ppvh, part_EspgOm))+geom_point()+
+seed_filtre %>% ggplot(aes(ppvh, JPLN_EgOm))+geom_point()+
   geom_vline(xintercept = 0.5, linetype="dashed", color="gray")+labs(y="JPLN_Eg")+
   facet_grid(filtre~seed)+mytheme.dark("")
 ```
 
+
 #Différence entre `JPLN_Eg` et  `JPLN_SigmaO`  {.tabset}
 
 ```{r}
-seed_filtre=seed_filtre %>% mutate(diffJPLN=part_SigO-part_EspgOm) 
-seed_filtre %>% group_by(seed) %>% summarise(part_sigO = part_SigO[1]) %>% kable() %>% kable_styling()
+seed_filtre=seed_filtre %>% mutate(diffJPLN=JPLN_SigT-JPLN_EgOm) 
+seed_filtre %>% group_by(seed) %>% summarise(JPLN_SigT = JPLN_SigT[1]) %>% kable() %>% kable_styling()
 ```
 
 ## AUC
 
 ```{r} 
 seed_filtre %>% ggplot(aes(AUC, diffJPLN))+geom_point()+
-  geom_vline(xintercept = 0.5, linetype="dashed", color="gray")+
-  geom_hline(yintercept = 0, linetype="dashed", color="red", alpha=0.8)+
   facet_grid(filtre~seed)+mytheme.dark("")
 ```
 
@@ -82,14 +86,13 @@ seed_filtre %>% ggplot(aes(AUC, diffJPLN))+geom_point()+
 
 ```{r}
 seed_filtre %>% ggplot(aes(ppvh, diffJPLN))+geom_point()+
-  geom_vline(xintercept = 0.5, linetype="dashed", color="gray")+
-  geom_hline(yintercept = 0, linetype="dashed", color="red", alpha=0.8)+
   facet_grid(filtre~seed)+mytheme.dark("")
 ```
 
-# Avec Delta{.tabset}
 
-Delta est la différence entre $\Sigma_O^{-1}$ et $E_g[ \Omega_{Tm}] = P\Omega_m$. Plus Delta est petit, plus l'utilisation de PLN en amont de VEMtree est juste, c'est à dire que l'approximation est de bonne qualité.
+# Delta{.tabset}
+
+Delta est la différence entre $\widetilde{\Sigma}^{-1}$ et $E_g[ \Omega_{Tm}] = (P\Omega)_m + diag(\Omega_m)$. Plus Delta est petit, plus l'utilisation de PLN en amont de VEMtree est juste, c'est à dire que l'approximation est de bonne qualité.
 
 
 ```{r}
@@ -117,44 +120,86 @@ seed_filtre %>% ggplot(aes( ppvh,Delta))+geom_point()+
 
 ```
 
-Sur ces exemples Delta permet de beaucoup mieux séparer les bonnes estimations que la borne inf. Cependant choisir le modèle qui minimise Delta ne srait pas satisfaisant pour le premier exemple. On peut en revanche choisir le modèle avec la meilleure borne inf parmi ceux présentant une petite valeur de Delta.  
+## diff_JPLN
+
+```{r}
+seed_filtre %>% ggplot(aes( diffJPLN,Delta, color=(AUC>0.5)))+geom_point()+
+  facet_grid(filtre~seed)+mytheme.dark("AUC>0.5")
+
+```
+
+# Ajout de la différence à la borne inf `J` {.tabset}
+
+```{r}
+seed_filtre=seed_filtre %>% mutate(Jcor = J+diffJPLN)
+seed_filtre %>% ggplot(aes(J,Jcor))+geom_point()+
+  facet_grid(filtre~seed)+mytheme.dark("")
+```
+
+##AUC 
+
+```{r}
+seed_filtre %>% ggplot(aes(AUC,Jcor))+geom_point()+
+  facet_grid(filtre~seed)+mytheme.dark("")
+```
+
+##PPVH 
+
+```{r}
+seed_filtre %>% ggplot(aes(ppvh,Jcor))+geom_point()+
+  facet_grid(filtre~seed)+mytheme.dark("")
+```
+
 
 
 # Sous-sélection des bornes inf {.tabset}
 ## Par `JPLN_Eg`
+
 ```{r, echo=FALSE}
-seed_filtre=seed_filtre %>% group_by(seed,filtre) %>% mutate(qdiff = quantile(diffJPLN,0.5),
-                                                             gooddiff = diffJPLN<qdiff) %>% 
-  ungroup()
+seed_filtre=seed_filtre %>% group_by(seed,filtre) %>% mutate(qdiff = quantile(diffJPLN,0.3), gooddiff = diffJPLN<qdiff) %>%  ungroup()
 ```
+
+```{r}
+seed_filtre %>%filter(gooddiff) %>%   group_by(seed, filtre) %>% mutate(maxJ = max(J)) %>%   filter(J==maxJ) %>% dplyr::select(maxJ, AUC, ppvh) %>% kable() %>% kable_styling()
+```
+
+```{r}
+seed_filtre %>%filter(gooddiff) %>%   group_by(seed, filtre) %>% mutate(maxJcor = max(Jcor)) %>%   filter(Jcor==maxJcor) %>% dplyr::select(maxJcor, AUC, ppvh) %>% kable() %>% kable_styling()
+```
+
 
 ###AUC
 
 ```{r}
-seed_filtre %>% ggplot(aes( AUC,J, color=(gooddiff)))+geom_point()+
+seed_filtre %>% ggplot(aes( AUC,Jcor, color=(gooddiff)))+geom_point()+
   geom_vline(xintercept = 0.5, linetype="dashed", color="gray")+
-  facet_grid(filtre~seed) + mytheme.dark("diffJPLN <q5(diffJPLN)")
+  facet_grid(filtre~seed) + mytheme.dark("diffJPLN <q3(diffJPLN)")
 ```
 
 ###PPVH
 
 ```{r}
-seed_filtre %>% ggplot(aes( ppvh,J, color=(gooddiff)))+geom_point()+
+seed_filtre %>% ggplot(aes( ppvh,Jcor, color=(gooddiff)))+geom_point()+
   geom_vline(xintercept = 0.5, linetype="dashed", color="gray")+
-  facet_grid(filtre~seed) + mytheme.dark("diffJPLN <q5(diffJPLN)")
+  facet_grid(filtre~seed) + mytheme.dark("diffJPLN <q3(diffJPLN)")
 ```
 
 ## Par Delta
 ```{r, echo=FALSE}
-seed_filtre=seed_filtre %>% group_by(seed,filtre) %>% mutate(medDelta = quantile(Delta,0.1),
-                                                             goodDelta = Delta<medDelta) %>% 
-  ungroup()
+seed_filtre=seed_filtre %>% group_by(seed,filtre) %>% mutate(medDelta = quantile(Delta,0.1),  goodDelta = Delta<medDelta) %>%  ungroup()
 
 ```
 
+```{r}
+seed_filtre %>%filter(goodDelta) %>%   group_by(seed, filtre) %>% mutate(maxJ = max(J)) %>%   filter(J==maxJ) %>% dplyr::select(maxJ, AUC, ppvh) %>% kable() %>% kable_styling()
+```
+
+```{r}
+seed_filtre %>%filter(goodDelta) %>%   group_by(seed, filtre) %>% mutate(maxJcor = max(Jcor)) %>%   filter(Jcor==maxJcor) %>% dplyr::select(maxJcor, AUC, ppvh) %>% kable() %>% kable_styling()
+```
 ### AUC
 ```{r}
-seed_filtre %>% ggplot(aes( AUC,J, color=(goodDelta)))+geom_point()+
+seed_filtre %>% ggplot(aes( AUC,Jcor, color=(goodDelta)))+geom_point()+
   geom_vline(xintercept = 0.5, linetype="dashed", color="gray")+
   facet_grid(filtre~seed) + mytheme.dark("Delta < q10(Delta)")
 ```
@@ -162,7 +207,7 @@ seed_filtre %>% ggplot(aes( AUC,J, color=(goodDelta)))+geom_point()+
 ### PPVH
 
 ```{r}
-seed_filtre %>% ggplot(aes( ppvh,J, color=(goodDelta)))+geom_point()+
+seed_filtre %>% ggplot(aes( ppvh,Jcor, color=(goodDelta)))+geom_point()+
   geom_vline(xintercept = 0.5, linetype="dashed", color="gray")+
   facet_grid(filtre~seed) + mytheme.dark("Delta < q10(Delta)")
 ```
@@ -170,7 +215,7 @@ seed_filtre %>% ggplot(aes( ppvh,J, color=(goodDelta)))+geom_point()+
  
 # Courbes de saturation
 
-```{r}
+```{r, cache=TRUE}
 seed_filtre %>% dplyr::select(J, seed, filtre, index) %>% as_tibble() %>% group_by(seed, filtre) %>% 
   mutate(maxJ = purrr::map(index, function(x){max(J[1:x])})) %>% unnest() %>% ungroup() %>%
   ggplot(aes(index, maxJ, color=filtre))+geom_point()+geom_line()+
