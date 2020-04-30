@@ -17,21 +17,26 @@ library(sparsepca)
 source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
 
 # simu parameters
-set.seed(1) # major and  bad cor
-n=200 ;p=14;r=1;type="scale-free";plot=TRUE
-O=1:p
-################
-#----- DATA
-# simulate graph and omega, then sigma0 and finally counts
-missing_data<-missing_from_scratch(n,p,r,type,plot)
-counts=missing_data$Y; sigmaO= missing_data$Sigma;omega=missing_data$Omega
-trueClique=missing_data$TC;hidden=missing_data$H
-PLNfit<-PLN(counts~1)
-MO<-PLNfit$var_par$M  ;SO<-PLNfit$var_par$S  ;sigma_obs=PLNfit$model_par$Sigma
-theta=PLNfit$model_par$Theta ;matcovar=matrix(1, n,1)
-ome=omega[c(setdiff(1:(p+r), hidden), hidden),c(setdiff(1:(p+r), hidden), hidden)]
-diag(ome)=0
-
+function(seed, B){
+  set.seed(seed) # major and  bad cor
+  n=200 ;p=14;r=1;type="scale-free";plot=TRUE
+  O=1:p
+  ################
+  #----- DATA
+  # simulate graph and omega, then sigma0 and finally counts
+  missing_data<-missing_from_scratch(n,p,r,type,plot)
+  counts=missing_data$Y; sigmaO= missing_data$Sigma;omega=missing_data$Omega
+  trueClique=missing_data$TC;hidden=missing_data$H
+  PLNfit<-PLN(counts~1)
+  MO<-PLNfit$var_par$M  ;SO<-PLNfit$var_par$S  ;sigma_obs=PLNfit$model_par$Sigma
+  theta=PLNfit$model_par$Theta ;matcovar=matrix(1, n,1)
+  ome=omega[c(setdiff(1:(p+r), hidden), hidden),c(setdiff(1:(p+r), hidden), hidden)]
+  diag(ome)=0
+  tic()
+  cliques_spca=boot_FitSparsePCA(scale(MO),B=B,r=1, cores=3,unique=FALSE)
+  toc()
+  saveRDS(cliques_spca, "/Users/raphaellemomal/these/R/codes/missingActor/SimResults/cliques_spca",seed,"_",B,".rds")
+}
 seqB=c(seq(10,200,20), seq(250,500,50), seq(600, 800, 100))
 
 nbcliques=sapply(seqB, function(B){ 
@@ -56,14 +61,14 @@ J800=c(do.call(rbind, lapply(List800, function(vem){
   tail(vem$lowbound$J,1)
 })) )
 max.prec=c(do.call(rbind, lapply(List800, function(vem){
- vem$max.prec
+  vem$max.prec
 })) )
 data800<-data.frame(nb_init=1:length(List800), max.prec=max.prec) %>% as_tibble() %>% 
   mutate(maxJ = purrr::map(nb_init, function(x){max(J800[1:x])})) %>% unnest()
 plot=data800 %>% ggplot(aes(nb_init, maxJ, color=max.prec))+geom_point()+geom_line()+
   facet_wrap(~ max.prec)+mytheme.dark("")+
   labs(title="max of J among the x first cliques of sPCA with B=800", x="x")
-  
+
 ggsave(plot, filename ="/Users/raphaellemomal/these/R/images/J_B800_s1.png", 
        width = 6, height=4 )
 JvaryB<-lapply(seqB, function(B){
