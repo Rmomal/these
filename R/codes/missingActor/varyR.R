@@ -57,7 +57,7 @@ simu_vary_r<-function(p,n,r,B,rMax,maxIter,seed,type,alpha,eps=1e-3,nobeta=FALSE
   # q=p+rMax
   # D=.Machine$double.xmax
   # alpha = (1/n)*((1/(q-1))*log(D) - 0.5*log(q*(q-1)))
- 
+  
   set.seed(seed)
   # sim data
   missing_data<-missing_from_scratch(n,p,r=r,type,plot)
@@ -71,14 +71,14 @@ simu_vary_r<-function(p,n,r,B,rMax,maxIter,seed,type,alpha,eps=1e-3,nobeta=FALSE
   # vem with original counts
   VEM_r0<-VEMtree(counts, MO, SO, MH=NULL,ome_init = omegainit,W_init =Winit,eps=eps,
                   Wg_init =Wginit,plot = FALSE, maxIter = maxIter,print.hist = FALSE,
-                    alpha=alpha, verbatim=FALSE, filterWg = TRUE, filterDiag = FALSE, nobeta=nobeta )
-
+                  alpha=alpha, verbatim=FALSE, filterWg = TRUE, filterDiag = FALSE, nobeta=nobeta )
+  
   #  vary r
   VEMr<-lapply(1:rMax, function(r){
     cat(paste0(r," missing actors: "))
     t1<-Sys.time()
     cliques_spca <- boot_FitSparsePCA(scale(MO),B,r=r,cores=3)
- 
+    
     ListVEM<-List.VEM(cliquesObj =cliques_spca, counts, sigma_obs, MO,SO,r=r,alpha=alpha, cores=cores,
                       eps=eps,maxIter, nobeta=nobeta)
     t2<-Sys.time()
@@ -114,7 +114,7 @@ seed=1; p=14 ; B=100; type="scale-free" ; n=200
 t1<-Sys.time()
 simu_vary_r(seed=seed,B=B, n=n, p=p,r=0,maxIter=200,rMax=3, 
             type = type,nobeta=FALSE, plot=FALSE , cores=3, alpha=0.1)
- t2<-Sys.time()
+t2<-Sys.time()
 difftime(t2, t1)
 t1<-Sys.time()
 simu_vary_r(seed=seed,B=B, n=n, p=p,r=1,maxIter=200,
@@ -125,6 +125,65 @@ difftime(t2, t1)
 simr1<-readRDS("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/scale-free_seed1_r1_1-3.rds")        
 simr0<-readRDS("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/scale-free_seed1_r0_1-3.rds")        
 
+# - corriger la borne inf pour 0 acteurs manquants
+Jcor_0r<-function(vem,p){
+  O=1:p
+  omega=vem$omega
+  EhZZ=t(vem$M[,O])%*%vem$M[,O] + diag(colSums(vem$S[,O]))
+  sigTilde =  sigTilde = (1/n)*EhZZ
+  EsO=vem$Pg*vem$omega+diag(diag(vem$omega))
+  EgO = nearPD(EsO, eig.tol=0.1)$mat
+  JPLN_SigT = part_JPLN(sigTilde,EhZZ=EhZZ)
+  JPLN_EgOm = part_JPLN(EgO,EhZZ=EhZZ, var=FALSE)
+  diffJPLN = JPLN_SigT-JPLN_EgOm
+  Jcor=tail(vem$lowbound$J,1)+diffJPLN
+  return(Jcor)
+}
+Jcor_Delta<-function(vem,p){
+  omega=vem$omega
+  O=1:p ; H=(p+1):ncol(omega) ; r=length(H)
+  EhZZ=t(vem$M[,O])%*%vem$M[,O] + diag(colSums(vem$S[,O]))
+  sigTilde =  sigTilde = (1/n)*EhZZ
+  EgO=vem$Pg*vem$omega+diag(diag(vem$omega))
+  if(ncol(omega)==p){
+    r=0
+    EgOm = EgO[O,O]
+  }else{
+    if(r==1){
+      EgOm = EgO[O,O] - matrix(EgO[O,H],p,r)%*%matrix(EgO[H,O],r,p)/EgO[H,H]
+    }else{
+      EgOm = EgO[O,O] - matrix(EgO[O,H],p,r)%*%solve(EgO[H,H])%*%matrix(EgO[H,O],r,p)
+    }
+  }
+  EgOm = nearPD(EgOm, eig.tol=0.1)$mat
+  JPLN_SigT = part_JPLN(sigTilde,EhZZ=EhZZ)
+  JPLN_EgOm = part_JPLN(EgOm,EhZZ=EhZZ, var=FALSE)
+  diffJPLN = JPLN_SigT-JPLN_EgOm
+  Jcor=tail(vem$lowbound$J,1)+diffJPLN
+  Delta = norm(solve(sigTilde) - EgOm,type = "F")
+  return(c(Jcor=Jcor, Delta=Delta, r=r))
+}
+
+Jdata_r0<-do.call(rbind,c(list(Jcor_Delta(simr0$list.vem0,p=14)),
+                          do.call(rbind, lapply(1:3, function(r){
+                            lapply(simr0$VEMr[[r]],function(vem) Jcor_Delta(vem,p=14))}
+                          ))))%>%
+  as_tibble() %>% mutate(trueR = 0)
+Jdata_r1<-do.call(rbind,c(list(Jcor_Delta(simr1$list.vem0,p=14)),
+                          do.call(rbind, lapply(1:3, function(r){
+                            lapply(simr1$VEMr[[r]],function(vem) Jcor_Delta(vem,p=14))}
+                          )))) %>%
+  as_tibble() %>% mutate(trueR = 1)
+
+Jdata = rbind(Jdata_r0, Jdata_r1) %>% as_tibble()
+plot=Jdata %>% group_by(trueR, r) %>% 
+  mutate(q10Delta=quantile(Delta, 0.1)) %>% 
+  filter(Delta<q10Delta) %>% mutate(maxJcor=max(Jcor)) %>% 
+  ggplot(aes(as.factor(r), maxJcor, color=as.factor(trueR)))+
+  geom_point(shape=16, size=3)+mytheme.dark("True r:")+
+  labs(x="r", title="Parmi les petites valeurs de Delta :")
+
+ggsave(plot, filename = "/Users/raphaellemomal/these/R/images/Selec_r.png", width=6, height=4)
 # crit0<-do.call(rbind, lapply(simr0$list.vem0, function(vem0){
 #  criteria(list(vem0),simr0$counts,simr0$theta, matcovar=matrix(1, nrow(simr0$counts),1),r=0)}))
 crit0<- criteria(list(simr0$list.vem0),simr0$counts,simr0$theta,
@@ -145,7 +204,7 @@ critr0$trueR=0
 critr1$trueR=1
 
 critr0$max.prec=c(simr0$list.vem0$max.prec, do.call(rbind, lapply(simr0$VEMr, function(r){
- do.call(rbind, lapply(r, function(vem){
+  do.call(rbind, lapply(r, function(vem){
     vem$max.prec
   }))
 })))
@@ -178,7 +237,7 @@ diag(ome)=0
 AUC_critr<-do.call(rbind, lapply(simr1$VEMr[[1]], function(vem){
   Pg=vem$Pg
   auc<-round(auc(pred = Pg, label = ome),3)
-  }))
+}))
 testAUC$AUC=AUC_critr
 PPVH_critr<-do.call(rbind, lapply(simr1$VEMr[[1]], function(vem){
   Pg=vem$Pg
@@ -187,7 +246,7 @@ PPVH_critr<-do.call(rbind, lapply(simr1$VEMr[[1]], function(vem){
 testAUC$ppvh=PPVH_critr
 testAUC %>% ggplot(aes(AUC, vBIC, color=max.prec))+geom_point()+mytheme.dark("")
 
- 
+
 crit %>%as_tibble() %>% 
   group_by(trueR,r) %>%  summarise(max=max(ICL)) %>%
   ggplot(aes(r,max,color=as.factor(trueR)))+geom_point()+geom_line()+
@@ -253,7 +312,7 @@ nbocc0 %>% ggplot(aes(nbocc,J,color=as.factor(trim)))+geom_point()+
   facet_wrap(~r, scales="free")+mytheme.dark("")
 nbocc1 %>% ggplot(aes(nbocc,J,color=as.factor(trim)))+geom_point()+
   facet_wrap(~r, scales="free")+mytheme.dark("")
- 
+
 #----------------
 p1<-critr0 %>%as_tibble() %>% filter(r<4) %>%  gather(key, value, -r ) %>% 
   filter(key%in%c("vBIC","J")) %>% 

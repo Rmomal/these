@@ -110,7 +110,7 @@ FitSparsePCA <- function(Y, r=1, alphaGrid=10^(seq(-4, 0, by=.1))){
               loglik=loglik, bic=bic, cliques=cliques))
 }
 
-boot_FitSparsePCA<-function(Y, B,r, cores=3){
+boot_FitSparsePCA<-function(Y, B,r, cores=3, unique=TRUE){
   cliqueList<-mclapply(1:B, function(x){
     n=nrow(Y); v=0.8; n.sample=round(0.8*n, 0)
     ech=sample(1:n,n.sample,replace = FALSE)
@@ -120,7 +120,9 @@ boot_FitSparsePCA<-function(Y, B,r, cores=3){
   }, mc.cores=cores)
   
   nb_occ<-tabulate(match(cliqueList,unique(cliqueList)))
-  cliqueList<-unique(cliqueList)
+  if(unique){
+    cliqueList<-unique(cliqueList)
+  }
   return(list(cliqueList=cliqueList,nb_occ=nb_occ) )
 }
 
@@ -1012,11 +1014,14 @@ criteria<-function(List.vem,counts,theta, matcovar,r){
   return(res)
 }
 
-List.VEM<-function(cliquesObj, counts, sigma_obs, MO,SO,r,alpha, cores,maxIter,eps, nobeta, filterDiag,filterWg){
+List.VEM<-function(cliquesObj, counts, sigma_obs, MO,SO,
+                   r,alpha, cores,maxIter,eps, nobeta, 
+                   filterDiag,filterWg){
   p=ncol(counts) ; O=1:p ; n=nrow(counts)
   
   #--- run all initialisations with parallel computation
-  list<-mclapply(seq_along(cliquesObj$cliqueList), function(num){
+  cliques=unique(cliquesObj$cliqueList)
+  list<-mclapply(seq_along(cliques), function(num){
     #init
     c=cliquesObj$cliqueList[[num]]
     init=initVEM(counts = counts, initviasigma=c, sigma_obs,r = r)
@@ -1027,6 +1032,7 @@ List.VEM<-function(cliquesObj, counts, sigma_obs, MO,SO,r,alpha, cores,maxIter,e
                  filterDiag = filterDiag, nobeta=nobeta)
     VEM$clique=c
     VEM$nbocc=cliquesObj$nb_occ[num]
+    VEM$nbocc_vec=cliquesObj$nb_occ
     return(VEM)
   }, mc.cores=cores)
   #--- keep only converged vems

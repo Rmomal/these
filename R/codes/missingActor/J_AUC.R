@@ -19,7 +19,7 @@ source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-exactDet.R")
 
 
 
-J_AUC<-function(seed, p,r,B=100,cores=3,plot=FALSE,type="scale-free",n=200){
+J_AUC<-function(seed, p,r,cliques_spca=NULL,B=100,cores=3,plot=FALSE,type="scale-free",n=200){
   #------ Data simulation
   set.seed(seed)
   O=1:p
@@ -34,7 +34,10 @@ J_AUC<-function(seed, p,r,B=100,cores=3,plot=FALSE,type="scale-free",n=200){
   diag(ome)=0
   
   #------ cliques et VEMtee
-  cliques_spca <- boot_FitSparsePCA(scale(MO),B=B,r=1, cores=3)
+  if(is.null(cliques)){
+     cliques_spca <- boot_FitSparsePCA(scale(MO),B=B,r=1, cores=3)
+  }
+ 
   ListVEM_filtre<-List.VEM(cliquesObj=cliques_spca, counts, sigma_obs,
                     MO,SO,r=1,eps=1e-3, maxIter=200, alpha = 0.3,cores=cores,
                     nobeta = FALSE, filterDiag = TRUE,filterWg=TRUE)
@@ -43,7 +46,7 @@ J_AUC<-function(seed, p,r,B=100,cores=3,plot=FALSE,type="scale-free",n=200){
                            nobeta = FALSE, filterDiag = FALSE,filterWg=FALSE)
   ListVEM=c(ListVEM_filtre,ListVEM_nofiltre)
   #------ shape des résultats
-  filtre=rep(c(TRUE,FALSE), each=length(cliques_spca$cliqueList))
+  filtre=rep(c(TRUE,FALSE), each=length(unique(cliques_spca$cliqueList)))
   goodPrec=!do.call(rbind,lapply(ListVEM, function(x) x$max.prec))
   J=do.call(rbind,lapply(ListVEM, function(vem){tail(vem$lowbound$J,1)}))
   nbocc=do.call(rbind, lapply(ListVEM, function(vem){ vem$nbocc}))
@@ -68,13 +71,36 @@ J_AUC<-function(seed, p,r,B=100,cores=3,plot=FALSE,type="scale-free",n=200){
     vbic2=J- (nbparam+nbparam_mixedmodel)*log(n)/2
     return(c(vbic0=vbic0,vbic1=vbic1,vbic2=vbic2)) }))
   Delta<-do.call(rbind, lapply(ListVEM, function(vem){
+    sigT_inv = solve((1/n)*(t(vem$M[,O])%*%vem$M[,O]+diag(colSums(vem$S[,O]))))
     omega=vem$omega
-    sigmaO_inv = solve((1/n)*(t(vem$M[,O])%*%vem$M[,O]+diag(colSums(vem$S[,O]))))
-    omegaM = omega[O,O] - matrix(omega[O,H],p,r)%*%matrix(omega[H,O],r,p)/omega[H,H] # r=1
-    Delta = norm(sigmaO_inv - vem$Pg[O,O]*omegaM,type = "F")
+    EsO=vem$Pg*vem$omega+diag(diag(vem$omega))
+    EgOm = EsO[O,O] - matrix(EsO[O,H],p,r)%*%matrix(EsO[H,O],r,p)/EsO[H,H]
+    EgOm = nearPD(EgOm, eig.tol=0.1)$mat
+    Delta = norm(sigT_inv - EgOm,type = "F")
     return(Delta)}))
-  data= data.frame(goodPrec, J,Icl, AUC,ppvh, vBICs,Delta,filtre=filtre, index=rep(1:length(cliques_spca$cliqueList),2)) 
+  JPLN<-do.call(rbind, lapply(ListVEM, function(vem){
+    EhZZ=t(vem$M[,O])%*%vem$M[,O] + diag(colSums(vem$S[,O]))
+    sigTilde = (1/n)*EhZZ
+    omega=vem$omega
+    EsO=vem$Pg*vem$omega+diag(diag(vem$omega))
+    EgOm = EsO[O,O] - matrix(EsO[O,H],p,r)%*%matrix(EsO[H,O],r,p)/EsO[H,H]
+    EgOm = nearPD(EgOm, eig.tol=0.1)$mat
+    JPLN_SigT = part_JPLN(sigTilde,EhZZ=EhZZ)
+    JPLN_EgOm = part_JPLN(EgOm,EhZZ=EhZZ, var=FALSE)
+    return(data.frame(JPLN_SigT=JPLN_SigT,JPLN_EgOm=JPLN_EgOm))}))
+ 
+  data= data.frame(goodPrec, J,Icl, AUC,ppvh, vBICs,Delta,filtre=filtre, JPLN_SigT=JPLN$JPLN_SigT,JPLN_EgOm=JPLN$JPLN_EgOm,
+                   index=rep(1:length(unique(cliques_spca$cliqueList)),2)) 
   return(data)
+}
+
+part_JPLN<-function(mat_var,EhZZ, var=TRUE){
+  if(var){
+    partJPLN=-n*0.5*(det.fractional(mat_var, log=TRUE)) - 0.5*sum(EhZZ*solve(mat_var))
+  }else{# si on donne une matrice de précision
+    partJPLN=n*0.5*(det.fractional(mat_var, log=TRUE)) - 0.5*sum(EhZZ*(mat_var))
+  }
+  return(partJPLN)
 }
 # maxJ_good=which(J==max(J[J<min(J[!goodPrec])]))
 # maxJ=which.max(J)
@@ -82,9 +108,22 @@ J_AUC<-function(seed, p,r,B=100,cores=3,plot=FALSE,type="scale-free",n=200){
 #ICL[choice]
 
 #--- experiments
-seed1<-J_AUC(seed = 1,p = 14,r=1,B=500)
-seed19<-J_AUC(seed = 19,p = 14,r=1,B=500)
- 
+cliques_spca19=readRDS("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/cliques_spca19_10000.rds")
+cliques_spca1=readRDS("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/cliques_spca1_10000.rds")
+small_cliques1=list()
+small_cliques1$cliqueList=cliques_spca1$cliqueList[1:10]
+small_cliques1$nb_occ = cliques_spca1$nb_occ[1:10]
+tic()
+seed1<-J_AUC(seed = 1,p = 14,r=1,B=500, cliques_spca=cliques_spca1) # 10 min
+toc()
+tic()
+seed19<-J_AUC(seed = 19,p = 14,r=1,B=500, cliques_spca=cliques_spca19) # 30 min
+toc()
+
+
+plot(seed19$JPLN_SigT,seed19$JPLN_EgOm) 
+
+
 seed1$seed=1 ; seed19$seed=19
 seed_filtre=rbind(seed1,seed19)
 saveRDS(seed_filtre, "/Users/raphaellemomal/these/R/codes/missingActor/SimResults/seed_filtre.rds")

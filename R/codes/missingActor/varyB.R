@@ -17,7 +17,7 @@ library(sparsepca)
 source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
 
 # simu parameters
-function(seed, B){
+gener_cliques<-function(seed, B){
   set.seed(seed) # major and  bad cor
   n=200 ;p=14;r=1;type="scale-free";plot=TRUE
   O=1:p
@@ -35,8 +35,10 @@ function(seed, B){
   tic()
   cliques_spca=boot_FitSparsePCA(scale(MO),B=B,r=1, cores=3,unique=FALSE)
   toc()
-  saveRDS(cliques_spca, "/Users/raphaellemomal/these/R/codes/missingActor/SimResults/cliques_spca",seed,"_",B,".rds")
+  saveRDS(cliques_spca, paste0("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/cliques_spca",seed,"_",B,".rds"))
 }
+gener_cliques(1, 1e+4)
+gener_cliques(19, 1e+4)
 seqB=c(seq(10,200,20), seq(250,500,50), seq(600, 800, 100))
 
 nbcliques=sapply(seqB, function(B){ 
