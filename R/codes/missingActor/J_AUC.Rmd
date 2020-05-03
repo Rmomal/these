@@ -1,7 +1,7 @@
 ---
 title: "Choisir la meilleure initialisation"
 output: 
-  html_document: 
+  html_document:
     theme: cosmo
     toc: yes
     toc_float: yes
@@ -301,3 +301,8 @@ plotdata %>%
   labs(title="Zoom sur les 200 premiers échantillons bootstrap", y="nombre de cliques uniques")
 ```
 
+# Points sensibles
+
+- tolérance pour la projection nearPD
+- projeter en cours d'algo ?
+- 

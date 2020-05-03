@@ -196,10 +196,13 @@ Starting with the two hidden layers of our model, the lower bound writes:
 \mathcal{J}(\Ybf; g,h)&=\log p(\Ybf) - KL\left[g(T) h(\Zbf) \middle\vert\middle\vert\ p(T,\Zbf | \Ybf)\right]\\
 &= \log p(\Ybf) - \Esp_{gh}[\log( g(T) h(\Zbf)) - \log p(\Zbf,T\mid \Ybf) ]\\
 &= \log p(\Ybf) - \Esp_{gh}[\log g(T) + \log h(\Zbf) ] + \Esp_{gh}[\log p(\Ybf,\Zbf,T)] - \Esp_{gh}[\log p(\Ybf)]\\
-&= \Esp_{gh} [\log p(\Ybf,\Zbf,T)] + \entr[g(T)] + \entr[h(\Zbf)]\\
-&= \Esp_{gh} [\log (p_\beta(T)p_{\Omega}(\Zbf\mid T)p_\theta(\Ybf\mid \Zbf))] + \entr[g_{\widetilde{\beta}}(T)] + \entr[h_{M,S}(\Zbf)]
+&= \Esp_{gh} [\log p(\Ybf,\Zbf,T)] + \entr[g(T)] + \entr[h(\Zbf)]
 \end{align*}
 
+\begin{equation}
+\label{firstJ}
+ \boxed{\mathcal{J}(\Ybf; g,h) = \Esp_{gh} [\log (p_\beta(T)p_{\Omega}(\Zbf\mid T)p_\theta(\Ybf\mid \Zbf))] + \entr[g_{\widetilde{\beta}}(T)] + \entr[h_{M,S}(\Zbf)]}
+\end{equation}
 Thus the model's parameters are $\Phi = (\beta, \Omega, \theta, \widetilde{\beta},M,S)$.
 \subsection{Optimizing in $\theta$ and $h(\Zbf_O)$:}
 \citet{CMR18} compute the lower bound of a VEM for the original PLN, which we write $\mathcal{J}_{PLN}$,  in the R package \textit{PLNmodels}. It is possible to use $\mathcal{J}_{PLN}$ in our computation as well, the following shows how.
@@ -330,7 +333,7 @@ Finally:
 \Esp_{gh} [\log(\Zbf \mid T)] = \frac{n}{2} \Big( \sum_{k} \log \omega_{kk}+\frac{1}{2}\sum _{\substack{kl\\ k \neq l}} P_{kl} \log (\varphi_{kl}) - \sum_{\substack{kl\\ k \neq l}} P_{kl} \omega_{kl} \sigma_{kl} - \sum_{k} \omega_{kk} \sigma_{kk}\Big)
  \end{empheq}
 
-$\widetilde{\Sigma}$ is defined using variational estimates for $M$ and $S$ : $$\widetilde{\Sigma} = \frac{1}{n}(\widetilde{M}^\intercal \widetilde{M} + \widetilde{S}. $$
+$\widetilde{\Sigma}$ is defined using variational estimates for $M$ and $S$ : $$\widetilde{\Sigma} = \frac{1}{n}(\widetilde{M}^\intercal \widetilde{M} + \widetilde{S}). $$
 The conditional expectation is approximated using $\widetilde{\Sigma}$:
 $$\Esp_{gh} [\log(\Zbf \mid T)] \approx \frac{n}{2} \Big( \sum_{k} \log \omega_{kk}+\frac{1}{2}\sum _{\substack{kl\\ k \neq l}} P_{kl} \log (\varphi_{kl}) - \sum_{\substack{kl\\ k \neq l}} P_{kl} \omega_{kl} \widetilde{\sigma}_{kl} - \sum_{k} \omega_{kk} \widetilde{\sigma}_{kk}\Big)$$
 \subsubsection{Details of $\Esp_g[\log g(T) - \log p(T)]$}
@@ -364,64 +367,67 @@ Let's isolate the terms referring to the edges in the expression to be minimized
 Setting $A_{kl}$ to zero, we obtain:
  $$\log \widetilde{\beta}_{kl} = \log \beta_{kl} + \frac{n}{2} \big( \frac{1}{2} \log \varphi_{kl} + \omega_{kl}\: \widetilde{\sigma}_{kl} \big) $$
  
- Finally the update formula for $\widetilde{\beta}_kl$ is:
+ Finally the update formula for $\widetilde{\beta}_{kl}$ is:
  
   $$\boxed{\displaystyle \widetilde{\beta}_{kl} = \beta_{kl} \: \varphi_{kl}^{n/4} \exp( \omega_{kl}\: \widetilde{\sigma}_{kl} ) }$$
  
 \paragraph{Means of the hidden part of the latent Gaussian vector under the $h$ distribution \\}
-At step $(t+1)$ of the VE part of the algorithm, the following updates occur:
-\paragraph{$M_H$:}
+Means $M_H$ only appear in the $H$, $OH$ and $HO$ blocs of $\Sigma$. The derivative of KL with respect to mean $M_{ik}$ for the $i^\text{th}$ sample of species $k\in H$ writes:
+
 \begin{align*}
-\partial_{M_H} KL &= M_H\Omega_H  + \widetilde{M}_O(P_{gOH}\odot\Omega_{OH}) =0\\
-\iff& \boxed{M_H^{t+1} =- \widetilde{M}_O(P_{gOH}^t\odot\Omega_{OH})\Omega_H^{-1}}
+\frac{\partial KL}{\partial M_{ik}} &=\frac{n}{2}\frac{\partial}{\partial M_{ik}}\Big(2\sum_{\substack{k \neq l\\
+(k, l) \in H\times O}} P_{kl} \omega_{kl} (M^\intercal M)_{kl} + \sum_{k\in H} \omega_{kk} (M^\intercal M)_{kk}\Big)\\
+&= n( \sum_{l \in O } M_{il} P_{kl}\omega_{kl} + M_{ik} \omega_{kk}) 
+\end{align*}
+\begin{align*}
+\frac{\partial KL}{\partial M_{ik}}  = 0\iff M_{ik} &= -\frac{1}{\omega_{kk}} \sum_{l\in O} M_{il} (P\odot\Omega)_{lk}\\
+&=-\frac{M_{iO} (P\odot\Omega)[O,H]}{\omega_{kk}}
 \end{align*}
 
+Which  matricially comes down to
+$$\boxed{ M_H = -M_O(P\odot\Omega)_{OH} \Omega_H^{-1}}$$
 
+\subsubsection{Computing edge probabilities under $g$}
+During computations, we need edge probability under the $g$ distribution, which is simply computed as the sum of probabilities of trees containing this edge:
 
-\subsubsection{Computing edge probabilities}
-The matrix $\widetilde{\betabf}$ allows us to build an approximate of the distribution of a tree $T$ conditional to  data $\Ybf$:
-$$\tilde{p}(T|\Ybf) = \prod_{kl} \widetilde{\beta}_{kl} \big/ D $$
-where $D = \sum_{T\in \mathcal{T}}\prod_{kl} \widetilde{\beta}_{kl}$ is the normalisation constant. As distribution $g$ aim is to approach the condiitonal distribution of $T$, we can write:
 \begin{align*}
-\mathds{P}_g(kl \in T) &\simeq 1 - \sum_{T : kl \notin T}  \tilde{p}(T|\Ybf)\\
-&= 1 - \frac{1}{D} \sum_{T : kl \notin T}\prod_{kl} \widetilde{\beta}_{kl}
+\mathds{P}_g(kl \in T)  &= \sum_{\substack{T  \in \mathcal{T} \\ kl \in T }} g(T) =\frac{1}{\widetilde{B}} \sum_{\substack{T  \in \mathcal{T} \\ kl \in T }} \prod_{uv} \widetilde{\beta}_{uv}
 \end{align*}
+where $\widetilde{B}= \sum_{T \in \mathcal{T} }\prod_{uv}  \widetilde{\beta}_{uv}$.\\
 
-This sum-product quantity is computationaly available thanks to the Matrix Tree theorem. We therefore compute:
-$$\boxed{P_{gkl}^{h+1} = 1 - \dfrac{|Q_{uv}^*(\widetilde{\betabf}_{\setminus kl}^h)|}{|Q_{uv}^*(\widetilde{\betabf}^h)|} \simeq\mathds{P}_g(kl \in T)}$$
-
-\subsection{M step: optimizing in $(\beta, \Omega)$}
+ This is again a sum-product form, but on a special set of trees. This can be efficiently computed using a formula from \citet{kirshner} (Theorem 3), stated in the appendix.
  
+\subsection{M step: optimizing in $(\beta, \Omega)$}
+ The M step aims at maximizing the lower bound in the parameters referring to original distributions for $T$ and $Z|T$, therefore $\beta$ and $\Omega$. From Eq.(\ref{firstJ}) we obtain that: 
 $$ \argmax_{\beta, \Omega} \mathcal{J}(\Ybf ; g,h) =\argmax_{\beta, \Omega} \left\{ \Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T) ]\right\} $$
 
-\subsubsection{General expression}
+As distributions of VE step mimic original ones, computations are very similar. We get:
 \begin{align*}
-\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T))  &= \sum_{kl} \mathds{1}\{kl \in T\} \log \beta_{kl} - \log B + \frac{n}{2}\log |\Omega_T| - \frac{1}{2}<\Omega_T,\Zbf^\intercal \Zbf>\\
-\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T) ] &= \sum_{kl} P_{gkl} \log\beta_{kl} +\frac{n}{2} \Esp_g[\log |\Omega_T|] -\frac{1}{2} <\Esp_g [\Omega_T], \Esp_h[\Zbf^\intercal \Zbf]>- \log B
+\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T))  &= \sum_{kl} \mathds{1}\{kl \in T\} \log \beta_{kl} - \log B + \frac{n}{2}\log |\Omega_T| - \frac{1}{2}Tr(\Omega_T,\Zbf^\intercal \Zbf)\\
+\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T) ] &= \sum_{kl} P_{gkl} \log\beta_{kl} +\frac{n}{2} \Esp_g[\log |\Omega_T|] -\frac{1}{2} Tr(\Esp_g [\Omega_T], \Esp_h[\Zbf^\intercal \Zbf])- \log B
 \end{align*}
 
-$\Omega_T$ is tree-strucutred, so its determinent is decomposable on the edges:
-$$|\Omega_{T}| = \prod_{k} \omega_{kk} \prod_{kl \in T} \frac{\omega_{kk}\omega_{ll}-\omega_{kl}^2}{\omega_{kk}\omega_{ll}}$$
-
-And we get
-
-$$\Esp_g[\log |\Omega_{T}|]= \sum _{kl} P_{gkl} \left[ \log\left(\frac{\omega_{kk}\omega_{ll}-\omega_{kl}^2}{\omega_{kk}\omega_{ll}}\right)\right] + \sum_k \log \omega_{kk}$$
-
-Finally, denoting $\psi_{kl} = \left(\frac{\omega_{kk}\omega_{ll}-\omega_{kl}^2}{\omega_{kk}\omega_{ll}}\right)^{n/2}$ we obtain:
+Reminding that $\Esp_g[\log |\Omega_{T}|]= \sum _{kl} P_{kl}  \log\varphi_{kl}+ \sum_k \log \omega_{kk}$,  we obtain:
 \begin{align*}
-\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T) ] &=\sum_{kl} P_{gkl} \left(\log  \beta_{kl}\psi_{kl}\right) + \frac{n}{2}\sum_k \log \omega_{kk} - \frac{1}{2}<P_g \odot \Omega, \widetilde{M}^\intercal \widetilde{M} + \widetilde{S}>- \log B
+\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T) ] &=\sum_{kl} P_{gkl} \left(\log  \beta_{kl}\psi_{kl}\right) + \frac{n}{2}\sum_k \log \omega_{kk} - \frac{1}{2}Tr( (P \odot \Omega) \times (M^\intercal M +S))- \log B
 \end{align*}
  
-\subsubsection{Update formulas}
-\paragraph{Update of $\beta$:}
-\begin{align*}
-\partial_{\beta_{jk}} \Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T) ] &= \frac{P_{gjk}}{\beta_{jk}} - \frac{\partial_{\beta_{jk}} B }{B} \\
-&=\frac{P_{gjk}}{\beta_{jk}}  - [M(W)]_{jk} \\
-=0 \iff & \boxed{\widehat{\beta}_{jk} = P_{gjk} / ([M(W)]_{jk})}
-\end{align*}\\
+\subsubsection{Update formula for $\beta$}
+ The derivative of $ \mathcal{J}(\Ybf ; g,h)$ with respect to weight $\beta_{kl}$ of edge $kl$ is:
+ 
+ \begin{align*}
+\frac{\partial}{\partial_{\beta_{kl}}} \mathcal{J}(\Ybf ; g,h) &=  \frac{\partial}{\partial_{\beta_{kl}}} \Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T) ] \\
+&= \frac{P_{kl}}{\beta_{kl}} - \frac{\partial_{\beta_{kl}} B }{B} \\
+\end{align*}
 
+The derivative of the normalization constant with respect to $\beta_{kl}$ is the derivative of an output from the Matrix Tree theorem with respect to one of the weight's matrix entry. This quantity is given by \citet{Meila} (Lemma 2). Defining matrix $Q(\betabf)$ as displayed in the appendix, then $\partial_{\beta_{kl}} B = Q(\betabf)_{kl}$ and:
+ \begin{align*}
+&\frac{\partial}{\partial_{\beta_{kl}}} \mathcal{J}(\Ybf ; g,h) 
+=0 \\
+\iff & \boxed{\widehat{\beta}_{kl} = \frac{P_{kl}}{ Q(\betabf)_{kl}} }
+\end{align*}
 
-\paragraph{Update of $\Omega$:}
+\subsubsection{Update formula for $\Omega$:}
 
 \[
  \partial_{\omega_{kl}}\left(\sum_{kl} P_{gkl} \left(\log  \beta_{kl}\psi_{kl}\right) +\frac{n}{2} \sum_k \log \omega_{kk}\right) =\begin{cases}
@@ -434,9 +440,10 @@ And
 - \frac{1}{2} <P_g \odot \Omega, \underbrace{\widetilde{M}^\intercal \widetilde{M} + \widetilde{S}}_{n\widetilde{\Sigma}}> &=- \frac{n}{2}\times 2 \times \sum_{j<k}P_{gjk} \omega_{jk} \widetilde{\sigma}_{jk}- \frac{n}{2}\sum_{ k} \omega_{kk} \widetilde{\sigma}_{kk}
 \end{align*}
 The "$\times 2$" above comes from differenciating $j$ from $k$.
-\begin{itemize}
 
-\item The complete derivative for off-diagonal terms of $\Omega$ is :
+\paragraph{Off-diagonal terms:\\}
+
+ The complete derivative for off-diagonal terms of $\Omega$ is :
 \begin{align*}
  \partial_{\omega_{kl}}\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T) ] &=-n \frac{P_{gkl} }{\omega_{kk}\omega_{ll}-\omega_{kl}^2}\times \omega_{kl} - n P_{gjk}  \widetilde{\sigma}_{jk} =0\\
  \iff & \widetilde{\sigma}_{jk} \omega_{kl}^2 - \omega_{kl} - \widetilde{\sigma}_{jk} \omega_{kk}\omega_{ll} = 0 \\
@@ -458,8 +465,8 @@ On the other hand, we also have:
 
 Therefore: $$\boxed{ \widehat{\omega}_{kl} = (1 - \sqrt{1+4\widetilde{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}}) / 2\widetilde{\sigma}_{jk}}$$
 
-
-\item We get the complete derivative for diagonal terms of $\Omega$:
+\paragraph{Diagonal terms:\\}
+ We get the complete derivative for diagonal terms of $\Omega$:
 \begin{align*}
  \partial_{\omega_{kk}}\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T) ] &=\frac{n}{2} \times\frac{1}{\omega_{kk}} \left(\sum_l P_{gkl} \frac{\omega_{kl}^2}{(\omega_{kk}\omega_{ll}-\omega_{kl}^2)} + 1\right) -\frac{n}{2}\widetilde{\sigma}_{kk} =0\\
  \iff &  \frac{1}{\omega_{kk}} \left(\sum_l P_{gkl} \frac{\omega_{kl}^2}{(\omega_{kk}\omega_{ll}-\omega_{kl}^2)} + 1\right) =\widetilde{\sigma}_{kk}
@@ -468,7 +475,7 @@ Then from the optimization of the off-diagonal terms, we have that $$\frac{\omeg
 
 which leads to 
 $$\boxed{ \hat{\omega}_{kk} = \frac{1}{\widetilde{\sigma}_{kk}} \left( 1- \sum_l  P_{gkl} \;\omega_{kl} \;\widetilde{\sigma}_{kl}\right)}$$
-\end{itemize}
+ 
 
 \section{Model selection criteria}
 
