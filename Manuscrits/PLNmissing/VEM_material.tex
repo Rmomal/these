@@ -53,10 +53,8 @@
 
 
 \setlength\parindent{0pt}
-\author{Raphaelle Momal}
-\title{PLN with missing actor}
-
- 
+ \setcounter{tocdepth}{2}
+\title{Reconstruction of a missing actor from count data using network inference}
 
 \begin{document}
 
@@ -407,11 +405,15 @@ As distributions of VE step mimic original ones, computations are very similar. 
 \Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T) ] &= \sum_{kl} P_{gkl} \log\beta_{kl} +\frac{n}{2} \Esp_g[\log |\Omega_T|] -\frac{1}{2} Tr(\Esp_g [\Omega_T], \Esp_h[\Zbf^\intercal \Zbf])- \log B
 \end{align*}
 
-Reminding that $\Esp_g[\log |\Omega_{T}|]= \sum _{kl} P_{kl}  \log\varphi_{kl}+ \sum_k \log \omega_{kk}$,  we obtain:
+Reminding that $\Esp_g[\log |\Omega_{T}|]= \frac{1}{2}\sum _{kl} P_{kl}  \log\varphi_{kl}+ \sum_k \log \omega_{kk}$,  we obtain:
 \begin{align*}
-\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T) ] &=\sum_{kl} P_{gkl} \left(\log  \beta_{kl}\psi_{kl}\right) + \frac{n}{2}\sum_k \log \omega_{kk} - \frac{1}{2}Tr( (P \odot \Omega) \times (M^\intercal M +S))- \log B
+\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T) ] &=\sum_{kl} P_{kl} \log  \beta_{kl} - \log B + \frac{n}{4} \sum_{kl} P_{kl} \log\varphi_{kl} + \frac{n}{2}\sum_k \log \omega_{kk}\\
+& \;\; - \frac{1}{2}Tr( (P \odot \Omega) \times (M^\intercal M +S))\\
+&= \frac{n}{2}\left( \sum_k \log \omega_{kk}  + \frac{1}{2} \sum_{kl} P_{kl} \log \varphi_{kl} - \sum_{k} \omega_{kk} \sigma_{kk} - \sum_{kl} P_{kl} \omega_{kl} \sigma_{kl}\right)\\
+& \;\; +\sum_{kl} P_{kl} \log  \beta_{kl} - \log B 
 \end{align*}
  
+ $$\boxed{\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T) ]  =  \frac{n}{2} \sum_{kl} P_{kl} ( \frac{1}{2} \log \varphi_{kl} -\omega_{kl} \sigma_{kl} ) + \frac{n}{2} \sum_k (\log \omega_{kk} - \omega_{kk} \sigma_{kk}) +\sum_{kl} P_{kl} \log  \beta_{kl} - \log B }$$
 \subsubsection{Update formula for $\beta$}
  The derivative of $ \mathcal{J}(\Ybf ; g,h)$ with respect to weight $\beta_{kl}$ of edge $kl$ is:
  
@@ -420,7 +422,7 @@ Reminding that $\Esp_g[\log |\Omega_{T}|]= \sum _{kl} P_{kl}  \log\varphi_{kl}+ 
 &= \frac{P_{kl}}{\beta_{kl}} - \frac{\partial_{\beta_{kl}} B }{B} \\
 \end{align*}
 
-The derivative of the normalization constant with respect to $\beta_{kl}$ is the derivative of an output from the Matrix Tree theorem with respect to one of the weight's matrix entry. This quantity is given by \citet{Meila} (Lemma 2). Defining matrix $Q(\betabf)$ as displayed in the appendix, then $\partial_{\beta_{kl}} B = Q(\betabf)_{kl}$ and:
+The derivative of the normalization constant with respect to $\beta_{kl}$ is the derivative of an output from the Matrix Tree theorem with respect to one of the weight's matrix entry. This quantity is given by \citet{Meila} (Lemma 2). Defining matrix $Q(\betabf)$ as showed in the appendix, then $\partial_{\beta_{kl}} B = Q(\betabf)_{kl}$ and:
  \begin{align*}
 &\frac{\partial}{\partial_{\beta_{kl}}} \mathcal{J}(\Ybf ; g,h) 
 =0 \\
@@ -428,55 +430,57 @@ The derivative of the normalization constant with respect to $\beta_{kl}$ is the
 \end{align*}
 
 \subsubsection{Update formula for $\Omega$:}
-
-\[
- \partial_{\omega_{kl}}\left(\sum_{kl} P_{gkl} \left(\log  \beta_{kl}\psi_{kl}\right) +\frac{n}{2} \sum_k \log \omega_{kk}\right) =\begin{cases}
-               -n \frac{P_{gkl} }{\omega_{kk}\omega_{ll}-\omega_{kl}^2}\times \omega_{kl} \text{\hspace{1cm}if $k\neq l$}\\\\
-              \frac{n}{2} \times\frac{1}{\omega_{kk}} \left(\sum_l P_{gkl} \frac{\omega_{kl}^2}{(\omega_{kk}\omega_{ll}-\omega_{kl}^2)} + 1\right)\text{\hspace{0.5cm}if $k = l$}
-            \end{cases}
-\]
-And
-\begin{align*}
-- \frac{1}{2} <P_g \odot \Omega, \underbrace{\widetilde{M}^\intercal \widetilde{M} + \widetilde{S}}_{n\widetilde{\Sigma}}> &=- \frac{n}{2}\times 2 \times \sum_{j<k}P_{gjk} \omega_{jk} \widetilde{\sigma}_{jk}- \frac{n}{2}\sum_{ k} \omega_{kk} \widetilde{\sigma}_{kk}
-\end{align*}
-The "$\times 2$" above comes from differenciating $j$ from $k$.
-
+  
 \paragraph{Off-diagonal terms:\\}
 
  The complete derivative for off-diagonal terms of $\Omega$ is :
 \begin{align*}
- \partial_{\omega_{kl}}\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T) ] &=-n \frac{P_{gkl} }{\omega_{kk}\omega_{ll}-\omega_{kl}^2}\times \omega_{kl} - n P_{gjk}  \widetilde{\sigma}_{jk} =0\\
- \iff & \widetilde{\sigma}_{jk} \omega_{kl}^2 - \omega_{kl} - \widetilde{\sigma}_{jk} \omega_{kk}\omega_{ll} = 0 \\
- \iff & \widehat{\omega}_{kl} = (1 \pm \sqrt{1+4\widetilde{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}}) / 2\widetilde{\sigma}_{jk}
+ \partial_{\omega_{kl}}\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T) ] &= \partial_{\omega_{kl}}\Big(\frac{n}{2} \sum_{kl} P_{kl} \Big( \frac{1}{2} \log \big(1 - \frac{\omega_{kl}^2}{\omega_{kk} \omega_{ll}}\big) -\omega_{kl} \sigma_{kl} \Big) \Big)\\
+ &= -\frac{n}{2} \Big( \frac{\omega_{kl}}{\omega_{kk} \omega_{ll} - \omega_{kl}^2} + \sigma_{kl}\Big)
+ \end{align*}
+ 
+ \begin{align*}
+  \partial_{\omega_{kl}}\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T) ] = 0 \iff & {\sigma}_{jk} \omega_{kl}^2 - \omega_{kl} - {\sigma}_{jk} \omega_{kk}\omega_{ll} = 0 \\
+ \iff & \widehat{\omega}_{kl} = (1 \pm \sqrt{1+4{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}}) / 2{\sigma}_{jk}
 \end{align*}
 
 To choose between roots, we use the constraint $\dfrac{\omega_{kl}^2}{\omega_{kk}\omega_{ll}} < 1$ which is equivalent to 
-$$ (1 \pm \sqrt{1+4\widetilde{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}}) < 4\widetilde{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}.$$
-As $\widetilde{\sigma}_{jk}^2 \omega_{kk}\omega_{ll} > 0$ by positive-definitiveness of $\Omega$, we have:
+$$ (1 \pm \sqrt{1+4{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}}) < 4{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}.$$
+As ${\sigma}_{jk}^2 \omega_{kk}\omega_{ll} > 0$ by positive-definitiveness of $\Omega$, we have:
 \begin{align*}
-&1 - \sqrt{1+4\widetilde{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}} < 1- \sqrt{4\widetilde{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}}\\
-\iff &(1 - \sqrt{1+4\widetilde{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}})^2 < ( \sqrt{4\widetilde{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}}-1)^2 < 4\widetilde{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}
+&1 - \sqrt{1+4{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}} < 1- \sqrt{4{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}}\\
+\iff &(1 - \sqrt{1+4{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}})^2 < ( \sqrt{4{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}}-1)^2 < 4{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}
 \end{align*}
 
 On the other hand, we also have:
 \begin{align*}
-&(1 + \sqrt{1+4\widetilde{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}})^2 >4\widetilde{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}.
+&(1 + \sqrt{1+4{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}})^2 >4{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}.
 \end{align*}
 
-Therefore: $$\boxed{ \widehat{\omega}_{kl} = (1 - \sqrt{1+4\widetilde{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}}) / 2\widetilde{\sigma}_{jk}}$$
+Therefore: $ {\omega}_{kl} = (1 - \sqrt{1+4\widetilde{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}}) / 2{\sigma}_{jk}$. Using $\widetilde{\Sigma}$ as an estimator for $\Sigma$, we obtain:
+
+$$\boxed{ \widehat{\omega}_{kl} = (1 - \sqrt{1+4\widetilde{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}}) / 2\widetilde{\sigma}_{jk}}$$
 
 \paragraph{Diagonal terms:\\}
- We get the complete derivative for diagonal terms of $\Omega$:
+The derivative for diagonal terms of $\Omega$ is:
 \begin{align*}
- \partial_{\omega_{kk}}\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T) ] &=\frac{n}{2} \times\frac{1}{\omega_{kk}} \left(\sum_l P_{gkl} \frac{\omega_{kl}^2}{(\omega_{kk}\omega_{ll}-\omega_{kl}^2)} + 1\right) -\frac{n}{2}\widetilde{\sigma}_{kk} =0\\
- \iff &  \frac{1}{\omega_{kk}} \left(\sum_l P_{gkl} \frac{\omega_{kl}^2}{(\omega_{kk}\omega_{ll}-\omega_{kl}^2)} + 1\right) =\widetilde{\sigma}_{kk}
+ \partial_{\omega_{kk}}\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T) ] &=\frac{n}{2} \partial_{\omega_{kk}} \Big( \sum_k (\log \omega_{kk} - \omega_{kk} \sigma_{kk} )+  \sum_{k<l} P_{kl} \log \big(1-\frac{\omega_{kl}^2}{\omega_{kk} \omega_{ll}}\big)\Big)\\
+ &=\frac{n}{2} \Big( \frac{1}{\omega_{kk}} \Big( 1 + \sum_{k<l} P_{kl} \omega_{kl} \frac{\omega_{kl}}{\omega_{kk}\omega_{ll} - \omega_{kl}}\Big) - \sigma_{kl}\Big)\\
+  \end{align*}
+
+From the optimization of the off-diagonal terms, we have that $$\frac{\omega_{kl}}{(\omega_{kk}\omega_{ll}-\omega_{kl}^2)}  = - {\sigma}_{kl} . $$
+Therefore
+ \begin{align*}
+ \partial_{\omega_{kk}}\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T) ] 
+  &=\frac{n}{2} \Big( \frac{1}{\omega_{kk}} ( 1 - \sum_{k<l} P_{kl} \omega_{kl} \sigma_{kl} ) - \sigma_{kl}\Big) = 0 \\
+  \iff &  \omega_{kk}=\frac{1}{\sigma_{kk}} \left(1-\sum_{l>k} P_{kl}\omega_{kl}\sigma_{kl} \right)  
 \end{align*}
-Then from the optimization of the off-diagonal terms, we have that $$\frac{\omega_{kl}}{(\omega_{kk}\omega_{ll}-\omega_{kl}^2)}  = - \widetilde{\sigma}_{kl}  $$
 
-which leads to 
-$$\boxed{ \hat{\omega}_{kk} = \frac{1}{\widetilde{\sigma}_{kk}} \left( 1- \sum_l  P_{gkl} \;\omega_{kl} \;\widetilde{\sigma}_{kl}\right)}$$
+Using $\widetilde{\Sigma}$ as an estimate for $\Sigma$ we obtain
+$$\boxed{ \hat{\omega}_{kk} = \frac{1}{\widetilde{\sigma}_{kk}} \left( 1- \sum_{l>k}  P_{kl} \;\omega_{kl} \;\widetilde{\sigma}_{kl}\right)}$$
  
-
+\section{Algorithm initialization}
+\section{Numerical issues and getaround}
 \section{Model selection criteria}
 
 A variational lower bound of the BIC criteria is available. The true BIC is defined as:

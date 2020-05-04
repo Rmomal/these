@@ -139,7 +139,8 @@ Jcor_0r<-function(vem,p){
   Jcor=tail(vem$lowbound$J,1)+diffJPLN
   return(Jcor)
 }
-Jcor_Delta<-function(vem,p){
+# fonction plus générale, gère r=0 et 1 séparément, calcule Delta
+Jcor_Delta<-function(vem,p,eig.tol=1e-3){
   omega=vem$omega
   O=1:p ; H=(p+1):ncol(omega) ; r=length(H)
   EhZZ=t(vem$M[,O])%*%vem$M[,O] + diag(colSums(vem$S[,O]))
@@ -155,7 +156,7 @@ Jcor_Delta<-function(vem,p){
       EgOm = EgO[O,O] - matrix(EgO[O,H],p,r)%*%solve(EgO[H,H])%*%matrix(EgO[H,O],r,p)
     }
   }
-  EgOm = nearPD(EgOm, eig.tol=0.1)$mat
+  EgOm = nearPD(EgOm, eig.tol=eig.tol)$mat
   JPLN_SigT = part_JPLN(sigTilde,EhZZ=EhZZ)
   JPLN_EgOm = part_JPLN(EgOm,EhZZ=EhZZ, var=FALSE)
   diffJPLN = JPLN_SigT-JPLN_EgOm
@@ -176,12 +177,90 @@ Jdata_r1<-do.call(rbind,c(list(Jcor_Delta(simr1$list.vem0,p=14)),
   as_tibble() %>% mutate(trueR = 1)
 
 Jdata = rbind(Jdata_r0, Jdata_r1) %>% as_tibble()
-plot=Jdata %>% group_by(trueR, r) %>% 
-  mutate(q10Delta=quantile(Delta, 0.1)) %>% 
-  filter(Delta<q10Delta) %>% mutate(maxJcor=max(Jcor)) %>% 
-  ggplot(aes(as.factor(r), maxJcor, color=as.factor(trueR)))+
+penTr0_0=data.frame(penT=-( sum( simr0$list.vem0$Pg * log(simr0$list.vem0$Wg+(simr0$list.vem0$Wg==0)) ) - 
+                              logSumTree(simr0$list.vem0$Wg)$det) ,r=0, trueR = 0)
+penT_r0<-data.frame(do.call(rbind, do.call(rbind, lapply(1:3, function(r){ 
+  lapply(simr0$VEMr[[r]],function(vem){
+    penT=-( sum( vem$Pg * log(vem$Wg+(vem$Wg==0)) ) - logSumTree(vem$Wg)$det) 
+    return(c(penT=penT, r=r, trueR=0))})}))))
+penTr1_0=data.frame(penT=-( sum( simr1$list.vem0$Pg * log(simr1$list.vem0$Wg+(simr1$list.vem0$Wg==0)) ) - 
+                              logSumTree(simr1$list.vem0$Wg)$det) , r=0, trueR=1)
+penT_r1<-do.call(rbind, do.call(rbind, lapply(1:3, function(r){ 
+  lapply(simr1$VEMr[[r]],function(vem){
+    penT=-( sum( vem$Pg * log(vem$Wg+(vem$Wg==0)) ) - logSumTree(vem$Wg)$det) 
+    return(c(penT=penT, r=r, trueR=1))})
+})))
+penT=rbind(penTr0_0, penT_r0,penTr1_0,penT_r1) %>% as_tibble()
+
+#vbic
+p=14
+vbicr0_0=data.frame(pen_vBIC=p+ (p*(p+1)/2)+(p*(p-1)/2 - 1), B=logSumTree(simr0$list.vem0$Wg)$det ,r=0, trueR = 0)
+vBIC_r0<-data.frame(do.call(rbind, do.call(rbind, lapply(1:3, function(r){ 
+  lapply(simr0$VEMr[[r]],function(vem){
+    p=14;q=p+r
+    nbparam<-p+ (p*(p+1)/2 +r*p)+(q*(q-1)/2 - 1) #d comprends l'intercept
+    pen_vBIC=nbparam*log(n)/2
+    B=logSumTree(vem$Wg)$det
+    return(c(pen_vBIC=pen_vBIC, B=B,r=r, trueR=0))})}))))
+vbicr1_0=data.frame(pen_vBIC=p+ (p*(p+1)/2)+(p*(p-1)/2 - 1), B=logSumTree(simr1$list.vem0$Wg)$det ,r=0, trueR = 1)
+vBIC_r1<-data.frame(do.call(rbind, do.call(rbind, lapply(1:3, function(r){ 
+  lapply(simr1$VEMr[[r]],function(vem){
+    p=14;q=p+r
+    nbparam<-p+ (p*(p+1)/2 +r*p)+(q*(q-1)/2 - 1) #d comprends l'intercept
+    pen_vBIC=nbparam*log(n)/2
+    B=logSumTree(vem$Wg)$det
+    return(c(pen_vBIC=pen_vBIC, B=B,r=r, trueR=1))})}))))
+
+vBIC=rbind(vbicr0_0, vBIC_r0,vbicr1_0,vBIC_r1) %>% as_tibble()
+allData=left_join(left_join(Jdata, penT, by=c("r","trueR")) , vBIC,by=c("r","trueR"))
+
+summarise=allData %>%  mutate(ICL1=Jcor-penT, ICL2=Jcor- B, ICL3=Jcor-penT-pen_vBIC,
+                                           ICL4=Jcor-penT-pen_vBIC-B) %>% 
+  group_by(r, trueR) %>%
+  summarize(maxJcor=max(Jcor), maxICL1=max(ICL1),maxICL2=max(ICL2),
+         maxICL3=max(ICL3),maxICL4=max(ICL4)) 
+
+summarise %>%   gather(key, value, -r,-trueR) %>% 
+  ggplot(aes(as.factor(r), value, color=as.factor(trueR)))+
+  facet_wrap(~key)+
   geom_point(shape=16, size=3)+mytheme.dark("True r:")+
+  labs(x="r")
+
+
+
+
+
+
+JfiltreDelta=Jdata %>% group_by(trueR, r) %>% 
+  mutate(q10Delta=quantile(Delta, 0.1)) %>% 
+  filter(Delta<q10Delta)
+
+JfiltreDelta %>% mutate(maxJcor=max(Jcor)) %>% 
+  ggplot(aes(as.factor(r), maxJcor, color=as.factor(trueR)))+
+  geom_point(shape=16, size=3)+facet_wrap(~as.factor(trueR))+mytheme.dark("True r:")+
   labs(x="r", title="Parmi les petites valeurs de Delta :")
+penTr0_0=data.frame(penT=-( sum( simr0$list.vem0$Pg * log(simr0$list.vem0$Wg+(simr0$list.vem0$Wg==0)) ) - 
+            logSumTree(simr0$list.vem0$Wg)$det) ,r=0, trueR = 0)
+penT_r0<-data.frame(do.call(rbind, do.call(rbind, lapply(1:3, function(r){ 
+               lapply(simr0$VEMr[[r]],function(vem){
+                 penT=-( sum( vem$Pg * log(vem$Wg+(vem$Wg==0)) ) - logSumTree(vem$Wg)$det) 
+                 return(c(penT=penT, r=r, trueR=0))})}))))
+penTr1_0=data.frame(penT=-( sum( simr1$list.vem0$Pg * log(simr1$list.vem0$Wg+(simr1$list.vem0$Wg==0)) ) - 
+              logSumTree(simr1$list.vem0$Wg)$det) , r=0, trueR=1)
+penT_r1<-do.call(rbind, do.call(rbind, lapply(1:3, function(r){ 
+  lapply(simr1$VEMr[[r]],function(vem){
+    penT=-( sum( vem$Pg * log(vem$Wg+(vem$Wg==0)) ) - logSumTree(vem$Wg)$det) 
+  return(c(penT=penT, r=r, trueR=1))})
+  })))
+penT=rbind(penTr0_0, penT_r0,penTr1_0,penT_r1) %>% as_tibble()
+left_join(JfiltreDelta, penT, by=c("r","trueR")) %>% 
+  mutate(nbparam=(p + (p*(p+1)/2 +r*p+r)+((p+r)*(p+r-1)/2 - 1)),
+        ICL = Jcor - penT- nbparam*log(n)/2) %>% group_by(r, trueR) %>% 
+  mutate(maxICL = max(ICL)) %>% 
+  ggplot(aes(as.factor(r), maxICL, color=as.factor(trueR)))+
+  geom_point(shape=16, size=3)+facet_wrap(~as.factor(trueR))+mytheme.dark("True r:")+
+  labs(x="r", title="Parmi les petites valeurs de Delta :")
+
 
 ggsave(plot, filename = "/Users/raphaellemomal/these/R/images/Selec_r.png", width=6, height=4)
 # crit0<-do.call(rbind, lapply(simr0$list.vem0, function(vem0){

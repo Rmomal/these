@@ -15,7 +15,7 @@ mytheme.dark <-function(legend){list= list(theme_light(), scale_color_brewer(leg
                                                  plot.title = element_text(hjust = 0.5)))
 return(list)}
 
-seed_filtre=readRDS("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/seed_filtre.rds")
+seed_filtre=readRDS("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/seed_filtre_eigtol_1e-6.rds")
 seed_filtre=seed_filtre %>% mutate(filtre=as.factor(ifelse(filtre, "GEM", "VEM")))
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
 ```
@@ -92,14 +92,16 @@ seed_filtre %>% group_by(seed) %>% summarise(JPLN_SigT = JPLN_SigT[1]) %>% kable
 ## AUC
 
 ```{r} 
- seed_filtre %>% ggplot(aes(AUC, diffJPLN))+geom_point()+
+ seed_filtre %>% ggplot(aes(AUC, diffJPLN))+
+  geom_vline(xintercept = 0.5, linetype="dashed", color="orange")+geom_point()+
   facet_grid(filtre~seed)+mytheme.dark("")
 ```
 
 ## PPVH
 
 ```{r}
-seed_filtre %>% ggplot(aes(ppvh, diffJPLN))+geom_point()+
+seed_filtre %>% ggplot(aes(ppvh, diffJPLN))+
+  geom_vline(xintercept = 0.5, linetype="dashed", color="orange")+geom_point()+
   facet_grid(filtre~seed)+mytheme.dark("")
 ```
 
@@ -150,10 +152,16 @@ seed_filtre %>% dplyr::select(Delta,filtre,index,seed) %>%
 `J` peut être corrigée de cette approximation :
 $$J_{cor} = J + diffJPLN$$.
 
+```{r,echo=FALSE}
+seed_filtre=seed_filtre %>% mutate(Jcor = J+diffJPLN)
+seed_filtre %>%  group_by(seed, filtre) %>% mutate(maxJcor = max(Jcor)) %>%   filter(Jcor==maxJcor) %>% dplyr::select(seed, filtre,maxJcor, AUC, ppvh) %>% mutate(AUC=cell_spec(AUC,"html", color = ifelse(AUC < 0.5, "red"," black")),  ppvh=cell_spec(ppvh,"html", color = ifelse(ppvh < 0.5, "red"," black")))%>% kable(escape=FALSE, format="html",caption="Sélection avec J corrigée",align=c("ccrrr"))%>% 
+  collapse_rows() %>% kable_styling()
+```
+
 ## `J`
 
 ```{r,echo=FALSE}
-seed_filtre=seed_filtre %>% mutate(Jcor = J+diffJPLN)
+
 seed_filtre %>% ggplot(aes(J,Jcor, color=(AUC>0.5&ppvh>0.5)))+geom_point()+
   facet_grid(filtre~seed)+mytheme.dark("(AUC,PPVH)>0.5")
 ```
@@ -257,8 +265,8 @@ mxJcor sature bien avant maxJ:
 
 ```{r}
 seed_filtre %>% dplyr::select(Jcor, seed, filtre, index) %>% as_tibble() %>% group_by(seed, filtre) %>% 
-  mutate(maxJ = purrr::map(index, function(x){max(Jcor[1:x])})) %>% unnest() %>% ungroup() %>%
-  ggplot(aes(index, maxJ, color=filtre))+geom_point()+geom_line()+
+  mutate(maxJcor = purrr::map(index, function(x){max(Jcor[1:x])})) %>% unnest() %>% ungroup() %>%
+  ggplot(aes(index, maxJcor, color=filtre))+geom_point()+geom_line()+
   mytheme.dark("")+facet_wrap(~seed, scales="free_x")+
   labs(title="B=1e+4", x="x premières cliques uniques")
 

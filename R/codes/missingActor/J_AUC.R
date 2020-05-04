@@ -19,7 +19,7 @@ source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-exactDet.R")
 
 
 
-J_AUC<-function(seed, p,r,cliques_spca=NULL,B=100,cores=3,plot=FALSE,type="scale-free",n=200){
+J_AUC<-function(seed, p,r,eig.tol=0.1,cliques_spca=NULL,B=100,cores=3,plot=FALSE,type="scale-free",n=200){
   #------ Data simulation
   set.seed(seed)
   O=1:p
@@ -75,7 +75,7 @@ J_AUC<-function(seed, p,r,cliques_spca=NULL,B=100,cores=3,plot=FALSE,type="scale
     omega=vem$omega
     EsO=vem$Pg*vem$omega+diag(diag(vem$omega))
     EgOm = EsO[O,O] - matrix(EsO[O,H],p,r)%*%matrix(EsO[H,O],r,p)/EsO[H,H]
-    EgOm = nearPD(EgOm, eig.tol=0.1)$mat
+    EgOm = nearPD(EgOm, eig.tol=eig.tol)$mat
     Delta = norm(sigT_inv - EgOm,type = "F")
     return(Delta)}))
   JPLN<-do.call(rbind, lapply(ListVEM, function(vem){
@@ -84,7 +84,7 @@ J_AUC<-function(seed, p,r,cliques_spca=NULL,B=100,cores=3,plot=FALSE,type="scale
     omega=vem$omega
     EsO=vem$Pg*vem$omega+diag(diag(vem$omega))
     EgOm = EsO[O,O] - matrix(EsO[O,H],p,r)%*%matrix(EsO[H,O],r,p)/EsO[H,H]
-    EgOm = nearPD(EgOm, eig.tol=0.1)$mat
+    EgOm = nearPD(EgOm, eig.tol=eig.tol)$mat
     JPLN_SigT = part_JPLN(sigTilde,EhZZ=EhZZ)
     JPLN_EgOm = part_JPLN(EgOm,EhZZ=EhZZ, var=FALSE)
     return(data.frame(JPLN_SigT=JPLN_SigT,JPLN_EgOm=JPLN_EgOm))}))
@@ -114,10 +114,10 @@ small_cliques1=list()
 small_cliques1$cliqueList=cliques_spca1$cliqueList[1:10]
 small_cliques1$nb_occ = cliques_spca1$nb_occ[1:10]
 tic()
-seed1<-J_AUC(seed = 1,p = 14,r=1,B=500, cliques_spca=cliques_spca1) # 10 min
+seed1<-J_AUC(seed = 1,p = 14,r=1, eig.tol=1e-3, cliques_spca=cliques_spca1) # 10 min
 toc()
 tic()
-seed19<-J_AUC(seed = 19,p = 14,r=1,B=500, cliques_spca=cliques_spca19) # 30 min
+seed19<-J_AUC(seed = 19,p = 14,r=1, eig.tol=1e-3, cliques_spca=cliques_spca19) # 30 min
 toc()
 
 
@@ -126,7 +126,7 @@ plot(seed19$JPLN_SigT,seed19$JPLN_EgOm)
 
 seed1$seed=1 ; seed19$seed=19
 seed_filtre=rbind(seed1,seed19)
-saveRDS(seed_filtre, "/Users/raphaellemomal/these/R/codes/missingActor/SimResults/seed_filtre.rds")
+saveRDS(seed_filtre, "/Users/raphaellemomal/these/R/codes/missingActor/SimResults/seed_filtre_eigtol_1e-3.rds")
 #--- plots
 seed_filtre %>% ggplot(aes( AUC,J, color=(goodPrec)))+geom_point()+
   geom_vline(xintercept = 0.5, linetype="dashed", color="gray")+
