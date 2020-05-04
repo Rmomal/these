@@ -114,10 +114,10 @@ small_cliques1=list()
 small_cliques1$cliqueList=cliques_spca1$cliqueList[1:10]
 small_cliques1$nb_occ = cliques_spca1$nb_occ[1:10]
 tic()
-seed1<-J_AUC(seed = 1,p = 14,r=1, eig.tol=1e-3, cliques_spca=cliques_spca1) # 10 min
+seed1<-J_AUC(seed = 1,p = 14,r=1, eig.tol=1e-6, cliques_spca=cliques_spca1) # 10 min
 toc()
 tic()
-seed19<-J_AUC(seed = 19,p = 14,r=1, eig.tol=1e-3, cliques_spca=cliques_spca19) # 30 min
+seed19<-J_AUC(seed = 19,p = 14,r=1, eig.tol=1e-6, cliques_spca=cliques_spca19) # 30 min
 toc()
 
 
@@ -126,7 +126,7 @@ plot(seed19$JPLN_SigT,seed19$JPLN_EgOm)
 
 seed1$seed=1 ; seed19$seed=19
 seed_filtre=rbind(seed1,seed19)
-saveRDS(seed_filtre, "/Users/raphaellemomal/these/R/codes/missingActor/SimResults/seed_filtre_eigtol_1e-3.rds")
+saveRDS(seed_filtre, "/Users/raphaellemomal/these/R/codes/missingActor/SimResults/seed_filtre_eigtol_1e-6.rds")
 #--- plots
 seed_filtre %>% ggplot(aes( AUC,J, color=(goodPrec)))+geom_point()+
   geom_vline(xintercept = 0.5, linetype="dashed", color="gray")+

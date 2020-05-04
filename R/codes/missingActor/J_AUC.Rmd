@@ -57,6 +57,14 @@ seed_filtre %>% ggplot(aes( ppvh,J))+
   facet_grid(filtre~seed)+mytheme.dark("")
 ```
 
+## GEM/VEM
+```{r}
+seed_filtre %>% dplyr::select(J,filtre,index,seed) %>% 
+  spread(filtre,J) %>% 
+  ggplot(aes(VEM, GEM))+geom_point()+facet_wrap(~seed)+geom_abline()+
+  mytheme.dark("") 
+```
+
 #  `JPLN_Eg` {.tabset}
 Le modèle PLN est estimé par `PLNmodels` de manière variationnelle et maximise une borne inf `JPLN`. L'utilisation de `JPLN` dans notre algorithme amène à faire l'hypothèse que $E_{gh}[\log p(Z_O|T)] \approx E_h[\log p(Z_O)]$, ce qui revient à négliger la structure de dépendance par arbre et à supposer que $E_g[\Omega_{Tm}] \approx \widetilde{\Sigma}_O^{-1} \approx \Sigma_O^{-1}$. Ces approximations permettent d'utiliser les estimateurs de $\theta$, $M$ et $S$ obtenus avec `PLNmodels`.
 
@@ -147,7 +155,7 @@ seed_filtre %>% dplyr::select(Delta,filtre,index,seed) %>%
   mytheme.dark("") 
 ```
 
-# Ajout de diffJPLN à la borne inf `J` {.tabset}
+# `Jcor`: correction de la borne inf {.tabset} 
 
 `J` peut être corrigée de cette approximation :
 $$J_{cor} = J + diffJPLN$$.
@@ -183,6 +191,14 @@ seed_filtre %>% ggplot(aes(ppvh,Jcor))+geom_point()+
 ```
 
 
+## GEM/VEM
+
+```{r}
+seed_filtre %>% dplyr::select(Jcor,filtre,index,seed) %>% 
+  spread(filtre,Jcor) %>% 
+  ggplot(aes(VEM, GEM))+geom_point()+facet_wrap(~seed)+geom_abline()+
+  mytheme.dark("") 
+```
 
 # Sous-sélection des bornes inf {.tabset}
 
@@ -275,7 +291,7 @@ seed_filtre %>% dplyr::select(Jcor, seed, filtre, index) %>% as_tibble() %>% gro
 
 ## max J
 
-```{r, cache=TRUE}
+```{r}
 seed_filtre %>% dplyr::select(J, seed, filtre, index) %>% as_tibble() %>% group_by(seed, filtre) %>% 
   mutate(maxJ = purrr::map(index, function(x){max(J[1:x])})) %>% unnest() %>% ungroup() %>%
   ggplot(aes(index, maxJ, color=filtre))+geom_point()+geom_line()+
