@@ -140,7 +140,7 @@ Jcor_0r<-function(vem,p){
   return(Jcor)
 }
 # fonction plus générale, gère r=0 et 1 séparément, calcule Delta
-Jcor_Delta<-function(vem,p,eig.tol=1e-3){
+Jcor_Delta<-function(vem,p,eig.tol=1e-6){
   omega=vem$omega
   O=1:p ; H=(p+1):ncol(omega) ; r=length(H)
   EhZZ=t(vem$M[,O])%*%vem$M[,O] + diag(colSums(vem$S[,O]))
@@ -213,11 +213,13 @@ vBIC_r1<-data.frame(do.call(rbind, do.call(rbind, lapply(1:3, function(r){
 
 vBIC=rbind(vbicr0_0, vBIC_r0,vbicr1_0,vBIC_r1) %>% as_tibble()
 allData=left_join(left_join(Jdata, penT, by=c("r","trueR")) , vBIC,by=c("r","trueR"))
-
-summarise=allData %>%  mutate(ICL1=Jcor-penT, ICL2=Jcor- B, ICL3=Jcor-penT-pen_vBIC,
-                                           ICL4=Jcor-penT-pen_vBIC-B) %>% 
+n=200 ; p=14
+summarise=allData %>% mutate(penZH=n*r*0.5*(1+log(2*pi)))%>%  
+  mutate(ICL0=Jcor-penT-penZH-pen_vBIC,ICL1=Jcor-penT-penZH*log(n)-pen_vBIC, 
+         ICL2=Jcor-penT-penZH*log(n), 
+         ICL3=Jcor-penZH*log(n)-pen_vBIC,ICL4=Jcor-penZH*log(n)) %>% 
   group_by(r, trueR) %>%
-  summarize(maxJcor=max(Jcor), maxICL1=max(ICL1),maxICL2=max(ICL2),
+  summarize( maxICL0=max(ICL0),  maxICL1=max(ICL1),maxICL2=max(ICL2),
          maxICL3=max(ICL3),maxICL4=max(ICL4)) 
 
 summarise %>%   gather(key, value, -r,-trueR) %>% 

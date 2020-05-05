@@ -480,6 +480,13 @@ Using $\widetilde{\Sigma}$ as an estimate for $\Sigma$ we obtain
 $$\boxed{ \hat{\omega}_{kk} = \frac{1}{\widetilde{\sigma}_{kk}} \left( 1- \sum_{l>k}  P_{kl} \;\omega_{kl} \;\widetilde{\sigma}_{kl}\right)}$$
  
 \section{Algorithm initialization}
+Parameters to initialize are weights matrices $\betabf$ and $\widetilde{\betabf}$, the $\Omega$ matrix and $M_H$. The initialization takes advantage of the first fit of PLNmodels on observed counts which gives variational estimates of $M_O$ and $\Sigma_O$.
+
+\subsection{Weight matrices}
+ The matrix $\betabf$ gathers edges weights of the true distribution $p$ in the M step.  Its initial O  bloc is the edges weights inferred with the EMtree algorithm, using the estimated matrix $\widetilde{\Sigma}_O$ as an input.  Remaining entries of $\betabf$, as well as matrix $\widetilde{\betabf}$, which gathers edges weights under the $g$ distribution in the VE step of the algorithm, are initialized uniformly.
+ 
+\subsection{Matrix $\Omega$}
+
 \section{Numerical issues and getaround}
 \section{Model selection criteria}
 

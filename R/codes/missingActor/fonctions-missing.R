@@ -380,7 +380,7 @@ LowerBound<-function(Pg ,omega, M, S, W, Wg,p, logSTW, logSTWg){
   t2<-(- 0.5)* sum( ((Pg+diag(q))*omega)*(t(M)%*%M + diag(colSums(S))) ) 
   t3<- n*0.5* sum(log(diag(omega)))  - q*n*0.5*log(2*pi)
   T1<-t1+t2+t3
-
+  
   # Eglog(p) - Eg log(g)
   T2<-sum(F_Sym2Vec(Pg) * (log(F_Sym2Vec(W)+(F_Sym2Vec(W)==0)) - log(F_Sym2Vec(Wg)+(F_Sym2Vec(Wg)==0)) )) - logSTW+ logSTWg
   
@@ -464,17 +464,19 @@ Kirshner <- function(W){
   }else{
     index=which(colSums(W)==0)
   }
+  index=index[1]
   L = Laplacian(W)[-index,-index]
- # if(!is.finite(sum(L))) browser()
- # Leigen = eigen(L)
- # Q = (Leigen$vectors) %*% diag(1/Leigen$values) %*% t(Leigen$vectors)
- #  Q = inverse.fractional(L)
+  # if(!is.finite(sum(L))) browser()
+  # Leigen = eigen(L)
+  # Q = (Leigen$vectors) %*% diag(1/Leigen$values) %*% t(Leigen$vectors)
+  #  Q = inverse.fractional(L)
   Q = inverse.gmp(L)
-  Q = rbind(c(0, diag(Q)),
-            cbind(diag(Q), (diag(Q)%o%rep(1, p-1) + rep(1, p-1)%o%diag(Q) - 2*Q)))
+  Q =  rbind(c(0, diag(Q)),
+             cbind(diag(Q), (diag(Q)%o%rep(1, p-1) + rep(1, p-1)%o%diag(Q) - 2*Q))) 
   Q = .5*(Q + t(Q))
   P = W * Q
   P = .5*(P + t(P))
+  P[P>1]=1 # numerical issues
   return(P)
 }
 
@@ -672,13 +674,13 @@ VE<-function(MO,SO,SH,omega,W,Wg,MH,Pg,logSTW,logSTWg,eps, alpha, filterWg=FALSE
   
   Wg.new = compWg$Wg
   #if(sum(colSums(Wg.new)==0)!=0) browser()
- # Pg.new = suppressWarnings( EdgeProba(Wg.new))
+  # Pg.new = suppressWarnings( EdgeProba(Wg.new))
   
   logSTWg.tot=logSumTree(Wg.new)
   logSTWg.new=logSTWg.tot$det
   max.prec=logSTWg.tot$max.prec
   Pg.new=Kirshner(Wg.new)
-
+  
   # if(sum(is.na(Pg.new))!= 0){# si pb pas de pb
   #   message("NaNs in Pg")
   #   Wg.new=Wg
@@ -726,19 +728,19 @@ Mstep<-function(M,S,Pg, omega,W,logSTW,logSTWg, plot=FALSE,eps, verbatim=FALSE,W
     omega2=computeOffDiag(omDiag2, SigmaTilde,p)
     #if(sum(omega2[O,H]!=0)==0) browser()
   }
- 
+  
   LB11=LowerBound(Pg = Pg, omega=omega1, M=M, S=S,W=W, Wg=Wg,p,logSTW=logSTW,logSTWg=logSTWg)
   LB12=LowerBound(Pg = Pg, omega=omega2, M=M, S=S,W=W, Wg=Wg,p,logSTW=logSTW,logSTWg=logSTWg)
   
   if(iterVEM>3 || !hidden  ){
     if(filterDiag){
-       if(as.numeric(LB11[1])>as.numeric(LB12[1])){
-      message("no diag")
-      omega=omega1
-      LB1=c(LB11,"omega")
-    }else{
-      omega=omega2
-      LB1=c(LB12,"omega")}
+      if(as.numeric(LB11[1])>as.numeric(LB12[1])){
+        message("no diag")
+        omega=omega1
+        LB1=c(LB11,"omega")
+      }else{
+        omega=omega2
+        LB1=c(LB12,"omega")}
     }else{
       omega=omega2
       LB1=c(LB12,"omega")}
@@ -747,7 +749,7 @@ Mstep<-function(M,S,Pg, omega,W,logSTW,logSTWg, plot=FALSE,eps, verbatim=FALSE,W
     LB1=c(LB12,"omega")
   }
   
-
+  
   #--- Beta
   #  while((diff>eps) && (iterM <= 2)){
   #  iterM=iterM+1
@@ -767,7 +769,7 @@ Mstep<-function(M,S,Pg, omega,W,logSTW,logSTWg, plot=FALSE,eps, verbatim=FALSE,W
     #   c=c*1.1
     # }
     W.new= Pg/(Mei )
-   # if(sum(!is.finite(F_Sym2Vec(W.new)))) browser()
+    # if(sum(!is.finite(F_Sym2Vec(W.new)))) browser()
     if(length(which(W.new< 1e-16))!=0){
       W.new[W.new< 1e-16] = 0 # pas de bmax
     }
@@ -830,7 +832,7 @@ VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, maxIter=20,eps=1e-2, 
   logSTW=logSumTree(W)$det
   logSTWg=logSumTree(Wg)$det
   #(diffW[iter] > eps) ||
-  while(  (diffOm[iter] > eps) && (diffJ>eps)  && (iter < maxIter) || iter<2 ){ 
+  while(  (diffOm[iter] > eps) && (abs(diffJ)>eps)  && (iter < maxIter) || iter<2 ){ 
     iter=iter+1 
     # if(iter==28) browser()
     if(verbatim) cat(paste0("\n Iter n°", iter))
@@ -907,7 +909,7 @@ VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, maxIter=20,eps=1e-2, 
     omega=resM$omega
   }
   ##########################
- 
+  
   lowbound[[iter+1]] = rbind( resVE$LB, resM$LB) 
   lowbound=data.frame(do.call(rbind,lowbound))
   lowbound[,-ncol(lowbound)]<-apply(lowbound[,-ncol(lowbound)],2,function(x) as.numeric(as.character(x)))
@@ -990,8 +992,8 @@ ICL<-function(TrueJ, Pg,Wg ,S,n,r,d, omega){
   Pg=Kirshner(Wg)
   pen_T=-( sum( Pg * log(Wg+(Wg==0)) ) - logSumTree(Wg)$det) 
   pen_r<-p*(d) + (p*(p+1)/2 +r*p+r)+(q*(q-1)/2 - 1) #d comprends l'intercept
- # norm=n*q*(q-1)/2
- 
+  # norm=n*q*(q-1)/2
+  
   
   ICL=TrueJ   - (pen_T + pen_ZH + pen_r*log(n)/2)
   return(ICL)
@@ -1016,7 +1018,7 @@ criteria<-function(List.vem,counts,theta, matcovar,r){
 
 List.VEM<-function(cliquesObj, counts, sigma_obs, MO,SO,
                    r,alpha, cores,maxIter,eps, nobeta, 
-                   filterDiag,filterWg){
+                   filterDiag,filterWg, save=FALSE){
   p=ncol(counts) ; O=1:p ; n=nrow(counts)
   
   #--- run all initialisations with parallel computation
@@ -1027,12 +1029,16 @@ List.VEM<-function(cliquesObj, counts, sigma_obs, MO,SO,
     init=initVEM(counts = counts, initviasigma=c, sigma_obs,r = r)
     Wginit= init$Wginit; Winit= init$Winit; omegainit=init$omegainit ; MHinit=init$MHinit
     #run VEMtree
-    VEM<-VEMtree(counts,MO,SO,MH=MHinit,omegainit,Winit,Wginit, eps=eps, alpha=alpha,maxIter=maxIter, 
+    VEM<-VEMtree(counts=counts,MO=MO,SO=SO,MH=MHinit,ome_init=omegainit,W_init=Winit,
+                 Wg_init=Wginit, eps=eps, alpha=alpha,maxIter=maxIter, 
                  verbatim = TRUE, print.hist=FALSE, filterWg = filterWg, 
                  filterDiag = filterDiag, nobeta=nobeta)
     VEM$clique=c
     VEM$nbocc=cliquesObj$nb_occ[num]
     VEM$nbocc_vec=cliquesObj$nb_occ
+    if(save){
+      saveRDS(VEM, paste0("/Users/raphaellemomal/simulations/Fatala_missing/r",r,"_num",num, ".rds"))
+    }
     return(VEM)
   }, mc.cores=cores)
   #--- keep only converged vems
@@ -1070,8 +1076,8 @@ logSumTree<-function(W){
   #output=suppressWarnings(log(det(mat)))
   output=det.fractional(mat, log=TRUE)
   if(output==log(.Machine$double.xmax )){
-     max.prec=TRUE
-     message("max.prec!")
+    max.prec=TRUE
+    message("max.prec!")
   }
   # output=tryCatch({det.fractional(mat, log=TRUE)},# exact computation
   #                 error=function(e){ # if error, trim matrix 
