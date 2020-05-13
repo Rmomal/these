@@ -23,7 +23,7 @@ build_misAct<-function(simus, H){
   }))
   voisBetween<-do.call(rbind,lapply(simus, function(seed){
     between=draw_network(seed$omega)$graph_data %>% activate(nodes) %>% as_tibble() %>% dplyr::select(btw)
-    between=between$btw/max(between$btw)
+    between=between$btw#/max(between$btw)
     between[seed$omega[H,-H]==0] = 0
     between=between[-H]
     return(between)

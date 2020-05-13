@@ -2,8 +2,9 @@
 title: "Results"
 output: 
   html_document:
-    toc: true
-    toc_float: true
+    theme: cosmo
+    toc: yes
+    toc_float: yes
 ---
 
 
@@ -36,14 +37,16 @@ return(list)}
 # data
 H=15
 simus=list()
-badseed=c()
-simus=lapply(1:400, function(seed){
-  file= paste0("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/15nodes_1r_400_filtreWg//SF_seed",seed,".rds")
-    if(file.exists(file)){
-      readRDS(file)
-    }else{badseed<<-c(badseed,seed)}
-  })
-simus=simus[-badseed]
+N=400
+#paste0("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/15nodes_exact_SH_F/SF_seed",seed,".rds")
+ 
+simus=readRDS("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/simus_14_14_filtre_sumP.rds")
+badseeds=which(do.call(rbind, lapply(simus, function(seed){
+  length(seed)
+}))!=5)
+simus=simus[-badseeds]
+N=length(simus)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message=FALSE)
 ```
 
 
@@ -61,7 +64,7 @@ La table misAct rassemble des charactéristiques calculées sur chacun des graph
 
 ```{r, cache=FALSE}
 misAct=build_misAct(simus, H=15)
-misAct[1:5,] %>% kable %>% kable_styling()
+misAct[1:6,] %>% kable %>% kable_styling()
 ```
 
 
@@ -75,10 +78,10 @@ Les résultats sont résumés en regroupant les graphes par l'influence de leur 
 
 ```{r}
 misAct=misAct %>% mutate(influence=unlist(purrr::map(nH, function(x){
-    if(x<5) res="minor"
-    if(x>=5 & x<7) res="medium"
-    if(x>=7) res="major"
-    return(res)})))
+  if(x<5) res="minor"
+  if(x>=5 & x<7) res="medium"
+  if(x>=7) res="major"
+  return(res)})))
 
 misAct %>% group_by(influence) %>% summarise(count=n())%>% kable %>% kable_styling()
 ```
@@ -95,49 +98,23 @@ Tous les VEMtree ont convergé, mais pas de la même manière. L'algo VEMtree a 
 Donc VEMtree peut s'être arrêté du fait de la borne inf indépendemment de la convergence sur les paramètres W et Omega. Dans ce qui suit, on voit que maxIter (qui vaut 200) n'a jamais été atteint, et que lorsque c'est la convergence de J qui permet l'arrêt de l'algorithme, Omega a convergé mais pas W.
 
 ```{r}
- 
+
 # nb de stops par J au lieu des paramètres : 
 stopJ=do.call(rbind, lapply(simus, function(graine){
   diffW = tail(graine$VEM_1$features$diffW,1)
   diffOm = tail(graine$VEM_1$features$diffOm,1)
-  return(diffW>1e-3 || diffOm>1e-3)
+  return( diffOm>1e-3)
 }))
 nb.stopJ = sum(stopJ)
-# nb.stopJ = 145
-# est-ce qu'on était loin de eps pour W et Om quand J a stoppé ?
-diffOm=do.call(rbind, lapply(simus, function(graineJ){
-  diffOm = tail(graineJ$VEM_1$features$diffOm,1)
+
+finalIter=do.call(rbind, lapply(simus, function(graine){
+  finalIter=graine$VEM_1$finalIter
 }))
-sum(diffOm[which(stopJ)]<1e-3) # en fait tous les Omega ont convergé
-diffW=do.call(rbind, lapply(simus, function(graineJ){
-  diffW = tail(graineJ$VEM_1$features$diffW,1)
-}))
-# hist(log(diffW[which(stopJ)]), main="log(diffW) quand diffW>eps", xlab="", ylab="",
-#      col="#FA7E1E", border=FALSE)
-# sum(diffW[which(stopJ)]>0.1) # 79
-# weird.conv = which(do.call(rbind, lapply(simus, function(graine){
-#   diffW = tail(graine$VEM_1$features$diffW,1)
-#   return(diffW > 1e-3)
-# })))
-# # donc divergence des poids W pour 40% des graines
-# data.frame(diffW= diffW, diffOm= diffOm, nH=misAct$nH) %>% as_tibble() %>% 
-#   group_by(nH) %>% summarise(count=n(), noWconv = sum(diffW>1e-3), prop=round(100*noWconv/count, 1)) %>% kable() %>% kable_styling()
-# 
-# weird.iter=do.call(rbind, lapply(simus[weird.conv], function(graine){
-#   graine$VEM_1$finalIter
-# })) # longue queue : entre 13 et 135, mean=41.5 sd = 25
-# good.iter=do.call(rbind, lapply(simus[-weird.conv], function(graine){
-#   graine$VEM_1$finalIter
-# })) # entre 12 et 180, mean = 32.5, sd = 18, (31 et 12.5 si on enlève la valeur extrême)
-# data.frame(iter = rbind(weird.iter, good.iter), 
-#            Wconv = as.factor(rep(c(0,1),c(length(weird.iter),length(good.iter))) ) )%>% 
-#   ggplot(aes(Wconv, iter, color=Wconv))+geom_boxplot()+mytheme.dark("W converged")
+summary(finalIter)
 
 ```
 
-# Qualité d'inférence
-
-## Réseau et position de l'acteur manquant
+# Réseau et position de l'acteur manquant {.tabset}
 
 La qualité d'inférence est évaluée avec l'AUC, la PPV (TP/(TP+FP)) et le TPR (TP/(TP+FN)) des arêtes incluant l'acteur manquant, notés PPVH et TPRH. Ces valeurs sont calculées pour chaque graphes, et les proportion de valeurs supérieures à 0.8 sont mises en liens avec le nombre de voisins nH de l'acteur manquant.
 
@@ -156,33 +133,73 @@ Qual<-data.frame(auc=do.call(rbind, lapply(simus, function(seed){
   Pg=seed$VEM_1$Pg ;ome=seed$omega ; diag(ome)=0 ; H=15
   ppvh=accppvtpr(Pg,ome,h=H,seuil=0.5)[8]
   return(ppvh)
-})), seed = (1:400)[-badseed]) %>% as_tibble() %>% mutate( nH =misAct$nH,
+})), seed = (1:N)) %>% as_tibble() %>% mutate( nH =misAct$nH,
                                                influence=misAct$influence)
  
-Qual %>% group_by(nH) %>% summarise( count=n(),auc.prop80 = round(sum(auc>0.8)*100/count, 1), pvh.prop80 = round(sum(ppvh>0.8)*100/count, 1))%>% kable() %>% kable_styling()
+# Qual %>% group_by(nH) %>% summarise( count=n(),auc.prop80 = round(sum(auc>0.8)*100/count, 1), pvh.prop80 = round(sum(ppvh>0.8)*100/count, 1))%>% kable() %>% kable_styling()
 
 Qual %>% group_by(influence) %>% 
   summarise(count=n(), med.auc=round(median(auc), 2),
-                              auc.prop80 = round(sum(auc>0.8)*100/count, 1))%>% 
+            auc.prop50 = round(sum(auc>0.5)*100/count, 1))%>% 
   kable() %>% kable_styling()
-
-Qual %>% group_by(influence) %>% summarise( count=n(), med.ppvh=round(median(ppvh, na.rm=TRUE),2), med.tprh=round(median(tprh),2), ppvh.prop80 = round(sum(ppvh>0.8, na.rm=TRUE)*100/count, 1),tprh.prop80 = round(sum(tprh>0.8)*100/count, 1))%>% 
+Qual %>% group_by(influence) %>% summarise( count=n(), med.ppvh=round(median(ppvh, na.rm=TRUE),2), med.tprh=round(median(tprh),2), ppvh.prop50 = round(sum(ppvh>0.5, na.rm=TRUE)*100/count, 1),tprh.prop50 = round(sum(tprh>0.5)*100/count, 1))%>% 
   kable() %>% kable_styling()
+```
 
+## Boxplots 
+```{r}
 Qual %>% gather(key, value, -nH,  -influence, -seed) %>% 
   ggplot(aes(key, value, color=key, fill=key))+geom_boxplot(alpha=0.3)+
   facet_grid(~as.factor(influence))+mytheme.dark("")+
   labs(x="", y="", title="Inference quality and influence of the missing actor")
+```
 
+## Densities
+```{r}
 Qual %>% gather(key, value, -nH,  -influence, -seed) %>% 
   ggplot(aes(value, key, color=key, fill=key))+geom_density_ridges(alpha=0.3)+
   facet_grid(~as.factor(influence))+mytheme.dark("")+
   labs(x="", y="", title="Inference quality and influence of the missing actor")
-
-
 ```
 
-## Reconstruction de l'acteur manquant
+VEMtree was unable to infer the missing actor in some case of major influence:
+
+```{r}
+c(Qual[(Qual$influence=="major" & Qual$ppvh< 0.5), "seed"])
+```
+
+## AUC vs PPVH
+
+```{r}
+Qual %>%
+  ggplot(aes(auc, ppvh, color=influence, fill=influence))+geom_vline(xintercept = 0.5, color="gray")+
+  geom_hline(yintercept = 0.5, color="gray")+geom_point()+
+  facet_grid(~as.factor(influence))+mytheme.dark("")+
+  labs(x="AUC", y="PPVH", title="")
+```
+
+## AUC vs TPRH
+
+```{r}
+Qual %>%
+  ggplot(aes(auc, tprh, color=influence, fill=influence))+geom_vline(xintercept = 0.5, color="gray")+
+  geom_hline(yintercept = 0.5, color="gray")+geom_point()+
+  facet_grid(~as.factor(influence))+mytheme.dark("")+
+  labs(x="AUC", y="TPRH", title="")
+```
+
+
+## PPVH vs TPRH
+
+```{r}
+Qual %>%
+  ggplot(aes(ppvh, tprh, color=influence, fill=influence))+geom_vline(xintercept = 0.5, color="gray")+
+  geom_hline(yintercept = 0.5, color="gray")+geom_point()+
+  facet_grid(~as.factor(influence))+mytheme.dark("")+
+  labs(x="PPVH", y="TPRH", title="")
+```
+
+# Reconstruction de l'acteur manquant
 
 La reconstruction de l'acteur manquant est évaluée par la corrélation entre le vecteur latent gaussien d'origine $Z_H$, et le vecteur des moyennes inférées $M_H$.
 
@@ -202,55 +219,209 @@ datacor %>% ggplot(aes(corZM, color=influence, fill=influence))+
 
 ```
 
-
-# Bornes inférieures
-
-```{r, warning=FALSE}
-bornesJ=do.call(rbind, lapply(simus, function(graine){
-  tail(graine$VEM_1$lowbound$J,1)
-}))
-ICL=do.call(rbind, lapply(simus, function(graine){
-  J=tail(graine$VEM_1$lowbound$J,1)
-  pen_T=-( sum( graine$VEM_1$Pg * log(graine$VEM_1$Wg+(graine$VEM_1$Wg==0)) ) - logSumTree(graine$VEM_1$Wg)$det )
-  return(J-pen_T)
-}))
-datacor=datacor %>% mutate(goodcor=ifelse(corZM>0.5,"cor>0.5","cor<0.5"),
-                   borneJ = bornesJ,icl=ICL,
-                    nH=misAct$nH)
-which(datacor$influence=="major" & datacor$goodcor=="cor<0.5")
-datacor %>%  
-  ggplot(aes(borneJ, color=goodcor,fill=goodcor))+
-  geom_histogram(alpha=0.3)+mytheme.dark("")+facet_wrap(~influence)
-
-datacor %>%  
-  ggplot(aes(borneJ, color=influence,fill=influence))+
-  geom_histogram(alpha=0.3)+mytheme.dark("")+facet_grid(goodcor~influence)
-
-datacor %>%  
-  ggplot(aes(icl, color=influence,fill=influence))+
-  geom_histogram(alpha=0.3)+mytheme.dark("")+facet_grid(goodcor~influence)
-
-datacor %>%  
-  ggplot(aes(nH, color=influence,fill=influence))+
-  geom_histogram(alpha=0.3)+mytheme.dark("")+facet_grid(goodcor~influence, scales="free_x")
-
-Qual=Qual %>% mutate(J=bornesJ, icl=ICL,goodauc=ifelse(auc>0.5,"auc>0.5","auc<0.5")) 
-Qual %>% ggplot(aes(J, color=influence,fill=influence))+
-  geom_histogram(alpha=0.3)+mytheme.dark("")+facet_grid(goodauc~influence)
-Qual %>% ggplot(aes(ICL, color=influence,fill=influence))+
-  geom_histogram(alpha=0.3)+mytheme.dark("")+facet_grid(goodauc~influence)
-
-which(Qual$influence=="major" & Qual$auc<0.5)
-nb_occ=c(do.call(rbind, lapply(simus, function(graine){
-  graine$VEM_1$nbocc
-})))
-Qual$nb_occ=nb_occ
-Qual %>% ggplot(aes(nb_occ>1,auc, color=influence, fill=influence ))+geom_boxplot(alpha=0.3)+
-  facet_wrap(~influence)+mytheme.dark("")
+VEMtree was unable to reconstruct missing actor in some major influence cases :
+```{r}
+which(datacor$influence=="major" & datacor$corZM < 0.5)
 ```
 
-# Conclusion
+# Pourquoi plusieurs groupes {.tabset}
+Etude de J, Jcor, Icl et diffJPLN en fonction de AUC, PPVH et corZM
 
-Pour une influence importante de l'acteur manquant, VEMtree permet d'inférer correctement à la fois le réseau et la position de l'acteur manquant dans le réseau avec une qualité d'environ 70% en médiane à la fois pour l'auc et la ppvh, ainsi que de reconstruire les valeurs de l'acteur manquant par site avec des corrélations de plus de 75% en médiane.
+```{r, warning=FALSE}
+J=do.call(rbind, lapply(simus, function(graine){
+  tail(graine$VEM_1$lowbound$J,1)
+}))
+penT=do.call(rbind, lapply(simus, function(graine){
+  pen_T=-( 0.5*sum( graine$VEM_1$Pg * log(graine$VEM_1$Wg+(graine$VEM_1$Wg==0)) ) - logSumTree(graine$VEM_1$Wg)$det )
+  return(pen_T)
+}))
+Jcor_diff=do.call(rbind, lapply(simus, function(graine){
+  getJcor(graine$VEM_1,14)
+}))
+data=data.frame(J,penT, Jcor_diff,auc=Qual$auc,ppvh= Qual$ppvh,tprh=Qual$tprh, corZM=datacor$corZM, influence=Qual$influence) %>% as_tibble()
+```
 
- 
+
+## AUC
+
+```{r}
+data %>% gather(key, value, -influence, -auc, -ppvh,-tprh,-corZM) %>% 
+  ggplot(aes(auc, value, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~key, scales="free_y")+mytheme.dark("")
+
+data %>% gather(key, value, -influence, -auc, -ppvh,-tprh,-corZM) %>% filter(key=="diff") %>% 
+  ggplot(aes(auc, value, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")+
+  labs(y="diffJPLN")
+
+data %>% gather(key, value, -influence, -auc, -ppvh,-tprh,-corZM) %>% filter(key=="J") %>% 
+  ggplot(aes(auc, value, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")+
+  labs(y="J")
+
+data %>% gather(key, value, -influence, -auc, -ppvh,-tprh,-corZM) %>% filter(key=="Jcor") %>% 
+  ggplot(aes(auc, value, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")+
+  labs(y="Jcor")
+
+
+data %>% mutate(ICL = Jcor-penT) %>%   
+  ggplot(aes(auc, ICL, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")+
+  labs(y="ICL.Jcor")
+
+data %>% mutate(ICL = J-penT) %>%   
+  ggplot(aes(auc, ICL, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")+
+  labs(y="ICL.J")
+
+```
+
+## PPVH
+
+
+```{r}
+data %>% gather(key, value, -influence, -auc, -ppvh,-corZM,-tprh) %>% 
+  ggplot(aes(ppvh, value, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~key, scales="free_y")+mytheme.dark("")
+
+data %>% gather(key, value, -influence, -auc, -ppvh,-corZM,-tprh) %>% filter(key=="diff") %>% 
+  ggplot(aes(ppvh, value, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")+labs(y="diffJPLN")
+
+data %>% gather(key, value, -influence, -auc, -ppvh,-corZM,-tprh) %>% filter(key=="J") %>% 
+  ggplot(aes(ppvh, value, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")+labs(y="J")
+
+data %>% gather(key, value, -influence, -auc, -ppvh,-corZM,-tprh) %>% filter(key=="Jcor") %>% 
+  ggplot(aes(ppvh, value, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")+labs(y="Jcor")
+
+
+data %>% mutate(ICL = Jcor-penT) %>%   
+  ggplot(aes(ppvh, ICL, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")+labs(y="ICL.Jcor")
+
+data %>% mutate(ICL = J-penT) %>%   
+  ggplot(aes(ppvh, ICL, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")+labs(y="ICL.J")
+
+```
+
+## corZM
+
+```{r}
+data %>% gather(key, value, -influence, -auc, -ppvh,-corZM,-tprh) %>% 
+  ggplot(aes(corZM, value, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~key, scales="free_y")+mytheme.dark("")
+
+data %>% gather(key, value, -influence, -auc, -ppvh,-corZM,-tprh) %>% filter(key=="diff") %>% 
+  ggplot(aes(corZM, value, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")+labs(y="diffJPLN")
+
+data %>% gather(key, value, -influence, -auc, -ppvh,-corZM,-tprh) %>% filter(key=="J") %>% 
+  ggplot(aes(corZM, value, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")+labs(y="J")
+
+data %>% gather(key, value, -influence, -auc, -ppvh,-corZM,-tprh) %>% filter(key=="Jcor") %>% 
+  ggplot(aes(corZM, value, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")+labs(y="Jcor")
+
+
+data %>% mutate(ICL = Jcor-penT) %>%   
+  ggplot(aes(corZM, ICL, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")+labs(y="ICL.Jcor")
+
+data %>% mutate(ICL = J-penT) %>%   
+  ggplot(aes(corZM, ICL, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")+labs(y="ICL.J")
+
+```
+
+## TPRH
+
+```{r}
+data %>% gather(key, value, -influence, -auc, -ppvh,-corZM,-tprh) %>% 
+  ggplot(aes(tprh, value, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~key, scales="free_y")+mytheme.dark("")
+
+data %>% gather(key, value, -influence, -auc, -ppvh,-corZM,-tprh) %>% filter(key=="diff") %>% 
+  ggplot(aes(tprh, value, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")+labs(y="diffJPLN")
+
+data %>% gather(key, value, -influence, -auc, -ppvh,-corZM,-tprh) %>% filter(key=="J") %>% 
+  ggplot(aes(tprh, value, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")+labs(y="J")
+
+data %>% gather(key, value, -influence, -auc, -ppvh,-corZM,-tprh) %>% filter(key=="Jcor") %>% 
+  ggplot(aes(tprh, value, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")+labs(y="Jcor")
+
+
+data %>% mutate(ICL = Jcor-penT) %>%   
+  ggplot(aes(tprh, ICL, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")+labs(y="ICL.Jcor")
+
+data %>% mutate(ICL = J-penT) %>%   
+  ggplot(aes(tprh, ICL, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")+labs(y="ICL.J")
+
+```
+
+
+# Caractéristiques des graphes {.tabset}
+
+```{r}
+data=data.frame(J,Jcor= Jcor_diff[,1],auc=Qual$auc,ppvh= Qual$ppvh,corZM=datacor$corZM, influence=Qual$influence, max.maxDeg=misAct$max.maxDeg,mean.btw=misAct$mean.btw, btwH=misAct$btwH, tprh=Qual$tprh, mean.maxDeg=misAct$mean.maxDeg, mean.vv=misAct$mean.vv, mean.cpH=misAct$mean.cpH) %>% as_tibble()
+```
+
+## J et Jcor
+
+```{r}
+data  %>% 
+  ggplot(aes(J, btwH, color=influence))+ geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")
+data  %>% 
+  ggplot(aes(J, mean.btw, color=influence))+ geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")
+data  %>% 
+  ggplot(aes(J, max.maxDeg, color=influence))+ geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")
+
+data  %>% 
+  ggplot(aes(Jcor, btwH, color=influence))+ geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")
+data  %>% 
+  ggplot(aes(Jcor, mean.btw, color=influence))+ geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")
+data  %>% 
+  ggplot(aes(Jcor, max.maxDeg, color=influence))+ geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")
+
+```
+
+## AUC
+
+```{r}
+data  %>% 
+  ggplot(aes(auc, btwH, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")
+data  %>% 
+  ggplot(aes(auc, mean.btw, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")
+data  %>% 
+  ggplot(aes(auc, max.maxDeg, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")
+
+```
+
+## PPVH
+
+```{r}
+data  %>% 
+  ggplot(aes(ppvh, btwH, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")
+data  %>% 
+  ggplot(aes(ppvh, mean.btw, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")
+data  %>% 
+  ggplot(aes(ppvh, max.maxDeg, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")
+
+```
+
+## corZM
+
+```{r}
+data  %>% 
+  ggplot(aes(corZM, btwH, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")
+data  %>% 
+  ggplot(aes(corZM, mean.btw, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")
+data  %>% 
+  ggplot(aes(corZM, max.maxDeg, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")
+
+data  %>% 
+  ggplot(aes(corZM, mean.vv, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")
+data  %>% 
+  ggplot(aes(corZM, mean.cpH, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")
+data  %>% 
+  ggplot(aes(corZM, mean.maxDeg, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")
+
+
+```
+
+## TPRH
+
+```{r}
+data  %>% 
+  ggplot(aes(tprh, btwH, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")
+data  %>% 
+  ggplot(aes(tprh, mean.btw, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")
+data  %>% 
+  ggplot(aes(tprh, max.maxDeg, color=influence))+geom_vline(xintercept = 0.5, color="gray")+geom_point()+facet_wrap(~influence, scales="free_y")+mytheme.dark("")
+
+```

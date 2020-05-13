@@ -2,7 +2,7 @@ source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
 library(ade4)
 data(baran95)
 raw_counts=as.matrix(baran95$fau)
-poor_species<-which(colSums(counts==0)/nrow(counts)>0.9)
+poor_species<-which(colSums(raw_counts==0)/nrow(raw_counts)>0.9)
 counts=as.matrix(baran95$fau[,-poor_species])
 
 # Lancer VEM avec 2 manquants et représenter les sites sur le plan des 2 vecteurs de moyenne 
@@ -24,10 +24,9 @@ fprim=function(u,q){
   exp(u)*(u-1)-u*D^(1/(q-1))/sqrt(q*(q-1))
 }
 minimum=optimize(fprim, c(0,100),maximum = FALSE, q=(p+3)) # max 3 missing actors
-alpha_sup=minimum$minimum*(2/0.618)/n
+alpha_sup=minimum$minimum/n
 
-alpha=round(alpha_sup,1)-0.1
-#------ r=5
+#------ 
 
 cliques_Fatala<-function(r,MO){
   set.seed(1); p=ncol(MO)
@@ -43,7 +42,7 @@ VEMr<-function(r, alpha, cores=3){
   ListVEM<-List.VEM(cliquesObj=cliques_spca, counts=counts, sigma_obs=sigma_obs,MO= MO,
                     SO=SO,alpha=alpha,r=r,
                     maxIter = 100,filterDiag = TRUE, filterWg = TRUE,nobeta = FALSE,
-                    cores=cores, eps = 1e-2, save=TRUE)
+                    cores=cores, eps = 1e-3, save=TRUE)
   toc() # 60.981s sur 3 coeurs avec B=100 (50 pour B=50)
   return(ListVEM)
 }
@@ -55,16 +54,18 @@ for(i in 1:3){
 }
 #----- RUN
 #-- comparaison EM0 et VEM0
-EM0<-EMtree(PLNfit,maxIter = 20,cond.tol = 1e-12,plot = TRUE)
+mean.sigT=mean((1/n)*(t(MO)%*%MO+diag(colSums(SO))))
+EM0<-EMtree(PLNfit,maxIter = 20,cond.tol = 1e-6,plot = TRUE)
 init0=initVEM(counts , initviasigma = NULL,  sigma_obs,r = 0)
 Wginit= init0$Wginit; Winit= init0$Winit; omegainit=init0$omegainit 
 VEM0<-VEMtree(counts,MO,SO,MH=NULL,omegainit,Winit,Wginit, eps=1e-3, 
-              alpha=0.1,maxIter=20, plot=FALSE,print.hist=FALSE,filterWg=TRUE,
+              alpha=0.1,maxIter=20, plot=TRUE,print.hist=FALSE,filterWg=TRUE,
               verbatim = TRUE,nobeta = FALSE, filterDiag = TRUE)
 g1<-ggimage(VEM0$Pg)
 g2<-ggimage(EM0$edges_prob)
 grid.arrange(g1, g2, ncol=2)
 #-- 
+alpha=round(alpha_sup,1)-0.1
 VEM1<-VEMr(1, alpha=0.1)
 VEM2<-VEMr(2, alpha=0.1)
 VEM3<-VEMr(3, alpha=0.1)
@@ -114,29 +115,6 @@ mean(do.call(rbind,lapply(Fatala_selec[[2]], length)))
 mean(do.call(rbind,lapply(Fatala_selec[[3]], length))) #ok.
 
 #----- initialization selection
-getJcor<-function(vem,p,eig.tol=1e-6){
-  omega=vem$omega
-  O=1:p ; H=(p+1):ncol(omega) ; r=length(H)
-  EhZZ=t(vem$M[,O])%*%vem$M[,O] + diag(colSums(vem$S[,O]))
-  sigTilde =  sigTilde = (1/n)*EhZZ
-  EgO=vem$Pg*vem$omega+diag(diag(vem$omega))
-  if(ncol(omega)==p){
-    r=0
-    EgOm = EgO[O,O]
-  }else{
-    if(r==1){
-      EgOm = EgO[O,O] - matrix(EgO[O,H],p,r)%*%matrix(EgO[H,O],r,p)/EgO[H,H]
-    }else{
-      EgOm = EgO[O,O] - matrix(EgO[O,H],p,r)%*%solve(EgO[H,H])%*%matrix(EgO[H,O],r,p)
-    }
-  }
-  EgOm = nearPD(EgOm, eig.tol=eig.tol)$mat
-  JPLN_SigT = part_JPLN(sigTilde,EhZZ=EhZZ)
-  JPLN_EgOm = part_JPLN(EgOm,EhZZ=EhZZ, var=FALSE)
-  diffJPLN = JPLN_SigT-JPLN_EgOm
-  Jcor=tail(vem$lowbound$J,1)+diffJPLN
-  return(c(Jcor=Jcor,  r=r))
-}
 
 JData123<-lapply(1:3, function(r){
   do.call(rbind,lapply(seq_along(Fatala_selec[[r]]),function(num){
@@ -160,7 +138,9 @@ Fatala_data=left_join(Jdata, penT, by=c("r","num"))
 p=ncol(MO) ; n=nrow(MO)
 Fatala_data=Fatala_data %>% mutate(penZH = 0.5*sum(log(rep(1,n))) + n*r*0.5*(1+log(2*pi)),
                        penvBIC=log(n)*0.5*(p+ (p*(p+1)/2 +r*p)+((p+r)*(p+r-1)/2 - 1))) %>% 
-  mutate(ICL0 = Jcor - penvBIC ,ICL1 = Jcor - penvBIC - penZH,ICL2 = Jcor - penvBIC - penZH - penT )
+  mutate(ICL0 = Jcor - penvBIC ,
+         ICL1 = Jcor - penvBIC - penZH,
+         ICL2 = Jcor - penvBIC - penZH - penT )
 
 Fatala_data %>%ggplot(aes(r, ICL, color=as.factor(r)))+geom_point()+mytheme.dark("")
 
@@ -170,9 +150,17 @@ Fatala_data %>%dplyr::select(r, Jcor, ICL0, ICL1, ICL2) %>% gather(key, value,-r
 Fatala_data %>%dplyr::select(r, ICL0, ICL1, ICL2) %>%   
   group_by(r) %>% mutate(maxICL0 = max(ICL0),maxICL1 = max(ICL1),maxICL2 = max(ICL2)) %>% ungroup() %>% 
   dplyr::select(r,maxICL0,maxICL1,maxICL2) %>% gather(key, value,-r) %>% 
-  ggplot(aes(r,value, color=as.factor(r)))+geom_point()+ facet_wrap(~key)+
+  ggplot(aes(r,value, color=as.factor(r)))+geom_point(size=3)+ facet_wrap(~key)+
   mytheme.dark("")
 
+#-----
+p=ncol(MO); r=2 ; H=(p+1):(p+r)
+bestnum=unlist(Fatala_data %>% filter(r==r) %>% filter(ICL0==max(ICL0)) %>% dplyr::select(num))
+bestvem = Fatala_selec[[2]][[10]]
+MH=bestvem$M[,H]
+Fatala_means = data.frame(MH,baran95$plan$site)
+colnames(Fatala_means) = c("M1","M2","Site")
+ggplot(Fatala_means, aes(M1, M2, color=Site))+geom_point()+mytheme.dark("")
 ##########
 # anciens résultats pour mémoire
 list=readRDS("/Users/raphaellemomal/these/R/save_simu_baran95/FatalaVEM.rds")

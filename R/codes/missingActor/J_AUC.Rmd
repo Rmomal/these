@@ -123,25 +123,25 @@ $$\Delta = ||\widetilde{\Sigma}_O^{-1} - E_g[ \Omega_{Tm}]   ||_F $$Plus Delta e
 ## diffJPLN
 
 ```{r}
-seed_filtre %>% ggplot(aes( diffJPLN,Delta, color=(AUC>0.7 & ppvh > 0.7)))+geom_point()+
-  facet_grid(filtre~seed)+mytheme.dark("AUC>0.7\net\nPPVH>0.7")
+# seed_filtre %>% ggplot(aes( diffJPLN,Delta, color=(AUC>0.7 & ppvh > 0.7)))+geom_point()+
+#   facet_grid(filtre~seed)+mytheme.dark("AUC>0.7\net\nPPVH>0.7")
 
 ```
 
 ##AUC
 
 ```{r,echo=FALSE}
-seed_filtre %>% ggplot(aes( AUC,Delta))+geom_point()+
-  geom_vline(xintercept = 0.5, linetype="dashed", color="orange")+
-  facet_grid(filtre~seed)+mytheme.dark("")
+# seed_filtre %>% ggplot(aes( AUC,Delta))+geom_point()+
+#   geom_vline(xintercept = 0.5, linetype="dashed", color="orange")+
+#   facet_grid(filtre~seed)+mytheme.dark("")
 ```
 
 ##PPVH
 
 ```{r,echo=FALSE}
-seed_filtre %>% ggplot(aes( ppvh,Delta))+geom_point()+
-  geom_vline(xintercept = 0.5, linetype="dashed", color="orange")+
-  facet_grid(filtre~seed)+mytheme.dark("")
+# seed_filtre %>% ggplot(aes( ppvh,Delta))+geom_point()+
+#   geom_vline(xintercept = 0.5, linetype="dashed", color="orange")+
+#   facet_grid(filtre~seed)+mytheme.dark("")
 
 ```
 
@@ -149,10 +149,10 @@ seed_filtre %>% ggplot(aes( ppvh,Delta))+geom_point()+
 ## GEM/VEM
 
 ```{r,echo=FALSE}
-seed_filtre %>% dplyr::select(Delta,filtre,index,seed) %>% 
-  spread(filtre,Delta) %>% 
-  ggplot(aes(VEM, GEM))+geom_point()+facet_wrap(~seed)+geom_abline()+
-  mytheme.dark("") 
+# seed_filtre %>% dplyr::select(Delta,filtre,index,seed) %>% 
+#   spread(filtre,Delta) %>% 
+#   ggplot(aes(VEM, GEM))+geom_point()+facet_wrap(~seed)+geom_abline()+
+#   mytheme.dark("") 
 ```
 
 # `Jcor`: correction de la borne inf {.tabset} 
@@ -241,35 +241,35 @@ seed_filtre %>% ggplot(aes( ppvh,Jcor, color=(gooddiff)))+geom_point()+
 ## Par `Delta` : tab
 
 ```{r, echo=FALSE}
-seed_filtre=seed_filtre %>% group_by(seed,filtre) %>% mutate(medDelta = quantile(Delta,0.1),  goodDelta = Delta<medDelta) %>%  ungroup()
+# seed_filtre=seed_filtre %>% group_by(seed,filtre) %>% mutate(medDelta = quantile(Delta,0.1),  goodDelta = Delta<medDelta) %>%  ungroup()
 
 ```
 
 ```{r,echo=FALSE}
-seed_filtre %>%filter(goodDelta) %>%   group_by(seed, filtre) %>% mutate(maxJ = max(J)) %>%   filter(J==maxJ) %>% dplyr::select(seed, filtre,maxJ, AUC, ppvh) %>% kable(escape=FALSE, format="html",caption="Sélection avec J",align=c("ccrrr"))%>% 
-  collapse_rows() %>% kable_styling()
+# seed_filtre %>%filter(goodDelta) %>%   group_by(seed, filtre) %>% mutate(maxJ = max(J)) %>%   filter(J==maxJ) %>% dplyr::select(seed, filtre,maxJ, AUC, ppvh) %>% kable(escape=FALSE, format="html",caption="Sélection avec J",align=c("ccrrr"))%>% 
+#   collapse_rows() %>% kable_styling()
 ```
 
 ```{r,echo=FALSE}
-seed_filtre %>%filter(goodDelta) %>%   group_by(seed, filtre) %>% mutate(maxJcor = max(Jcor)) %>%   filter(Jcor==maxJcor) %>% dplyr::select(seed, filtre,maxJcor, AUC, ppvh)  %>% kable(escape=FALSE,format="html",caption="Sélection avec J corrigée",align=c("ccrrr")) %>% 
-  collapse_rows()%>% kable_styling()
+# seed_filtre %>%filter(goodDelta) %>%   group_by(seed, filtre) %>% mutate(maxJcor = max(Jcor)) %>%   filter(Jcor==maxJcor) %>% dplyr::select(seed, filtre,maxJcor, AUC, ppvh)  %>% kable(escape=FALSE,format="html",caption="Sélection avec J corrigée",align=c("ccrrr")) %>% 
+#   collapse_rows()%>% kable_styling()
 ```
 
 ## Par `Delta : graphes
 AUC :
 ```{r}
-seed_filtre %>% ggplot(aes( AUC,Jcor, color=(goodDelta)))+geom_point()+
-  geom_vline(xintercept = 0.5, linetype="dashed", color="gray")+
-  facet_grid(filtre~seed) + mytheme.dark("Delta < q10(Delta)")
+# seed_filtre %>% ggplot(aes( AUC,Jcor, color=(goodDelta)))+geom_point()+
+#   geom_vline(xintercept = 0.5, linetype="dashed", color="gray")+
+#   facet_grid(filtre~seed) + mytheme.dark("Delta < q10(Delta)")
 
 ```
 
 PPVH : 
 
 ```{r}
-seed_filtre %>% ggplot(aes( ppvh,Jcor, color=(goodDelta)))+geom_point()+
-  geom_vline(xintercept = 0.5, linetype="dashed", color="gray")+
-  facet_grid(filtre~seed) + mytheme.dark("Delta < q10(Delta)")
+# seed_filtre %>% ggplot(aes( ppvh,Jcor, color=(goodDelta)))+geom_point()+
+#   geom_vline(xintercept = 0.5, linetype="dashed", color="gray")+
+#   facet_grid(filtre~seed) + mytheme.dark("Delta < q10(Delta)")
 ```
 
  

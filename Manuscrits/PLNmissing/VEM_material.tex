@@ -185,7 +185,7 @@ $ g(T) = \left(\prod_{kl} \widetilde{\beta}_{kl} \right) / \widetilde{B}$. \\
 Moreover, it follows from the independence of the samples that $h$ is a product law: $ h(\Zbf) = \prod_i h_i(\Zbf_i)$.
 Our variational approximation consists in assuming that each of its components is a multivariate Gaussian: $h(\Zbf_i) = \Ncal(\Zbf_i; \mbf_i, \Sbf_i)$, where $\Sbf_i$ is diagonal. More precisely:  $ h(Z_i) =  \mathcal{N}(m_i,S_i)$ , where $S_i$ is diagonal with diagonal $(s_{i1}^2, ... , s_{i(p+r)}^2)$, meaning that $\Zbf_H$ and $\Zbf_O$ are independent under distribution $h$. Marginals are written $h_O$  and  $h_H$. $S=\sum_i S_i$  and $ M =  [m_i]_{1 \leq i \leq (p+r)}$ (so $\Esp_h[Z_{\cdot k}^\intercal Z_{\cdot k}] = \sum_i s_{ik} + m_{\cdot k}^\intercal m_{\cdot k}$). $S$ is also diagonal and its H and O blocs are denoted $S_H$ and $S_O$. In the following, the $n\times p $ and $n\times r $ matrices $M_O$ and  $M_H$ compile all vectors of means $\mbf_i$ corresponding respectively to observed and hidden latent vectors ; $M_O$ and  $M_H$ are gathered in matrix $M= (M_O | M_H)$.
 
-\textcolor{red}{SH is fixed}
+ 
 %In the following we use the scalar product on the matrix space defined with the trace operator as: 
 %$$  Tr(A^\intercal B) = <A,B> .$$
 \paragraph{Lower bound:}
@@ -235,7 +235,7 @@ The expectation in $gh$ is again separable thanks to the independence hypothesis
 $\Esp_g [\Omega_{Tm}]$ is a $p\times p$ matrix of expected inverse covariance over the whole spanning-tree space. Introducing the quantity  $\log |\Esp_g [\Omega_{Tm}]| $ in part (\ref{PLNlike}) of $\mathcal{J}(\Ybf; g,h)$:
 \begin{align*}
 &\Esp_{gh}[\log p(\Zbf_O | T)] +\Esp_h[\log p(\Ybf|\Zbf_O)]+ \entr[h(\Zbf_O)]\\
-& =\ \frac{n}{2} \log |\Esp_g [\Omega_{Tm}]| - \frac{1}{2}Tr\left(\Esp_h [\Zbf_O^\intercal \Zbf_O ]\; \Esp_g[\Omega_{Tm}]\right)+ \Esp_{h}[\log p(\Ybf|\Zbf_O)] + \entr[h(\Zbf_O)]\\
+& = \frac{n}{2} \log |\Esp_g [\Omega_{Tm}]| - \frac{1}{2}Tr\left(\Esp_h [\Zbf_O^\intercal \Zbf_O ]\; \Esp_g[\Omega_{Tm}]\right)+ \Esp_{h}[\log p(\Ybf|\Zbf_O)] + \entr[h(\Zbf_O)]\\
 & \;\;\;+  \frac{n}{2}\left( \Esp_g[\log|\Omega_{Tm}|] - \log|\Esp_g [\Omega_{Tm}]|\right)
 \end{align*}
 %The second line is a negative quantity, because the log determinent is a concave function. Jensen's inequality gives:
@@ -261,15 +261,21 @@ After maximizing part (\ref{PLNlike}) of $\mathcal{J}(\Ybf; g,h)$ in $h_O$, this
 Here it shows that assuming a tree structure for the latent layer of parameters $\Zbf$ reveals an average precision matrix over all the precision matrices of possible trees.  Recalling the writing of $\Omega_T$ of sub-section \ref{distrib}, we have that
  \begin{align*}
  \Esp_g [\Omega_{T}] & = \Esp_g [I_T \odot \Omega ] = \Esp_g [I_T] \odot \Omega \\
- &= P_g\odot \Omega
+ &= P\odot \Omega
  \end{align*}
 
-Where $P_g$ is the matrix of edge probabilities under the $g$ distribution. For a specific edge $kl$, we indeed have that $\Esp_g [I_T[k,l]] = \Esp_g [\mathds{1}_{kl \in T}] =  \sum_{\substack{T\in \mathcal{T}\\ kl \in T } }g(T) = P_g[k,l]$.
+Where $P$ is the matrix of edge probabilities under the $g$ distribution. For a specific edge $kl$, we indeed have that $\Esp_g [I_T[k,l]] = \Esp_g [\mathds{1}_{kl \in T}] =  \sum_{\substack{T\in \mathcal{T}\\ kl \in T } }g(T) = P[k,l]$.
 
 The lower bound of \cite{CMR18} normally involves $\Sigma_O^{-1}$. Thus using it in our context yields the following approximation:
-$$\Sigma_O^{-1} \approx \Esp_g[\Omega_{Tm}] = (P_g \odot \Omega_m)[O,O] $$
+$$\Sigma_O^{-1} \approx \Esp_g[\Omega_{Tm}] = (P \odot \Omega_m)[O,O] $$
 
-\textcolor{red}{Study $\Delta =\Sigma_O^{-1} -   (P_g \odot \Omega_m)[O,O]$ }
+And the following $\Delta$ difference in the lowerbound:
+ $$\Delta = \frac{n}{2} \log |\widetilde{\Sigma}_O^{-1}| - \frac{1}{2}Tr\left(\Esp_h [\Zbf_O^\intercal \Zbf_O ]\; \widetilde{\Sigma}_O^{-1}\right)- \frac{n}{2} \log |\Esp_g [\Omega_{Tm}]| + \frac{1}{2}Tr\left(\Esp_h [\Zbf_O^\intercal \Zbf_O ]\; \Esp_g[\Omega_{Tm}]\right).$$
+ 
+ Correcting $\bound$ with $\Delta$ would give a more accurate value. However for $\Delta$ to be correctly computed, $\Esp_g [\Omega_{T}]$ should be positive definite, which is rarely the case. Therefore we project $ \Esp_g [\Omega_{T}]$ onto the space of positive definite matrices in order to find the closest matrix to $ \Esp_g [\Omega_{T}]$ which satisfies this condition. Calling it $\widetilde{\Omega}$, we define:
+ $$\widetilde{\Delta} = \frac{n}{2} \log |\widetilde{\Sigma}_O^{-1}| - \frac{1}{2}Tr\left(\Esp_h [\Zbf_O^\intercal \Zbf_O ]\; \widetilde{\Sigma}_O^{-1}\right)- \frac{n}{2} \log |\widetilde{\Omega}| + \frac{1}{2}Tr\left(\Esp_h [\Zbf_O^\intercal \Zbf_O ]\; \widetilde{\Omega}\right)$$
+ $$\bound_c = \bound + \widetilde{\Delta} $$
+ 
 \subsection{VE step: optimizing in $g$ and $h(\Zbf_H)$}
 The VE step minimizes the Küllback-Leibler divergence between the approximated and the aimed distributions :
 
@@ -283,10 +289,10 @@ KL\left(g(T)h(\Zbf) \mid\mid  p(\Zbf,T|\Ybf)\right) &= \Esp_{gh}\left[\log g(T)h
 &= -\Esp_{gh}[\log p(\Zbf \mid T) ] - \Esp_g[\log p(T) - \log g(T)] - \entr[h(\Zbf)]\\
 & \;\;\;\; -\Esp_h[\log p(\Ybf \mid \Zbf_O)] +\log p(\Ybf) 
 \end{align*}
-Distributions $p(\Ybf)$ and $p(\Ybf\mid \Zbf_O)$  do not depend on distributions $g$ and $h(\Zbf_H)$. Moreover, $\entr[h(\Zbf)]$ does not need to be optimized in $h(\Zbf_H)$ as $S_H$ stays constant. We obtain:
+Distributions $p(\Ybf)$ and $p(\Ybf\mid \Zbf_O)$  do not depend on distributions $g$ and $h(\Zbf_H)$. Moreover, as $Z_O$ and $Z_H$ are independant under the $h$ distribution, $\entr[h(\Zbf)] = \entr[h(\Zbf_O)]+ \entr[h(\Zbf_H)]$ and  $\entr[h(\Zbf_O)]$ is already optimized. We obtain:
  
 \begin{empheq}[box=\widefbox]{align*}
-\argmin_{g,h(\Zbf_H)} KL  &=\argmin_{g,h(\Zbf_H)} \Big\{ -\Esp_{gh}[\log p(\Zbf \mid T) ] - \Esp_g[\log p(T) - \log g(T)]\Big\}
+\argmin_{g,h(\Zbf_H)} KL  &=\argmin_{g,h(\Zbf_H)} \Big\{ -\Esp_{gh}[\log p(\Zbf \mid T) ] - \Esp_g[\log p(T) - \log g(T)] -\entr[h(\Zbf_H)] \Big\}
 \end{empheq}
  
  During the minimization, we will use the optimized distribution $h(\Zbf_O^*) = \prod_i^n \mathcal{N}(\widetilde{\mbf}_{Oi}, \widetilde{S}_{Oi})$, its parameters being gathered in $n\times p$ matrices $\widetilde{M}_O$ and $\widetilde{S}_O$.
@@ -336,38 +342,48 @@ The conditional expectation is approximated using $\widetilde{\Sigma}$:
 $$\Esp_{gh} [\log(\Zbf \mid T)] \approx \frac{n}{2} \Big( \sum_{k} \log \omega_{kk}+\frac{1}{2}\sum _{\substack{kl\\ k \neq l}} P_{kl} \log (\varphi_{kl}) - \sum_{\substack{kl\\ k \neq l}} P_{kl} \omega_{kl} \widetilde{\sigma}_{kl} - \sum_{k} \omega_{kk} \widetilde{\sigma}_{kk}\Big)$$
 \subsubsection{Details of $\Esp_g[\log g(T) - \log p(T)]$}
 \begin{align*}
-\log g(T) - \log p(T) &= \left(  \sum_{jk} \mathds{1}\{jk \in T\} \log \widetilde{\beta}_{jk} - \log \widetilde{B}\right) - \left(  \sum_{jk} \mathds{1}\{jk \in T\} \log {\beta}_{jk} - \log {B}\right)\\
-&=\sum_{jk} \mathds{1}\{jk \in T\} \log \frac{\widetilde{\beta}_{jk}}{{\beta}_{jk}} - \log \frac{\widetilde{B}}{B}
+\log g(T) - \log p(T) &= \left(  \sum_{j<k} \mathds{1}\{jk \in T\} \log \widetilde{\beta}_{jk} - \log \widetilde{B}\right) - \left(  \sum_{j<k} \mathds{1}\{jk \in T\} \log {\beta}_{jk} - \log {B}\right)\\
+&=\frac{1}{2}\sum_{jk} \mathds{1}\{jk \in T\} \log \frac{\widetilde{\beta}_{jk}}{{\beta}_{jk}} - \log \frac{\widetilde{B}}{B}
 \end{align*}
 $$\boxed{
-\Esp_g[\log g(T) - \log p(T)] = \sum_{jk}P_{gjk} \left(\log \frac{\widetilde{\beta}_{jk}}{{\beta}_{jk}}\right) - \log \frac{\widetilde{B}}{B} }$$
+\Esp_g[\log g(T) - \log p(T)] = \frac{1}{2}\sum_{jk}P_{gjk} \left(\log \frac{\widetilde{\beta}_{jk}}{{\beta}_{jk}}\right) - \log \frac{\widetilde{B}}{B} }$$
 
  
 This is also the (opposite of the) Kullback–Leibler divergence of a tree drawn under $p$ from a tree draw under $g$. This can be used in network comparison.
+ \subsubsection{Details of $\entr[h(\Zbf_H)]$}
  
+ The entropy of the Gaussian multivariate vector $Z_H$ mainly depends on its variance matrix $S_H$. By definition of $S_H$ we have:
+ \begin{align*}
+ \log |S_H| &= \log(\prod_{k=1}^r \sum_{i=1}^n S_{ik})
+\end{align*}
+which gives the following entropy:
+\begin{align*}
+\entr[h(Z_H)]&= \frac{1}{2} \log |S_H| + \frac{nr}{2}(1+\log(2\pi))\\
+ &=\frac{1}{2}\left[ \sum_{k=1}^r \log\left(\sum_{i=1}^n S_{ik}\right)+ nr(1+\log 2\pi )\right]
+\end{align*}
 \subsubsection{Final quantity to optimize:}
 \begin{align*}
-\argmin_{g,h(\Zbf_H)} KL  &=\argmin_{g,h(\Zbf_H)}  \Big\{-\Esp_{gh}[\log p(\Zbf \mid T) ] + \Esp_g[\log g(T) - \log p(T)\Big\}\\
+\argmin_{g,h(\Zbf_H)} KL  &=\argmin_{g,h(\Zbf_H)}  \Big\{-\Esp_{gh}[\log p(\Zbf \mid T) ] + \Esp_g[\log g(T) - \log p(T)-\entr[h(Z_H)]\Big\}\\
 &= \argmin_{g,h(\Zbf_H)}  \bigg\{ -\frac{n}{2} \Big( \sum_{k} \log \omega_{kk}+\frac{1}{2}\sum _{\substack{kl\\ k \neq l}} P_{kl} \log (\varphi_{kl}) - \sum_{\substack{kl\\ k \neq l}} P_{kl} \omega_{kl} \widetilde{\sigma}_{kl} - \sum_{k} \omega_{kk} \widetilde{\sigma}_{kk}\Big) \\
-& \;\;\;\; + \sum_{jk}P_{gjk} \left(\log \frac{\widetilde{\beta}_{jk}}{{\beta}_{jk}}\right) - \log \frac{\widetilde{B}}{B} \bigg\}
+& \;\;\;\; + \frac{1}{2}\sum_{kl}P_{kl} \left(\log \frac{\widetilde{\beta}_{kl}}{{\beta}_{kl}}\right) - \log \frac{\widetilde{B}}{B} -\frac{1}{2}\sum_{k\in H} \log\left(\sum_i \widetilde{S}_{ik}\right) \bigg\}
 \end{align*}
  
-
+ 
 \subsubsection{Update formulas for $\widetilde{\beta}$ and $M_H$ }
 
 \paragraph{Edges weights under the $g$ distribution \\}
 Let's isolate the terms referring to the edges in the expression to be minimized:
 \begin{align*}
- \sum_{\substack{kl\\ k \neq l}} A_{kl} &= \sum_{\substack{kl\\ k \neq l}} P_{kl}\Big(\log \widetilde{\beta}_{kl} - \log \beta_{kl} - \frac{n}{2} \big( \frac{1}{2} \log \varphi_{kl} +\omega_{kl} \widetilde{\sigma}_{kl} \big)\Big)   
+  \sum_{\substack{kl\\ k \neq l}} P_{kl}\Big(\frac{1}{2}\log \widetilde{\beta}_{kl} - \frac{1}{2}\log \beta_{kl} - \frac{n}{2} \big( \frac{1}{2} \log \varphi_{kl} -\omega_{kl} \widetilde{\sigma}_{kl} \big)\Big)   
 \end{align*}
 
  
-Setting $A_{kl}$ to zero, we obtain:
- $$\log \widetilde{\beta}_{kl} = \log \beta_{kl} + \frac{n}{2} \big( \frac{1}{2} \log \varphi_{kl} + \omega_{kl}\: \widetilde{\sigma}_{kl} \big) $$
+Equating the term $kl$ of the above sum to zero, we obtain:
+ $$\log \widetilde{\beta}_{kl} = \log \beta_{kl} + n\left( \frac{1}{2} \log \varphi_{kl} - \omega_{kl}\: \widetilde{\sigma}_{kl} \right) $$
  
  Finally the update formula for $\widetilde{\beta}_{kl}$ is:
  
-  $$\boxed{\displaystyle \widetilde{\beta}_{kl} = \beta_{kl} \: \varphi_{kl}^{n/4} \exp( \omega_{kl}\: \widetilde{\sigma}_{kl} ) }$$
+  $$\boxed{\displaystyle \widetilde{\beta}_{kl} = \beta_{kl} \: \varphi_{kl}^{n/2} \exp( -n\;\omega_{kl}\: \widetilde{\sigma}_{kl} ) }$$
  
 \paragraph{Means of the hidden part of the latent Gaussian vector under the $h$ distribution \\}
 Means $M_H$ only appear in the $H$, $OH$ and $HO$ blocs of $\Sigma$. The derivative of KL with respect to mean $M_{ik}$ for the $i^\text{th}$ sample of species $k\in H$ writes:
@@ -385,13 +401,22 @@ Means $M_H$ only appear in the $H$, $OH$ and $HO$ blocs of $\Sigma$. The derivat
 Which  matricially comes down to
 $$\boxed{ M_H = -M_O(P\odot\Omega)_{OH} \Omega_H^{-1}}$$
 
+
+\paragraph{Variances of the hidden part of the latent Gaussian vector under the $h$ distribution \\}
+$S-H$ appears in the entropy of $h(\Zbf_H)$ and in the diagonal of $\Sigma$. 
+\begin{align*}
+\frac{\partial KL}{\partial S_{ik}} &= \frac{1}{2}  \frac{\partial KL}{\partial S_{ik}}  \Big(\sum_k \omega_{kk} S_{\cdot k} - \sum_k \log S_{\cdot k}\Big)\\
+&=\omega_{kk} - \frac{1}{S_{ik}}
+\end{align*}
+We obtain for $k\in H$ and all $i$:
+$$\boxed{S_{ik} = 1/\omega_{kk}}$$
 \subsubsection{Computing edge probabilities under $g$}
 During computations, we need edge probability under the $g$ distribution, which is simply computed as the sum of probabilities of trees containing this edge:
 
 \begin{align*}
-\mathds{P}_g(kl \in T)  &= \sum_{\substack{T  \in \mathcal{T} \\ kl \in T }} g(T) =\frac{1}{\widetilde{B}} \sum_{\substack{T  \in \mathcal{T} \\ kl \in T }} \prod_{uv} \widetilde{\beta}_{uv}
+\mathds{P}_g(kl \in T)  &= \sum_{\substack{T  \in \mathcal{T} \\ kl \in T }} g(T) =\frac{1}{\widetilde{B}} \sum_{\substack{T  \in \mathcal{T} \\ kl \in T }} \prod_{uv \in T} \widetilde{\beta}_{uv}
 \end{align*}
-where $\widetilde{B}= \sum_{T \in \mathcal{T} }\prod_{uv}  \widetilde{\beta}_{uv}$.\\
+where $\displaystyle \widetilde{B}= \sum_{T \in \mathcal{T} }\prod_{uv \in T}  \widetilde{\beta}_{uv}$.\\
 
  This is again a sum-product form, but on a special set of trees. This can be efficiently computed using a formula from \citet{kirshner} (Theorem 3), stated in the appendix.
  
@@ -401,19 +426,19 @@ $$ \argmax_{\beta, \Omega} \mathcal{J}(\Ybf ; g,h) =\argmax_{\beta, \Omega} \lef
 
 As distributions of VE step mimic original ones, computations are very similar. We get:
 \begin{align*}
-\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T))  &= \sum_{kl} \mathds{1}\{kl \in T\} \log \beta_{kl} - \log B + \frac{n}{2}\log |\Omega_T| - \frac{1}{2}Tr(\Omega_T,\Zbf^\intercal \Zbf)\\
-\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T) ] &= \sum_{kl} P_{gkl} \log\beta_{kl} +\frac{n}{2} \Esp_g[\log |\Omega_T|] -\frac{1}{2} Tr(\Esp_g [\Omega_T], \Esp_h[\Zbf^\intercal \Zbf])- \log B
+\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T))  &= \sum_{k<l} \mathds{1}\{kl \in T\} \log \beta_{kl} - \log B + \frac{n}{2}\log |\Omega_T| - \frac{1}{2}Tr(\Omega_T,\Zbf^\intercal \Zbf)\\
+\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T) ] &= \sum_{k<l} P_{kl} \log\beta_{kl} +\frac{n}{2} \Esp_g[\log |\Omega_T|] -\frac{1}{2} Tr(\Esp_g [\Omega_T] \; \Esp_h[\Zbf^\intercal \Zbf])- \log B
 \end{align*}
 
 Reminding that $\Esp_g[\log |\Omega_{T}|]= \frac{1}{2}\sum _{kl} P_{kl}  \log\varphi_{kl}+ \sum_k \log \omega_{kk}$,  we obtain:
 \begin{align*}
-\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T) ] &=\sum_{kl} P_{kl} \log  \beta_{kl} - \log B + \frac{n}{4} \sum_{kl} P_{kl} \log\varphi_{kl} + \frac{n}{2}\sum_k \log \omega_{kk}\\
+\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T) ] &=\frac{1}{2}\sum_{kl} P_{kl} \log  \beta_{kl} - \log B + \frac{n}{4} \sum_{kl} P_{kl} \log\varphi_{kl} + \frac{n}{2}\sum_k \log \omega_{kk}\\
 & \;\; - \frac{1}{2}Tr( (P \odot \Omega) \times (M^\intercal M +S))\\
 &= \frac{n}{2}\left( \sum_k \log \omega_{kk}  + \frac{1}{2} \sum_{kl} P_{kl} \log \varphi_{kl} - \sum_{k} \omega_{kk} \sigma_{kk} - \sum_{kl} P_{kl} \omega_{kl} \sigma_{kl}\right)\\
-& \;\; +\sum_{kl} P_{kl} \log  \beta_{kl} - \log B 
+& \;\; +\sum_{k<l} P_{kl} \log  \beta_{kl} - \log B 
 \end{align*}
  
- $$\boxed{\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T) ]  =  \frac{n}{2} \sum_{kl} P_{kl} ( \frac{1}{2} \log \varphi_{kl} -\omega_{kl} \sigma_{kl} ) + \frac{n}{2} \sum_k (\log \omega_{kk} - \omega_{kk} \sigma_{kk}) +\sum_{kl} P_{kl} \log  \beta_{kl} - \log B }$$
+ $$\boxed{\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T) ]  =  \frac{n}{2} \sum_{kl} P_{kl} ( \frac{1}{2} \log \varphi_{kl} -\omega_{kl} \sigma_{kl} ) + \frac{n}{2} \sum_k (\log \omega_{kk} - \omega_{kk} \sigma_{kk}) +\sum_{k<l} P_{kl} \log  \beta_{kl} - \log B }$$
 \subsubsection{Update formula for $\beta$}
  The derivative of $ \mathcal{J}(\Ybf ; g,h)$ with respect to weight $\beta_{kl}$ of edge $kl$ is:
  
@@ -486,7 +511,7 @@ Parameters to initialize are weights matrices $\betabf$ and $\widetilde{\betabf}
  The matrix $\betabf$ gathers edges weights of the true distribution $p$ in the M step.  Its initial O  bloc is the edges weights inferred with the EMtree algorithm, using the estimated matrix $\widetilde{\Sigma}_O$ as an input.  Remaining entries of $\betabf$, as well as matrix $\widetilde{\betabf}$, which gathers edges weights under the $g$ distribution in the VE step of the algorithm, are initialized uniformly.
  
 \subsection{Matrix $\Omega$}
-
+Initialization of $\Omega$ relies on finding potential neighbors to each missing actor. Neighbors of a missing actor will typically form a  highly correlated group which can be found using different methods. Here we chose to use the sparse PCA method, a method to find 
 \section{Numerical issues and getaround}
 \section{Model selection criteria}
 

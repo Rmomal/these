@@ -99,13 +99,57 @@ FitSparsePCA <- function(Y, r=1, alphaGrid=10^(seq(-4, 0, by=.1))){
     # Find the cliques
     alphaOpt <- alphaGrid[aOpt]
     sPcaOpt <- sPCA[[aOpt]]
-    sPcaOpt$loadings
-    cliques <- list(); 
-    sapply(1:ncol(sPcaOpt$loadings), function(j){
-      cliques[[j]] <<- which(sPcaOpt$loadings[, j]!=0)
+    
+    cliques <- lapply(1:ncol(sPcaOpt$loadings), function(col){
+      which(sPcaOpt$loadings[,col]!=0)
     })
     nbDifferentH<-length(unique(cliques))
   }
+  return(list(sPcaOpt=sPcaOpt, alphaGrid=alphaGrid, alphaOpt=alphaOpt, 
+              loglik=loglik, bic=bic, cliques=cliques))
+}
+FitSparsePCA2 <- function(Y, r=1, alphaGrid=10^(seq(-4, 0, by=.1))){
+  # Fit sparse PCA on a grid of alpha
+  # Needs an estimate o Sigma: empirical variance of the rotated scores 
+  #    + diagonal risidual variances (why not?)
+  n <- nrow(Y); p <- ncol(Y); alphaNb <- length(alphaGrid); nbDifferentH=-1
+  # while(nbDifferentH!=r){
+  # Fits all sparsePCA
+  sPCA <- list()
+  for(a in 1:alphaNb){
+    sPCA[[a]] <- spca(Y, k=r, alpha=alphaGrid[a], verbose=FALSE)
+    sPCA[[a]]$Sigma <- cov(sPCA[[a]]$scores%*%t(sPCA[[a]]$transform))
+    
+    resVar <- (n-1)*apply(Y - sPCA[[a]]$scores %*% t(sPCA[[a]]$transform), 2, var)/n
+    sPCA[[a]]$Sigma <- sPCA[[a]]$Sigma  + diag(resVar)
+    sPCA[[a]]$df <- 1 + sum(sPCA[[a]]$loadings!=0)
+    sPCA[[a]]$loglik <- sum(dmvnorm((Y), sigma=sPCA[[a]]$Sigma, log=TRUE))
+    sPCA[[a]]$bic <- sPCA[[a]]$loglik - log(n)*sPCA[[a]]$df/2
+  }
+  #2 neighbors minimum
+  df<-unlist(lapply(sPCA, function(sPca){sPca$df}))
+  
+  good<-do.call(rbind,lapply(sPCA, function(spca){
+    vec_col<-apply(spca$loadings, 2,function(col){
+      sum(col!=0)>1})
+    return(sum(vec_col)==r)
+  }))
+  # Selects alpha via pseudo-BIC
+  loglik <- unlist(lapply(sPCA, function(sPca){sPca$loglik}))
+  bic <- unlist(lapply(sPCA, function(sPca){sPca$bic}))
+  aOpt <- which.max(bic[good])
+  # Find the cliques
+  alphaOpt <- alphaGrid[aOpt]
+  sPcaOpt <- sPCA[c(aOpt-2,aOpt,aOpt+2)]
+  
+  cliques <-  lapply(sPcaOpt, function(x){
+    lapply(1:ncol(x$loadings), function(col){
+      which(x$loadings[,col]!=0)
+    })
+  })
+  
+  #nbDifferentH<-length(unique(cliques))
+  #}
   return(list(sPcaOpt=sPcaOpt, alphaGrid=alphaGrid, alphaOpt=alphaOpt, 
               loglik=loglik, bic=bic, cliques=cliques))
 }
@@ -217,7 +261,7 @@ initVEM<-function(counts,initviasigma,sigma_obs,r){
   Wginit <- matrix(1, p+r, p+r); Wginit =Wginit / sum(Wginit)
   Winit <- matrix(1, p+r, p+r); Winit =Winit / sum(Winit)
   Winit[1:p,1:p] <- EMtree_corZ(cov2cor(sigma_obs),n = n,maxIter = 20,verbatim = FALSE)$edges_weight
-  diag(Wginit) = 1;diag(Winit) = 1
+  diag(Wginit) = 0;diag(Winit) = 0
   # Z
   if(r!=0){
     initial.param<-initEM(sigma_obs,n=n,cliqueList = (initviasigma),cst=1.05, pca=TRUE) # quick and dirty modif for initEM to take a covariance matrix as input
@@ -275,13 +319,15 @@ computeWg<-function(phi,omega,W,MH,MO,S, alpha,hidden=TRUE, hist=FALSE, verbatim
   SigmaTilde= (t(M)%*%M + diag(colSums(S)))/n
   
   ## update
-  logWg<-log(W+exp(-20)*(W==0))+alpha*(n*0.25*log(phi+exp(-20)*(phi==0))-0.5*n*(omega*SigmaTilde))
+  #0.25 et 0.5
+  null = union(which(W==0),which(phi==0))
+  logWg[-null]<-log(W[-null])+alpha*(n*0.5*log(phi[-null])-n*(omega*SigmaTilde)[-null])
   diag(logWg) = 0
   #--- centrage O
-  mean.gamma=F_Sym2Vec(logWg)
-  gammaO=F_Sym2Vec(logWg[O,O])
+  #  mean.gamma=F_Sym2Vec(logWg)
+  gammaO=logWg[O,O]
   gammaO=gammaO-mean(gammaO) 
-  Wg[O,O]=exp(F_Vec2Sym(gammaO))
+  # Wg[O,O]=exp(F_Vec2Sym(gammaO))
   
   if(hidden){
     #--- centrage OH
@@ -290,8 +336,16 @@ computeWg<-function(phi,omega,W,MH,MO,S, alpha,hidden=TRUE, hist=FALSE, verbatim
     rangeO=max(gammaO)-min(gammaO)
     rangeOH=max(gammaOH)-min(gammaOH)
     if(verbatim)  cat(paste0(", ratio rOH/rOO=", round(rangeOH/rangeO,5)))
-    Wg[O,H]=exp(gammaOH)
-    Wg[H,O]<-t(Wg[O,H])
+    # Wg[O,H]=exp(gammaOH)
+    # Wg[H,O]<-t(Wg[O,H])
+    
+    logWg[O,O] = gammaO
+    logWg[O,H] = gammaOH
+    logWg[H,O] = t(logWg[O,H])
+    
+    # norm1=(round(min(logWg)/log(10))+15)*log(10) #division maximale pour ne pas tuer les poids les plus petits
+    # norm2=max((round(max(logWg)/log(10))-1)*log(10),0)
+    # logWg=logWg-min(norm1, norm2)
   }
   #--- trimming
   
@@ -300,17 +354,23 @@ computeWg<-function(phi,omega,W,MH,MO,S, alpha,hidden=TRUE, hist=FALSE, verbatim
     hist(gammaO, breaks=20,main="O")
     hist(gammaOH, breaks=20,main="OH")
   }
-  # q99=quantile(Wg[O,O],0.99)
-  # Wg[Wg>min(bsup,q99)]<-min(bsup,q99)
-  # Wg[Wg<binf]<-binf
+  Wg = exp(logWg)
   
   Wg[W==0]=0
   Wg[phi==0]=0
   if(hidden) Wg[H,H]=0
   diag(Wg)=0
-  norm1=10^(round(log10(min(Wg[Wg!=0]))-(-15))) #division maximale pour ne pas tuer les poids les plus petits
-  norm2=max(10^(round(log10(max(Wg))-1)),1)
-  Wg=Wg/(min(norm1, norm2))
+  # norm1=10^(round(log10(min(Wg[Wg!=0]))-(-15))) #division maximale pour ne pas tuer les poids les plus petits
+  # norm2=max(10^(round(log10(max(Wg))-1)),1)
+  # Wg=Wg/(min(norm1, norm2))
+  vec_null<-apply(Wg,2,function(x){
+    vec=(x==0)
+    return(sum(vec))
+  })
+  if(sum(vec_null==(p-1))!=0){
+    stop("isolated nodes: algorithm failed to converge")
+  }
+  
   return(list(Wg=Wg ))
 }
 
@@ -376,20 +436,20 @@ LowerBound<-function(Pg ,omega, M, S, W, Wg,p, logSTW, logSTWg){
   if(hidden) H=(p+1):q
   
   #Egh lop (Z |T)
-  t1<- sum(F_Sym2Vec(n*0.5* Pg * log (phi+(phi==0))))
-  t2<-(- 0.5)* sum( ((Pg+diag(q))*omega)*(t(M)%*%M + diag(colSums(S))) ) 
+  t1<- n*0.25*sum( Pg * log(phi+(phi==0)))
+  t2<-(- 0.5)* sum( ((Pg+diag(q))*omega)*( t(M)%*%M + diag(colSums(S)) ) ) 
   t3<- n*0.5* sum(log(diag(omega)))  - q*n*0.5*log(2*pi)
   T1<-t1+t2+t3
   
   # Eglog(p) - Eg log(g)
-  T2<-sum(F_Sym2Vec(Pg) * (log(F_Sym2Vec(W)+(F_Sym2Vec(W)==0)) - log(F_Sym2Vec(Wg)+(F_Sym2Vec(Wg)==0)) )) - logSTW+ logSTWg
+  T2<-0.5*sum(Pg * (log(W+(W==0)) - log(Wg+(Wg==0)) )) - logSTW+ logSTWg
   
   #Eh log h(Z), reste constant car omegaH fixé à 1 pour identifiabilité 
-  T3<- (0.5*sum(log(S))) + n*q*0.5*(1+log(2*pi))
+  T3<- 0.5*sum(apply(S,2,function(x){ log(sum(x))}))+q*n*0.5*(1+log(2*pi))
   
   J=T1+T2+T3
   if(is.nan(J)) browser()
-  return(c(J=J, T1=T1, T2=T2, t1=t1, t2=t2))
+  return(c(J=J, T1=T1, T2=T2, t1=t1, t2=t2,T3=T3))
 }
 
 
@@ -441,10 +501,8 @@ EdgeProba <- function(W, verbatim=FALSE, p.min=1e-16){
   diag(P)=0
   return(P)
 }
-Kirshner <- function(W){
-  # W = squared weight matrix
-  # Kirshner (07) formulas
-  # W = beta.unif*phi
+exactMeila<-function (W,r){
+  projL=FALSE
   p = nrow(W)
   if(sum(colSums(W)==0 )==0){
     sums=apply(W,2,function(x){ sum(x!=0)})
@@ -462,22 +520,82 @@ Kirshner <- function(W){
       }
     }
   }else{
-    index=which(colSums(W)==0)
+    index=which(colSums(W)==0)[1]
   }
-  index=index[1]
   L = Laplacian(W)[-index,-index]
+  if(min(eigen(L)$values)<1e-16){
+    message("nearPD")
+    projL=TRUE
+    L = as.matrix(nearPD(L,eig.tol=1e-14, posd.tol = 1e-14)$mat)
+  }
+  vec_null<-apply(L,2,function(x){
+    vec=(x==0)
+    return(sum(vec))
+  })
+  if(sum(vec_null==(p-1))!=0){
+    stop("isolated nodes: algorithm failed to converge")
+  }
+  M =inverse.gmp(L)
+  M = rbind(c(0, diag(M)), cbind(diag(M), (diag(M) %o% rep(1, 
+                                                           p - 1) + rep(1, p - 1) %o% diag(M) - 2 * M)))
+  M = 0.5 * (M + t(M))
+  return(list(M=M,projL=projL))
+}
+Kirshner <- function(W,r){
+  # W = squared weight matrix
+  # Kirshner (07) formulas
+  # W = beta.unif*phi
+  projL=FALSE
+  p = nrow(W)
+  if(sum(colSums(W)==0 )==0){
+    sums=apply(W,2,function(x){ sum(x!=0)})
+    suspects_paires=which(sums==1)
+    if(length(suspects_paires)<2){
+      index=1
+    }else{
+      mate=sapply(suspects_paires, function(suspect){
+        which(W[,suspect]!=0)
+      })
+      if(length(intersect(mate, suspects_paires))!=0){
+        index=intersect(mate, suspects_paires)[1]
+      }else{
+        index=1
+      }
+    }
+  }else{
+    index=which(colSums(W)==0)[1]
+  }
+  L = Laplacian(W)[-index,-index]
+   
+  if(min(eigen(L)$values)<1e-16){
+    message("nearPD")
+    projL=TRUE
+    L = as.matrix(nearPD(L,eig.tol=1e-14, posd.tol = 1e-14)$mat)
+  }
+  vec_null<-apply(L,2,function(x){
+    vec=(x==0)
+    return(sum(vec))
+  })
+  if(sum(vec_null==(p-1))!=0){
+    stop("isolated nodes: algorithm failed to converge")
+  }
   # if(!is.finite(sum(L))) browser()
   # Leigen = eigen(L)
   # Q = (Leigen$vectors) %*% diag(1/Leigen$values) %*% t(Leigen$vectors)
   #  Q = inverse.fractional(L)
-  Q = inverse.gmp(L)
-  Q =  rbind(c(0, diag(Q)),
-             cbind(diag(Q), (diag(Q)%o%rep(1, p-1) + rep(1, p-1)%o%diag(Q) - 2*Q))) 
-  Q = .5*(Q + t(Q))
-  P = W * Q
+  K = inverse.gmp(L)
+  K =  rbind(c(0, diag(K)),
+             cbind(diag(K), (diag(K)%o%rep(1, p-1) + rep(1, p-1)%o%diag(K) - 2*K))) 
+  K = .5*(K + t(K))
+  P = W * K
   P = .5*(P + t(P))
-  P[P>1]=1 # numerical issues
-  return(P)
+  
+  # P[P>1]=1 # numerical issues
+  if(sum(P<0)!=0){
+    cat(paste0(" ",sum(P<0)/2,"neg. prob, min=", min(P),", max=",max(P[P<0])))
+  }
+  P[P<1e-16]=0 # numerical zero
+  return(list(P=P,projL=projL))
 }
 
 generator_PLN<-function(Sigma,covariates=NULL, n=50){
@@ -641,14 +759,17 @@ plotVerdict<-function(values,colonne){
 }
 
 #===========
-VE<-function(MO,SO,SH,omega,W,Wg,MH,Pg,logSTW,logSTWg,eps, alpha, filterWg=FALSE,plot=FALSE,verbatim, hist=FALSE){
+VE<-function(MO,SO,SH,omega,W,Wg,MH,Pg,logSTW,logSTWg,eps, alpha, filterWg=FALSE,plot=FALSE,updateSH=FALSE,verbatim, hist=FALSE){
   #--Setting up
   t1=Sys.time()
   n=nrow(MO);  p=ncol(MO);  O=1:ncol(MO); trim=FALSE
   hidden=(ncol(omega)!=ncol(MO))
   if(hidden){
     H=(p+1):ncol(omega);r=length(H)
-    SH <-matrix(1,n,r) # SH fixed to 1 for identifiability
+    if(!updateSH){ SH=matrix(1,nrow=n,ncol=r)
+    }else{
+      SH <-matrix(1/(diag(omega)[H]),n,r, byrow = TRUE)
+    }
     S<-cbind(SO,SH)# all SHi have same solution, depending only on Mstep
     M=cbind(MO,MH) 
   }else{
@@ -663,51 +784,67 @@ VE<-function(MO,SO,SH,omega,W,Wg,MH,Pg,logSTW,logSTWg,eps, alpha, filterWg=FALSE
   #--- MH 
   if(hidden){
     MH.new<- (-MO) %*% (Pg[O,H] * omega[O,H])/diag(omega)[H]
-    #if(sum(MH.new!=0)==0) browser()
     MH=MH.new
+    vec_null<-apply(as.matrix(MH,n,r),2,function(x){
+      vec=(x==0)
+      return(sum(vec))
+    })
+    if(sum(vec_null==n)!=0){ 
+      stop("null mean: algorithm failed to converged")
+    }
     M=cbind(MO,MH)
     LB1=c(LowerBound(Pg = Pg, omega=omega, M=M, S=S,W=W, Wg=Wg,p, logSTW=logSTW,logSTWg=logSTWg),"MH")
   }else{LB1=LB0}
   
   #--- Wg
   compWg= computeWg(phi,omega,W,MH,MO,S=S,alpha,hidden=hidden, hist=hist, verbatim=verbatim)  
-  
   Wg.new = compWg$Wg
-  #if(sum(colSums(Wg.new)==0)!=0) browser()
-  # Pg.new = suppressWarnings( EdgeProba(Wg.new))
-  
-  logSTWg.tot=logSumTree(Wg.new)
-  logSTWg.new=logSTWg.tot$det
-  max.prec=logSTWg.tot$max.prec
-  Pg.new=Kirshner(Wg.new)
-  
-  # if(sum(is.na(Pg.new))!= 0){# si pb pas de pb
-  #   message("NaNs in Pg")
-  #   Wg.new=Wg
-  #   Pg.new=Pg
-  # }
-  
-  LB2=LowerBound(Pg = Pg.new, omega=omega, M=M, S=S,W=W, Wg=Wg.new,p, logSTW=logSTW,logSTWg=logSTWg.new)
-  if(filterWg){ 
-    bool=as.numeric(LB2[1])>as.numeric(LB1[1])
-    if(bool ){
+  if(sum(!is.finite(Wg.new))==0){
+    logSTWg.tot=logSumTree(Wg.new)
+    logSTWg.new=logSTWg.tot$det
+    Kirsh=Kirshner(Wg.new,r)
+    Pg.new=Kirsh$P
+    if(hidden){
+      vec_null<-apply(as.matrix(Pg.new[O,H],p,r),2,function(x){
+        vec=(x==0)
+        return(sum(vec))
+      })
+      if(sum(vec_null==n)!=0){ 
+        stop("isolated missing actor")
+      }
+    }
+    
+    projL=Kirsh$projL
+    LB2=LowerBound(Pg = Pg.new, omega=omega, M=M, S=S,W=W, Wg=Wg.new,p, logSTW=logSTW,logSTWg=logSTWg.new)
+    
+    if(filterWg){ 
+      bool=as.numeric(LB2[1])>as.numeric(LB1[1])
+      if(bool ){
+        Wg=Wg.new
+        Pg=Pg.new
+        logSTWg=logSTWg.new
+      }else{message("no Wg update")
+        LB2=LowerBound(Pg = Pg, omega=omega, M=M, S=S,W=W, Wg=Wg,p, logSTW=logSTW,logSTWg=logSTWg)}
+    }else{
       Wg=Wg.new
       Pg=Pg.new
       logSTWg=logSTWg.new
-    }else{message("no Wg update")
-      LB2=LowerBound(Pg = Pg, omega=omega, M=M, S=S,W=W, Wg=Wg,p, logSTW=logSTW,logSTWg=logSTWg)}
+    }
   }else{
-    Wg=Wg.new
-    Pg=Pg.new
-    logSTWg=logSTWg.new}
+    
+    message("no Wg update: Wg.new infinite")
+    LB2=LowerBound(Pg = Pg, omega=omega, M=M, S=S,W=W, Wg=Wg,p, logSTW=logSTW,logSTWg=logSTWg)
+  }
+  max.prec=(logSTWg==log(.Machine$double.xmax))
   
   LB2=c(LB2,"Wg")
+  
   
   #-- end
   if(hidden){ LB= rbind(LB1, LB2)
   }else{ LB=LB2 }
   
-  res=list(Gprobs=Pg,Gweights=Wg,Hmeans=M,Hvar=S,LB=LB,logSTWg=logSTWg,max.prec=max.prec )
+  res=list(Gprobs=Pg,Gweights=Wg,Hmeans=M,Hvar=S,LB=LB,logSTWg=logSTWg,max.prec=max.prec,projL=projL )
   return(res)
 }
 
@@ -720,7 +857,7 @@ Mstep<-function(M,S,Pg, omega,W,logSTW,logSTWg, plot=FALSE,eps, verbatim=FALSE,W
   
   #--- Omega
   omega2=omega
-  for(i in 1:2){
+  for(i in 1:1){
     omDiag1 <- diag(omega) # omegaH bouge aussi
     omega1=computeOffDiag(omDiag1, SigmaTilde,p)
     #if(sum(omega1[O,H]!=0)==0) browser()
@@ -753,43 +890,30 @@ Mstep<-function(M,S,Pg, omega,W,logSTW,logSTWg, plot=FALSE,eps, verbatim=FALSE,W
   #--- Beta
   #  while((diff>eps) && (iterM <= 2)){
   #  iterM=iterM+1
-  for(i in 1:2){
-    Mei=Meila(W)
-    if(sum(!is.finite(F_Sym2Vec(Meila(W))))!=0 ||  sum(F_Sym2Vec(Meila(W))<=0)!=0){
-      Wtest=W*100
-      if( sum(F_Sym2Vec(Meila(Wtest))==0)==0){
-        Mei=Meila(Wtest)
-      }else{
-        Mei = Mei+1e-14
-      }
-    }
-    # c=0.1
-    # while(min(eigen(Laplacian(W)[-1,-1])$values)<0){
-    #   W=W+diag(c,ncol(W))
-    #   c=c*1.1
-    # }
-    W.new= Pg/(Mei )
-    # if(sum(!is.finite(F_Sym2Vec(W.new)))) browser()
-    if(length(which(W.new< 1e-16))!=0){
-      W.new[W.new< 1e-16] = 0 # pas de bmax
-    }
+  for(i in 1:1){
+    exM=exactMeila(W,r)
+    Mei=exM$M
+    projL=exM$projL
+    
+    logW.new = matrix(0,ncol(Pg), ncol(Pg))
+    null=which(Pg==0)
+    logW.new[-null]= log(Pg[-null]) - log(Mei[-null] )
+    logW.new[-null]=logW.new[-null]-mean(logW.new[-null])
+    # norm1=(round(min(logW.new)/log(10))+15)*log(10) #division maximale pour ne pas tuer les poids les plus petits
+    # norm2=max((round(max(logW.new)/log(10))-1)*log(10),0)
+    # logW.new=logW.new-min(norm1, norm2)
+    
+    W.new = exp(logW.new)
+    W.new[W.new< 1e-16] = 0 # pas de bmax
     if(hidden) W.new[H,H]=0
     diag(W.new)=0
-    #if(is.na(logSumTree(W.new)$det )){
-    norm1=10^(round(log10(min(W[W!=0]))-(-14))) #division maximale pour ne pas tuer les poids les plus petits
-    norm2=max(10^(round(log10(max(W))-2)),1)
-    
-    W.new=W.new/(min(norm1, norm2))
-    #}
-    # diff=max(abs(F_Sym2Vec(W.new)-F_Sym2Vec(W)))
     W=W.new
-    # }
   }
   logSTW.tot=logSumTree(W)
   logSTW=logSTW.tot$det
   max.prec=logSTW.tot$max.prec
   LB2=c(LowerBound(Pg = Pg, omega=omega, M=M, S=S,W=W, Wg=Wg,p,logSTW=logSTW,logSTWg=logSTWg),"W")
-  res=list(W=W, omega=omega,  LB=rbind(LB1,LB2), logSTW=logSTW,max.prec=max.prec) 
+  res=list(W=W, omega=omega,  LB=rbind(LB1,LB2), logSTW=logSTW,max.prec=max.prec,projL=projL) 
   return(res)
 }
 
@@ -804,19 +928,22 @@ Mstep_nobeta<-function(M,S,Pg, omega,W,Wg,p){
   }
   
   LB1=c(LowerBound(Pg = Pg, omega=omega, M=M, S=S,W=W, Wg=Wg,p),"omega")
-  res=list(W=W, omega=omega,  LB=LB1) 
+  res=list(W=W, omega=omega,  LB=LB1,projl=projL) 
   return(res)
 }
 
 #===========
 VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, maxIter=20,eps=1e-2, alpha,
-                  verbatim=TRUE, plot=FALSE, print.hist=FALSE, filterWg=FALSE,filterDiag=FALSE,nobeta=FALSE){
+                  verbatim=TRUE,updateSH=FALSE, plot=FALSE, print.hist=FALSE, filterWg=FALSE,filterDiag=FALSE,nobeta=FALSE){
   n=nrow(MO);  p=ncol(MO);  O=1:ncol(MO)
   hidden=!is.null(MH)
   if(hidden){  
     H=(p+1):ncol(ome_init);r=length(H)
-    SH=matrix(1,nrow=n,ncol=r)
-    #   SH <-matrix(1/(diag(omega)[H]),n,r, byrow = TRUE)
+    if(!updateSH){ SH=matrix(1,nrow=n,ncol=r)
+    }else{
+      SH <-matrix(1/(diag(omega)[H]),n,r, byrow = TRUE)
+    }
+    
     M=cbind(MO,MH) ; S=cbind(SO, SH)
   }else{
     r=0
@@ -827,18 +954,20 @@ VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, maxIter=20,eps=1e-2, 
   iter=0 ; lowbound=list()
   diffW=c();diffOm=c();diffWg=c();diffPg=c();diffJ=c();diffOmDiag=c(0);diffMH=c(); diffquantile=c() ;diffPhi<-c(); J<-c()
   diffWiter=1 ; diffJ=1 ; J=c()
-  max.prec=FALSE
+  max.prec=FALSE; projL=FALSE
   t1=Sys.time()
   logSTW=logSumTree(W)$det
   logSTWg=logSumTree(Wg)$det
   #(diffW[iter] > eps) ||
-  while(  (diffOm[iter] > eps) && (abs(diffJ)>eps)  && (iter < maxIter) || iter<2 ){ 
+  #&& (abs(diffJ)>eps)
+  while(  (diffOm[iter] > eps)   && (iter < maxIter) || iter<2 ){ 
+    
     iter=iter+1 
     # if(iter==28) browser()
     if(verbatim) cat(paste0("\n Iter n°", iter))
     #--- VE
     resVE<-VE(MO=MO,SO=SO,SH=SH,omega=omega,W=W,Wg=Wg,MH=MH,Pg=Pg,logSTW,logSTWg,eps=1e-3,verbatim=verbatim,
-              alpha=alpha,filterWg=filterWg, plot=FALSE, hist=print.hist)
+              alpha=alpha,filterWg=filterWg, plot=FALSE,updateSH=updateSH, hist=print.hist)
     M=resVE$Hmeans 
     S=resVE$Hvar 
     Pg.new=resVE$Gprobs
@@ -850,6 +979,7 @@ VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, maxIter=20,eps=1e-2, 
       MH=MH.new
     }
     if(resVE$max.prec) max.prec=TRUE
+    if(resVE$projL) projL=TRUE
     diffWg[iter]<-abs(max(Wg.new-Wg))
     diffPg[iter]<-abs(max(Pg.new-Pg))
     Wg=Wg.new
@@ -875,6 +1005,7 @@ VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, maxIter=20,eps=1e-2, 
       omega.new=resM$omega
       logSTW=resM$logSTW
       if(resM$max.prec) max.prec=TRUE
+      if(resM$projL) projL=TRUE
       diffOm[iter]=abs(max((omega.new)-(omega)))
       if(iter>1)diffOmDiag[iter]=sum(diag(omega.new)-diag(omega))
       omega=omega.new
@@ -883,17 +1014,19 @@ VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, maxIter=20,eps=1e-2, 
     lowbound[[iter]] = rbind( resVE$LB, resM$LB)
     
     diffJ=Jiter - tail(J,1)
+    #  if(diffJ<0 && iter > 1) browser()
     J<-c(J, Jiter)
   }
   ########################
   resVE<-VE(MO=MO,SO=SO,SH=SH,omega=omega,W=W,Wg=Wg,logSTW,logSTWg,MH=MH,Pg=Pg,eps=1e-3,verbatim=verbatim,
-            alpha=alpha,filterWg=filterWg, plot=FALSE, hist=print.hist)
+            alpha=alpha,filterWg=filterWg, plot=FALSE,updateSH=updateSH, hist=print.hist)
   M=resVE$Hmeans 
   S=resVE$Hvar 
   Pg=resVE$Gprobs
   Wg=resVE$Gweights 
   logSTWg=resVE$logSTWg
   if(resVE$max.prec) max.prec=TRUE
+  if(resVE$projL) projL=TRUE
   if(hidden){ 
     SH<-matrix(S[,H],n,r)
     MH<-matrix(M[,H],n,r)
@@ -905,6 +1038,7 @@ VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, maxIter=20,eps=1e-2, 
   }else{
     resM<-Mstep(M=M,S=S,Pg=Pg, omega=omega,W=W,logSTW,logSTWg,plot=FALSE, eps=1e-3 ,Wg=Wg, p=p,filterDiag=filterDiag, iterVEM=iter)
     if(resM$max.prec) max.prec=TRUE
+    if(resM$projL) projL=TRUE
     W=resM$W
     omega=resM$omega
   }
@@ -940,7 +1074,8 @@ VEMtree<-function(counts,MO,SO,MH,ome_init,W_init,Wg_init, maxIter=20,eps=1e-2, 
       scale_color_discrete("")
     grid.arrange(g1,g2, ncol=1)
   }
-  return(list(M=M,S=S,Pg=Pg,Wg=Wg,W=W,omega=omega, lowbound=lowbound, features=features, finalIter=iter, time=time,max.prec=max.prec))
+  return(list(M=M,S=S,Pg=Pg,Wg=Wg,W=W,omega=omega, lowbound=lowbound, features=features,
+              finalIter=iter, time=time,max.prec=max.prec,projL=projL))
 }
 
 True_lowBound<-function(Y, M,S,theta,X, W, Wg, Pg, omega){
@@ -1018,7 +1153,7 @@ criteria<-function(List.vem,counts,theta, matcovar,r){
 
 List.VEM<-function(cliquesObj, counts, sigma_obs, MO,SO,
                    r,alpha, cores,maxIter,eps, nobeta, 
-                   filterDiag,filterWg, save=FALSE){
+                   filterDiag,filterWg,updateSH=FALSE, save=FALSE){
   p=ncol(counts) ; O=1:p ; n=nrow(counts)
   
   #--- run all initialisations with parallel computation
@@ -1029,25 +1164,20 @@ List.VEM<-function(cliquesObj, counts, sigma_obs, MO,SO,
     init=initVEM(counts = counts, initviasigma=c, sigma_obs,r = r)
     Wginit= init$Wginit; Winit= init$Winit; omegainit=init$omegainit ; MHinit=init$MHinit
     #run VEMtree
-    VEM<-VEMtree(counts=counts,MO=MO,SO=SO,MH=MHinit,ome_init=omegainit,W_init=Winit,
-                 Wg_init=Wginit, eps=eps, alpha=alpha,maxIter=maxIter, 
-                 verbatim = TRUE, print.hist=FALSE, filterWg = filterWg, 
-                 filterDiag = filterDiag, nobeta=nobeta)
+    
+    VEM<- tryCatch({VEMtree(counts=counts,MO=MO,SO=SO,MH=MHinit,ome_init=omegainit,W_init=Winit,
+                            Wg_init=Wginit, eps=eps, alpha=alpha,maxIter=maxIter, 
+                            verbatim = TRUE, print.hist=FALSE, filterWg = filterWg, 
+                            filterDiag = filterDiag, nobeta=nobeta, updateSH=updateSH)},
+                   error=function(e){e},finally={})
     VEM$clique=c
     VEM$nbocc=cliquesObj$nb_occ[num]
     VEM$nbocc_vec=cliquesObj$nb_occ
     if(save){
-      saveRDS(VEM, paste0("/Users/raphaellemomal/simulations/Fatala_missing/r",r,"_num",num, ".rds"))
+      saveRDS(VEM, paste0("/Users/raphaellemomal/simulations/Fatala_missing/v2.r",r,"_num",num, ".rds"))
     }
     return(VEM)
   }, mc.cores=cores)
-  #--- keep only converged vems
-  # converged<-do.call(rbind,lapply(list,function(vem){
-  #   diffW=vem$features$diffW
-  #   conv=(diffW[length(diffW)]<=eps)}))
-  # if(sum(converged)!=0){
-  #   list=list[converged]
-  # } 
   return(list)
 }
 
@@ -1098,4 +1228,61 @@ logSumTree<-function(W){
   #                       return(output)}, finally={})
   # }
   return(list(det=output,max.prec=max.prec))
+}
+
+
+getJcor<-function(vem,p,eig.tol=1e-14,eps=1e-14){
+  omega=vem$omega
+  O=1:p ; H=(p+1):ncol(omega) ; r=length(H) ; n=nrow(vem$M)
+  EhZZ=t(vem$M[,O])%*%vem$M[,O] + diag(colSums(vem$S[,O]))
+  sigTilde = (1/n)*EhZZ
+  EgO=vem$Pg*vem$omega+diag(diag(vem$omega))
+  if(ncol(omega)==p){
+    r=0
+    EgOm = EgO[O,O]
+  }else{
+    if(r==1){
+      EgOm = EgO[O,O] - matrix(EgO[O,H],p,r)%*%matrix(EgO[H,O],r,p)/EgO[H,H]
+    }else{
+      EgOm = EgO[O,O] - matrix(EgO[O,H],p,r)%*%solve(EgO[H,H])%*%matrix(EgO[H,O],r,p)
+    }
+  }
+  #if(det.fractional(EgOm, log=FALSE)<0){
+  EgOm.new = nearPD(EgOm, eig.tol=eig.tol, do2eigen = TRUE, posd.tol = eps)$mat
+  diff=norm(EgOm.new - EgOm, type="F")
+  
+  EgOm=EgOm.new
+  
+  #  Jcor=NaN
+  #}else{
+  JPLN_SigT = part_JPLN(sigTilde,EhZZ=EhZZ,n)
+  JPLN_EgOm = part_JPLN(EgOm,EhZZ=EhZZ,n, var=FALSE)
+  diffJPLN = JPLN_SigT-JPLN_EgOm
+  # print(c(det.fractional(EgOm, log=TRUE),diffJPLN))
+  det=det.fractional(EgOm, log=TRUE)
+  if(det<(-40)){
+    #  Jcor=NaN
+    Jcor= tail(vem$lowbound$J,1)+diffJPLN
+  }else{
+    Jcor=tail(vem$lowbound$J,1)+diffJPLN
+  }
+  return(c(Jcor=Jcor, diff=diffJPLN,detEg=det))
+}
+
+cond_lap<-function(W,index){
+  L=Laplacian(W)[-index,-index]
+  lambda=svd(L)$d
+  cond=min(abs(lambda))/max(abs(lambda))
+  return(cond)
+}
+
+
+
+part_JPLN<-function(mat_var,EhZZ,n, var=TRUE){
+  if(var){
+    partJPLN=-n*0.5*(det.fractional(mat_var, log=TRUE)) - 0.5*sum(EhZZ*solve(mat_var))
+  }else{# si on donne une matrice de précision
+    partJPLN=n*0.5*(det.fractional(mat_var, log=TRUE)) - 0.5*sum(EhZZ*(mat_var))
+  }
+  return(partJPLN)
 }

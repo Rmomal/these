@@ -1,10 +1,4 @@
 base
-methods
-datasets
-utils
-grDevices
-graphics
-stats
 EMtree
 ggplot2
 ggraph
@@ -18,7 +12,6 @@ dplyr
 stringr
 forcats
 useful
-parallel
 gplots
 ROCR
 ggridges

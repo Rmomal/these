@@ -19,7 +19,7 @@ source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-exactDet.R")
 ##### function
 
 Simu_missing<-function(p,B,N,n,cores,r, maxIter, eps){
-  lapply(188:N, function(seed){
+  lapply(1:N, function(seed){
     cat(paste0("\n seed ",seed, " : "))
     T1<-Sys.time()
     set.seed(seed)
@@ -32,12 +32,9 @@ Simu_missing<-function(p,B,N,n,cores,r, maxIter, eps){
     PLNfit<-PLN(counts~1, control=list(trace=0))
     MO<-PLNfit$var_par$M  ; SO<-PLNfit$var_par$S  ; theta=PLNfit$model_par$Theta ; 
     matcovar=matrix(1, n,1) ; sigma_obs=PLNfit$model_par$Sigma
-    if(r!=0){
-      sorted_omega=omega[c(setdiff(1:(p+r), hidden), hidden),c(setdiff(1:(p+r), hidden), 
-                                                               hidden)]
-    }else{
-      sorted_omega=omega
-    }
+    
+    sorted_omega=omega[c(setdiff(1:(p+r), hidden), hidden),c(setdiff(1:(p+r), hidden), 
+                                                             hidden)]
     
     #1 missing actors
     t1<-Sys.time()
@@ -47,41 +44,27 @@ Simu_missing<-function(p,B,N,n,cores,r, maxIter, eps){
     # best VEM with 1 missing actor
     ListVEM<-List.VEM(cliquesObj =cliques_spca, counts, sigma_obs, MO,SO,r=1,alpha=0.1,
                       eps=eps,maxIter=maxIter, nobeta=FALSE, cores=cores,
-                      filterDiag = FALSE, filterWg=FALSE)
-    # if(sum(goodPrec)!=0){ # tri spécifique si filtreWg est FALSE
-    #   if(sum(J<min(J[!goodPrec]))!=0){
-    #     maxJ_good=which(J==max(J[J<min(J[!goodPrec])])) 
-    #   }else{
-    #     maxJ_good = which(J==max(J[goodPrec]))
-    #   }
-    # }else{
-    #   maxJ_good = which.max(J)
-    # } 
-    # Delta<-do.call(rbind, lapply(ListVEM, function(vem){
-    #   sigT_inv = solve((1/n)*(t(vem$M[,O])%*%vem$M[,O]+diag(colSums(vem$S[,O]))))
-    #   omega=vem$omega
-    #   EsO=vem$Pg*vem$omega+diag(diag(vem$omega))
-    #   EgOm = EsO[O,O] - matrix(EsO[O,H],p,r)%*%matrix(EsO[H,O],r,p)/EsO[H,H]
-    #   EgOm = nearPD(EgOm, eig.tol=)$mat
-    #   Delta = norm(sigT_inv - EgOm,type = "F")
-    #   return(Delta)}))
- 
-    diffJPLN<-do.call(rbind, lapply(ListVEM, function(vem){
-      EhZZ=t(vem$M[,O])%*%vem$M[,O] + diag(colSums(vem$S[,O]))
-      sigTilde = (1/n)*EhZZ
-      omega=vem$omega
-      EsO=vem$Pg*vem$omega+diag(diag(vem$omega))
-      EgOm = EsO[O,O] - matrix(EsO[O,H],p,r)%*%matrix(EsO[H,O],r,p)/EsO[H,H]
-      EgOm = nearPD(EgOm, eig.tol=1e-6)$mat
-      JPLN_SigT = part_JPLN(sigTilde,EhZZ=EhZZ)
-      JPLN_EgOm = part_JPLN(EgOm,EhZZ=EhZZ, var=FALSE)
-      return(JPLN_SigT-JPLN_EgOm)}))
-    J=do.call(rbind,lapply(ListVEM, function(vem){tail(vem$lowbound$J,1)}))
-    Jcor=J+diffJPLN
-    # res=data.frame(init = 1:length(ListVEM), Jcor, Delta) %>% as_tibble() %>% 
-    #   mutate(q10Delta = quantile(Delta, 0.1)) %>% 
-    #   filter( Delta<= q10Delta) %>% filter(Jcor==max(Jcor))
-    maxJ_good=which.max(Jcor)
+                      filterDiag = FALSE, filterWg=TRUE,save=FALSE, updateSH = TRUE)
+    
+    Jcor<-do.call(rbind, lapply(ListVEM, function(vem){
+      if(length(vem)==15){
+        res=getJcor(vem,14)[1]
+      }else{
+        res=NA
+      }
+      return(res)
+    }))
+    if(sum(!is.na(Jcor))!=0){
+      sumP=do.call(rbind, lapply(ListVEM, function(vem){(sum(vem$Pg)-28)<1e-10}))
+      data=data.frame(Jcor,sumP, num=1:length(ListVEM))
+      maxJ_good=unlist(data %>% filter(sumP) %>% filter(Jcor==max(Jcor, na.rm=TRUE)) %>%
+                    dplyr::select(num))
+    }else{
+      maxJ_good = which.max(do.call(rbind, lapply(ListVEM, function(vem){
+       tail(vem$lowbound$J,1)
+      })))
+    }
+    
     VEM_1=ListVEM[[maxJ_good]]
     
     ############
@@ -93,7 +76,7 @@ Simu_missing<-function(p,B,N,n,cores,r, maxIter, eps){
     runtime=difftime(T2, T1)
     cat(paste0("\nseed ", seed," in ",round(runtime,3), attr(runtime, "units"),"\n"))
     Sim=list(omega=sorted_omega,ZH=ZH,VEM_1=VEM_1,time_boots=time_boots, nbinit=nbinit )
-    saveRDS(Sim, file=paste0("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/15nodes_1r_400_Jcor/SF_seed",
+    saveRDS(Sim, file=paste0("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/15nodes_exact_SH_F/SF_seed",
                              seed,".rds"))
     
     return(Sim)
@@ -101,11 +84,9 @@ Simu_missing<-function(p,B,N,n,cores,r, maxIter, eps){
 }
 
 ######### run
-t1<-Sys.time()
-Sim15<-Simu_missing(p = 14, n = 200, B = 100,N =400, cores=3,eps=1e-3,r=1,maxIter=200)
-t2<-Sys.time()
-difftime(t2,t1)
-saveRDS(Sim15, file="/Users/raphaellemomal/these/R/codes/missingActor/SimResults/Sim15_r1_200SF.rds")
+
+Sim15<-Simu_missing(p = 14, n = 200, B = 100,N = 400,eps = 1e-3, cores=3,r=1,maxIter=200)
+a saveRDS(Sim15, file="/Users/raphaellemomal/these/R/codes/missingActor/SimResults/Sim15_r1_200SF.rds")
 # Sim30<-Simu_missing(p = 29, n = 200, B = 40,N = 200)
 # saveRDS(Sim15, file="/Users/raphaellemomal/these/R/codes/missingActor/SimResults/Sim30.rds")
 Sim15_r0<-Simu_missing(p = 14, n = 200, B = 40,N = 30, cores=3,r=0,maxIter=100)

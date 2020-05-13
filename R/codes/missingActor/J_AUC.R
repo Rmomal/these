@@ -19,7 +19,7 @@ source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-exactDet.R")
 
 
 
-J_AUC<-function(seed, p,r,eig.tol=0.1,cliques_spca=NULL,B=100,cores=3,plot=FALSE,type="scale-free",n=200){
+J_AUC<-function(seed, p,r,alpha,eig.tol=1e-6,cliques_spca=NULL,B=100,cores=3,plot=FALSE,type="scale-free",n=200){
   #------ Data simulation
   set.seed(seed)
   O=1:p
@@ -39,10 +39,10 @@ J_AUC<-function(seed, p,r,eig.tol=0.1,cliques_spca=NULL,B=100,cores=3,plot=FALSE
   }
  
   ListVEM_filtre<-List.VEM(cliquesObj=cliques_spca, counts, sigma_obs,
-                    MO,SO,r=1,eps=1e-3, maxIter=200, alpha = 0.3,cores=cores,
+                    MO,SO,r=1,eps=1e-3, maxIter=200, alpha = alpha,cores=cores,
                     nobeta = FALSE, filterDiag = TRUE,filterWg=TRUE)
   ListVEM_nofiltre<-List.VEM(cliquesObj=cliques_spca, counts, sigma_obs,
-                           MO,SO,r=1,eps=1e-3, maxIter=200, alpha = 0.3,cores=cores,
+                           MO,SO,r=1,eps=1e-3, maxIter=200, alpha =alpha,cores=cores,
                            nobeta = FALSE, filterDiag = FALSE,filterWg=FALSE)
   ListVEM=c(ListVEM_filtre,ListVEM_nofiltre)
   #------ shape des résultats
@@ -63,21 +63,13 @@ J_AUC<-function(seed, p,r,eig.tol=0.1,cliques_spca=NULL,B=100,cores=3,plot=FALSE
     return(ICL) }))
   vBICs<-do.call(rbind, lapply(ListVEM, function(vem){
     J=tail(vem$lowbound$J,1)
-    p=14;q=15;r=1;d=1
+   r=1;d=1 ; q=p+r
     nbparam<-p*(d) + (p*(p+1)/2 +r*p)+(q*(q-1)/2 - 1)
     nbparam_mixedmodel<-round(SumTree(vem$W),1)*(1+q^2)-1
     vbic0=J- nbparam*log(n)/2
     vbic1=J- nbparam*log(n)/2 -nbparam_mixedmodel
     vbic2=J- (nbparam+nbparam_mixedmodel)*log(n)/2
     return(c(vbic0=vbic0,vbic1=vbic1,vbic2=vbic2)) }))
-  Delta<-do.call(rbind, lapply(ListVEM, function(vem){
-    sigT_inv = solve((1/n)*(t(vem$M[,O])%*%vem$M[,O]+diag(colSums(vem$S[,O]))))
-    omega=vem$omega
-    EsO=vem$Pg*vem$omega+diag(diag(vem$omega))
-    EgOm = EsO[O,O] - matrix(EsO[O,H],p,r)%*%matrix(EsO[H,O],r,p)/EsO[H,H]
-    EgOm = nearPD(EgOm, eig.tol=eig.tol)$mat
-    Delta = norm(sigT_inv - EgOm,type = "F")
-    return(Delta)}))
   JPLN<-do.call(rbind, lapply(ListVEM, function(vem){
     EhZZ=t(vem$M[,O])%*%vem$M[,O] + diag(colSums(vem$S[,O]))
     sigTilde = (1/n)*EhZZ
@@ -89,7 +81,7 @@ J_AUC<-function(seed, p,r,eig.tol=0.1,cliques_spca=NULL,B=100,cores=3,plot=FALSE
     JPLN_EgOm = part_JPLN(EgOm,EhZZ=EhZZ, var=FALSE)
     return(data.frame(JPLN_SigT=JPLN_SigT,JPLN_EgOm=JPLN_EgOm))}))
  
-  data= data.frame(goodPrec, J,Icl, AUC,ppvh, vBICs,Delta,filtre=filtre, JPLN_SigT=JPLN$JPLN_SigT,JPLN_EgOm=JPLN$JPLN_EgOm,
+  data= data.frame(goodPrec, J,Icl, AUC,ppvh, vBICs,filtre=filtre, JPLN_SigT=JPLN$JPLN_SigT,JPLN_EgOm=JPLN$JPLN_EgOm,
                    index=rep(1:length(unique(cliques_spca$cliqueList)),2)) 
   return(data)
 }
@@ -114,10 +106,10 @@ small_cliques1=list()
 small_cliques1$cliqueList=cliques_spca1$cliqueList[1:10]
 small_cliques1$nb_occ = cliques_spca1$nb_occ[1:10]
 tic()
-seed1<-J_AUC(seed = 1,p = 14,r=1, eig.tol=1e-6, cliques_spca=cliques_spca1) # 10 min
+seed1<-J_AUC(seed = 1,p = 14,r=1, alpha=0.1,eig.tol=1e-6, cliques_spca=cliques_spca1) # 17 min
 toc()
 tic()
-seed19<-J_AUC(seed = 19,p = 14,r=1, eig.tol=1e-6, cliques_spca=cliques_spca19) # 30 min
+seed19<-J_AUC(seed = 19,p = 14,r=1, alpha=0.1,eig.tol=1e-6, cliques_spca=cliques_spca19) # 71 min
 toc()
 
 
