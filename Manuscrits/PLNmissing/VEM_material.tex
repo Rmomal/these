@@ -465,26 +465,26 @@ The derivative of the normalization constant with respect to $\beta_{kl}$ is the
  \end{align*}
  
  \begin{align*}
-  \partial_{\omega_{kl}}\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T) ] = 0 \iff & {\sigma}_{jk} \omega_{kl}^2 - \omega_{kl} - {\sigma}_{jk} \omega_{kk}\omega_{ll} = 0 \\
- \iff & \widehat{\omega}_{kl} = (1 \pm \sqrt{1+4{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}}) / 2{\sigma}_{jk}
+  \partial_{\omega_{kl}}\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T) ] = 0 \iff & {\sigma}_{jk} \omega_{kl}^2 - \omega_{kl} - {\sigma}_{kl} \omega_{kk}\omega_{ll} = 0 \\
+ \iff & \widehat{\omega}_{kl} = (1 \pm \sqrt{1+4{\sigma}_{kl}^2 \omega_{kk}\omega_{ll}}) / 2{\sigma}_{kl}
 \end{align*}
 
 To choose between roots, we use the constraint $\dfrac{\omega_{kl}^2}{\omega_{kk}\omega_{ll}} < 1$ which is equivalent to 
-$$ (1 \pm \sqrt{1+4{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}}) < 4{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}.$$
-As ${\sigma}_{jk}^2 \omega_{kk}\omega_{ll} > 0$ by positive-definitiveness of $\Omega$, we have:
+$$ (1 \pm \sqrt{1+4{\sigma}_{kl}^2 \omega_{kk}\omega_{ll}}) < 4{\sigma}_{kl}^2 \omega_{kk}\omega_{ll}.$$
+As ${\sigma}_{kl}^2 \omega_{kk}\omega_{ll} > 0$ by positive-definitiveness of $\Omega$, we have:
 \begin{align*}
-&1 - \sqrt{1+4{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}} < 1- \sqrt{4{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}}\\
-\iff &(1 - \sqrt{1+4{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}})^2 < ( \sqrt{4{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}}-1)^2 < 4{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}
+&1 - \sqrt{1+4{\sigma}_{kl}^2 \omega_{kk}\omega_{ll}} < 1- \sqrt{4{\sigma}_{kl}^2 \omega_{kk}\omega_{ll}}\\
+\iff &(1 - \sqrt{1+4{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}})^2 < ( \sqrt{4{\sigma}_{kl}^2 \omega_{kk}\omega_{ll}}-1)^2 < 4{\sigma}_{kl}^2 \omega_{kk}\omega_{ll}
 \end{align*}
 
 On the other hand, we also have:
 \begin{align*}
-&(1 + \sqrt{1+4{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}})^2 >4{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}.
+&(1 + \sqrt{1+4{\sigma}_{kl}^2 \omega_{kk}\omega_{ll}})^2 >4{\sigma}_{kl}^2 \omega_{kk}\omega_{ll}.
 \end{align*}
 
-Therefore: $ {\omega}_{kl} = (1 - \sqrt{1+4\widetilde{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}}) / 2{\sigma}_{jk}$. Using $\widetilde{\Sigma}$ as an estimator for $\Sigma$, we obtain:
+Therefore: $ {\omega}_{kl} = (1 - \sqrt{1+4\widetilde{\sigma}_{kl}^2 \omega_{kk}\omega_{ll}}) / 2{\sigma}_{kl}$. Using $\widetilde{\Sigma}$ as an estimator for $\Sigma$, we obtain:
 
-$$\boxed{ \widehat{\omega}_{kl} = (1 - \sqrt{1+4\widetilde{\sigma}_{jk}^2 \omega_{kk}\omega_{ll}}) / 2\widetilde{\sigma}_{jk}}$$
+$$\boxed{ \widehat{\omega}_{kl} = (1 - \sqrt{1+4\widetilde{\sigma}_{kl}^2 \omega_{kk}\omega_{ll}}) / 2\widetilde{\sigma}_{kl}}$$
 
 \paragraph{Diagonal terms:\\}
 The derivative for diagonal terms of $\Omega$ is:

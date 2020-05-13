@@ -1203,30 +1203,11 @@ logSumTree<-function(W){
   }
   mat=Laplacian(W)[-index, -index]
   max.prec=FALSE
-  #output=suppressWarnings(log(det(mat)))
   output=det.fractional(mat, log=TRUE)
   if(output==log(.Machine$double.xmax )){
     max.prec=TRUE
     message("max.prec!")
   }
-  # output=tryCatch({det.fractional(mat, log=TRUE)},# exact computation
-  #                 error=function(e){ # if error, trim matrix 
-  #                   trim=TRUE
-  #                   W=W/10
-  #                   W[W<1e-16]=0
-  #                   output=log(det(Laplacian(W)[-1,-1]))
-  #                   return(output)}, finally={})
-  # if(!is.finite(output)){
-  #   if(det(mat)<0) message("exact det na")
-  #   if(!is.finite(det(mat))) message("exact det inf")
-  #   output=  tryCatch({det.fractional(mat, log=TRUE)},# exact computation
-  #                     error=function(e){ # if error, trim matrix 
-  #                       trim=TRUE
-  #                       W=W/10
-  #                       W[W<1e-16]=0
-  #                       output=log(det(Laplacian(W)[-1,-1]))
-  #                       return(output)}, finally={})
-  # }
   return(list(det=output,max.prec=max.prec))
 }
 
