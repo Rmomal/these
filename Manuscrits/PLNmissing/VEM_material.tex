@@ -381,7 +381,7 @@ Let's isolate the terms referring to the edges in the expression to be minimized
 Equating the term $kl$ of the above sum to zero, we obtain:
  $$\log \widetilde{\beta}_{kl} = \log \beta_{kl} + n\left( \frac{1}{2} \log \varphi_{kl} - \omega_{kl}\: \widetilde{\sigma}_{kl} \right) $$
  
- Finally the update formula for $\widetilde{\beta}_{kl}$ is:
+Which gives the following update formula for $\widetilde{\beta}_{kl}$:
  
   $$\boxed{\displaystyle \widetilde{\beta}_{kl} = \beta_{kl} \: \varphi_{kl}^{n/2} \exp( -n\;\omega_{kl}\: \widetilde{\sigma}_{kl} ) }$$
  
@@ -489,28 +489,13 @@ $$\boxed{ \widehat{\omega}_{kl} = (1 - \sqrt{1+4\widetilde{\sigma}_{kl}^2 \omega
 \paragraph{Diagonal terms:\\}
 The derivative for diagonal terms of $\Omega$ is:
 \begin{align*}
- \partial_{\omega_{kk}}\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T) ] &=\frac{n}{2} \partial_{\omega_{kk}} \Big( \sum_k (\log \omega_{kk} - \omega_{kk} \sigma_{kk} )+  \sum_{j<l} P_{jl} \log \big(1-\frac{\omega_{jl}^2}{\omega_{jj} \omega_{ll}}\big)\Big)\\
- &=\frac{n}{2} \Big( \frac{1}{\omega_{kk}} \Big( 1 + \sum_{j<k} P_{jk} \omega_{jk} \frac{\omega_{jk}}{\omega_{kk}\omega_{jj} - \omega_{jk}^2}\Big) - \sigma_{kk}\Big)\\
+ \partial_{\omega_{kk}}\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T) ] &=  \partial_{\omega_{kk}} \Big( \sum_k (\log \omega_{kk} - \omega_{kk} \sigma_{kk} )+ \frac{1}{2} \sum_{k}\sum_{l\neq k} P_{jl} \log \big(1-\frac{\omega_{jl}^2}{\omega_{jj} \omega_{ll}}\big)\Big)\\
+ &=   \frac{1}{\omega_{kk}} \Big( 1 + \frac{1}{2}\sum_{l\neq k} P_{kl} \omega_{kl} \frac{\omega_{kl}}{\omega_{kk}\omega_{ll} - \omega_{kl}^2}\Big) - \sigma_{kk} \\
   \end{align*}
-\textcolor{red}{En vrai:
-\begin{align*}
- \partial_{\omega_{kk}}\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T) ] &=\frac{n}{2} \Big( \frac{1}{\omega_{kk}} \Big( 1 + \sum_{l} P_{kl} \omega_{kl} \frac{\omega_{kl}}{\omega_{kk}\omega_{ll} - \omega_{kl}^2}\Big) - \sigma_{kk}\Big)\\
-  \end{align*}
-  Qui donne 
-  $$\hat{\omega}_{kk} = \frac{1}{\widetilde{\sigma}_{kk}} \left( 1- \sum_{l}  P_{kl} \;\omega_{kl} \;\widetilde{\sigma}_{kl}\right)$$
-  Mais alors les $\widetilde{\beta}_{kl}$ pour $kl \in O\times H$ sont deux fois plus élevés en valeur absolue que les $\widetilde{\beta}_{kl}$ pour $kl \in O^2$}
+ From the optimization of the off-diagonal terms, we have that $$\frac{\omega_{kl}}{(\omega_{kk}\omega_{ll}-\omega_{kl}^2)}  = - {\sigma}_{kl} $$
+ which leads to
+  $$\boxed{\hat{\omega}_{kk} = \frac{1}{\widetilde{\sigma}_{kk}} \left( 1- \frac{1}{2}\sum_{l\neq k}  P_{kl} \;\omega_{kl} \;\widetilde{\sigma}_{kl}\right)}$$
   
-  
-From the optimization of the off-diagonal terms, we have that $$\frac{\omega_{kl}}{(\omega_{kk}\omega_{ll}-\omega_{kl}^2)}  = - {\sigma}_{kl} . $$
-Therefore
- \begin{align*}
- \partial_{\omega_{kk}}\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T) ] 
-  &=\frac{n}{2} \Big( \frac{1}{\omega_{kk}} ( 1 - \sum_{j<k} P_{jk} \omega_{jk} \sigma_{jk} ) - \sigma_{kk}\Big) = 0 \\
-  \iff &  \omega_{kk}=\frac{1}{\sigma_{kk}} \left(1-\sum_{j<k} P_{jk}\omega_{jk}\sigma_{jk} \right)  
-\end{align*}
-
-Using $\widetilde{\Sigma}$ as an estimate for $\Sigma$ we obtain
-$$\boxed{ \hat{\omega}_{kk} = \frac{1}{\widetilde{\sigma}_{kk}} \left( 1- \sum_{j<k}  P_{jk} \;\omega_{jk} \;\widetilde{\sigma}_{jk}\right)}$$
  
 \section{Algorithm initialization}
 Parameters to initialize are weights matrices $\betabf$ and $\widetilde{\betabf}$, the $\Omega$ matrix and $M_H$. The initialization takes advantage of the first fit of PLNmodels on observed counts which gives variational estimates of $M_O$ and $\Sigma_O$.
