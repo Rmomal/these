@@ -370,7 +370,7 @@ computeWg<-function(phi,omega,W,MH,MO,S, alpha,hidden=TRUE, hist=FALSE, verbatim
   if(sum(vec_null==(p-1))!=0){
     stop("isolated nodes: algorithm failed to converge")
   }
-  
+ 
   return(list(Wg=Wg ))
 }
 
@@ -403,8 +403,13 @@ computeOffDiag<-function(omegaDiag,SigmaTilde,p){
          function(j){
            sapply((j+1):q,
                   function(k){
-                    omega[k, j] <<- (1 - ( 1+4*SigmaTilde[k,j]^2*omegaDiag[j]*omegaDiag[k])^0.5)/(2*SigmaTilde[k,j])
-                    omega[j, k] <<- omega[k, j]
+                    if(SigmaTilde[k,j]!=0){
+                      omega[k, j] <<- (1 - ( 1+4*SigmaTilde[k,j]^2*omegaDiag[j]*omegaDiag[k])^0.5)/(2*SigmaTilde[k,j])
+                      omega[j, k] <<- omega[k, j]
+                    }else{
+                      omega[k, j] <<- 0
+                      omega[j, k] <<- 0
+                    }
                   }
            )
          }
@@ -420,12 +425,51 @@ computeOffDiag<-function(omegaDiag,SigmaTilde,p){
 }
 
 omegaDiag<-function(Pg,omega,SigmaTilde){ #closed form
-  quantity<-Pg*omega*SigmaTilde
-  quantity[lower.tri(quantity,diag=FALSE)]<-NA
+  q=ncol(omega)
+  quantity<-(Pg)*omega*SigmaTilde
+ # quantity[lower.tri(quantity,diag=TRUE)]<-NA
   vectorSuml=colSums(quantity, na.rm=TRUE)
   omegaDiag = (1-vectorSuml)/diag(SigmaTilde)
   return(omegaDiag)
 }
+optimDiag2 <- function(omega_ii,i,  omega, SigmaTilde, Pg) { #for numerical optimization
+  q <- nrow(omega)
+  phi = CorOmegaMatrix(omega)
+  newphi=(1- phi)/phi
+  diag(newphi)=0
+  quotient = diag(Pg %*% newphi)[i]
+  
+  grad=(1/omega_ii)*(quotient+1) - SigmaTilde[i, i]
+  return( grad)
+}
+dichotomie <- function(a, b, F.x, eps, bool=FALSE){
+  x.min = ifelse(F.x(0) >0,b,1e-4);
+  while(F.x(x.min)<0){x.min = x.min -x.min/2}
+  x.max = a
+  while(F.x(x.max)>0){x.max = x.max * 2}
+  #  cat(paste0("\n [xmin ; xmax] = [",round(x.min,3),",",round(x.max,3),"]"))
+  x = (x.max+x.min)/2
+  f.min = F.x(x.min)
+  f.max = F.x(x.max)
+  f = F.x(x)
+  iter=0
+  while(abs(x.max-x.min) > eps){
+    iter=iter+1
+    
+    if(f < 0) {
+      x.max = x
+      f.max = f
+    }else{
+      x.min = x
+      f.min = f
+    }
+    x = (x.max+x.min)/2;
+    f = F.x(x)
+  }
+  #  cat(paste0("f=",round(f,8),", om_ii=",round(x,3),"\n"))
+  return(x)
+}
+
 #=====
 #Lower bound
 
@@ -446,10 +490,10 @@ LowerBound<-function(Pg ,omega, M, S, W, Wg,p, logSTW, logSTWg){
   
   #Eh log h(Z), reste constant car omegaH fixé à 1 pour identifiabilité 
   T3<- 0.5*sum(apply(S,2,function(x){ log(sum(x))}))+q*n*0.5*(1+log(2*pi))
-  
+   
   J=T1+T2+T3
   if(is.nan(J)) browser()
-  return(c(J=J, T1=T1, T2=T2, t1=t1, t2=t2,T3=T3))
+  return(c(J=J, T1=T1, T2=T2,T3=T3, t1=t1, t2=t2,t3=t3))
 }
 
 
@@ -504,24 +548,25 @@ EdgeProba <- function(W, verbatim=FALSE, p.min=1e-16){
 exactMeila<-function (W,r){
   projL=FALSE
   p = nrow(W)
-  if(sum(colSums(W)==0 )==0){
-    sums=apply(W,2,function(x){ sum(x!=0)})
-    suspects_paires=which(sums==1)
-    if(length(suspects_paires)<2){
-      index=1
-    }else{
-      mate=sapply(suspects_paires, function(suspect){
-        which(W[,suspect]!=0)
-      })
-      if(length(intersect(mate, suspects_paires))!=0){
-        index=intersect(mate, suspects_paires)[1]
-      }else{
-        index=1
-      }
-    }
-  }else{
-    index=which(colSums(W)==0)[1]
-  }
+  # if(sum(colSums(W)==0 )==0){
+  #   sums=apply(W,2,function(x){ sum(x!=0)})
+  #   suspects_paires=which(sums==1)
+  #   if(length(suspects_paires)<2){
+  #     index=1
+  #   }else{
+  #     mate=sapply(suspects_paires, function(suspect){
+  #       which(W[,suspect]!=0)
+  #     })
+  #     if(length(intersect(mate, suspects_paires))!=0){
+  #       index=intersect(mate, suspects_paires)[1]
+  #     }else{
+  #       index=1
+  #     }
+  #   }
+  # }else{
+  #   index=which(colSums(W)==0)[1]
+  # }
+  index=1
   L = Laplacian(W)[-index,-index]
   if(min(eigen(L)$values)<1e-16){
     message("nearPD")
@@ -547,26 +592,27 @@ Kirshner <- function(W,r){
   # W = beta.unif*phi
   projL=FALSE
   p = nrow(W)
-  if(sum(colSums(W)==0 )==0){
-    sums=apply(W,2,function(x){ sum(x!=0)})
-    suspects_paires=which(sums==1)
-    if(length(suspects_paires)<2){
-      index=1
-    }else{
-      mate=sapply(suspects_paires, function(suspect){
-        which(W[,suspect]!=0)
-      })
-      if(length(intersect(mate, suspects_paires))!=0){
-        index=intersect(mate, suspects_paires)[1]
-      }else{
-        index=1
-      }
-    }
-  }else{
-    index=which(colSums(W)==0)[1]
-  }
+  # if(sum(colSums(W)==0 )==0){
+  #   sums=apply(W,2,function(x){ sum(x!=0)})
+  #   suspects_paires=which(sums==1)
+  #   if(length(suspects_paires)<2){
+  #     index=1
+  #   }else{
+  #     mate=sapply(suspects_paires, function(suspect){
+  #       which(W[,suspect]!=0)
+  #     })
+  #     if(length(intersect(mate, suspects_paires))!=0){
+  #       index=intersect(mate, suspects_paires)[1]
+  #     }else{
+  #       index=1
+  #     }
+  #   }
+  # }else{
+  #   index=which(colSums(W)==0)[1]
+  # }
+  index=1
   L = Laplacian(W)[-index,-index]
-   
+
   if(min(eigen(L)$values)<1e-16){
     message("nearPD")
     projL=TRUE
@@ -789,9 +835,9 @@ VE<-function(MO,SO,SH,omega,W,Wg,MH,Pg,logSTW,logSTWg,eps, alpha, filterWg=FALSE
       vec=(x==0)
       return(sum(vec))
     })
-    if(sum(vec_null==n)!=0){ 
-      stop("null mean: algorithm failed to converged")
-    }
+    # if(sum(vec_null==n)!=0){ 
+    #   stop("null mean: algorithm failed to converged")
+    # }
     M=cbind(MO,MH)
     LB1=c(LowerBound(Pg = Pg, omega=omega, M=M, S=S,W=W, Wg=Wg,p, logSTW=logSTW,logSTWg=logSTWg),"MH")
   }else{LB1=LB0}
@@ -804,6 +850,7 @@ VE<-function(MO,SO,SH,omega,W,Wg,MH,Pg,logSTW,logSTWg,eps, alpha, filterWg=FALSE
     logSTWg.new=logSTWg.tot$det
     Kirsh=Kirshner(Wg.new,r)
     Pg.new=Kirsh$P
+    cat(paste0(" sumP=", signif(sum(Pg.new)-28,3)))
     if(hidden){
       vec_null<-apply(as.matrix(Pg.new[O,H],p,r),2,function(x){
         vec=(x==0)
@@ -857,16 +904,17 @@ Mstep<-function(M,S,Pg, omega,W,logSTW,logSTWg, plot=FALSE,eps, verbatim=FALSE,W
   
   #--- Omega
   omega2=omega
-  for(i in 1:1){
-    omDiag1 <- diag(omega) # omegaH bouge aussi
-    omega1=computeOffDiag(omDiag1, SigmaTilde,p)
+  for(i in 1:3){
+    # omDiag1 <- diag(omega) # omegaH bouge aussi
+    # omega1=computeOffDiag(omDiag1, SigmaTilde,p)
     #if(sum(omega1[O,H]!=0)==0) browser()
-    omDiag2 <- omegaDiag(Pg,omega2,SigmaTilde) # omegaH bouge aussi
-    omega2=computeOffDiag(omDiag2, SigmaTilde,p)
+    omH <- omegaDiag(Pg,omega2,SigmaTilde)[H] # omegaH bouge aussi
+    omDiag=c(diag(omega)[O],omH)
+    omega2=computeOffDiag(omDiag, SigmaTilde,p)
     #if(sum(omega2[O,H]!=0)==0) browser()
   }
   
-  LB11=LowerBound(Pg = Pg, omega=omega1, M=M, S=S,W=W, Wg=Wg,p,logSTW=logSTW,logSTWg=logSTWg)
+#  LB11=LowerBound(Pg = Pg, omega=omega1, M=M, S=S,W=W, Wg=Wg,p,logSTW=logSTW,logSTWg=logSTWg)
   LB12=LowerBound(Pg = Pg, omega=omega2, M=M, S=S,W=W, Wg=Wg,p,logSTW=logSTW,logSTWg=logSTWg)
   
   if(iterVEM>3 || !hidden  ){
@@ -885,7 +933,7 @@ Mstep<-function(M,S,Pg, omega,W,logSTW,logSTWg, plot=FALSE,eps, verbatim=FALSE,W
     omega=omega2
     LB1=c(LB12,"omega")
   }
-  
+  cat(paste0(" omegaH=",signif(omega[H,H],3)))
   
   #--- Beta
   #  while((diff>eps) && (iterM <= 2)){
