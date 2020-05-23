@@ -56,15 +56,15 @@
 
 
 \setlength\parindent{0pt}
- \setcounter{tocdepth}{2}
+
 \title{Reconstruction of a missing actor from count data using network inference}
 
 \begin{document}
 
 \maketitle
 \vspace{3cm}
-
-
+\tableofcontents
+\newpage
 \section{Model}
 
 $$\left\{\begin{array}{rl}
@@ -116,11 +116,11 @@ Where  $ \Upsilon_{Tm} $ is the Schur's complement of $R_{TO}$: $\Upsilon_{Tm}=R
 \subsection{Assumptions}
 \paragraph{Assumption A:} The missing latent variables are not connected with each other. The $H$ bloc of $\Upsilon_T$ should thus be diagonal.
 
-\paragraph{Assumption B:} To reduce the number of parameters, we assume that precision matrices which are faithful to different trees  only differ in the position of their zero entries, meaning that any trees sharing  an edge will also share the same value in their precision matrix. Let's define $\Upsilon$ such as $$\forall T_a \in \{T \in\mathcal{T} / kl \in T \}, \Upsilon_{T_a}[k,l] =  \Upsilon_ [k,l].$$
+\paragraph{Assumption B:} To reduce the number of parameters, we assume that precision matrices which are faithful to different trees  only differ in the position of their zero entries, meaning that any trees sharing  an edge will also share the same value in their precision matrix. Let's define $\Upsilon$ such as $$\forall T_a \in \{T \in\mathcal{T} / kl \in T \}, \Upsilon_{T_a}[k,l] =  \Upsilon [k,l].$$
 
  Let's also define $I_T$ the binary matrix with diagonal one indicating the  edges presence in tree $T$ : $I_T=(\mathds{1}_{kl \in T} + \mathds{1}_{k=l})_{kl}$. Then we can write :
 $$\forall T\in \mathcal{T}, \;\;\; \Upsilon_T = I_T \had \Upsilon $$
-where '$\had$' denotes the Hadamard product. We obtain the following for $\Upsilon_T$, where the diagonal does not depend on $T$:
+where '$\had$' denotes the Hadamard product. We obtain the following for $\Upsilon_T$:
 \[
  \Upsilon_T=
   \left( {\begin{array}{cc}
@@ -150,10 +150,9 @@ Where KL is the Küllback-Leibler divergence. The approximation we adopt relies 
 $$p(T,\Ubf \mid\Ybf) \approx  q(\Ubf,T) = g(T)\:h(\Ubf).$$
 
  A consequence of this hypothesis is the contributions of   $\Esp_h[\log p(\Ubf\mid T)]$ and $\log p(T)$ --~only terms involving $T$ in the lower bound~-- writing as sums on the edges. As distribution   $g$ minimizes the KL divergence, it has to factorizes on the edges as well and hence:
-$ g(T) = \left(\prod_{kl} \widetilde{\beta}_{kl} \right) / \widetilde{B}$. 
+$ g(T) = \left(\prod_{kl} \widetilde{\beta}_{kl} \right) / \widetilde{B}$. \\
 
-Moreover, it follows from the independence of the samples that $h$ is a product law: $ h(\Zbf) = \prod_i h_i(\Zbf_i)$.
-Our variational approximation consists in assuming that each of its components is a multivariate Gaussian: $h(\Zbf_i) = \Ncal(\Zbf_i; \mbf_i, \Sbf_i)$, where $\Sbf_i$ is diagonal, meaning that $\Zbf_H$ and $\Zbf_O$ are independent under distribution $h$.  In the following we use the  $n\times (p+r)$ matrices $M$ and $S$ which compile respectively all vectors of means $\mbf_i$ and diagonals of variances $\Sbf_i$.
+Moreover, it follows from the independence of the samples that $h$ is a product law: $ h(\Ubf) = \prod_i h_i(\Ubf_i)$. Our variational approximation consists in assuming that each of its components is a multivariate Gaussian: $h(\Ubf_i) = \Ncal(\Ubf_i; \mbf_i, \Sbf_i)$, where $\Sbf_i$ is diagonal, meaning that $\Ubf_H$ and $\Ubf_O$ are independent under distribution $h$.  In the following we use the  $n\times (p+r)$ matrices $M$ and $S$ which compile respectively all vectors of means $\mbf_i$ and diagonals of variances $\Sbf_i$.
 
 
 \paragraph{Lower bound:}
@@ -167,7 +166,7 @@ The lower bound of our model writes:
 
 \begin{equation}
 \label{firstJ}
- \boxed{\mathcal{J}(\Ybf; g,h) = \Esp_{gh} [\log (p_\beta(T)p_{\Upsilon}(\Ubf\mid T)p_{\theta, \sigma}(\Ybf\mid \Ubf))] + \entr[g_{\widetilde{\beta}}(T)] + \entr[h_{M,S}(\Ubf)]}
+ \boxed{\mathcal{J}(\Ybf; g,h) = \Esp_{gh} \Big[\log \big(p_\beta(T)\:p_{\Upsilon}(\Ubf\mid T)\:p_{\theta, \sigma}(\Ybf\mid \Ubf)\big)\Big] + \entr[g_{\widetilde{\beta}}(T)] + \entr[h_{M,S}(\Ubf)]}
 \end{equation}
 Thus the model's parameters are $\Phi = (\theta,\sigma,M,S,\widetilde{\beta}, \beta,  \Upsilon)$.
 
@@ -177,7 +176,7 @@ Thus the model's parameters are $\Phi = (\theta,\sigma,M,S,\widetilde{\beta}, \b
 \subsubsection{Rewriting  $\mathcal{J}(\Ybf; g,h)$}
 Let's first separate observed and unobserved latent variables:
 \begin{align*}
-\mathcal{J}(\Ybf; g,h)&= \Esp_{gh}[\log p(T)  p(\Ubf_H| \Ubf_O,T) p(\Ubf_O|T)p(\Ybf|\Ubf_O)] + \entr[g(T)] +\entr[h(\Ubf_H,\Ubf_O)]
+\mathcal{J}(\Ybf; g,h)&= \Esp_{gh}\Big[\log \big(p(T)\:  p(\Ubf_H| \Ubf_O,T)\: p(\Ubf_O|T)\:p(\Ybf|\Ubf_O)\big)\Big] + \entr[g(T)] +\entr[h(\Ubf_H,\Ubf_O)]
 \end{align*}
 
  $\Ubf_O$ and $\Ubf_H$ being independent under the $h$ distribution, we have:
@@ -235,17 +234,18 @@ Distributions $p(\Ybf)$ and $p(\Ybf\mid \Ubf_O)$  do not depend on distributions
  Taking the expectation, and by independence of $g$ and $h$:
  $$\Esp_{gh} [\log p(\Ubf \mid T)] = \frac{n}{2} \Esp_{gh} [\log | \Upsilon_T|] - \frac{1}{2} Tr(\Esp_g[\Upsilon_T] \Esp_h[\boldsymbol{U}^\intercal \boldsymbol{U}])$$
  
-From the definition of the $h$ distribution: $$ \Esp_h[\Ubf^\intercal \Ubf] = M^\intercal M + S = SSD$$
- Where SSD is the sum of squared deviances and is a suffiencient statistic of the distribution. As latent vectors are normalized, SSD has diagonal 1.
+ We let $SSD$ denote the sum of squared deviance. From the definition of the $h$ distribution: $$ \Esp_h[\Ubf^\intercal \Ubf] = M^\intercal M + S = SSD$$
+  $SSD$ is a sufficient statistic of the distribution, and  as latent vectors have variance 1, $SSD/n$ has diagonal 1.
  
 \paragraph{Expectation of the log-determinant of $\Upsilon_T$\\}
 Thanks to $\Upsilon_T$ being tree-structured, its determinant factorizes on the edges of $T$ as follows:
 \begin{align*}
-|\Upsilon_T| &=\frac{ \prod_{kl \in T} |R_{T[kl]}|}{\prod_k (r_{Tkk})^{deg(k)-1}} =  \prod_{kl \in T} (1-r_{Tkl}^2),
+|\Upsilon_T| &=\frac{\prod_k (r_{Tkk})^{deg(k)-1}}{\prod_{kl \in T} |R_{T[kl]}|} =  \Big(\prod_{kl \in T} (1-r_{Tkl}^2)\Big)^{-1},
  \end{align*}
- which can be estimated using that $\forall kl \in T, r_{kl} = \frac{ssd_{kl}}{n}$,
- which gives $$\Esp_g[\log|\hat{\Upsilon}_T|]=\frac{1}{2}\sum_{kl} P_{kl}\log(1-\frac{ssd_{kl}^2}{n^2}).$$
+ which can be estimated using that $\forall kl \in T, r_{kl} = \frac{ssd_{kl}}{n}$.
+ This gives $$\Esp_g[\log|\hat{\Upsilon}_T|]=-\frac{1}{2}\sum_{kl} P_{kl}\log(1-\frac{ssd_{kl}^2}{n^2}).$$
 \paragraph{Trace of expectations\\}
+Following assumption B, we have that:
   \[ \Esp_g[\Upsilon_T]_{kl}  =  \Esp_g[I_T\had\Upsilon]_{kl} \left\{ 
 \begin{array}{cc}
 (P \had \Upsilon)_{kl} & k \neq l\\
@@ -257,7 +257,7 @@ Therefore we obtain $Tr(\Esp_g[\Upsilon_T] SSD) = \sum_{kl} P_{kl} \upsilon_{kl}
 
 Finally, 
 \begin{empheq}[box=\lesswidefbox]{align*}
-\Esp_{gh} [\log p(\Ubf \mid T)] =  \frac{n}{4}\sum _{\substack{kl\\ k \neq l}} P_{kl} \log \Big(1-\frac{ssd_{kl}^2}{n^2}\Big) - \frac{1}{2}\sum_{\substack{kl\\ k \neq l}} P_{kl} \upsilon_{kl} ssd_{kl} - \frac{1}{2} \sum_{k} \upsilon_{kk} 
+\Esp_{gh} [\log p(\Ubf \mid T)] =- \frac{n}{4}\sum _{\substack{kl\\ k \neq l}} P_{kl} \log \Big(1-\frac{ssd_{kl}^2}{n^2}\Big) - \frac{1}{2}\sum_{\substack{kl\\ k \neq l}} P_{kl} \upsilon_{kl} ssd_{kl} - \frac{1}{2} \sum_{k} \upsilon_{kk} 
  \end{empheq}
 \subsubsection{Details of $\Esp_g[\log g(T) - \log p(T)]$}
 \begin{align*}
@@ -282,7 +282,7 @@ which gives the following entropy:
 \subsubsection{Final quantity to optimize:}
 \begin{align*}
 \argmin_{g,h(\Ubf_H)} KL  &=\argmin_{g,h(\Ubf_H)}  \Big\{-\Esp_{gh}[\log p(\Ubf \mid T) ] + \Esp_g[\log g(T) - \log p(T)-\entr[h(\Ubf_H)]\Big\}\\
-&= \argmin_{g,h(\Ubf_H)}  \bigg\{- \frac{n}{4}\sum _{\substack{kl\\ k \neq l}} P_{kl} \log \Big(1-\frac{ssd_{kl}^2}{n^2}\Big) + \frac{1}{2}\sum_{\substack{kl\\ k \neq l}} P_{kl} \upsilon_{kl} ssd_{kl} + \frac{1}{2} \sum_{k} \upsilon_{kk} \\
+&= \argmin_{g,h(\Ubf_H)}  \bigg\{ \frac{n}{4}\sum _{\substack{kl\\ k \neq l}} P_{kl} \log \Big(1-\frac{ssd_{kl}^2}{n^2}\Big) + \frac{1}{2}\sum_{\substack{kl\\ k \neq l}} P_{kl} \upsilon_{kl} ssd_{kl} + \frac{1}{2} \sum_{k} \upsilon_{kk} \\
 & \;\;\;\; + \frac{1}{2}\sum_{\substack{kl\\ k\neq l}}P_{kl} \left(\log \frac{\widetilde{\beta}_{kl}}{{\beta}_{kl}}\right) - \log \frac{\widetilde{B}}{B} -\frac{1}{2}\sum_{k\in H} \log\left(\sum_i \widetilde{S}_{ik}\right) \bigg\}
 \end{align*}
  
@@ -292,16 +292,16 @@ which gives the following entropy:
 \paragraph{Edges weights under the $g$ distribution \\}
 Let's isolate the terms referring to the edges in the expression to be minimized:
 \begin{align*}
-  \sum_{\substack{kl\\ k \neq l}} \frac{P_{kl}}{2}\Big(\log \widetilde{\beta}_{kl} - \log \beta_{kl} - \frac{n}{2} \log (1-\frac{ssd_{kl}^2}{n^2}) + \upsilon_{kl}\: ssd_{kl} \Big)   
+  \sum_{\substack{kl\\ k \neq l}} \frac{P_{kl}}{2}\Big(\log \widetilde{\beta}_{kl} - \log \beta_{kl} + \frac{n}{2} \log (1-\frac{ssd_{kl}^2}{n^2}) + \upsilon_{kl}\: ssd_{kl} \Big)   
 \end{align*}
 
  
 Equating the term $kl$ of the above sum to zero, we obtain:
- $$\log \widetilde{\beta}_{kl} = \log \beta_{kl} +  \frac{n}{2} \log  \left(1-\frac{ssd_{kl}^2}{n^2}\right) - \upsilon_{kl}\:ssd_{kl} $$
+ $$\log \widetilde{\beta}_{kl} = \log \beta_{kl} - \frac{n}{2} \log  \left(1-\frac{ssd_{kl}^2}{n^2}\right) - \upsilon_{kl}\:ssd_{kl} $$
  
 Which gives the following update formula for $\widetilde{\beta}_{kl}$:
  
-  $$\boxed{\displaystyle \widetilde{\beta}_{kl} = \beta_{kl} \: \left(1-\frac{ssd_{kl}^2}{n^2}\right)^{n/2} \exp( -\upsilon_{kl}\: ssd_{kl} ) }$$
+  $$\boxed{\displaystyle \widetilde{\beta}_{kl} = \beta_{kl} \: \left(1-\frac{ssd_{kl}^2}{n^2}\right)^{-n/2} \exp( -\upsilon_{kl}\: ssd_{kl} ) }$$
 
 
 \paragraph{Means of the hidden part of the latent Gaussian vector under the $h$ distribution \\}
@@ -347,42 +347,87 @@ $$ \argmax_{\beta, \Upsilon} \mathcal{J}(\Ybf ; g,h) =\argmax_{\beta, \Upsilon} 
 
 As distributions of VE step mimic original ones, computations are very similar. We get:
 \begin{align*}
-\log (p_\beta(T)p_{\Upsilon_T}(\Ubf\mid T))  &= \sum_{k<l} \mathds{1}\{kl \in T\} \log \beta_{kl} - \log B + \frac{n}{2}\log |\Upsilon_T| - \frac{1}{2}Tr(\Upsilon_T \Ubf^\intercal \Ubf)\\
-\Esp_{gh} [\log (p_\beta(T)p_{\Upsilon_T}(\Ubf\mid T) ] &= \sum_{k<l} P_{kl} \log\beta_{kl} +\frac{n}{2} \Esp_g[\log |\Upsilon_T|] -\frac{1}{2} Tr(\Esp_g [\Upsilon_T] \; SSD)- \log B
+\log (p_\beta(T)p_{\Upsilon_T}(\Ubf\mid T))  &= \frac{1}{2}\sum_{kl} \mathds{1}\{kl \in T\} \log \beta_{kl} - \log B + \frac{n}{2}\log |\Upsilon_T| - \frac{1}{2}Tr(\Upsilon_T \Ubf^\intercal \Ubf)\\
+\Esp_{gh} [\log (p_\beta(T)p_{\Upsilon_T}(\Ubf\mid T) ] &= \frac{1}{2}\sum_{kl} P_{kl} \log\beta_{kl} +\frac{n}{2} \Esp_g[\log |\Upsilon_T|] -\frac{1}{2} Tr(\Esp_g [\Upsilon_T] \; SSD)- \log B
 \end{align*}
 
-Reminding that $\Esp_g[\log |\Upsilon_{T}|]= \frac{1}{2}\sum _{kl} P_{kl}  \log \left(1-\frac{ssd_{kl}^2}{n^2}\right)$,  we obtain:
+Reminding that $\Esp_g[\log |\Upsilon_{T}|]= \frac{-1}{2}\sum _{kl} P_{kl}  \log \left(1-\frac{ssd_{kl}^2}{n^2}\right)$,  we obtain:
 \begin{align*}
-\Esp_{gh} [\log (p_\beta(T)p_{\Upsilon_T}(\Ubf\mid T) ] &=\frac{1}{2}\sum_{kl} P_{kl} \log  \beta_{kl} - \log B + \frac{n}{4} \sum_{kl} P_{kl} \log\left(1-\frac{ssd_{kl}^2}{n^2}\right)  - \frac{1}{2}Tr( (P \had \Upsilon) SSD)\\
-&= \frac{n}{2}\left( \sum_k \log \omega_{kk}  + \frac{1}{2} \sum_{kl} P_{kl} \log \varphi_{kl} - \sum_{k} \omega_{kk} \sigma_{kk} - \sum_{kl} P_{kl} \omega_{kl} \sigma_{kl}\right)\\
-& \;\; +\sum_{k<l} P_{kl} \log  \beta_{kl} - \log B 
+\Esp_{gh} [\log (p_\beta(T)p_{\Upsilon_T}(\Ubf\mid T) ] &=\frac{1}{2}\sum_{kl} P_{kl} \log  \beta_{kl} - \log B - \frac{n}{4} \sum_{kl} P_{kl} \log\left(1-\frac{ssd_{kl}^2}{n^2}\right)  - \frac{1}{2}Tr\big( (P \had \Upsilon)\: SSD\big) 
 \end{align*}
  
- $$\boxed{\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Zbf\mid T) ]  =  \frac{n}{2} \sum_{kl} P_{kl} ( \frac{1}{2} \log \varphi_{kl} -\omega_{kl} \sigma_{kl} ) + \frac{n}{2} \sum_k (\log \omega_{kk} - \omega_{kk} \sigma_{kk}) +\sum_{k<l} P_{kl} \log  \beta_{kl} - \log B }$$
+ \subsubsection{Update formula for $\beta$}
+ The derivative of $ \mathcal{J}(\Ybf ; g,h)$ with respect to weight $\beta_{kl}$ of edge $kl$ is:
+ 
+ \begin{align*}
+\frac{\partial}{\partial_{\beta_{kl}}} \mathcal{J}(\Ybf ; g,h) &=  \frac{\partial}{\partial_{\beta_{kl}}} \Esp_{gh} [\log (p_\beta(T)p_{\Upsilon_T}(\Ubf\mid T) ] \\
+&= \frac{P_{kl}}{\beta_{kl}} - \frac{\partial_{\beta_{kl}} B }{B} \\
+\end{align*}
+
+The derivative of the normalization constant with respect to $\beta_{kl}$ is the derivative of an output from the Matrix Tree theorem with respect to one of the weight's matrix entry. This quantity is given by \citet{Meila} (Lemma 2). Defining matrix $Q(\betabf)$ as showed in the appendix, then $\partial_{\beta_{kl}} B = Q(\betabf)_{kl}$ and:
+ \begin{align*}
+&\frac{\partial}{\partial_{\beta_{kl}}} \mathcal{J}(\Ybf ; g,h) 
+=0 \\
+\iff & \boxed{\widehat{\beta}_{kl} = \frac{P_{kl}}{ Q(\betabf)_{kl}} }
+\end{align*}
+ \subsubsection{Update formula for $\Upsilon$}
+ \paragraph{Notations\\}
+In what follows, for any $q\times q$  matrix $A$, $A_{kl}$ will refer to the bloc $kl$ of $A$: $A_{kl}=(a_{ij})_{\{i,j\}\in\{k,l\}}$.   $[A_{kl}]^q$ will then denote the matrix obtained by filling up with zero entries to obtain full dimension $q\times q$, so that:
+$$([A_{kl}]^q )_{ij}=\left\{ \begin{array}{rl}
+a_{ij} & \text{if } \{i,j\}\in\{k,l\}\\
+0 &  \text{if } \{i,j\}\in\{1,..., q\}_{\setminus kl}
+\end{array}\right.$$
+
+ 
+\paragraph{Justification\\}
+Let $\hat{\Upsilon}^*$ and $\hat{\Upsilon}_T^*$ be estimators of $\Upsilon$ and $\Upsilon_T$ respectively, such that:
+$$\hat{\Upsilon}^*=\argmax_\Upsilon \Big\{\Esp_g[\Esp_h[\log p_\Upsilon(\Ubf|T)]]\Big\} \text{ , and\hspace{0.5cm}}\hat{\Upsilon}_T^*=\argmax_{\Upsilon_T} \Big\{\Esp_h[\log p_{\Upsilon_T}(\Ubf|T)]\Big\}.$$
+Then by definition of $\hat{\Upsilon}^*$:
+$$\Esp_g[\Esp_h[\log p_{\hat{\Upsilon}^*}(\Ubf|T)]] \geq \Esp_g[\Esp_h[\log p_{\hat{\Upsilon}_T^*}(\Ubf|T)]] $$
+Therefore the use of $\hat{\Upsilon}_T^*$ is sub-optimal. However, for a any other estimator  $\hat{\Upsilon}_T$ of $\Upsilon_T$, we have by definition of $\hat{\Upsilon}_T^*$ that
+$$\Esp_h[\log p_{\hat{\Upsilon}_T}(\Ubf|T)] \leq \Esp_h[\log p_{\hat{\Upsilon}_T^*}(\Ubf|T)] $$
+Then by increase of the expectation we obtain
+$$\Esp_g[\Esp_h[\log p_{\hat{\Upsilon}_T}(\Ubf|T)]] \leq \Esp_g[\Esp_h[\log p_{\hat{\Upsilon}_T^*}(\Ubf|T)]] $$
+which guarantees the increase of the lower bound. Therefore, maximizing only inside the expectation in $g$ and using $\hat{\Upsilon}_T^*$ falls within the framework of GEMs.
+
+\paragraph{Computation\\}
+ We use the maximum likelihood estimate $\hat{\Upsilon}_T$ established in Lauritzen, which writes as the following in our context:
+\begin{align*}
+\widehat{\Upsilon}_T &= n  \sum_{kl\in T}   [(SSD_{kl})^{-1}]^{p+r} - n\sum_k (deg(k)-1)[(SSD_{kk})^{-1}]^{p+r}\\
+&=n \sum_{kl\in T}  [(SSD_{kl})^{-1} - (SSD_{kk})^{-1} -  (SSD_{ll})^{-1} ]^{p+r} + n\sum_k[(SSD_{kk})^{-1}]^{p+r}
+\end{align*}
+As SSD has diagonal n, the expression simplifies. Denoting $I_d$ the identity matrix of dimension $d$ we obtain:
+$$\widehat{\Upsilon}_T =n\sum_{kl\in T} [(SSD_{kl})^{-1} -\frac{1}{n} I_2]^{p+r}+ I_{p+r}$$
+
+We can detail each bloc matrices as follows:
+\[
+n\times [(SSD_{kl})^{-1} - \frac{1}{n}I_2] = \frac{1}{1-(ssd_{kl}/n)^2}
+\left(\begin{array}{cc}
+		(ssd_{kl}/n)^2   & -ssd_{kl}/n\\
+		-ssd_{kl}/n& (ssd_{kl}/n)^2 
+		\end{array}\right)
+\]
+
+To derive an estimate for $\Upsilon$, we consider the expectation in $g$:
+
+$$\Esp_g[\widehat{\Upsilon}_T]= n\sum_{kl} P_{kl} \had [(SSD_{kl})^{-1} - I_2]^{p+r} + I_{p+r}$$
+ The expectation above defines a matrix which off-diagonal term $kl$ and diagonal term $kk$ write as follows:
+$$(\Esp_g[\widehat{\Upsilon}_T])_{kl} = P_{kl} \left(\frac{-ssd_{kl}/n}{1-(ssd_{kl}/n)^2} \right)$$ 
+$$(\Esp_g[\widehat{\Upsilon}_T])_{kk} = \sum_l P_{kl} \frac{(ssd_{kl}/n)^2}{1-(ssd_{kl}/n)^2} +1 $$
+ 
+ We now define the estimator $\widehat{\Upsilon}$, such that the relationship $\Esp_g[\widehat{\Upsilon}_T]=P\had \widehat{\Upsilon}$ remains. The above yields:
+ \[\left\{\begin{array}{rl}
+ \widehat{\Upsilon}_{kl} &= \dfrac{-ssd_{kl}/n}{1-(ssd_{kl}/n)^2} \\\\
+ \widehat{\Upsilon}_{kk} &=\sum_l P_{kl} \dfrac{(ssd_{kl}/n)^2}{1-(ssd_{kl}/n)^2} +1
+ \end{array}\right.
+ \]
+Hence all diagonal terms are positive. Out of curiosity we could rewrite term $kk$ to make the estimate for the degree of node $k$ appear. With $d\widehat{e}g(k)=\sum_l P_{kl}$ we also have:
+$$\widehat{\Upsilon}_{kk} =\sum_l \frac{P_{kl} }{1-(ssd_{kl}/n)^2} -(d\widehat{e}g(k)-1).$$
+
 %%%%%%%%%%%%%% 
 \newpage
 \bibliographystyle{apsrev} %tested plainnat
 \bibliography{bibi}
  \appendix
-\section{Calcul du déterminant}
-Dans la suite $\Sigma$ est fidèle à l'arbre $T$, et $\Sigma^{-1} = I_T\cdot \Omega$. D'après Lauritzen (5.12):
-$$\frac{\omega_{\mu\Upsilon}^2}{\omega_{\mu\mu}\omega_{\Upsilon\Upsilon}} = c_{\mu\Upsilon}^2 = 1-\frac{|\Sigma|\;|\Sigma_{\setminus \{\mu\Upsilon\}}|}{|\Sigma_{\setminus\Upsilon}|\;|\Sigma_{\setminus \mu}|} $$
-
-$\Sigma$ étant fidèle à un arbre, son déterminant se factorise simplement sur les arêtes en produit de leur corrélations, de telle sorte que :
-\begin{align*}
-    |\Sigma| &= \prod_k \sigma_{kk} \prod_{kl\in T} (1-\rho_{kl}^2)\\
-    |\Sigma_{\setminus\Upsilon}| &= \prod_{k \neq \Upsilon} \sigma_{kk} \prod_{\substack{kl\in T \\ k \neq \Upsilon}} (1-\rho_{kl}^2)\\
-    |\Sigma_{\setminus \{\mu\Upsilon\}}| &= \prod_{k\notin \{\mu, \Upsilon\}} \sigma_{kk} \prod_{\substack{kl\in T\\ (kl) \notin \{\mu, \Upsilon\}^2 }} (1-\rho_{kl}^2)
-\end{align*}
-Alors :
-\begin{align*}
-    \frac{|\Sigma|\;|\Sigma_{\setminus \{\mu\Upsilon\}}|}{|\Sigma_{\setminus\Upsilon}|\;|\Sigma_{\setminus \mu}|} &=\frac{\prod_k \sigma_{kk} \prod_{k\notin \{\mu, \Upsilon\}} \sigma_{kk}}{\prod_{k \neq \Upsilon} \sigma_{kk} \prod_{k \neq \mu} \sigma_{kk}} \times \frac{ \prod_{kl\in T} (1-\rho_{kl}^2)\prod_{\substack{kl\in T\\ (kl) \notin \{\mu, \Upsilon\}^2 }} (1-\rho_{kl}^2)}{\prod_{\substack{kl\in T \\ k \neq \Upsilon}} (1-\rho_{kl}^2)\prod_{\substack{kl\in T \\ k \neq \mu}} (1-\rho_{kl}^2)} \\
-    &=\frac{(1-\rho_{\mu\Upsilon}^2)}{\prod_{\substack{kl\in T\\ (kl) \notin \{\mu, \Upsilon\}^2 }} (1-\rho_{kl}^2)} \times \prod_{\substack{kl\in T\\ (kl) \notin \{\mu, \Upsilon\}^2 }} (1-\rho_{kl}^2)\\
-     &=1-\rho_{\mu\Upsilon}^2
-\end{align*}
-Finalement : 
-$$\boxed{c_{\mu\Upsilon}^2 = \rho_{\mu\Upsilon}^2}$$
-
-On peut alors écrire
-$$ |\Sigma| = \prod_k \sigma_{kk} \prod_{kl \in T} (1-c_{kl}^2)$$
+ 
 \end{document}
