@@ -70,23 +70,65 @@ arbre=1*(missing_data$Omega!=0)
 Sigma=missing_data$Sigma
 cor_t=cov2cor(Sigma)
 gamma= solve(cor_t)
-plot((arbre*cor_t)^2, (arbre*cov2cor(gamma))^2)
+plot((arbre*cor_t)^2, -(arbre*cov2cor(gamma)))
 abline(0,1)
 
 # corrélations en fonction des corrélations partielles obtenues par l'inverse
 # de la matrice de variance
+set.seed(1)
+n=200 ;p=14;r=0
+missing_data<-missing_from_scratch(n,p,r,type,plot=TRUE)
+counts=missing_data$Y
+PLNfit=PLN(counts~1)
+Sigma=PLNfit$model_par$Sigma
 omega=missing_data$Omega
-plot(F_Sym2Vec((arbre*cov2cor(solve(omega)))^2), F_Sym2Vec((arbre*cov2cor(omega))))
+arbre=1*(missing_data$Omega!=0)
+plot(F_Sym2Vec((1-arbre*cov2cor(Sigma)^2)^2), F_Sym2Vec(arbre*cov2cor(omega))^2)
 abline(0,1)
+omega[1,2]^2/(omega[1,1]*omega[2,2])
+cov2cor(omega)[1,2]^2
 
-om_t=omega
-diag(om_t)=1
-solve(om_t)
-plot((arbre*cov2cor(inverse.gmp(om_t))),(arbre*cov2cor(om_t)))
-abline(0,1)
+######
+# verif formule 5.12
+omega=missing_data$Omega
+arbre=1*(omega!=0)
+corp=cov2cor(omega)
+sigma=solve(omega)
+detS=det(sigma)
+res=matrix(NA, 14, 14)
+for(mu in 1:14){
+  for(gam in mu:14){
+    detS_mu = det(sigma[-mu,-mu])
+    detS_gam=det(sigma[-gam,-gam])
+    detS_mugam=det(sigma[-c(mu,gam),-c(mu,gam)])
+   res[mu,gam]=arbre[mu,gam]*(corp[mu,gam]^2-(1-((detS*detS_mugam)/(detS_mu*detS_gam))))
+  }
+}
+ggimage(res)
+diag(arbre)=0
 
+det.fractional(sigma, log=TRUE)
+res=matrix(NA, 14, 14)
+for(mu in 1:14){
+  for(gam in mu:14){
+    detS_mu = 0.5*sum(log((1-cov2cor(sigma[-mu,-mu])[arbre[-mu,-mu]!=0]^2)))+
+      sum(log(diag(sigma[-mu,-mu])))
+    detS_gam=0.5*sum(log((1-cov2cor(sigma[-gam,-gam])[arbre[-gam,-gam]!=0]^2)))+
+      sum(log(diag(sigma[-gam,-gam])))
+    detS_mugam=0.5*sum(log((1-cov2cor(sigma[-c(mu,gam),-c(mu,gam)])[arbre[-c(mu,gam),-c(mu,gam)]!=0]^2)))+
+      sum(log(diag(sigma[-c(mu,gam),-c(mu,gam)])))
+    res[mu,gam]=arbre[mu,gam]*(corp[mu,gam]^2-(1-((detS*detS_mugam)/(detS_mu*detS_gam))))
+  }
+}
+ggimage(res)
 
+plot(CorOmegaMatrix(sigma), 1-cov2cor(sigma)^2)
+prod(1-cov2cor(sigma)^2*arbre)
+prod(arbre*CorOmegaMatrix(sigma) + (arbre==0))
 
+mu=1
+detS_1=log(det(sigma[-1,-1]))
+detS_mu = 0.5*sum(log((1-cov2cor(sigma[-mu,-mu])[arbre[-mu,-mu]!=0]^2)))+
+  sum(log(diag(sigma[-mu,-mu])))
 
-
-
+log(det(sigma)) - 0.5*sum(log((1-cov2cor(sigma)[arbre!=0]^2)))-sum(log(diag(sigma)))

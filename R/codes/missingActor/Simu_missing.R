@@ -26,25 +26,25 @@ Simu_missing<-function(p,B,N,n,cores,r, maxIter, eps){
     type="scale-free" ; O=1:p ;H=(p+1):(p+r); plot=FALSE 
     # Data
     missing_data<-missing_from_scratch(n,p,r,type,plot)
-    counts=missing_data$Y; ZH=missing_data$ZH ; sigmaO= missing_data$Sigma; 
-    omega=missing_data$Omega; trueClique=missing_data$TC[[1]]; hidden=missing_data$H
+    counts=missing_data$Y; UH=missing_data$UH  
+    G=missing_data$G; trueClique=missing_data$TC[[1]]; hidden=missing_data$H
     # Observed parameters
     PLNfit<-PLN(counts~1, control=list(trace=0))
-    MO<-PLNfit$var_par$M  ; SO<-PLNfit$var_par$S  ; theta=PLNfit$model_par$Theta ; 
-    matcovar=matrix(1, n,1) ; sigma_obs=PLNfit$model_par$Sigma
-    
-    sorted_omega=omega[c(setdiff(1:(p+r), hidden), hidden),c(setdiff(1:(p+r), hidden), 
-                                                             hidden)]
-    
+    MO<-PLNfit$var_par$M  ; SO<-PLNfit$var_par$S  ; sigma_obs=PLNfit$model_par$Sigma
+  
+    #-- normalize the PLN outputs
+    D=diag(sigma_obs)
+    matsig=(matrix(rep(1/sqrt(D),n),n,p, byrow = TRUE))
+    MO=MO*matsig
+    SO=SO*matsig^2
     #1 missing actors
     t1<-Sys.time()
     cliques_spca <- boot_FitSparsePCA(scale(MO),B,r=1, cores=3)
     t2<-Sys.time()
     time_boots=difftime(t2, t1)
     # best VEM with 1 missing actor
-    ListVEM<-List.VEM(cliquesObj =cliques_spca, counts, sigma_obs, MO,SO,r=1,alpha=0.1,
-                      eps=eps,maxIter=maxIter, nobeta=FALSE, cores=cores,
-                      filterDiag = FALSE, filterWg=TRUE,save=FALSE, updateSH = TRUE)
+    ListVEM<-List.VEM(cliquesObj =cliques_spca, counts, cov2cor(sigma_obs), MO,SO,r=1,alpha=0.1,
+                      eps=eps,maxIter=100, cores=3, trackJ = FALSE)
     
     # Jcor<-do.call(rbind, lapply(ListVEM, function(vem){
     #   if(length(vem)==15){
@@ -75,10 +75,10 @@ Simu_missing<-function(p,B,N,n,cores,r, maxIter, eps){
     T2<-Sys.time()
     runtime=difftime(T2, T1)
     cat(paste0("\nseed ", seed," in ",round(runtime,3), attr(runtime, "units"),"\n"))
-    Sim=list(omega=sorted_omega,ZH=ZH,
+    Sim=list(G=G,UH=UH,
              ListVEM=ListVEM,#VEM_1=VEM_1,
              time_boots=time_boots, nbinit=nbinit )
-    saveRDS(Sim, file=paste0("/Users/raphaellemomal/simulations/15nodes_rawdata/SF_seed",
+    saveRDS(Sim, file=paste0("/Users/raphaellemomal/simulations/15nodes_V2/SF_seed",
                              seed,".rds"))
     
     return(Sim)

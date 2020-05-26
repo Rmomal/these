@@ -17,38 +17,41 @@ source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
 source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-exactDet.R")
 
 #-- function
-simu_vary_r<-function(p,n,r,B,rMax,maxIter,seed,type,alpha,eps=1e-3,nobeta=FALSE, cores=3, plot){
+simu_vary_r<-function(p,n,r,B,rMax,maxIter,seed,type,alpha,eps=1e-3, cores=3, plot){
   set.seed(seed)
   # sim data
   missing_data<-missing_from_scratch(n,p,r=r,type,plot)
-  counts=missing_data$Y; omega=missing_data$Omega
+  counts=missing_data$Y 
   # Observed parameters
   PLNfit<-PLN(counts~1, control=list(trace=0))
   MO<-PLNfit$var_par$M  ; SO<-PLNfit$var_par$S ; 
   theta=PLNfit$model_par$Theta; sigma_obs=PLNfit$model_par$Sigma
-  init0=initVEM(counts , initviasigma = NULL,  sigma_obs,r = 0)
-  Wginit= init0$Wginit; Winit= init0$Winit; omegainit=init0$omegainit 
+  #-- normalize the PLN outputs
+  D=diag(sigma_obs)
+  matsig=(matrix(rep(1/sqrt(D),n),n,p, byrow = TRUE))
+  MO=MO*matsig
+  SO=SO*matsig^2
+  #initialize
+  init0=initVEM(counts , initviasigma = NULL,  cov2cor(sigma_obs),r = 0)
+  Wginit= init0$Wginit; Winit= init0$Winit; upsinit=init0$upsinit 
   # vem with original counts
-  VEM_r0<-VEMtree(counts, MO, SO, MH=NULL,ome_init = omegainit,W_init =Winit,eps=eps,
+  VEM_r0<-VEMtree(counts, MO, SO, MH=NULL,upsinit,W_init =Winit,eps=eps,
                   Wg_init =Wginit,plot = FALSE, maxIter = maxIter,print.hist = FALSE,
-                  alpha=alpha, verbatim=FALSE, filterWg = TRUE, filterDiag = FALSE,
-                  updateSH = TRUE, nobeta=nobeta )
+                  alpha=alpha, verbatim=FALSE, trackJ=FALSE )
   
   #  vary r
-  VEMr<-lapply(3:rMax, function(r){
+  VEMr<-lapply(1:rMax, function(r){
     cat(paste0(r," missing actors: "))
     t1<-Sys.time()
     cliques_spca <- boot_FitSparsePCA(scale(MO),B,r=r,cores=3)
-    
-    ListVEM<-List.VEM(cliquesObj =cliques_spca, counts, sigma_obs, MO,SO,r=r,alpha=alpha, cores=cores,
-                      eps=eps,maxIter, nobeta=nobeta, 
-                      filterDiag = FALSE, filterWg = TRUE, updateSH = TRUE)
+    ListVEM<-List.VEM(cliquesObj =cliques_spca, counts, cov2cor(sigma_obs), MO,SO,r=r,alpha=alpha, cores=cores,
+                      eps=eps,maxIter,trackJ=FALSE)
     t2<-Sys.time()
     runtime=difftime(t2,t1)
     cat(paste0(round(runtime,3), attr(runtime, "units"),"\n"))
     return(ListVEM)
   })
-  saveRDS(list(list.vem0=VEM_r0, VEMr=VEMr, counts=counts, theta=theta),
+  saveRDS(list(VEM_r0=VEM_r0, VEMr=VEMr, counts=counts, theta=theta),
           file=paste0("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/",type,"_seed",
                       seed,"_r",r,"_1-",rMax ,".rds") )
 }
@@ -57,8 +60,8 @@ simu_vary_r<-function(p,n,r,B,rMax,maxIter,seed,type,alpha,eps=1e-3,nobeta=FALSE
 #-- run
 seed=1; p=14 ; B=100; type="scale-free" ; n=200 
 t1<-Sys.time()
-simu_vary_r(seed=seed,B=B, n=n, p=p,r=0,maxIter=200,rMax=3, 
-            type = type,nobeta=FALSE, plot=FALSE , cores=1, alpha=0.1)
+simu_vary_r(seed=seed,B=B, n=n, p=p,r=0,maxIter=200,rMax=2, 
+            type = type,nobeta=FALSE, plot=FALSE , cores=3, alpha=0.1)
 t2<-Sys.time()
 difftime(t2, t1)
 t1<-Sys.time()
@@ -69,14 +72,14 @@ difftime(t2, t1)
 
 #--
 
-get_allData<-function(seed, rMax,eps1,eps2){
+get_allData<-function(seed, rMax,eps1=1e-14,eps2=1e-14){
   simr1<-readRDS(paste0("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/scale-free_seed",seed,"_r1_1-",rMax,".rds") )       
   simr0<-readRDS(paste0("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/scale-free_seed",seed,"_r0_1-",rMax,".rds") )      
   p=14 ;n=200
   Data123<-lapply(1:rMax, function(r){
     do.call(rbind,lapply(seq_along(simr0$VEMr[[r]]),function(num){
       vem=simr0$VEMr[[r]][[num]]
-      if(length(vem)==15){
+      if(length(vem)==14){
         penT=-( 0.5*sum( vem$Pg * log(vem$Wg+(vem$Wg==0)) ) - logSumTree(vem$Wg)$det) 
         
         penZH=0.5*sum(apply(matrix(vem$S[,(p+1):(p+r)],n,r),2,
@@ -84,50 +87,50 @@ get_allData<-function(seed, rMax,eps1,eps2){
         sumPg = sum(vem$Pg)-2*(p+r-1)
         values=c(J=tail(vem$lowbound$J,1),getJcor(vem,p=p,eps1,eps2),penT=penT,penZH=penZH,sumPg=sumPg)
       }else{
-        values=c(NaN,NaN, NaN,NaN, NaN,NaN,NaN)
+        values=c(J=NaN,Jcor=NaN, diff=NaN,detEg=NaN, delta=NaN,penT=NaN,penZH=NaN,sumPg=NaN)
       }
       return(c(values,r=r, trueR=0, num=num))
     }))}) 
   Data123=do.call(rbind,Data123) %>%  as_tibble()
-  Data0<-c(J=tail(simr0$list.vem0$lowbound$J,1),
-           getJcor(simr0$list.vem0,p=14,eps1,eps2),
-           penT=-(0.5*sum( simr0$list.vem0$Pg * log(simr0$list.vem0$Wg+(simr0$list.vem0$Wg==0)) ) - 
-                    logSumTree(simr0$list.vem0$Wg)$det) ,
-           penZH=0,sumPg=sum(simr0$list.vem0$Pg)-26,
+  Data0<-c(J=tail(simr0$VEM_r0$lowbound$J,1),
+           getJcor(simr0$VEM_r0,p=14,eps1,eps2),
+           penT=-(0.5*sum( simr0$VEM_r0$Pg * log(simr0$VEM_r0$Wg+(simr0$VEM_r0$Wg==0)) ) - 
+                    logSumTree(simr0$VEM_r0$Wg)$det) ,
+           penZH=0,sumPg=sum(simr0$VEM_r0$Pg)-26,
            r=0, trueR=0, num=1)
   Data_r0 = rbind(Data0, Data123)
   
   Data123<-lapply(1:rMax, function(r){
     do.call(rbind,lapply(seq_along(simr1$VEMr[[r]]),function(num){
       vem=simr1$VEMr[[r]][[num]]
-      if(length(vem)==15){
+      if(length(vem)==14){
         penT=-( 0.5*sum( vem$Pg * log(vem$Wg+(vem$Wg==0)) ) - logSumTree(vem$Wg)$det) 
         penZH=0.5*sum(apply(matrix(vem$S[,(p+1):(p+r)],n,r),2,
                             function(x){ log(sum(x))}))+0.5*r*n*(1+log(2*pi))
         sumPg = sum(vem$Pg)-2*(p+r-1)
         values=c(J=tail(vem$lowbound$J,1),getJcor(vem,p=p,eps1,eps2),penT=penT,penZH=penZH,sumPg=sumPg)
       }else{
-        values=c(NaN,NaN, NaN,NaN, NaN,NaN,NaN)
+        values=c(J=NaN,Jcor=NaN, diff=NaN,detEg=NaN, delta=NaN,penT=NaN,penZH=NaN,sumPg=NaN)
       }
       return(c(values,r=r, trueR=1, num=num))
     }))}) 
   Data123=do.call(rbind,Data123) %>%  as_tibble()
-  Data0<-c(J=tail(simr1$list.vem0$lowbound$J,1),getJcor(simr1$list.vem0,p=14,eps1,eps2),penT=-(0.5*sum( simr1$list.vem0$Pg * log(simr1$list.vem0$Wg+(simr1$list.vem0$Wg==0)) ) - 
-                                                                                                 logSumTree(simr1$list.vem0$Wg)$det) ,
-           penZH=0,sumPg=sum(simr1$list.vem0$Pg)-26,
+  Data0<-c(J=tail(simr1$VEM_r0$lowbound$J,1),getJcor(simr1$VEM_r0,p=14,eps1,eps2),
+           penT=-(0.5*sum( simr1$VEM_r0$Pg * log(simr1$VEM_r0$Wg+(simr1$VEM_r0$Wg==0)) ) -logSumTree(simr1$VEM_r0$Wg)$det) ,
+           penZH=0,sumPg=sum(simr1$VEM_r0$Pg)-26,
            r=0, trueR=1, num=1)
   Data_r1 = rbind(Data0, Data123)
   
   allData = rbind(Data_r0, Data_r1)
-  allData=allData %>% mutate(goodsumP = abs(sumPg)<1e-10, 
+  allData=allData %>% mutate(goodsumP = abs(sumPg)<1e-3, 
                              penvBIC=0.5*log(n)*(p+ (p*(p+1)/2 +r*p)+((p+r)*(p+r-1)/2 - 1)),
                              ICL = Jcor-penT-penZH-penvBIC)
   return(allData)
 }
-allData1<-get_allData(1, rMax=3)
+allData1<-get_allData(1, rMax=2)
 allData2<-get_allData(2, rMax=2)
 allData7<-get_allData(7, rMax=3,eps1=1e-8,eps2=1e-7)
-summarise=allData7 %>% filter(detEg>-25) %>% #filter(goodsumP) %>% 
+summarise=allData1 %>% filter(!is.na(ICL)) %>% #filter(detEg>-25) %>% #filter(goodsumP) %>% 
   group_by(r, trueR) %>%
   summarize( maxICL=max(ICL, na.rm=TRUE),
              maxJCor=max(Jcor, na.rm=TRUE),maxJ=max(J, na.rm=TRUE)) 

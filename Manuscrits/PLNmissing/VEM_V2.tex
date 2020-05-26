@@ -240,10 +240,10 @@ Distributions $p(\Ybf)$ and $p(\Ybf\mid \Ubf_O)$  do not depend on distributions
 \paragraph{Expectation of the log-determinant of $\Upsilon_T$\\}
 Thanks to $\Upsilon_T$ being tree-structured, its determinant factorizes on the edges of $T$ as follows:
 \begin{align*}
-|\Upsilon_T| &=\frac{\prod_k (r_{Tkk})^{deg(k)-1}}{\prod_{kl \in T} |R_{T[kl]}|} =  \Big(\prod_{kl \in T} (1-r_{Tkl}^2)\Big)^{-1},
+|\Upsilon_T| &=\frac{\prod_k |R_{Tkk}|^{deg(k)-1}}{\prod_{kl \in T} |R_{Tkl}|} =  \Big(\prod_{kl \in T} (1-\rho_{Tkl}^2)\Big)^{-1},
  \end{align*}
- which can be estimated using that $\forall kl \in T, r_{kl} = \frac{ssd_{kl}}{n}$.
- This gives $$\Esp_g[\log|\hat{\Upsilon}_T|]=-\frac{1}{2}\sum_{kl} P_{kl}\log(1-\frac{ssd_{kl}^2}{n^2}).$$
+
+ This gives $$ \Esp_g[\log|\Upsilon_T|]=-\frac{1}{2}\sum_{kl} P_{kl}\log(1-\rho_{Tkl}^2).$$
 \paragraph{Trace of expectations\\}
 Following assumption B, we have that:
   \[ \Esp_g[\Upsilon_T]_{kl}  =  \Esp_g[I_T\had\Upsilon]_{kl} \left\{ 
@@ -253,11 +253,15 @@ Following assumption B, we have that:
 \end{array}
 \right.
 \]
-Therefore we obtain $Tr(\Esp_g[\Upsilon_T] SSD) = \sum_{kl} P_{kl} \upsilon_{kl} ssd_{kl} + \sum_k \upsilon_{kk} $.\\
+Therefore we obtain 
+\begin{align*}
+Tr(\Esp_g[\Upsilon_T] SSD) &= \sum_{kl} P_{kl} \upsilon_{kl} ssd_{kl} + \sum_k \upsilon_{kk} ssd_{kk}\\
+&=n( \sum_{kl} P_{kl} \upsilon_{kl} \:ssd_{kl}/n + \sum_k \upsilon_{kk} )
+\end{align*}
 
 Finally, 
 \begin{empheq}[box=\lesswidefbox]{align*}
-\Esp_{gh} [\log p(\Ubf \mid T)] =- \frac{n}{4}\sum _{\substack{kl\\ k \neq l}} P_{kl} \log \Big(1-\frac{ssd_{kl}^2}{n^2}\Big) - \frac{1}{2}\sum_{\substack{kl\\ k \neq l}} P_{kl} \upsilon_{kl} ssd_{kl} - \frac{1}{2} \sum_{k} \upsilon_{kk} 
+\Esp_{gh} [\log p(\Ubf \mid T)] =- \frac{n}{2}\Big(\frac{1}{2}\sum _{\substack{kl\\ k \neq l}} P_{kl} \log (1-\rho_{Tkl}^2)+ \sum_{\substack{kl\\ k \neq l}} P_{kl} \upsilon_{kl} \frac{ssd_{kl}}{n} + \sum_{k} \upsilon_{kk} \Big)
  \end{empheq}
 \subsubsection{Details of $\Esp_g[\log g(T) - \log p(T)]$}
 \begin{align*}
@@ -282,7 +286,7 @@ which gives the following entropy:
 \subsubsection{Final quantity to optimize:}
 \begin{align*}
 \argmin_{g,h(\Ubf_H)} KL  &=\argmin_{g,h(\Ubf_H)}  \Big\{-\Esp_{gh}[\log p(\Ubf \mid T) ] + \Esp_g[\log g(T) - \log p(T)-\entr[h(\Ubf_H)]\Big\}\\
-&= \argmin_{g,h(\Ubf_H)}  \bigg\{ \frac{n}{4}\sum _{\substack{kl\\ k \neq l}} P_{kl} \log \Big(1-\frac{ssd_{kl}^2}{n^2}\Big) + \frac{1}{2}\sum_{\substack{kl\\ k \neq l}} P_{kl} \upsilon_{kl} ssd_{kl} + \frac{1}{2} \sum_{k} \upsilon_{kk} \\
+&= \argmin_{g,h(\Ubf_H)}  \bigg\{ \frac{n}{2}\Big(\frac{1}{2}\sum _{\substack{kl\\ k \neq l}} P_{kl} \log (1-\rho^2) +  \sum_{\substack{kl\\ k \neq l}} P_{kl} \upsilon_{kl} \frac{ssd_{kl}}{n} +  \sum_{k} \upsilon_{kk} \Big)\\
 & \;\;\;\; + \frac{1}{2}\sum_{\substack{kl\\ k\neq l}}P_{kl} \left(\log \frac{\widetilde{\beta}_{kl}}{{\beta}_{kl}}\right) - \log \frac{\widetilde{B}}{B} -\frac{1}{2}\sum_{k\in H} \log\left(\sum_i \widetilde{S}_{ik}\right) \bigg\}
 \end{align*}
  
@@ -292,25 +296,25 @@ which gives the following entropy:
 \paragraph{Edges weights under the $g$ distribution \\}
 Let's isolate the terms referring to the edges in the expression to be minimized:
 \begin{align*}
-  \sum_{\substack{kl\\ k \neq l}} \frac{P_{kl}}{2}\Big(\log \widetilde{\beta}_{kl} - \log \beta_{kl} + \frac{n}{2} \log (1-\frac{ssd_{kl}^2}{n^2}) + \upsilon_{kl}\: ssd_{kl} \Big)   
+  \sum_{\substack{kl\\ k \neq l}} \frac{P_{kl}}{2}\Big(\log \widetilde{\beta}_{kl} - \log \beta_{kl} + \frac{n}{2} \log (1-\rho_{Tkl}^2) + \upsilon_{kl}\: ssd_{kl} \Big)   
 \end{align*}
 
  
 Equating the term $kl$ of the above sum to zero, we obtain:
- $$\log \widetilde{\beta}_{kl} = \log \beta_{kl} - \frac{n}{2} \log  \left(1-\frac{ssd_{kl}^2}{n^2}\right) - \upsilon_{kl}\:ssd_{kl} $$
+ $$\log \widetilde{\beta}_{kl} = \log \beta_{kl} - \frac{n}{2} \log  (1-\rho_{Tkl}^2) - \upsilon_{kl}\:ssd_{kl} $$
  
 Which gives the following update formula for $\widetilde{\beta}_{kl}$:
  
-  $$\boxed{\displaystyle \widetilde{\beta}_{kl} = \beta_{kl} \: \left(1-\frac{ssd_{kl}^2}{n^2}\right)^{-n/2} \exp( -\upsilon_{kl}\: ssd_{kl} ) }$$
+  $$\boxed{\displaystyle \widetilde{\beta}_{kl} = \beta_{kl} \: (1-\rho_{Tkl}^2)^{-n/2} \exp( -\upsilon_{kl}\: ssd_{kl} ) }$$
 
 
 \paragraph{Means of the hidden part of the latent Gaussian vector under the $h$ distribution \\}
 Means $M_H$ only appear in the $H$, $OH$ and $HO$ blocs of $SSD$. The derivative of KL with respect to mean $M_{ik}$ for the $i^\text{th}$ sample of species $k\in H$ writes:
 
 \begin{align*}
-\frac{\partial KL}{\partial M_{ik}} &=\frac{n}{2}\frac{\partial}{\partial M_{ik}}\Big(2\sum_{\substack{k \neq l\\
+\frac{\partial KL}{\partial M_{ik}} &= \frac{\partial}{\partial M_{ik}}\Big(2\sum_{\substack{k \neq l\\
 (k, l) \in H\times O}} P_{kl} \upsilon_{kl} (M^\intercal M)_{kl} + \sum_{k\in H} \upsilon_{kk} (M^\intercal M)_{kk}\Big)\\
-&= n( \sum_{l \in O } M_{il} P_{kl}\upsilon_{kl} + M_{ik} \upsilon_{kk}) 
+&=   \sum_{l \in O } M_{il} P_{kl}\upsilon_{kl} + M_{ik} \upsilon_{kk}
 \end{align*}
 \begin{align*}
 \frac{\partial KL}{\partial M_{ik}}  = 0\iff M_{ik} &= -\frac{1}{\upsilon_{kk}} \sum_{l\in O} M_{il} (P\had\Upsilon)_{lk}\\
@@ -351,9 +355,9 @@ As distributions of VE step mimic original ones, computations are very similar. 
 \Esp_{gh} [\log (p_\beta(T)p_{\Upsilon_T}(\Ubf\mid T) ] &= \frac{1}{2}\sum_{kl} P_{kl} \log\beta_{kl} +\frac{n}{2} \Esp_g[\log |\Upsilon_T|] -\frac{1}{2} Tr(\Esp_g [\Upsilon_T] \; SSD)- \log B
 \end{align*}
 
-Reminding that $\Esp_g[\log |\Upsilon_{T}|]= \frac{-1}{2}\sum _{kl} P_{kl}  \log \left(1-\frac{ssd_{kl}^2}{n^2}\right)$,  we obtain:
+Reminding that $\Esp_g[\log |\Upsilon_{T}|]= \frac{-1}{2}\sum _{kl} P_{kl}  \log \left(1-\rho_{Tkl}^2\right)$,  we obtain:
 \begin{align*}
-\Esp_{gh} [\log (p_\beta(T)p_{\Upsilon_T}(\Ubf\mid T) ] &=\frac{1}{2}\sum_{kl} P_{kl} \log  \beta_{kl} - \log B - \frac{n}{4} \sum_{kl} P_{kl} \log\left(1-\frac{ssd_{kl}^2}{n^2}\right)  - \frac{1}{2}Tr\big( (P \had \Upsilon)\: SSD\big) 
+\Esp_{gh} [\log (p_\beta(T)p_{\Upsilon_T}(\Ubf\mid T) ] &=\frac{1}{2}\sum_{kl} P_{kl} \log  \beta_{kl} - \log B - \frac{n}{4} \sum_{kl} P_{kl} \log\left(1-\rho_{Tkl}^2\right)  - \frac{1}{2}Tr\big( (P \had \Upsilon)\: SSD\big) 
 \end{align*}
  
  \subsubsection{Update formula for $\beta$}
@@ -370,7 +374,8 @@ The derivative of the normalization constant with respect to $\beta_{kl}$ is the
 =0 \\
 \iff & \boxed{\widehat{\beta}_{kl} = \frac{P_{kl}}{ Q(\betabf)_{kl}} }
 \end{align*}
- \subsubsection{Update formula for $\Upsilon$}
+
+ \subsubsection{Update formula for $\Upsilon$ and $R$}
  \paragraph{Notations\\}
 In what follows, for any $q\times q$  matrix $A$, $A_{kl}$ will refer to the bloc $kl$ of $A$: $A_{kl}=(a_{ij})_{\{i,j\}\in\{k,l\}}$.   $[A_{kl}]^q$ will then denote the matrix obtained by filling up with zero entries to obtain full dimension $q\times q$, so that:
 $$([A_{kl}]^q )_{ij}=\left\{ \begin{array}{rl}
@@ -391,7 +396,11 @@ $$\Esp_g[\Esp_h[\log p_{\hat{\Upsilon}_T}(\Ubf|T)]] \leq \Esp_g[\Esp_h[\log p_{\
 which guarantees the increase of the lower bound. Therefore, maximizing only inside the expectation in $g$ and using $\hat{\Upsilon}_T^*$ falls within the framework of GEMs.
 
 \paragraph{Computation\\}
- We use the maximum likelihood estimate $\hat{\Upsilon}_T$ established in Lauritzen, which writes as the following in our context:
+ We use the maximum likelihood estimates $\hat{\rho} $and $\hat{\Upsilon}_T$ established in \citet{Lau96}, which depends only on the $SSD$ matrix and the underlying dependency structure.
+  The correlation correpsonding to an existing edge in the structure $T$ is estimated using
+  $$ \forall kl\in T,\boxed{\hat{\rho}_{Tkl} = ssd_{kl}/n}.$$
+  
+   The estimator  $\hat{\Upsilon}_T$  writes as the following in our context:
 \begin{align*}
 \widehat{\Upsilon}_T &= n  \sum_{kl\in T}   [(SSD_{kl})^{-1}]^{p+r} - n\sum_k (deg(k)-1)[(SSD_{kk})^{-1}]^{p+r}\\
 &=n \sum_{kl\in T}  [(SSD_{kl})^{-1} - (SSD_{kk})^{-1} -  (SSD_{ll})^{-1} ]^{p+r} + n\sum_k[(SSD_{kk})^{-1}]^{p+r}
@@ -412,18 +421,17 @@ To derive an estimate for $\Upsilon$, we consider the expectation in $g$:
 
 $$\Esp_g[\widehat{\Upsilon}_T]= n\sum_{kl} P_{kl} \had [(SSD_{kl})^{-1} - I_2]^{p+r} + I_{p+r}$$
  The expectation above defines a matrix which off-diagonal term $kl$ and diagonal term $kk$ write as follows:
-$$(\Esp_g[\widehat{\Upsilon}_T])_{kl} = P_{kl} \left(\frac{-ssd_{kl}/n}{1-(ssd_{kl}/n)^2} \right)$$ 
-$$(\Esp_g[\widehat{\Upsilon}_T])_{kk} = \sum_l P_{kl} \frac{(ssd_{kl}/n)^2}{1-(ssd_{kl}/n)^2} +1 $$
+$$(\Esp_g[\widehat{\Upsilon}_T])_{kl} = P_{kl} \left(\frac{-ssd_{kl}/n}{1-(ssd_{kl}/n)^2} \right)\text{\hspace{0.5cm},\hspace{1cm}}(\Esp_g[\widehat{\Upsilon}_T])_{kk} = \sum_l P_{kl} \frac{(ssd_{kl}/n)^2}{1-(ssd_{kl}/n)^2} +1 $$
  
  We now define the estimator $\widehat{\Upsilon}$, such that the relationship $\Esp_g[\widehat{\Upsilon}_T]=P\had \widehat{\Upsilon}$ remains. The above yields:
- \[\left\{\begin{array}{rl}
- \widehat{\Upsilon}_{kl} &= \dfrac{-ssd_{kl}/n}{1-(ssd_{kl}/n)^2} \\\\
- \widehat{\Upsilon}_{kk} &=\sum_l P_{kl} \dfrac{(ssd_{kl}/n)^2}{1-(ssd_{kl}/n)^2} +1
+ \[ \boxed{\widehat{\Upsilon}_{kl}=\left\{\begin{array}{cl}
+  \dfrac{-ssd_{kl}/n}{1-(ssd_{kl}/n)^2} & ,k\neq l\\\\
+ \sum_l P_{kl} \dfrac{(ssd_{kl}/n)^2}{1-(ssd_{kl}/n)^2} +1 & ,k=l
  \end{array}\right.
- \]
+ }\]
 Hence all diagonal terms are positive. Out of curiosity we could rewrite term $kk$ to make the estimate for the degree of node $k$ appear. With $d\widehat{e}g(k)=\sum_l P_{kl}$ we also have:
 $$\widehat{\Upsilon}_{kk} =\sum_l \frac{P_{kl} }{1-(ssd_{kl}/n)^2} -(d\widehat{e}g(k)-1).$$
-
+ 
 %%%%%%%%%%%%%% 
 \newpage
 \bibliographystyle{apsrev} %tested plainnat

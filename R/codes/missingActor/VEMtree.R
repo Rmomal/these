@@ -55,6 +55,8 @@ missing_data<-missing_from_scratch(n,p,r,type,plot)
 counts=missing_data$Y
 sigmaO= missing_data$Sigma
 omega=missing_data$Omega
+upsilon=missing_data$Upsilon
+
 trueClique=missing_data$TC
 hidden=missing_data$H
 
@@ -69,7 +71,7 @@ order_sigma<-sigma_obs[c(trueClique[[1]],setdiff(1:p,trueClique[[1]])),
 ggimage(order_sigma)
 ggimage(solve(order_sigma))
 plot(sigmaO ,sigma_obs)
-ome_init=omega[c(setdiff(1:(p+r), hidden), hidden),c(setdiff(1:(p+r), hidden), hidden)]
+ome_init=upsilon[c(setdiff(1:(p+r), hidden), hidden),c(setdiff(1:(p+r), hidden), hidden)]
 ome=ome_init ; diag(ome)=0
 ggimage(ome)
 
