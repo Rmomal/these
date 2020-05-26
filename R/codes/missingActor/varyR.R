@@ -43,7 +43,7 @@ simu_vary_r<-function(p,n,r,B,rMax,maxIter,seed,type,alpha,eps=1e-3, cores=3, pl
   VEMr<-lapply(1:rMax, function(r){
     cat(paste0(r," missing actors: "))
     t1<-Sys.time()
-    cliques_spca <- boot_FitSparsePCA(scale(MO),B,r=r,cores=3)
+    cliques_spca <- boot_FitSparsePCA((MO),B,r=r,cores=3)
     ListVEM<-List.VEM(cliquesObj =cliques_spca, counts, cov2cor(sigma_obs), MO,SO,r=r,alpha=alpha, cores=cores,
                       eps=eps,maxIter,trackJ=FALSE)
     t2<-Sys.time()
@@ -58,15 +58,15 @@ simu_vary_r<-function(p,n,r,B,rMax,maxIter,seed,type,alpha,eps=1e-3, cores=3, pl
 
 ############
 #-- run
-seed=1; p=14 ; B=100; type="scale-free" ; n=200 
+seed=7; p=14 ; B=100; type="scale-free" ; n=200 
 t1<-Sys.time()
 simu_vary_r(seed=seed,B=B, n=n, p=p,r=0,maxIter=200,rMax=2, 
-            type = type,nobeta=FALSE, plot=FALSE , cores=3, alpha=0.1)
+            type = type, plot=FALSE , cores=3, alpha=0.1)
 t2<-Sys.time()
 difftime(t2, t1)
 t1<-Sys.time()
 simu_vary_r(seed=seed,B=B, n=n, p=p,r=1,maxIter=200,
-            rMax=2, type = type, nobeta=FALSE, plot=FALSE, cores=3, alpha=0.1)
+            rMax=2, type = type,  plot=FALSE, cores=3, alpha=0.1)
 t2<-Sys.time()
 difftime(t2, t1)
 
@@ -129,8 +129,8 @@ get_allData<-function(seed, rMax,eps1=1e-14,eps2=1e-14){
 }
 allData1<-get_allData(1, rMax=2)
 allData2<-get_allData(2, rMax=2)
-allData7<-get_allData(7, rMax=3,eps1=1e-8,eps2=1e-7)
-summarise=allData1 %>% filter(!is.na(ICL)) %>% #filter(detEg>-25) %>% #filter(goodsumP) %>% 
+allData7<-get_allData(7, rMax=2)
+summarise=allData7 %>% filter(!is.na(ICL)) %>% #filter(detEg>-25) %>% #filter(goodsumP) %>% 
   group_by(r, trueR) %>%
   summarize( maxICL=max(ICL, na.rm=TRUE),
              maxJCor=max(Jcor, na.rm=TRUE),maxJ=max(J, na.rm=TRUE)) 

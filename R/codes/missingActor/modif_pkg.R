@@ -18,6 +18,7 @@ generator_PLN<-function(Sigma,covariates=NULL, n=50){
   U<- rmvnorm(n, rep(0,p), R)
   matsig=(matrix(rep(sqrt(D),n),n,p, byrow = TRUE))
   Y = matrix(rpois(n*p, exp(U*matsig+prod )), n, p)
+ 
   return(list(Y=Y, U=U))
 }
 generator_param<-function(G,signed=FALSE,v=0){

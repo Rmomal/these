@@ -13,7 +13,9 @@ library(gridExtra)
 library(kableExtra)
 library(parallel)
 library(sparsepca)
-source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
+source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-V2.R")
+source("/Users/raphaellemomal/these/R/codes/missingActor/modif_pkg.R")
+source("/Users/raphaellemomal/these/R/codes/missingActor/VEM_tools.R")
 source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-exactDet.R")
 
 ##### function
@@ -87,7 +89,7 @@ Simu_missing<-function(p,B,N,n,cores,r, maxIter, eps){
 
 ######### run
 
-Sim15<-Simu_missing(p = 14, n = 200, B = 100,N = 400,eps = 1e-3, cores=3,r=1,maxIter=200)
+Sim15<-Simu_missing(p = 14, n = 200, B = 100,N = 217,eps = 1e-3, cores=3,r=1,maxIter=200)
 saveRDS(Sim15, file="/Users/raphaellemomal/these/R/codes/missingActor/SimResults/Sim15_r1_200SF.rds")
 # Sim30<-Simu_missing(p = 29, n = 200, B = 40,N = 200)
 # saveRDS(Sim15, file="/Users/raphaellemomal/these/R/codes/missingActor/SimResults/Sim30.rds")

@@ -319,25 +319,35 @@ getJcor<-function(vem,p,eig.tol=1e-14,eps=1e-14){
 # edges weight and probability
 exactMeila<-function (W,r){ # for edges weight beta
   p = nrow(W) ; index=1    
-  #cat(paste0(" condL=",signif(cond_lap(W,1),3)))
+ # cat(paste0(" condL=",signif(cond_lap(W,1),3)))
   L = Laplacian(W)[-index,-index]
+  # if(cond_lap(W,1)<1e-16){browser()
+  #  message("proj Mei")
+  #   L=as.matrix(nearPD(L,eig.tol = 1e-14, posd.tol = 1e-14)$mat)
+  # } 
+ 
   Mei =inverse.gmp(L)
   Mei = rbind(c(0, diag(Mei)), cbind(diag(Mei), (diag(Mei) %o% rep(1, p - 1) + rep(1, p - 1) %o% diag(Mei) - 2 * Mei)))
   Mei = 0.5 * (Mei + t(Mei))
-#  if(sum(Mei<0)!=0)  browser()
+  if(sum(Mei<0)!=0)  browser()
   return(Mei=Mei)
 }
 
 Kirshner <- function(W,r){# for edges probability from weights W (Kirshner (07) formulas)
   p = nrow(W);  index=1  
   L = Laplacian(W)[-index,-index]
+  if(cond_lap(W, 1)<1e-16 && min(Re(eigen(L)$values))<0){ 
+  #  L=as.matrix(nearPD(L, eig.tol = 1e-14, posd.tol = 1e-14)$mat)
+    stop("L in Kirshner is singular")
+ 
+  }
   K = inverse.gmp(L)
   K =  rbind(c(0, diag(K)),
              cbind(diag(K), (diag(K)%o%rep(1, p-1) + rep(1, p-1)%o%diag(K) - 2*K))) 
   K = .5*(K + t(K))
   P = W * K
   P = .5*(P + t(P)) 
-  if(sum(P<0)!=0){
+  if(sum(P<0)!=0){ 
     cat(paste0(" ",sum(P<0)/2,"neg. prob, min=", min(P),", max=",max(P[P<0])))
   }
 
@@ -390,15 +400,16 @@ VE<-function(MO,SO,SH,Upsilon,W,Wg,MH,Pg,logSTW,logSTWg,eps, alpha, verbatim,tra
       return(sum(vec))
     })
     M=cbind(MO,MH)
-    SH <-matrix((n-t(MH)%*%MH)/n,n,r, byrow = TRUE)
+    SH <-matrix(max((n-t(MH)%*%MH)/n,0),n,r, byrow = TRUE)
     S<-cbind(SO,SH) 
     if(trackJ) LB1=c(LowerBound(Pg = Pg, Upsilon=Upsilon, M=M, S=S,W=W, Wg=Wg,p, logSTW=logSTW,logSTWg=logSTWg),"MH")
   }else{if(trackJ)LB1=LB0}
   
   #--- Wg
   Rho=(1/n)*(t(M)%*%M+diag(colSums(S)))
-  if(max(F_Sym2Vec(Rho))>1){message("trim Rho") 
-    Rho[Rho>1]=1}
+  if(max(abs(F_Sym2Vec(Rho)))>1){message("trim Rho") 
+    Rho[Rho>1]=1
+    Rho[Rho<(-1)]=-1}
   compWg= computeWg(Rho, Upsilon, W, r, n, alpha,  hist=hist, verbatim=verbatim)  
   Wg.new = compWg$Wg
   
@@ -441,6 +452,7 @@ Mstep<-function(M, S, Pg, Upsilon,W, logSTW, logSTWg, eps, Wg, p, trackJ=FALSE){
   logW.new[-null]= log(Pg[-null]) - log(Mei[-null] )
   logW.new[-null]=logW.new[-null]-mean(logW.new[-null]) #centrage
   W.new = exp(logW.new)
+  W.new[null]=0
   W.new[W.new< 1e-16] = 0 # numeric zeros
   if(hidden) W.new[H,H]=0
   diag(W.new)=0
@@ -453,6 +465,7 @@ Mstep<-function(M, S, Pg, Upsilon,W, logSTW, logSTWg, eps, Wg, p, trackJ=FALSE){
   max.prec=logSTW.tot$max.prec
   if(trackJ){LB=rbind(LB1,LB2)}else{LB=LowerBound(Pg = Pg, Upsilon=Upsilon, M=M, S=S,W=W, Wg=Wg,p,logSTW=logSTW,logSTWg=logSTWg)}
   res=list(W=W, Upsilon=Upsilon, LB=LB , logSTW=logSTW,max.prec=max.prec) 
+ 
   return(res)
 }
 

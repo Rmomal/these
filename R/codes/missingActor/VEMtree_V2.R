@@ -18,7 +18,7 @@ source("/Users/raphaellemomal/these/R/codes/missingActor/modif_pkg.R")
 source("/Users/raphaellemomal/these/R/codes/missingActor/VEM_tools.R")
 
 #-- data simulation
-set.seed(20)
+set.seed(1)
 n=200 ;p=14;r=1;type="scale-free";plot=TRUE
 O=1:p
 missing_data<-missing_from_scratch(n,p,r,type,plot)
@@ -47,8 +47,10 @@ init=initVEM(counts = counts,initviasigma=cliques_spca$cliqueList[[1]], cov2cor(
 Wginit= init$Wginit; Winit= init$Winit; upsinit=init$upsinit ; MHinit=init$MHinit
 
 ##-- single VEM
-resVEM<- VEMtree(counts,MO,SO,MH=MHinit,upsinit,Winit,Wginit, eps=1e-3, alpha=0.1,
+resVEM<- VEMtree(counts,MO,SO,MH=MHinit,upsinit,Winit,Wginit, eps=1e-3, alpha=0.15,
                  maxIter=30, plot=TRUE,print.hist=FALSE, verbatim = TRUE,trackJ=FALSE)
+
+
 plotVEM(resVEM$Pg,G,r=1,seuil=0.5)
 resVEM$features
 tail(resVEM$lowbound$J,1)
@@ -74,9 +76,9 @@ get.ListVEM<-function(seed, eps=1e-3){
   SO=SO*matsig^2
   R=cov2cor(sigma_obs)
   #------
-  cliques_spca<- boot_FitSparsePCA(scale(MO),B=100,r=1, cores=3)
+  cliques_spca<- boot_FitSparsePCA((MO),B=100,r=1, cores=3)
   ListVEM<-List.VEM(cliquesObj =cliques_spca, counts, R, MO,SO,r=1,alpha=0.1,
-                    eps=eps,maxIter=100, cores=3 )
+                    eps=eps,maxIter=100, cores=3,trackJ=FALSE )
   res=ListVEM
   
   return(res)
@@ -116,13 +118,26 @@ ListVEM20<-get.ListVEM(20)
 toc()
 ListVEM19<-get.ListVEM(19)
 toc()
+tic()
+ListVEM1<-get.ListVEM(10)
+toc()
+tic()
+ListVEM7<-get.ListVEM(7)
+toc()
 data20=get_data(ListVEM20, 20)
 data19=get_data(ListVEM19, 19)
-data20=data20 %>% mutate(ICL=J-penT-penUH)
-data20%>%  mutate(maxJcor=Jcor==max(Jcor, na.rm=TRUE)) %>% 
-  gather(key, value, -diff,-Jcor,-J,-maxJcor,-num,-detEg,-ICL,-penUH,-penT,-delta) %>% 
-  ggplot(aes(value,Jcor))+geom_vline(xintercept=0.5, color="gray", linetype="dashed")+
+data1=get_data(ListVEM1,10)
+data7=get_data(ListVEM7,7)
+data7=data7 %>% mutate(Jcor2=J-penT*n)
+data7%>%  mutate(maxJcor=Jcor==max(Jcor, na.rm=TRUE)) %>% 
+  gather(key, value, -diff,-Jcor,-J,-maxJcor,-num,-detEg,-Jcor2,-penUH,-penT,-delta) %>% 
+  ggplot(aes(value,J))+geom_vline(xintercept=0.5, color="gray", linetype="dashed")+
   geom_point(aes(size=ifelse(maxJcor,2.5,2), shape=ifelse(maxJcor,15,20)))+
   scale_shape_identity() +scale_size_identity() + facet_wrap(~key)+mytheme.dark("")
+
+data1%>% 
+  ggplot(aes(tprh,Jcor2))+geom_vline(xintercept=0.5, color="gray", linetype="dashed")+
+  geom_point()+
+  scale_shape_identity() +scale_size_identity() +mytheme.dark("")
 
 

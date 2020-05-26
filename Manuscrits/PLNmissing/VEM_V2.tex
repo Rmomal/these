@@ -13,6 +13,8 @@
 \usetikzlibrary{shapes,backgrounds,arrows,automata,snakes,shadows,positioning, mindmap}
 
 %%%%% Commands
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
 \newcommand{\argmin}{\arg\!\min}
 \newcommand{\argmax}{\arg\!\max}
 \newcommand*\widefbox[1]{\fbox{\hspace{3em}#1\hspace{3em}}}
@@ -29,6 +31,8 @@
 \newcommand{\Ybf}{\boldsymbol{Y}}
 \newcommand{\Zbf}{\boldsymbol{Z}}
 \newcommand{\Wbf}{\boldsymbol{W}}
+\newcommand{\Qbf}{\boldsymbol{Q}}
+\newcommand{\Mbf}{\boldsymbol{M}}
 \newcommand{\Ubf}{\boldsymbol{U}}
 \newcommand{\Sbf}{\boldsymbol{S}}
 \newcommand{\mbf}{\boldsymbol{m}}
@@ -40,7 +44,8 @@
 \newcommand{\had}{\boldsymbol{\cdot}}
 
  %%%%%%% TIKZ
- \newcommand{\edgeunit}{1.5}
+\newcommand{\edgeunit}{1.5}
+\newcommand{\nodesize}{1em}
 \providecommand\given{} % is redefined in \Set
 \newcommand\SetSymbol[1][]{\nonscript\:#1\vert\nonscript\:}
 %\usepackage[mathcal]{eucal}
@@ -53,7 +58,8 @@
     basic/.style={%
     scale=0.9,circle,draw=black,transform shape,fill=white,font=\small}
 }
-
+\tikzstyle{basic}=[draw, circle, minimum width=0.4*\nodesize, inner sep=0, color=black, fill=black]
+\tikzstyle{clique}=[draw, rectangle, minimum width=2*\nodesize, minimum height=2*\nodesize, inner sep=0, color=black]
 
 \setlength\parindent{0pt}
 
@@ -70,7 +76,7 @@
 $$\left\{\begin{array}{rl}
 T & \sim\prod_{jk \in T} \beta_{jk}/B \\\\
 \Ubf |T& \sim\mathcal{N}(0,R_T)\\\\
-\Ybf|\Zbf&\sim\mathcal{P}( \exp( \Xbf\theta^\intercal + \Ubf\sigma^\intercal) )
+\Ybf|\Ubf&\sim\mathcal{P}( \exp( \Xbf\theta^\intercal + \Ubf\sigma^\intercal) )
 \end{array} \right.$$
 
 \paragraph{Dimensions:}
@@ -369,11 +375,8 @@ Reminding that $\Esp_g[\log |\Upsilon_{T}|]= \frac{-1}{2}\sum _{kl} P_{kl}  \log
 \end{align*}
 
 The derivative of the normalization constant with respect to $\beta_{kl}$ is the derivative of an output from the Matrix Tree theorem with respect to one of the weight's matrix entry. This quantity is given by \citet{Meila} (Lemma 2). Defining matrix $Q(\betabf)$ as showed in the appendix, then $\partial_{\beta_{kl}} B = Q(\betabf)_{kl}$ and:
- \begin{align*}
-&\frac{\partial}{\partial_{\beta_{kl}}} \mathcal{J}(\Ybf ; g,h) 
-=0 \\
-\iff & \boxed{\widehat{\beta}_{kl} = \frac{P_{kl}}{ Q(\betabf)_{kl}} }
-\end{align*}
+$$\frac{\partial}{\partial_{\beta_{kl}}} \mathcal{J}(\Ybf ; g,h) 
+=0 \iff  \boxed{\widehat{\beta}_{kl} = \frac{P_{kl}}{ Q(\betabf)_{kl}} }$$
 
  \subsubsection{Update formula for $\Upsilon$ and $R$}
  \paragraph{Notations\\}
@@ -429,7 +432,7 @@ $$(\Esp_g[\widehat{\Upsilon}_T])_{kl} = P_{kl} \left(\frac{-ssd_{kl}/n}{1-(ssd_{
  \sum_l P_{kl} \dfrac{(ssd_{kl}/n)^2}{1-(ssd_{kl}/n)^2} +1 & ,k=l
  \end{array}\right.
  }\]
-Hence all diagonal terms are positive. Out of curiosity we could rewrite term $kk$ to make the estimate for the degree of node $k$ appear. With $d\widehat{e}g(k)=\sum_l P_{kl}$ we also have:
+All diagonal terms are positive. Out of curiosity we could rewrite term $kk$ to make the estimate for the degree of node $k$ appear. With $d\widehat{e}g(k)=\sum_l P_{kl}$ we also have:
 $$\widehat{\Upsilon}_{kk} =\sum_l \frac{P_{kl} }{1-(ssd_{kl}/n)^2} -(d\widehat{e}g(k)-1).$$
  
 %%%%%%%%%%%%%% 
@@ -437,5 +440,172 @@ $$\widehat{\Upsilon}_{kk} =\sum_l \frac{P_{kl} }{1-(ssd_{kl}/n)^2} -(d\widehat{e
 \bibliographystyle{apsrev} %tested plainnat
 \bibliography{bibi}
  \appendix
+ \section{Algebraic Tools}
+ For any matrix $\Wbf$, we denote its entry in row $u$ and column $v$ by $[\Wbf]_{uv}$. We define the Laplacian matrix $\Qbf$ of a symmetric matrix $\Wbf=[w_{jk} ]_{1\leq j,k\leq p}$ as follows :
  
+\[
+ [\Qbf]_{jk}  =\begin{cases}
+    -w_{jk}  & 1\leq j<k \leq p\\
+    \sum_{u=1}^p w_{ju} & 1\leq j=k \leq p.
+    \end{cases}
+\]
+ 
+We further denote $\Wbf^{uv}$ the matrix $\Wbf$ deprived from its $u$th row and $v$th column and we remind that the $(u, v)$-minor of $\Wbf$ is the determinant of this deprived matrix, that is $|\Wbf^{uv}|$.
+
+\begin{theorem}[Matrix Tree Theorem  \cite{matrixtree,Meila}] \label{thm:MTT}
+    For any symmetric weight matrix W, the sum over all spanning trees of the product of the weights of their edges is equal to any minor of its Laplacian. That is, for any $1 \leq u, v \leq p$,
+ 
+   \[
+    W := \sum_{T\in\mathcal{T}} \prod_{(j, k)\in T} w_{jk} = |\Qbf^{uv}|.
+    \]
+   
+\end{theorem}    
+
+In the following, without loss of generality, we will choose $\Qbf^{pp}$. As an extension of this result, \cite{Meila} provide a close form expression for the derivative of $W$ with respect to each entry of $\Wbf$. 
+
+\begin{lemma} [\cite{Meila}] \label{lem:Meila}
+    Define the entries of the symmetric matrix $\Mbf$ as
+ 
+\[    
+ [\Mbf]_{jk} =\begin{cases}
+    \left[(\Qbf^{pp})^{-1}\right]_{jj} + \left[(\Qbf^{pp})^{-1}\right]_{kk} -2\left[(\Qbf^{pp})^{-1}\right]_{jk} & 1\leq j<k < p\\
+    \left[(\Qbf^{pp})^{-1}\right]_{jj} & k=p, 1\leq j \leq p  \\
+    0 & 1\leq j=k \leq p.
+    \end{cases}
+\]
+ 
+it holds that
+ 
+$$
+\partial_{w_{jk}} W = [\Mbf]_{jk}  \times W.
+$$
+\end{lemma}
+\begin{lemma} [\cite{kirshner}] \label{lem:Kirshner}
+    Let $p_W$ be a distribution on the space of spanning trees, such that $p_W(T)=\prod_{kl\in T} w_{kl} / W$, where $W$ is defined as in Theorem \ref{thm:MTT}. Taking the symmetric matrix $\Mbf$ as defined in Lemma  \ref{lem:Meila}, the probability for an edge $kl$ to be in the tree $T$ writes:
+ 
+$$\mathds{P}\{kl\in T\} = \sum_{T\in \mathcal{T}} p_W(T)= w_{kl}\: \Mbf_{kl}$$
+\end{lemma}
+ \section{Divers}
+ 
+\subsection{Dérivation du log-déterminant}
+On peut dériver par rapport à $\Omega$, en supposant la première ligne :
+\begin{align}
+    \partial_{\Omega}\left(\Esp_{gh}\left[\log p(\Zbf | T)\right] \right)&=  \Esp_{gh}\left[\partial_{\Omega}( \log p(\Zbf | T) )\right] \\
+    &=\Esp_{gh}\left[\frac{n}{2}\partial_{\Omega}( \log |\Omega_T|) -\frac{1}{2} \partial_\Omega (Tr(\Omega_T \; \Zbf^\intercal \Zbf ))\right]
+\end{align}
+
+\paragraph{\underline{$\partial_{\Omega}( \log |\Omega_T|)$} :}
+ $$\log |I_T \cdot \Omega| = \log \big(\sum_{k=1}^q (I_T\cdot \Omega)_{ik} \mathsf{Com}_{ik}\big)$$
+Le terme $\omega_{ik}$ n'apparaît pas dans le cofacteur $\mathsf{Com}_{ik}$, ce qui donne :
+\begin{align*}
+    \partial_{\omega_{ij}} \log |I_T\cdot \Omega| &= (I_T)_{ij} \frac{\mathsf{Com}_{ij}}{|I_T\cdot \Omega |}
+\end{align*}
+Or on a $(I_T\cdot \Omega)^{-1} = \frac{1}{|I_T \cdot \Omega|}\times \mathsf{Com}^\intercal$, et en particulier par symétrie de $\Omega_T$ on a que $(I_T\cdot \Omega)_{ij}^{-1}=\frac{\mathsf{Com}_{ij}}{|I_T\cdot \Omega |}$.
+
+Donc 
+\begin{align}
+         &\partial_{\omega_{ij}} \log |I_T\cdot \Omega| = (I_T)_{ij} (I_T\Omega)_{ij}^{-1}
+\end{align}
+Par symétrie :
+\begin{align}
+    &\partial_\Omega \log |I_T\cdot \Omega| = 2I_T \cdot \Omega_T^{-1}\\\\
+    \iff &\Esp_g \big( \partial_\Omega \log |\Omega_T| \big) = 2\Esp_g (I_T\cdot \Sigma_T) 
+\end{align}
+
+\paragraph{\underline{$ \partial_\Omega (Tr(\Omega_T \; Q ))$}:}
+\begin{align}
+    \partial_\Omega \Esp_{gh}[Tr(\Omega_T \Zbf^\intercal \Zbf)]&=\partial_\Omega Tr(\Esp_g[\Omega_T]Q)\\
+    &=\partial_\Omega Tr((P\cdot\Omega)Q)\\
+    &=2P\cdot Q
+\end{align}
+D'où $$ \Esp_g (I_T\cdot \Sigma_T)  = \frac{PQ}{n}$$
+
+Et également 
+$$\boxed{n I_T\cdot \hat{\Sigma}_T = I_T\cdot \Esp_h[\Zbf^\intercal \Zbf] = I_T\cdot \widehat{SSD}}$$
+\subsection{Calcul du déterminant}
+Soit $R=(\rho_{ij})_{ij}$ une matrice de corrélations, et $R^{-1}= \Upsilon$. D'après Lauritzen (5.12):
+$$\frac{\upsilon_{\mu\gamma}^2}{\upsilon_{\mu\mu}\upsilon_{\gamma\gamma}} = c_{\mu\gamma}^2 = 1-\frac{|R|\;|R_{\setminus \{\mu\gamma\}}|}{|R_{\setminus\gamma}|\;|R_{\setminus \mu}|} $$
+Si R est fidèle à un graphe $\mathcal{G}$ décomposable, alors son déterminant dépend des déterminants des blocs de $R$ défini par les cliques et les séparateurs du graphe, tel que :
+$$|R| = \frac{\prod_{C \in \mathcal{C}} |R_C|}{\prod_{S \in \mathcal{S}} |R_S|^{\nu(S)}} $$
+où $\nu(S)$ est la multiplicité du séparateur $S$. En particulier si $\mathcal{G}$ est un arbre $T$, les cliques sont les arêtes et les séparateurs les noeuds. Comme $R$ est de diagonale 1, son déterminant s'obtient simplement :
+\begin{align*}
+    |R| &=  \prod_{kl\in T} (1-\rho_{kl}^2)\\
+\end{align*}
+Lorsqu'un noeud $\gamma$ est retiré de $T$, $R_{\setminus \gamma}$ devient fidèle à un graphe marginalisé sur $\gamma$, où apparaît une clique $C_\gamma$ formée par l'ensemble des anciens voisins de $\gamma$, et le reste du graphe reste inchangé. L'ensemble des cliques du graphe marginalisé est donc constitué de $C_\gamma$, et des arêtes dont aucune extrémité n'est $\gamma$ dans $T$.
+\begin{figure}[h]
+ \begin{center}
+\begin{tabular}{lcl}
+a) && b)\vspace{-0.5cm}\\
+\hspace{0.5cm}
+	\begin{tikzpicture}	
+      \tikzstyle{every edge}=[-,>=stealth',shorten >=1pt,auto,thin,draw]
+		\node[basic] (A1) at (0, 0) {};
+		\node[basic] (A2) at (0.5*\edgeunit, 0) {};
+		\node[] (gam) at (1*\edgeunit, 0) {$\gamma$};
+		\node[] (mu) at (1.5*\edgeunit, 0) {$\mu$};
+		\node[basic] (A3) at (0.75*\edgeunit, 0.5*\edgeunit ) {};
+		\node[basic] (A4) at (1.25*\edgeunit, 0.5*\edgeunit) {};
+		\node[basic] (A5) at (1.75*\edgeunit, 0.5*\edgeunit) {};
+		\node[basic] (A6) at (1.75*\edgeunit, -0.5*\edgeunit) {};
+		\node[basic] (A7) at (1*\edgeunit, -0.5*\edgeunit) {};
+		\path (A1) edge [] (A2)
+        (A2) edge [] (gam)
+        (gam) edge [] (mu)
+        (gam) edge [] (A3)
+        (gam) edge [] (A4)
+        (gam) edge [] (A7)
+        (mu) edge [] (A5)
+        (mu) edge [] (A6);
+	\end{tikzpicture}
+&\hspace{1.5cm} &
+ \hspace{0.5cm}
+	\begin{tikzpicture}	
+      \tikzstyle{every edge}=[-,>=stealth',shorten >=1pt,auto,thin,draw]
+		\node[basic] (A1) at (0, 0) {};
+		\node[basic] (A2) at (0.5*\edgeunit, 0) {};
+		\node[] (mu) at (1.5*\edgeunit, 0) {$\mu$};
+		\node[basic] (A3) at (0.75*\edgeunit, 0.5*\edgeunit ) {};
+		\node[basic] (A4) at (1.25*\edgeunit, 0.5*\edgeunit) {};
+		\node[basic] (A5) at (1.75*\edgeunit, 0.5*\edgeunit) {};
+		\node[basic] (A6) at (1.75*\edgeunit, -0.5*\edgeunit) {};
+		\node[basic] (A7) at (1*\edgeunit, -0.5*\edgeunit) {};
+		\node[] (eg) at (2.25*\edgeunit, 0*\edgeunit) {=};
+		\path (A1) edge [] (A2)
+        (A2) edge [] (mu)
+        (A2) edge [] (A3)
+        (A2) edge [] (A4)
+        (A2) edge [] (A7)
+        (A3) edge [] (A4)
+        (A3) edge [] (mu)
+        (A3) edge [] (A7)
+        (A4) edge [] (mu)
+        (A4) edge [] (A7)
+        (mu) edge [] (A7)
+        (mu) edge [] (A5)
+        (mu) edge [] (A6);
+		\node[basic] (A1b) at (2.75*\edgeunit, 0) {};
+		\node[clique] (Cg) at (3.75*\edgeunit, 0) {$C_\gamma$};
+		\node[basic] (A5b) at (4.5*\edgeunit, 0.5*\edgeunit) {};
+		\node[basic] (A6b) at (4.5*\edgeunit, -0.5*\edgeunit) {};
+		\path (A1b) edge [] (Cg)
+        (Cg) edge [] (A5b)
+        (Cg) edge [] (A6b);
+	\end{tikzpicture}
+\end{tabular}
+ \caption{$a)$ Example of an original tree $T$. $b)$ Graph resulting from the marginalization of node $\gamma$ in $T$. Clique $C_\gamma$ appears, and is separated by nodes from the rest of the graph.}
+ \end{center}
+\end{figure}
+Les séparateurs des cliques restent des noeuds, ce qui permet d'écrire :
+$$|R_{\setminus \gamma} | = \prod_{\substack{kl \in T \\ \{k,l\} \neq \gamma }} (1- \rho_{kl}^2) \times |R_{C_\gamma}|$$
+
+Si $T$ est marginalisé sur deux noeuds $\gamma$ et $\mu$ à la fois, une clique $C_{\gamma \mu}$ apparaît, formée par l'union des voisins des deux noeuds dans $T$. Ici $\gamma$ et $\mu$ sont liés dans $T$, sans quoi la corrélation partielle $c_{\gamma \mu}$ est nulle. Il est encore possible d'écrire :
+$$| R_{\setminus \{\gamma,\mu\}}| = \prod_{\substack{kl \in T \\ \{k,l\} \notin \{\gamma,\mu\}}} (1-\rho_{kl}^2) \times |R_{C_{\gamma\mu}}|$$
+Alors :
+\begin{align*}
+    \frac{|R|\;|R_{\setminus \{\mu\gamma\}}|}{|R_{\setminus\gamma}|\;|R_{\setminus \mu}|} &= \frac{ \prod_{kl\in T} (1-\rho_{kl}^2)\prod_{\substack{kl\in T\\ \{k,l\} \notin \{\mu, \gamma\}}} (1-\rho_{kl}^2)}{\prod_{\substack{kl\in T \\\{k,l\} \neq \gamma }} (1-\rho_{kl}^2)\prod_{\substack{kl\in T \\ \{k,l\} \neq \mu }} (1-\rho_{kl}^2)} \times \frac{|R_{C_{\gamma \mu}}|}{|R_{C_\gamma}||R_{C_\mu}|}\\
+     &=(1-\rho_{\mu\gamma}^2)\times \frac{|R_{C_{\gamma \mu}}|}{|R_{C_\gamma}||R_{C_\mu}|}
+\end{align*}
+ On obtient:
+ $$  c_{\mu\gamma}^2 = 1-(1-\rho_{\mu\gamma}^2)\times \frac{|R_{C_{\gamma \mu}}|}{|R_{C_\gamma}||R_{C_\mu}|} $$
+
 \end{document}
