@@ -177,7 +177,8 @@ The lower bound of our model writes:
 Thus the model's parameters are $\Phi = (\theta,\sigma,M,S,\widetilde{\beta}, \beta,  \Upsilon)$.
 
 \subsection{PLNmodels: optimizing in $\theta$, $\sigma$, and $h(\Ubf_O)$:}
-\citet{CMR18} compute the lower bound of a VEM for the original PLN model, that is where no missing actor is assume and the independance structure of the latent layer of parameters is not supposed to be faithful to a tree. This lower bound, denoted $\mathcal{J}_{PLN}$  and implemented  in the R package \texttt{PLNmodels}, can be used in our computation as well.
+\citet{CMR18} compute the lower bound of a VEM for the original PLN model, that is where no missing actor is assume and the independence structure of the latent layer of parameters is not supposed to be faithful to a tree. We let $\mathcal{J}_{PLN}$ denote this lower bound, which writes:
+$$\mathcal{J}_{PLN} = \Esp_h[\log p(\Ubf_O)] + \Esp_h[\log p(\Ybf|\Ubf_O)] + \entr[h(\Ubf_O)].$$ $\mathcal{J}_{PLN}$ is implemented  in the R package \texttt{PLNmodels}, and can be used in our computation as well.
 
 \subsubsection{Rewriting  $\mathcal{J}(\Ybf; g,h)$}
 Let's first separate observed and unobserved latent variables:
@@ -185,35 +186,26 @@ Let's first separate observed and unobserved latent variables:
 \mathcal{J}(\Ybf; g,h)&= \Esp_{gh}\Big[\log \big(p(T)\:  p(\Ubf_H| \Ubf_O,T)\: p(\Ubf_O|T)\:p(\Ybf|\Ubf_O)\big)\Big] + \entr[g(T)] +\entr[h(\Ubf_H,\Ubf_O)]
 \end{align*}
 
- $\Ubf_O$ and $\Ubf_H$ being independent under the $h$ distribution, we have:
-\begin{align*}
-\entr[h(\Ubf_H,\Ubf_O)] &=\entr[h(\Ubf_O)] +\entr[h(\Ubf_H)]
-\end{align*}
-
-Now using the hypothesis of independence of $g$ and $h$, we obtain quantities with separate dependencies:
+ $\Ubf_O$ and $\Ubf_H$ being independent under the $h$ distribution, we have that $\entr[h(\Ubf_H,\Ubf_O)] =\entr[h(\Ubf_O)] +\entr[h(\Ubf_H)]$. Now using the hypothesis of independence of $g$ and $h$, we obtain quantities with separate dependencies:
 \begin{align}
 \mathcal{J}(\Ybf; g,h)&=  \Esp_{gh}[\log p(\Ubf_O | T)] +\Esp_h[\log p(\Ybf|\Ubf_O)]+\entr[h(\Ubf_O)]  \label{PLNlike}\\
 & \;\; + \Esp_{gh}[\log p(\Ubf_H | \Ubf_O,T) ]+\Esp_g[\log p(T)] +\entr[g(T)]+\entr[h(\Ubf_H)] \label{new}
 \end{align}
 
-Using again the independence of $g$ and $h$ to separate the expectation, and the linearity of the trace operator, the first term of the lower bound writes as the following:
+Which we write as below, where each term of the right hand-side corresponds to each line above:
+$$\mathcal{J}(\Ybf; g,h)= \Esp_g[\mathcal{J}_{\Ubf_O}(\Ybf;h)] + \mathcal{J}_{\Ubf_H|\Ubf_O}(\Ybf;h,g)]$$
+The idea is to take advantage of the maximization of  $\mathcal{J}_{PLN}$, which appears as follows in $\Esp_g[\mathcal{J}_{\Ubf_O}(\Ybf;h)] $:
 \begin{align*}
-\Esp_{gh}[\log p(\Ubf_O|T)] &=  \Esp_{gh} \left[\frac{n}{2} \log |\Upsilon_{Tm}| - \frac{1}{2} \sum_i \Ubf_{Oi}\Upsilon_{Tm} \Ubf_{Oi}^\intercal  \right]\\
-&= \frac{n}{2} \Esp_g [\log |\Upsilon_{Tm}|] - \frac{1}{2} \Esp_{gh}\left[Tr\left( \Ubf_O^\intercal \Ubf_O \Upsilon_{Tm}\right)\right]\\
- &=\frac{n}{2} \Esp_g [\log |\Upsilon_{Tm}|] - \frac{1}{2}  Tr\left(\Esp_h [\Ubf_O^\intercal \Ubf_O ]\; \Esp_g[\Upsilon_{Tm}]\right). 
+\mathcal{J}_{\Ubf_O}(\Ybf;h) &= \Esp_h[\log p(\Ubf_O|T)] + \Esp_h[\log p(\Ybf|\Ubf_O)]+\entr[h(\Ubf_O)]\\
+&= \mathcal{J}_{PLN} + \big(\Esp_h[\log p(\Ubf_O|T)-\log p(\Ubf_O) ]\big)\\
+\Esp_g[\mathcal{J}_{\Ubf_O}(\Ybf;h)] &= \mathcal{J}_{PLN} + \Big(\Esp_h\big[\Esp_g[\log p(\Ubf_O|T)]-\log p(\Ubf_O) \big]\Big)
 \end{align*}
-Now introducing the quantity  $\log |\Esp_g [\Upsilon_{Tm}]| $  in (\ref{PLNlike}) we obtain:
-\begin{align*}
-\Esp_{gh}[\log p(\Ubf_O | T)] +\Esp_h[\log p(\Ybf|\Ubf_O)]+ \entr[h(\Ubf_O)] & = \frac{n}{2} \log |\Esp_g [\Upsilon_{Tm}]| - \frac{1}{2}Tr\left(\Esp_h [\Ubf_O^\intercal \Ubf_O ]\; \Esp_g[\Upsilon_{Tm}]\right)+ \entr[h(\Ubf_O)]\\
-& \;\;\; + \Esp_{h}[\log p(\Ybf|\Ubf_O)] +  \frac{n}{2}\left( \Esp_g[\log|\Upsilon_{Tm}|] - \log|\Esp_g [\Upsilon_{Tm}]|\right)
-\end{align*}
+Noticing that $\log p(\Ubf_O) = \log (\Esp_g[ \log p(\Ubf_O|T)])$, the last term above is negative according to Jensen's inequality.
 
-Wtih $\Esp_g [\Upsilon_{Tm}]$ as a precision matrix for $\Ubf_O$, the lower bound $\mathcal{J}_{PLN}(\Esp_g [\Upsilon_{Tm}]^{-1})$ appears:
- $$\Esp_{gh}[\log p(\Ubf_O | T)] +\Esp_h[\log p(\Ybf|\Ubf_O)]+ \entr[h(\Ubf_O)] = \mathcal{J}_{PLN} (\Esp_g [\Upsilon_{Tm}]^{-1})- \frac{n}{2}\left( \Esp_g[\log|\Upsilon_{Tm}|] - \log|\Esp_g [\Upsilon_{Tm}]|\right)$$
- \subsubsection{Maximisation and correction of $\mathcal{J}(\Ybf; g,h)$}
-As the last term do not depend either on $\theta$ or $h(\Zbf_O)$, we finally obtain that
- $$ \argmax_{\theta, h(\Ubf_O)} \big\{\Esp_{gh}[\log p(\Ubf_O | T)] +\Esp_h[\log p(\Ybf|\Ubf_O)]+ \entr[h(\Ubf_O)]\big\} = \argmax_{\theta, h(\Ubf_O)} \big\{ \mathcal{J}_{PLN}(\Esp_g [\Upsilon_{Tm}]^{-1})\big\}.$$
+ \subsubsection{Maximization of $\mathcal{J}(\Ybf; g,h)$}
 
+$$\argmax_{\theta}\Big\{\Esp_g[\mathcal{J}_{\Ubf_O}(\Ybf;h)]\Big\} = \argmax_{\theta}\Big\{\mathcal{J}_{PLN}\Big\} $$
+$$ max_{h(\Ubf_O)}\Big\{\Esp_g[\mathcal{J}_{\Ubf_O}(\Ybf;h)]\Big\} \leq  max_{h(\Ubf_O)}\Big\{\mathcal{J}_{PLN}\Big\} $$
 
 \subsection{VE step: optimizing in $g$ and $h(\Zbf_H)$}
 The VE step minimizes the Küllback-Leibler divergence between the approximated and the aimed distributions :
