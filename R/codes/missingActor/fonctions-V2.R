@@ -339,7 +339,6 @@ Kirshner <- function(W,r){# for edges probability from weights W (Kirshner (07) 
   if(cond_lap(W, 1)<1e-16 && min(Re(eigen(L)$values))<0){ 
   #  L=as.matrix(nearPD(L, eig.tol = 1e-14, posd.tol = 1e-14)$mat)
     stop("L in Kirshner is singular")
- 
   }
   K = inverse.gmp(L)
   K =  rbind(c(0, diag(K)),
