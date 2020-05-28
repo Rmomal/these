@@ -134,7 +134,7 @@ p(\Ybf,\Ubf,T)& = p(T) \: p(\Ubf|T) \: p(\Ybf|\Ubf) \\
 
 \paragraph{Variational approximation:}
 
-Here $p(T,\Ubf \mid \Ybf)$ is untractable. We adopt a variational approximation aiming to maximise a lower bound of the log-likelihood of observed data $\log p(\Ybf)$, namely  
+Here $p(T,\Ubf \mid \Ybf)$ is intractable. We adopt a variational approximation aiming to maximize a lower bound of the log-likelihood of observed data $\log p(\Ybf)$, namely  
 \begin{align*}
     \mathcal{J}(\Ybf; g,h)
     & = \log p(\Ybf) - KL\left[q(T,\Ubf) \mid\mid p(T,\Ubf \mid \Ybf)\right]
@@ -180,19 +180,24 @@ Let's first separate observed and unobserved latent variables:
 \end{align}
 
 Which we write as below, where each term of the right hand-side corresponds to each line above:
-$$\mathcal{J}(\Ybf; g,h)= \Esp_g[\mathcal{J}_{\Ubf_O}(\Ybf;h)] + \mathcal{J}_{\Ubf_H|\Ubf_O}(\Ybf;h,g)]$$
+$$\mathcal{J}(\Ybf; g,h)= \Esp_g[\mathcal{J}_{\Ubf_O}(\Ybf;h)] + \mathcal{J}_{\Ubf_H|\Ubf_O}(\Ybf;h,g)$$
 The idea is to take advantage of the maximization of  $\mathcal{J}_{PLN}$, which appears as follows in $\Esp_g[\mathcal{J}_{\Ubf_O}(\Ybf;h)] $:
 \begin{align*}
 \mathcal{J}_{\Ubf_O}(\Ybf;h) &= \Esp_h[\log p(\Ubf_O|T)] + \Esp_h[\log p(\Ybf|\Ubf_O)]+\entr[h(\Ubf_O)]\\
 &= \mathcal{J}_{PLN} + \big(\Esp_h[\log p(\Ubf_O|T)-\log p(\Ubf_O) ]\big)\\
 \Esp_g[\mathcal{J}_{\Ubf_O}(\Ybf;h)] &= \mathcal{J}_{PLN} + \Big(\Esp_h\big[\Esp_g[\log p(\Ubf_O|T)]-\log p(\Ubf_O) \big]\Big)
 \end{align*}
-Noticing that $\log p(\Ubf_O) = \log (\Esp_g[ \log p(\Ubf_O|T)])$, the last term above is negative according to Jensen's inequality.
-
+Noticing that $\log p(\Ubf_O) = \log (\Esp_g[ \log p(\Ubf_O|T)])$, the last term above is negative according to Jensen's inequality. This yields:
+\begin{equation}
+\label{linkPLN}
+\mathcal{J}(\Ybf; g,h)\leq \mathcal{J}_{PLN}+ \mathcal{J}_{\Ubf_H|\Ubf_O}(\Ybf;h,g)
+\end{equation}
  \subsubsection{Maximization of $\mathcal{J}(\Ybf; g,h)$}
-
-$$\argmax_{\theta}\Big\{\mathcal{J}(\Ybf; g,h)\Big\} = \argmax_{\theta}\Big\{\mathcal{J}_{PLN}\Big\} $$
+Parameter $\theta$ only appears in $\Esp_h[\log p(\Ybf|\Ubf_O)]$, which is  maximized by $\mathcal{J}_{PLN}$. So we have
+$$\argmax_{\theta}\Big\{\mathcal{J}(\Ybf; g,h)\Big\} = \argmax_{\theta}\Big\{\mathcal{J}_{PLN}\Big\}. $$
+The maximization of $\mathcal{J}_{PLN}$ in $h(\Ubf_O)$ yields estimates of $M_O$ and $S_O$ which we use as proxy for the latent layer of Gaussian vectors.
 $$ (\tilde{M}_O, \tilde{S}_O) = \argmax_{M_O,S_O}\Big\{\mathcal{J}_{PLN}\Big\} $$
+For computational reasons we choose $\tilde{M}_O $ and $\tilde{S}_O$ as estimates for $M_O$ and $S_O$, even if this is known to be sub-optimal in $h(\Ubf_O)$ as shows relationship (\ref{linkPLN}).
 
 \subsection{VE step: optimizing in $g$ and $h(\Zbf_H)$}
 The VE step minimizes the Küllback-Leibler divergence between the approximated and the aimed distributions :
@@ -206,7 +211,7 @@ KL\left(g(T)h(\Ubf) \mid\mid  p(\Ubf,T|\Ybf)\right) &= \Esp_{gh}\left[\log g(T)h
 &= -\Esp_{gh}[\log p(\Ubf \mid T) ] - \Esp_g[\log p(T) - \log g(T)] - \entr[h(\Ubf)]\\
 & \;\;\;\; -\Esp_h[\log p(\Ybf \mid \Ubf_O)] +\log p(\Ybf) 
 \end{align*}
-Distributions $p(\Ybf)$ and $p(\Ybf\mid \Ubf_O)$  do not depend on distributions $g$ and $h(\Ubf_H)$. Moreover, as $\Ubf_O$ and $\Ubf_H$ are independant under the $h$ distribution, $\entr[h(\Ubf)] = \entr[h(\Ubf_O)]+ \entr[h(\Ubf_H)]$ and  $\entr[h(\Ubf_O)]$ is already optimized. We obtain:
+Distributions $p(\Ybf)$ and $p(\Ybf\mid \Ubf_O)$  do not depend on distributions $g$ and $h(\Ubf_H)$. Moreover, as $\Ubf_O$ and $\Ubf_H$ are independent under the $h$ distribution, $\entr[h(\Ubf)] = \entr[h(\Ubf_O)]+ \entr[h(\Ubf_H)]$ and  $\entr[h(\Ubf_O)]$ is already optimized. We obtain:
  
 \begin{empheq}[box=\widefbox]{align*}
 \argmin_{g,h(\Ubf_H)} KL  &=\argmin_{g,h(\Ubf_H)} \Big\{ -\Esp_{gh}[\log p(\Ubf \mid T) ] - \Esp_g[\log p(T) - \log g(T)] -\entr[h(\Ubf_H)] \Big\}
@@ -232,15 +237,14 @@ Thanks to $\Omega_T$ being tree-structured, its determinant factorizes on the ed
 \paragraph{Trace of expectations\\}
  
 \begin{align*}
-Tr(\Esp_g[\Omega_T] SSD) &= \sum_{kl} \Esp_g[I_{Tkl} \omega_{Tkl}ssd_{kl}] + \sum_k \Esp_g[\omega_{Tkk} ssd_{kk}] 
+Tr(\Esp_g[\Omega_T] SSD) &= \sum_{kl} \Esp_g[I_{Tkl}\: \omega_{Tkl\:}ssd_{kl}] + \sum_k \Esp_g[\omega_{Tkk}\: ssd_{kk}] 
 \end{align*}
 
 Finally, 
 \begin{empheq}[box=\lesswidefbox]{align*}
-\Esp_{gh} [\log p(\Ubf \mid T)] =-  \frac{n}{4}\sum _{k \neq l} \Esp_g\Big[ I_{Tkl}\Big(\log(1-\rho_{Tkl}^2)+ \omega_{Tkl} \frac{ssd_{kl}}{n}\Big)\Big] -\frac{1}{2}  \sum_k \Esp_g[\omega_{Tkk} ssd_{kk}] 
+\Esp_{gh} [\log p(\Ubf \mid T)] =-  \frac{n}{4}\sum _{k \neq l} \Esp_g\Big[ I_{Tkl}\Big(\log(1-\rho_{Tkl}^2)+ \omega_{Tkl} \frac{ssd_{kl}}{n}\Big)\Big] -\frac{1}{2}  \sum_k \Esp_g[\omega_{Tkk}\: ssd_{kk}] 
  \end{empheq}
- If we can provide estimates $\hat{\rho}_{kl}$ and $\widehat{\Omega}=(\hat{\omega}_{kl})_{kl}$ that are independent of $T$, then using that $SSD$ has diagonal $n$ the above expectation can be estimated as
- $$\Esp_{gh} [\log p(\Ubf \mid T)] =-  \frac{n}{4}\sum _{k \neq l} P_{kl}\Big(\log(1-\hat{\rho}_{kl}^2)+ \hat{\omega}_{kl} \frac{ssd_{kl}}{n}\Big) -\frac{n}{2} \sum_{k} \hat{\omega}_{kk}$$
+
 \subsubsection{Details of $\Esp_g[\log g(T) - \log p(T)]$}
 \begin{align*}
 \log g(T) - \log p(T) &= \left(  \sum_{j<k}I_{Tkl}\log \widetilde{\beta}_{Tjk} - \log \widetilde{B}_T\right) - \left(  \sum_{j<k} I_{Tkl}\log {\beta}_{jk} - \log {B}\right)\\
@@ -248,8 +252,7 @@ Finally,
 \end{align*}
 $$\boxed{
 \Esp_g[\log g(T) - \log p(T)] = \frac{1}{2}\sum_{jk} \Esp_g\Big[I_{Tkl} \big(\log \widetilde{\beta}_{Tjk}-\log(\beta_{jk})\big)\Big] - \log \frac{\Esp_g[\widetilde{B}_T]}{B} }$$
-If we can provide estimates $\widetilde{\beta}_{kl}$ that do not depend on $T$, the above expectation can be estimated as:
-$$ \Esp_g[\log g(T) - \log p(T)] = \frac{1}{2}\sum_{jk} P_{kl} \big(\log \widetilde{\beta}_{jk}-\log(\beta_{jk})\big) - \log \frac{\widetilde{B}}{B} $$
+
  \subsubsection{Details of $\entr[h(\Ubf_H)]$}
  
  The entropy of the Gaussian multivariate vector $\Ubf_H$ mainly depends on its variance matrix $S_H$. By definition of $S_H$ we have:
@@ -265,14 +268,8 @@ which gives the following entropy:
 \subsubsection{Final quantity to optimize:}
 \begin{align*}
 \argmin_{g,h(\Ubf_H)} KL  &=\argmin_{g,h(\Ubf_H)}  \Big\{-\Esp_{gh}[\log p(\Ubf \mid T) ] + \Esp_g[\log g(T) - \log p(T)-\entr[h(\Ubf_H)]\Big\}\\
-&= \argmin_{g,h(\Ubf_H)}  \bigg\{   \frac{n}{2}\sum _{k \neq l} \Esp_g\Big[ I_{Tkl}\Big(\frac{1}{2}\log(1-\rho_{Tkl}^2)+ \omega_{Tkl} \frac{ssd_{kl}}{n}\Big)\Big] +\frac{1}{2}  \sum_k \Esp_g[\omega_{Tkk} ssd_{kk}] \\
+&= \argmin_{g,h(\Ubf_H)}  \bigg\{   \frac{n}{2}\sum _{k \neq l} \Esp_g\Big[ I_{Tkl}\Big(\frac{1}{2}\log(1-\rho_{Tkl}^2)+ \omega_{Tkl} \frac{ssd_{kl}}{n}\Big)\Big] +\frac{1}{2}  \sum_k \Esp_g[\omega_{Tkk}\: ssd_{kk}] \\
 & \;\;\;\; +\frac{1}{2}\sum_{jk} \Esp_g\Big[I_{Tkl} \big(\log \widetilde{\beta}_{Tjk}-\log(\beta_{jk})\big)\Big] - \log \frac{\Esp_g[\widetilde{B}_T]}{B} -\frac{1}{2}\sum_{k\in H} \log\left(\sum_i \widetilde{S}_{ik}\right) \bigg\}
-\end{align*}
-With estimates independent of $T$:
-\begin{align*}
-\argmin_{g,h(\Ubf_H)} KL  &=\argmin_{g,h(\Ubf_H)}  \Big\{-\Esp_{gh}[\log p(\Ubf \mid T) ] + \Esp_g[\log g(T) - \log p(T)-\entr[h(\Ubf_H)]\Big\}\\
-&= \argmin_{g,h(\Ubf_H)}  \bigg\{ \frac{n}{2}\Big(\sum _{ k \neq l} P_{kl}\Big(\frac{1}{2} \log (1-\rho_{kl}^2) + \omega_{kl} \frac{ssd_{kl}}{n}\Big) +  \sum_{k} \omega_{kk} \Big)\\
-& \;\;\;\; + \frac{1}{2}\sum_{ k\neq l}P_{kl} \left(\log \frac{\widetilde{\beta}_{kl}}{{\beta}_{kl}}\right) - \log \frac{\widetilde{B}}{B} -\frac{1}{2}\sum_{k\in H} \log\left(\sum_i \widetilde{S}_{ik}\right) \bigg\}
 \end{align*}
  
  
@@ -280,7 +277,7 @@ With estimates independent of $T$:
 
 \paragraph{Edges weights under the $g$ distribution \\}
 Let's isolate the terms referring to the edges in the expression to be minimized:
-$$ \frac{1}{2}\sum _{k \neq l} \Esp_g\Big[I_{Tkl}\Big(\frac{n}{2} \log(1-\rho_{Tkl}^2)+ \omega_{Tkl}ssd_{kl}+\log \widetilde{\beta}_{Tjk}-\log\beta_{jk}\Big)\Big]  $$
+$$ \frac{1}{2}\sum _{k \neq l} \Esp_g\Big[I_{Tkl}\Big(\frac{n}{2} \log(1-\rho_{Tkl}^2)+ \omega_{Tkl}\:ssd_{kl}+\log \widetilde{\beta}_{Tjk}-\log\beta_{jk}\Big)\Big]  $$
  
  
 As $g$ is a discrete distribution on the space of spanning trees, maximizing an expectation taken on $g$ is equivalent to maximizing each expression inside the expectation on each tree. In the above sum, equating what is inside the expectation in $g$ of the term $kl$ to zero, we obtain:
@@ -296,16 +293,16 @@ Means $M_H$ only appear in the $H$, $OH$ and $HO$ blocs of $SSD$. Denoting $\bar
 
 \begin{align*}
 \frac{\partial KL}{\partial M_{jh}} &= \frac{\partial}{\partial M_{jh}}\Big(2\sum_{ (k, l) \in H\times O}\bar{\omega}_{kl} (M^\intercal M)_{kl} + \sum_{k\in H} \bar{\omega}_{kk} (M^\intercal M)_{kk}\Big)\\
-&=\frac{\partial}{\partial M_{jh}}\Big(2\sum_i \Big(\sum_{k\in H} M_{ik}\sum_{l\in O}\bar{\omega}_{kl} M_{il}\Big) + \sum_{k\in H} (\bar{\omega}_{kk} \sum_i M_{ik}^2)\Big)\\
-&=   \sum_{l \in O } M_{jl} \bar{\omega}_{hl} + M_{jh} \bar{\omega}_{hh}
+&=\frac{\partial}{\partial M_{jh}}\Big(2\sum_i \Big(\sum_{k\in H} M_{ik}\sum_{l\in O}\bar{\omega}_{kl} \widetilde{M}_{il}\Big) + \sum_{k\in H} (\bar{\omega}_{kk} \sum_i M_{ik}^2)\Big)\\
+&=   \sum_{l \in O } \widetilde{M}_{jl}\: \bar{\omega}_{hl} + M_{jh} \:\bar{\omega}_{hh}
 \end{align*}
 \begin{align*}
-\frac{\partial KL}{\partial M_{jh}}  = 0\iff M_{jh} &= -\frac{1}{\bar{\omega}_{hh}} \sum_{l\in O} M_{jl}\bar{\omega}_{lh}\\
-&=-\frac{M_{jO} \bar{\Omega}_{Oh}}{\bar{\omega}_{hh}}
+\frac{\partial KL}{\partial M_{jh}}  = 0\iff M_{jh} &= -\frac{1}{\bar{\omega}_{hh}} \sum_{l\in O} \widetilde{M}_{jl}\bar{\omega}_{lh}\\
+&=-\frac{\widetilde{M}_{jO} \bar{\Omega}_{Oh}}{\bar{\omega}_{hh}}
 \end{align*}
 
 As $\bar{\Omega}_H$ is diagonal following assumption A, this  matricially comes down to
-$$\boxed{ M_H = -M_O\bar{\Omega}_{OH} \bar{\Omega}_H^{-1}}$$
+$$\boxed{ M_H = -\widetilde{M}_O\bar{\Omega}_{OH} \bar{\Omega}_H^{-1}}$$
 
 
 \paragraph{Variances of the hidden part of the latent Gaussian vector under the $h$ distribution \\}
@@ -316,25 +313,13 @@ $S_H$ is updated following the constraint that $SSD$ has to be of diagonal $n$. 
 \iff &\boxed{s_h = 1-\frac{ M_h^\intercal M_h}{n}}
 \end{align*}
 
-\subsubsection{Computing edge probabilities under $g$}
-During computations, we need the edge probability under the $g$ distribution. This can be computed as the sum of probabilities of trees containing this edge:
-
-\begin{align*}
-\mathds{P}_g(kl \in T)  &= \sum_{\substack{T  \in \mathcal{T} \\ kl \in T }} g(T) =\frac{1}{\widetilde{B}} \sum_{\substack{T  \in \mathcal{T} \\ kl \in T }} \prod_{uv \in T} \widetilde{\beta}_{uv}
-\end{align*}
-where $\displaystyle \widetilde{B}= \sum_{T \in \mathcal{T} }\prod_{uv \in T}  \widetilde{\beta}_{uv}$.\\
-
- This is again a sum-product form, but on a special set of trees. This can be efficiently computed using a formula from \citet{kirshner} (Theorem 3), stated in the appendix.
- 
- 
  \subsection{M step: optimizing in $(\beta, \Omega_T)$}
  The M step aims at maximizing the lower bound in the parameters referring to original distributions for $T$ and $\Ubf|T$, therefore $\beta$ and $\Omega_T$. From Eq.(\ref{firstJ}) we obtain that: 
 $$ \argmax_{\beta, \Omega} \mathcal{J}(\Ybf ; g,h) =\argmax_{\beta, \Omega} \left\{ \Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Ubf\mid T) ]\right\} $$
 
-As distributions of VE step mimic original ones, computations are very similar. We get:
+As distributions of VE step mimic original ones, computations are very similar. We have:
 \begin{align*}
-\log (p_\beta(T)p_{\Omega_T}(\Ubf\mid T))  &= \frac{1}{2}\sum_{kl} I_{Tkl} \log \beta_{kl} - \log B + \frac{n}{2}\log |\Omega_T| - \frac{1}{2}Tr(\Omega_T \Ubf^\intercal \Ubf)\\
-\Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Ubf\mid T) ] &= \frac{1}{2}\sum_{kl} P_{kl} \log\beta_{kl} +\frac{n}{2} \Esp_g[\log |\Omega_T|] -\frac{1}{2} Tr(\bar{\Omega} \; SSD)- \log B
+\log (p_\beta(T)p_{\Omega_T}(\Ubf\mid T))  &= \frac{1}{2}\sum_{kl} I_{Tkl} \log \beta_{kl} - \log B + \frac{n}{2}\log |\Omega_T| - \frac{1}{2}Tr(\Omega_T \Ubf^\intercal \Ubf) 
 \end{align*}
 
 Reminding that $ \Esp_g[\log|\Omega_T|]=-\frac{1}{2}\sum_{kl} \Esp_g[ I_{Tkl}\log(1-\rho_{Tkl}^2)]$,  we obtain:
@@ -350,7 +335,7 @@ Reminding that $ \Esp_g[\log|\Omega_T|]=-\frac{1}{2}\sum_{kl} \Esp_g[ I_{Tkl}\lo
 &= \frac{P_{kl}}{\beta_{kl}} - \frac{\partial_{\beta_{kl}} B }{B} \\
 \end{align*}
 
-The derivative of the normalization constant with respect to $\beta_{kl}$ is the derivative of an output from the Matrix Tree theorem with respect to one of the weight's matrix entry. This quantity is given by \citet{Meila} (Lemma 2). Defining matrix $Q(\betabf)$ as showed in the appendix, then $\partial_{\beta_{kl}} B = B\times Q(\betabf)_{kl}$ and:
+The derivative of the normalization constant $B$ with respect to $\beta_{kl}$ is the derivative of an output from the Matrix Tree theorem with respect to one of the weight's matrix entry. This quantity is given by \citet{Meila} in Lem. \ref{lem:Meila} transcribed in the appendix. Defining matrix $Q(\betabf)$ as showed in the appendix, then $\partial_{\beta_{kl}} B = B\times Q(\betabf)_{kl}$ and:
 $$\frac{\partial}{\partial_{\beta_{kl}}} \mathcal{J}(\Ybf ; g,h) 
 =0 \iff  \boxed{\widehat{\beta}_{kl} = \frac{P_{kl}}{ Q(\betabf)_{kl}} }$$
 
@@ -380,7 +365,7 @@ and as soon as a maximum likelihood estimator exists for a parameter of $\mathca
 \widehat{\Omega}_T &= n  \sum_{kl\in T}   [(SSD_{kl})^{-1}]^{p+r} - n\sum_k (deg(k)-1)[(SSD_{kk})^{-1}]^{p+r}\\
 &=n \sum_{kl\in T}  [(SSD_{kl})^{-1} - (SSD_{kk})^{-1} -  (SSD_{ll})^{-1} ]^{p+r} + n\sum_k[(SSD_{kk})^{-1}]^{p+r}
 \end{align*}
-As SSD has diagonal n, the expression simplifies. Denoting $I_d$ the identity matrix of dimension $d$ we obtain:
+As $SSD$ has diagonal n, the expression simplifies. Denoting $I_d$ the identity matrix of dimension $d$ we obtain:
 $$\widehat{\Omega}_T =n\sum_{kl\in T} [(SSD_{kl})^{-1} -\frac{1}{n} I_2]^{p+r}+ I_{p+r}$$
 
 We can detail each bloc matrices as follows:
@@ -397,7 +382,7 @@ This allows to write the following:
  \sum_l I_{Tkl} \dfrac{(ssd_{kl}/n)^2}{1-(ssd_{kl}/n)^2} +1 & ,k=l
  \end{array}\right.
  }\]
-It shows here that using only trees comes down to only manipulate inverses of $2\times 2$ matrices, and yields values of non-nul off-diagonal terms of $\hat{\Omega}_T$ that are independent of $T$. This means that the common non-nul off-diagonal terms of precision matrices of different trees will be equal. \\
+It shows here that using only trees comes down to only manipulate inverses of $2\times 2$ matrices, and yields values of non-null off-diagonal terms of $\hat{\Omega}_T$ that are independent of $T$. This means that the common non-nul off-diagonal terms of precision matrices of different trees will be equal. \\
 
  Note that on the other hand, the diagonal depends on $T$ and its $k$ term depends on the degree of node $k$ as follows:
 
@@ -409,14 +394,28 @@ $$\Esp_g[\widehat{\Omega}_T]= \widehat{\bar{\Omega}}= n\sum_{kl} P_{kl} \had [(S
  The expectation above defines a matrix which off-diagonal term $kl$ and diagonal term $kk$ write as follows:
 $$\widehat{\bar{\Omega}}_{kl} = P_{kl} \left(\frac{-ssd_{kl}/n}{1-(ssd_{kl}/n)^2} \right)\text{\hspace{0.5cm},\hspace{1cm}}\widehat{\bar{\Omega}}_{kk} = \sum_l P_{kl} \frac{(ssd_{kl}/n)^2}{1-(ssd_{kl}/n)^2} +1 $$
  
+ \subsection{Computing edge probabilities under $g$}
+We  provide with maximum likelihood estimates $\hat{\rho}_{kl}$ and $\widehat{\Omega}=(\hat{\omega}_{kl})_{kl}$ that are independent from tree $T$. Then the estimate for $\widetilde{\beta}_{T}$ can be rewritten to not depend on $T$:
+
+   $$ \displaystyle \widetilde{\beta}_{kl} = \beta_{kl} \: (1-\hat{\rho}_{kl}^2)^{-n/2} \exp( -\hat{\omega}_{kl}\: ssd_{kl} ) $$
  
+This allows to get an estimate $\hat{P}_{kl}$ for the edge probability $P_{kl}$. We can define $P_{kl}$ as the sum of probabilities of trees containing this edge: $P_{kl}=\mathds{P}_g(kl \in T)  = \sum_{\substack{T  \in \mathcal{T} \\ kl \in T }} g(T) $. We then define  $\hat{P}_{kl}$ as the version of $P_{kl}$ with edges weights independent of $T$:
+\[
+\begin{array}{ccl}
+ P_{kl}& =\displaystyle\frac{1}{\widetilde{B}_T} \sum_{\substack{T  \in \mathcal{T} \\ kl \in T }} \prod_{uv \in T} \widetilde{\beta}_{Tuv} & \text{, with }\widetilde{B}_T= \sum_{T \in \mathcal{T} }\prod_{uv \in T}  \widetilde{\beta}_{Tuv}\\\\
+\hat{P}_{kl} &=\displaystyle \frac{1}{\widetilde{B}} \sum_{\substack{T  \in \mathcal{T} \\ kl \in T }} \prod_{uv \in T} \widetilde{\beta}_{uv} &\text{, with } \widetilde{B}= \sum_{T \in \mathcal{T} }\prod_{uv \in T}  \widetilde{\beta}_{uv}
+\end{array}\]
+ 
+The normalizing constant $\widetilde{B}_T$ is intractable, whereas $\widetilde{B}$ is a sum-product quantity which can be computed with the Matrix-Tree theorem (Th. \ref{thm:MTT} in the appendix). The remaining term of $\hat{P}_{kl}$ is also a sum-product quantity, but on a special set of trees. This can be efficiently computed using a formula from \citet{kirshner}, stated in the appendix (Lem. \ref{lem:Kirshner}).
+  
+
 %%%%%%%%%%%%%% 
 \newpage
 \bibliographystyle{apsrev} %tested plainnat
 \bibliography{bibi}
  \appendix
  \section{Algebraic Tools}
- For any matrix $\Wbf$, we denote its entry in row $u$ and column $v$ by $[\Wbf]_{uv}$. We define the Laplacian matrix $\Qbf$ of a symmetric matrix $\Wbf=[w_{jk} ]_{1\leq j,k\leq p}$ as follows :
+ We define the Laplacian matrix $\Qbf$ of a symmetric matrix $\Wbf=[w_{jk} ]_{1\leq j,k\leq p}$ as follows :
  
 \[
  [\Qbf]_{jk}  =\begin{cases}
@@ -428,7 +427,7 @@ $$\widehat{\bar{\Omega}}_{kl} = P_{kl} \left(\frac{-ssd_{kl}/n}{1-(ssd_{kl}/n)^2
 We further denote $\Wbf^{uv}$ the matrix $\Wbf$ deprived from its $u$th row and $v$th column and we remind that the $(u, v)$-minor of $\Wbf$ is the determinant of this deprived matrix, that is $|\Wbf^{uv}|$.
 
 \begin{theorem}[Matrix Tree Theorem  \cite{matrixtree,Meila}] \label{thm:MTT}
-    For any symmetric weight matrix W, the sum over all spanning trees of the product of the weights of their edges is equal to any minor of its Laplacian. That is, for any $1 \leq u, v \leq p$,
+    For any symmetric weight matrix W with all positive entries, the sum over all spanning trees of the product of the weights of their edges is equal to any minor of its Laplacian. That is, for any $1 \leq u, v \leq p$,
  
    \[
     W := \sum_{T\in\mathcal{T}} \prod_{(j, k)\in T} w_{jk} = |\Qbf^{uv}|.
@@ -436,16 +435,16 @@ We further denote $\Wbf^{uv}$ the matrix $\Wbf$ deprived from its $u$th row and 
    
 \end{theorem}    
 
-In the following, without loss of generality, we will choose $\Qbf^{pp}$. As an extension of this result, \cite{Meila} provide a close form expression for the derivative of $W$ with respect to each entry of $\Wbf$. 
+In the following, without loss of generality, we will choose $\Qbf^{11}$. As an extension of this result, \cite{Meila} provide a close form expression for the derivative of $W$ with respect to each entry of $\Wbf$. 
 
 \begin{lemma} [\cite{Meila}] \label{lem:Meila}
     Define the entries of the symmetric matrix $\Mbf$ as
  
 \[    
  [\Mbf]_{jk} =\begin{cases}
-    \left[(\Qbf^{pp})^{-1}\right]_{jj} + \left[(\Qbf^{pp})^{-1}\right]_{kk} -2\left[(\Qbf^{pp})^{-1}\right]_{jk} & 1\leq j<k < p\\
-    \left[(\Qbf^{pp})^{-1}\right]_{jj} & k=p, 1\leq j \leq p  \\
-    0 & 1\leq j=k \leq p.
+    \left[(\Qbf^{11})^{-1}\right]_{jj} + \left[(\Qbf^{11})^{-1}\right]_{kk} -2\left[(\Qbf^{11})^{-1}\right]_{jk} & 1< j<k \leq p\\
+    \left[(\Qbf^{11})^{-1}\right]_{jj} & k=1, 1< j \leq p  \\
+    0 &  j=k .
     \end{cases}
 \]
  
