@@ -7,7 +7,7 @@ source('Functions/FunctionsTree.R')
 par(mfcol=c(3, 2), mex=.6, pch=20)
 
 # Dims
-p <- 10; P <- p*(p-1)/2; B <- 1e2
+p <- 10; P <- p*(p-1)/2; B <- 1e3
 seed <- 1; set.seed(seed)
 
 # Parms
@@ -43,10 +43,10 @@ rSpanTreeV1 <- function(beta, prob){
    p <- nrow(prob); P <- p*(p-1)/2
    prob <- prob / max(prob) # To enforce connectivity
    probVec <- F_Sym2Vec(prob); betaVec <- F_Sym2Vec(beta)
-   # Optimal constant
-   w <- log(prob/beta); optTreeVec <- F_Sym2Vec(mst(w)); 
-   M <- p^(p-2) / exp(sum(F_Sym2Vec(w)[which(optTreeVec==1)]))
-   M <- p^2
+   # # Optimal constant
+   # w <- log(prob/beta); optTreeVec <- F_Sym2Vec(mst(w)); 
+   # M <- p^(p-2) / exp(sum(F_Sym2Vec(w)[which(optTreeVec==1)]))
+   M <- p
    OK <- FALSE; tries <- 0; pTree <- qTree <- rep(0, 1e4)
    while(!OK){
       tries <- tries + 1
