@@ -7,7 +7,7 @@ source('Functions/FunctionsTree.R')
 par(mfcol=c(3, 2), mex=.6, pch=20)
 
 # Dims
-p <- 10; P <- p*(p-1)/2; B <- 1e3
+p <- 10; P <- p*(p-1)/2; B <- 1e2
 seed <- 1; set.seed(seed)
 
 # Parms
@@ -43,8 +43,10 @@ rSpanTreeV1 <- function(beta, prob){
    p <- nrow(prob); P <- p*(p-1)/2
    prob <- prob / max(prob) # To enforce connectivity
    probVec <- F_Sym2Vec(prob); betaVec <- F_Sym2Vec(beta)
+   # Optimal constant
+   w <- log(prob/beta); optTreeVec <- F_Sym2Vec(mst(w)); 
+   M <- p^(p-2) / exp(sum(F_Sym2Vec(w)[which(optTreeVec==1)]))
    M <- p^2
-   # m <- min(probVec / betaVec); M <- p^(p-2) / m^(p-1)
    OK <- FALSE; tries <- 0; pTree <- qTree <- rep(0, 1e4)
    while(!OK){
       tries <- tries + 1
@@ -87,20 +89,22 @@ rSpanTreeV1 <- function(beta, prob){
 edgeFreq <- rep(0, P); binCode <- 1.1^(0:(P-1))
 pb <- tries <- maxRatio <- minRatio <- treeNum <- rep(0, B); 
 for(b in 1:B){
-   if(b%%round(sqrt(B))==0){cat('\n [', b, '] ', sep='')}
    tree <- rSpanTreeV1(beta, prob)
    treeVec <- F_Sym2Vec(tree$tree)
    edgeFreq <- edgeFreq + treeVec
    treeNum[b] <- treeVec %*% binCode
    tries[b] <- length(tree$pTree)
-   pb[b] <- sum(tree$pTree/tree$qTree > 1)
+   pb[b] <- sum(tree$pTree/tree$qTree > p^2)
    minRatio[b] <- min(tree$pTree/tree$qTree)
    maxRatio[b] <- max(tree$pTree/tree$qTree)
+   if(b%%round(sqrt(B))==0){
+      cat('\n [', b, '] ', sep='')
+      print(rbind(summary(tries[1:b]), summary(minRatio[1:b]), summary(maxRatio[1:b]), summary(pb[1:b])))
+   }
 }
 sum(edgeFreq)
 edgeFreq <- edgeFreq/B
 print(c(2/p, mean(probVec), mean(edgeFreq)))
-print(rbind(summary(tries), summary(minRatio), summary(maxRatio)))
 
 
 # Plots
