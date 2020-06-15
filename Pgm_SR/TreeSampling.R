@@ -82,7 +82,7 @@ rSpanTreeV1 <- function(beta, prob){
    pTree <- pTree[1:tries]; qTree <- qTree[1:tries]
    cat(tries, '')
    
-   return(list(tree=tree, qTree=qTree, pTree=pTree, qTree=qTree))
+   return(list(tree=tree, qTree=qTree, pTree=pTree, qTree=qTree, M=M))
 }
 
 # Tree sampling
@@ -94,11 +94,11 @@ for(b in 1:B){
    edgeFreq <- edgeFreq + treeVec
    treeNum[b] <- treeVec %*% binCode
    tries[b] <- length(tree$pTree)
-   pb[b] <- sum(tree$pTree/tree$qTree > p^2)
+   pb[b] <- sum(tree$pTree/tree$qTree > tree$M)
    minRatio[b] <- min(tree$pTree/tree$qTree)
    maxRatio[b] <- max(tree$pTree/tree$qTree)
    if(b%%round(sqrt(B))==0){
-      cat('\n [', b, '] ', sep='')
+      cat('\n [', b, '] \n', sep='')
       print(rbind(summary(tries[1:b]), summary(minRatio[1:b]), summary(maxRatio[1:b]), summary(pb[1:b])))
    }
 }
