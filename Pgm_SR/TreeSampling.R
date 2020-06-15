@@ -30,18 +30,22 @@ rSpanTree <- function(prob){
 }
 
 # Tree sampling
-edgeFreq <- rep(0, P)
+edgeFreq <- rep(0, P); treeNum <- rep(0, B); binCode <- 1.1^(0:(P-1))
 for(b in 1:B){
    if(b%%round(sqrt(B))==0){cat(b, '')}
    tree <- rSpanTree(prob)
-   edgeFreq <- edgeFreq + F_Sym2Vec(tree)
+   treeVec <- F_Sym2Vec(tree)
+   treeNum[b] <- treeVec %*% binCode
+   edgeFreq <- edgeFreq + treeVec
 }
 sum(edgeFreq)
 edgeFreq <- edgeFreq/B
 print(c(2/p, mean(probVec), mean(edgeFreq)))
+plot(cumsum(sort(table(treeNum), decreasing=TRUE)))
 
 # Plots
-par(mfrow=c(2, 1))
+par(mfrow=c(3, 1), mex=.6)
+plot(cumsum(sort(table(treeNum), decreasing=TRUE)))
 plot(sort(edgeFreq))
 plot(probVec, edgeFreq-probVec); 
 abline(0, 0)
