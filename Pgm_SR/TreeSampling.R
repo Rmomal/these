@@ -17,6 +17,9 @@ print(c(2/p, mean(probVec)))
 
 # Function
 rSpanTree <- function(prob){
+   # Approximate sampling of a spanning according to edge probabilities
+   # Frequency of edge selection empricially OK
+   # No guaranty about the actual distribution if the whole tree
    p <- nrow(prob)
    g <- F_Vec2Sym(F_Sym2Vec(matrix(rbinom(p^2, 1, prob), p, p)))
    while(!is.connected(g)){g <- F_Vec2Sym(F_Sym2Vec(matrix(rbinom(p^2, 1, prob), p, p)))}
