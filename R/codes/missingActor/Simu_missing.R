@@ -41,12 +41,21 @@ Simu_missing<-function(p,B,N,n,cores,r, maxIter, eps){
     SO=SO*matsig^2
     #1 missing actors
     t1<-Sys.time()
-    cliques_spca <- boot_FitSparsePCA(scale(MO),B,r=1, cores=3)
-    t2<-Sys.time()
-    time_boots=difftime(t2, t1)
+  #  cliques_spca <- boot_FitSparsePCA(scale(MO),B,r=1, cores=3)
+   
     # best VEM with 1 missing actor
-    ListVEM<-List.VEM(cliquesObj =cliques_spca, counts, cov2cor(sigma_obs), MO,SO,r=1,alpha=0.1,
-                      eps=eps,maxIter=100, cores=3, trackJ = FALSE)
+    # cliques_spca<-FitSparsePCA(counts, r=2)$cliques
+    # complement=lapply(cliques_spca, function(clique){setdiff(1:p,clique)})
+    # clique=list()
+    # t2<-Sys.time()
+    # time_spca=difftime(t2, t1)
+    # clique$cliqueList=lapply(c(cliques_spca,complement), function(cl) list(cl))
+    #--- init oracle
+    clique=list()
+    clique$cliqueList=list(list(trueClique))
+
+    ListVEM<-List.VEM(cliquesObj =clique, counts, cov2cor(sigma_obs), MO,SO,r=1,alpha=0.1,
+                      eps=eps,maxIter=maxIter, cores=3, trackJ = FALSE)
     
     # Jcor<-do.call(rbind, lapply(ListVEM, function(vem){
     #   if(length(vem)==15){
@@ -70,7 +79,7 @@ Simu_missing<-function(p,B,N,n,cores,r, maxIter, eps){
     # VEM_1=ListVEM[[maxJ_good]]
     # 
     ############
-    nbinit=length(ListVEM)
+   # nbinit=length(ListVEM)
     
     #---- end
     
@@ -78,9 +87,9 @@ Simu_missing<-function(p,B,N,n,cores,r, maxIter, eps){
     runtime=difftime(T2, T1)
     cat(paste0("\nseed ", seed," in ",round(runtime,3), attr(runtime, "units"),"\n"))
     Sim=list(G=G,UH=UH,
-             ListVEM=ListVEM,#VEM_1=VEM_1,
-             time_boots=time_boots, nbinit=nbinit )
-    saveRDS(Sim, file=paste0("/Users/raphaellemomal/simulations/15nodes_V2/SF_seed",
+             ListVEM=ListVEM)#,#VEM_1=VEM_1,
+             #time_spca=time_spca)#, nbinit=nbinit )
+    saveRDS(Sim, file=paste0("/Users/raphaellemomal/simulations/15nodes_V4_oracle/SF_seed",
                              seed,".rds"))
     
     return(Sim)
@@ -88,8 +97,9 @@ Simu_missing<-function(p,B,N,n,cores,r, maxIter, eps){
 }
 
 ######### run
-
-Sim15<-Simu_missing(p = 14, n = 200, B = 100,N = 217,eps = 1e-3, cores=3,r=1,maxIter=200)
+tic()
+Sim15<-Simu_missing(p = 14, n = 200, B = 100,N = 403,eps = 1e-3, cores=3,r=1,maxIter=200)
+toc()
 saveRDS(Sim15, file="/Users/raphaellemomal/these/R/codes/missingActor/SimResults/Sim15_r1_200SF.rds")
 # Sim30<-Simu_missing(p = 29, n = 200, B = 40,N = 200)
 # saveRDS(Sim15, file="/Users/raphaellemomal/these/R/codes/missingActor/SimResults/Sim30.rds")

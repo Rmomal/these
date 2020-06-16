@@ -72,15 +72,17 @@
 \tableofcontents
 \newpage
 \section{Model}
-
+We model counts using the Poisson log-normal distribution, with a latent layer of Gaussian vectors drawn conditionally to a spanning-tree structure $T$. 
 $$\left\{\begin{array}{rl}
 T & \sim\prod_{jk \in T} \beta_{jk}/B \\\\
 \Ubf |T& \sim\mathcal{N}(0,R_T)\\\\
 \Ybf|\Ubf&\sim\mathcal{P}( \exp( \Xbf\theta^\intercal + \Ubf\sigma^\intercal) )
 \end{array} \right.$$
-
+\textcolor{red}{Latent vectors with variance 1\\
+Do we explain the estimation of $\sigma$\\
+weights do not depend on $T$}
 \paragraph{Dimensions:}
-The model is build on matrices $\Ybf$ and $\Zbf$ with the following dimensions:\\
+The model is build on matrices $\Ybf$ and $\Ubf$ with the following dimensions:\\
 $\Ybf$: $n\times p$\\
 $\Ubf_O$: $n\times p$\\
 $\Ubf_H$: $n\times r$
@@ -103,17 +105,17 @@ $\Ubf_H$: $n\times r$
 
 \subsection{Distributions}
 \label{distrib}
- 
-The complete vector of underlying parameters $\Ubf$ follows a mixture of normalized Gaussian distributions on the space of all existing spanning trees.
+ Conditionally on the dependency structure $T$, $\Ubf$ is a centered Gaussian variable, with covariance matrix $R_T$ defined by block. As latent vectors are normalized, $R_T$ is a correlation matrix, and we define $\Omega_T=R_T^{-1}$ its inverse.  
+\begin{align*}
+(\Ubf_O,\Ubf_H)|T & \sim\mathcal{N}(0,R_T)\\
+\end{align*}
+The complete vector of underlying parameters $\Ubf$ thus follows a mixture of normalized Gaussian distributions on the space of all existing spanning trees.
 \begin{align*}
 (\Ubf_O,\Ubf_H) &\sim \sum_{T \in \mathcal{T}} p(T) \mathcal{N}(0,R_T) \\
 \end{align*}
 
  
-Conditionally on the dependency structure $T$, $\Ubf$ is a centered Gaussian variable, with covariance matrix $R_T$ defined by block. As latent vectors are normalized, $R_T$ is a correlation matrix, and we define $\Omega$ its inverse. We obtain the following distributions:
-\begin{align*}
-(\Ubf_O,\Ubf_H)|T & \sim\mathcal{N}(0,R_T)\\
-\end{align*}
+
  
  
 
@@ -217,59 +219,60 @@ Distributions $p(\Ybf)$ and $p(\Ybf\mid \Ubf_O)$  do not depend on distributions
 \argmin_{g,h(\Ubf_H)} KL  &=\argmin_{g,h(\Ubf_H)} \Big\{ -\Esp_{gh}[\log p(\Ubf \mid T) ] - \Esp_g[\log p(T) - \log g(T)] -\entr[h(\Ubf_H)] \Big\}
 \end{empheq}
  
- During the minimization, we will use the optimized distribution $h(\Ubf_O)^* = \prod_i^n \mathcal{N}(\widetilde{\mbf}_{Oi}, \widetilde{S}_{Oi})$, its parameters being gathered in $n\times p$ matrices $\widetilde{M}_O$ and $\widetilde{S}_O$.
  
  \subsubsection{Details of  $\Esp_{gh}[\log p(\Ubf \mid T) ]$} 
- $$\log p(\Ubf \mid T) = -\frac{n}{2} \log |R_T| - \frac{1}{2} Tr(\Omega_T \times \Ubf^\intercal \Ubf) $$
+ $$\log p(\Ubf \mid T) = -\frac{n}{2} \log |R_T| - \frac{1}{2} Tr(\Omega_T \times \Ubf^\intercal \Ubf) - \frac{n(p+r)}{2}\log 2\pi$$
  Taking the expectation, and by independence of $g$ and $h$:
- $$\Esp_{gh} [\log p(\Ubf \mid T)] = \frac{n}{2} \Esp_{gh} [\log | \Omega_T|] - \frac{1}{2} Tr(\Esp_g[\Omega_T] \Esp_h[\boldsymbol{U}^\intercal \boldsymbol{U}])$$
+ $$\Esp_{gh} [\log p(\Ubf \mid T)] = \frac{n}{2} \Esp_{gh} [\log | \Omega_T|] - \frac{1}{2} Tr(\Esp_g[\Omega_T] \Esp_h[\boldsymbol{U}^\intercal \boldsymbol{U}]) - \frac{n(p+r)}{2}\log 2\pi$$
  
- We let $SSD$ denote the sum of squared deviance. From the definition of the $h$ distribution: $$ \Esp_h[\Ubf^\intercal \Ubf] = M^\intercal M + S = SSD$$
+ We let $SSD$ denote the sum of squared deviance. From the definition of the $h$ distribution: $$ \Esp_h[\Ubf^\intercal \Ubf] = M^\intercal M + S$$
   $SSD$ is a sufficient statistic of the distribution, and  as latent vectors have variance 1, $SSD/n$ has diagonal 1.
  
 \paragraph{Expectation of the log-determinant of $\Omega_T$\\}
 Thanks to $\Omega_T$ being tree-structured, its determinant factorizes on the edges of $T$ as follows:
 \begin{align*}
-|\Omega_T| &=\frac{\prod_k |R_{Tkk}|^{deg(k)-1}}{\prod_{kl \in T} |R_{Tkl}|} =  \Big(\prod_{kl \in T} (1-\rho_{Tkl}^2)\Big)^{-1},
+|\hat{\Omega}_T| &=\frac{\prod_k |\hat{R}_{Tkk}|^{deg(k)-1}}{\prod_{kl \in T} |\hat{R}_{Tkl}|} =  \Big(\prod_{kl \in T} (1-\hat{\rho}_{Tkl}^2)\Big)^{-1},
  \end{align*}
-
- This gives $$ \Esp_g[\log|\Omega_T|]=-\frac{1}{2}\sum_{kl} \Esp_g[ I_{Tkl}\log(1-\rho_{Tkl}^2)].$$
+Above, we used that $\hat{R}_T$ has diagonal 1. We now use the estimator $\hat{\rho}_{Tkl}=ssd_{kl}/n$, which is independent from $T$. With $I_{Tkl} = \mathds{1}\{kl \in T \}$ and $\Esp_g[I_{Tkl}] = P_{kl}$,  this gives $$ \Esp_g[\log|\hat{\Omega}_T|]=-\frac{1}{2}\sum_{kl} P_{kl}\log(1-ssd_{kl}^2/n^2).$$
 \paragraph{Trace of expectations\\}
- 
+ As $S$ is diagonal:
 \begin{align*}
-Tr(\Esp_g[\Omega_T] SSD) &= \sum_{kl} \Esp_g[I_{Tkl}\: \omega_{Tkl\:}ssd_{kl}] + \sum_k \Esp_g[\omega_{Tkk}\: ssd_{kk}] 
+Tr(\Esp_g[\hat{\Omega}_T] (M^\intercal M +S)] &= \sum_{kl} \bar{\omega}_{kl} [M^\intercal M]_{kl}+ \sum_k  [M^\intercal M+S]_{kk} \widehat{\omega}_{Tkk}
 \end{align*}
 
 Finally, 
 \begin{empheq}[box=\lesswidefbox]{align*}
-\Esp_{gh} [\log p(\Ubf \mid T)] =-  \frac{n}{4}\sum _{k \neq l} \Esp_g\Big[ I_{Tkl}\Big(\log(1-\rho_{Tkl}^2)+ \omega_{Tkl} \frac{ssd_{kl}}{n}\Big)\Big] -\frac{1}{2}  \sum_k \Esp_g[\omega_{Tkk}\: ssd_{kk}] 
+\Esp_{gh} [\log p(\Ubf \mid T)] =& \frac{1}{2}\sum_{kl} \Esp_g[I_{Tkl}(\widehat{\omega}_{Tkl} [M^\intercal M]_{kl}- \frac{n}{2} \log|\widehat{R}_{Tkl}|)] -\frac{1}{2} \sum_k  [M^\intercal M+S]_{kk} \widehat{\omega}_{Tkk}- \frac{n(p+r)}{2}\log 2\pi
  \end{empheq}
 
 \subsubsection{Details of $\Esp_g[\log g(T) - \log p(T)]$}
 \begin{align*}
-\log g(T) - \log p(T) &= \left(  \sum_{j<k}I_{Tkl}\log \widetilde{\beta}_{Tjk} - \log \widetilde{B}_T\right) - \left(  \sum_{j<k} I_{Tkl}\log {\beta}_{jk} - \log {B}\right)\\
-&=\frac{1}{2}\sum_{jk} I_{Tkl}\log \frac{\widetilde{\beta}_{Tjk}}{{\beta}_{jk}} - \log \frac{\widetilde{B}_T}{B}
+\log g(T) - \log p(T) &= \left(  \sum_{k<l}I_{Tkl}\log \widetilde{\beta}_{kl} - \log \widetilde{B}\right) - \left(  \sum_{k<l} I_{Tkl}\log {\beta}_{kl} - \log {B}\right)\\
+&=\frac{1}{2}\sum_{kl} I_{Tkl}\log \frac{\widetilde{\beta}_{kl}}{{\beta}_{kl}} - \log \frac{\widetilde{B}}{B}
 \end{align*}
 $$\boxed{
-\Esp_g[\log g(T) - \log p(T)] = \frac{1}{2}\sum_{jk} \Esp_g\Big[I_{Tkl} \big(\log \widetilde{\beta}_{Tjk}-\log(\beta_{jk})\big)\Big] - \log \frac{\Esp_g[\widetilde{B}_T]}{B} }$$
+\Esp_g[\log g(T) - \log p(T)] = \frac{1}{2}\sum_{jk} P_{kl}  \big(\log \widetilde{\beta}_{kl}-\log(\beta_{kl})\big) - \log \frac{ \widetilde{B}}{B} }$$
 
  \subsubsection{Details of $\entr[h(\Ubf_H)]$}
  
- The entropy of the Gaussian multivariate vector $\Ubf_H$ mainly depends on its variance matrix $S_H$. By definition of $S_H$ we have:
- \begin{align*}
- \log |S_H| &= \log(\prod_{k=p+1}^{p+r} \sum_{i=1}^n S_{ik})
-\end{align*}
-which gives the following entropy:
+ %The entropy of the Gaussian multivariate vector $\Ubf_H$ mainly depends on its variance matrix $S_H$. By definition of $S_H$ we have:
+% \begin{align*}
+% \log |S_H| &= \log(\prod_{k=p+1}^{p+r} \sum_{i=1}^n S_{ik})
+%\end{align*}
+%which gives the following entropy:
+%\begin{align*}
+%\entr[h(\Ubf_H)]&= \frac{1}{2} \log |S_H| + \frac{nr}{2}(1+\log(2\pi))\\
+% &=\frac{1}{2}\left[ \sum_{k=p+1}^{p+r} \log\left(\sum_{i=1}^n S_{ik}\right)+ nr(1+\log 2\pi )\right]
+%\end{align*}
 \begin{align*}
-\entr[h(\Ubf_H)]&= \frac{1}{2} \log |S_H| + \frac{nr}{2}(1+\log(2\pi))\\
- &=\frac{1}{2}\left[ \sum_{k=p+1}^{p+r} \log\left(\sum_{i=1}^n S_{ik}\right)+ nr(1+\log 2\pi )\right]
+\entr[h(\Ubf_H)]&= \sum_i \entr[h(\Ubf_{Hi})] \\
+&=-\frac{1}{2} \sum_i\log |S_{Hi}| - \frac{nr}{2} \log(2e\pi)
 \end{align*}
-
 \subsubsection{Final quantity to optimize:}
 \begin{align*}
 \argmin_{g,h(\Ubf_H)} KL  &=\argmin_{g,h(\Ubf_H)}  \Big\{-\Esp_{gh}[\log p(\Ubf \mid T) ] + \Esp_g[\log g(T) - \log p(T)-\entr[h(\Ubf_H)]\Big\}\\
-&= \argmin_{g,h(\Ubf_H)}  \bigg\{   \frac{n}{2}\sum _{k \neq l} \Esp_g\Big[ I_{Tkl}\Big(\frac{1}{2}\log(1-\rho_{Tkl}^2)+ \omega_{Tkl} \frac{ssd_{kl}}{n}\Big)\Big] +\frac{1}{2}  \sum_k \Esp_g[\omega_{Tkk}\: ssd_{kk}] \\
-& \;\;\;\; +\frac{1}{2}\sum_{jk} \Esp_g\Big[I_{Tkl} \big(\log \widetilde{\beta}_{Tjk}-\log(\beta_{jk})\big)\Big] - \log \frac{\Esp_g[\widetilde{B}_T]}{B} -\frac{1}{2}\sum_{k\in H} \log\left(\sum_i \widetilde{S}_{ik}\right) \bigg\}
+&= \argmin_{g,h(\Ubf_H)}  \bigg\{\frac{1}{2}\sum _{k \neq l}  P_{kl}  \left(\log \widetilde{\beta}_{kl}-\log(\beta_{kl}) - \frac{ssd_{kl}/n}{1-(ssd_{kl}/n)^2} [M^\intercal M]_{kl}+\frac{n}{2} \log(1-ssd_{kl}^2/n^2)\right)\\
+&+\frac{1}{2} \sum_k  [M^\intercal M+S]_{kk} \sum_l P_{kl} \frac{(ssd_{kl}/n)^2}{1-(ssd_{kl}/n)^2} - \log \frac{ \widetilde{B}}{B }+\frac{1}{2} \sum_i\log |S_{Hi}| \bigg\}
 \end{align*}
  
  
@@ -277,15 +280,14 @@ which gives the following entropy:
 
 \paragraph{Edges weights under the $g$ distribution \\}
 Let's isolate the terms referring to the edges in the expression to be minimized:
-$$ \frac{1}{2}\sum _{k \neq l} \Esp_g\Big[I_{Tkl}\Big(\frac{n}{2} \log(1-\rho_{Tkl}^2)+ \omega_{Tkl}\:ssd_{kl}+\log \widetilde{\beta}_{Tjk}-\log\beta_{jk}\Big)\Big]  $$
+$$ \frac{1}{2}\sum _{k \neq l}  P_{kl}  \left(\log \widetilde{\beta}_{kl}-\log(\beta_{kl}) - \frac{ssd_{kl}/n}{1-(ssd_{kl}/n)^2} [M^\intercal M]_{kl}+\frac{n}{2} \log(1-ssd_{kl}^2/n^2)\right)$$
  
+Setting the term $kl$ of the above sum to zero, we obtain:
+ $$\log \widetilde{\beta}_{kl} = \log \beta_{kl} - \frac{n}{2} \log  (1-ssd_{kl}^2/n^2)+\frac{ssd_{kl}/n}{1-(ssd_{kl}/n)^2} [M^\intercal M]_{kl}$$
  
-As $g$ is a discrete distribution on the space of spanning trees, maximizing an expectation taken on $g$ is equivalent to maximizing each expression inside the expectation on each tree. In the above sum, equating what is inside the expectation in $g$ of the term $kl$ to zero, we obtain:
- $$\log \widetilde{\beta}_{Tkl} = \log \beta_{kl} - \frac{n}{2} \log  (1-\rho_{Tkl}^2) - \omega_{Tkl}\:ssd_{kl}$$
+Which gives the following update formula for $\widetilde{\beta}_{kl}$:
  
-Which gives the following update formula for $\widetilde{\beta}_{Tkl}$:
- 
-  $$\boxed{\displaystyle \widetilde{\beta}_{Tkl} = \beta_{kl} \: (1-\rho_{Tkl}^2)^{-n/2} \exp( -\omega_{Tkl}\: ssd_{kl} ) }$$
+  $$\boxed{\displaystyle \widetilde{\beta}_{kl} = \beta_{kl} \: (1-ssd_{kl}^2/n^2)^{-n/2} \exp\Big(\frac{ssd_{kl}/n}{1-(ssd_{kl}/n)^2} [M^\intercal M]_{kl} \Big) }$$
 
 
 \paragraph{Means of the hidden part of the latent Gaussian vector under the $h$ distribution \\}
@@ -306,13 +308,15 @@ $$\boxed{ M_H = -\widetilde{M}_O\bar{\Omega}_{OH} \bar{\Omega}_H^{-1}}$$
 
 
 \paragraph{Variances of the hidden part of the latent Gaussian vector under the $h$ distribution \\}
-$S_H$ is updated following the constraint that $SSD$ has to be of diagonal $n$. By definition, for $h\in H$ we have that $S_H = \sum_i s_{ih}$, therefore the constraint on the diagonal of $SSD$ does not allow to identify each of the $s_{ih}$, which we thus consider all equal, and we define $s_h$ such that for all $ h\in H$ and all $ i\in \{1,...,n\}$, $s_{ih} = s_h$.  By definition, the diagonal term $hh$ of $SSD$ is as follows:
+$S_H$ is updated following the constraint that $\Esp_g[\Ubf^\intercal \Ubf$ has to be of diagonal $n$. By definition, for $h\in H$ we have that $S_H = \sum_i s_{ih}$, therefore the constraint on the diagonal  does not allow to identify each of the $s_{ih}$, which we thus consider all equal, and we define $s_h$ such that for all $ h\in H$ and all $ i\in \{1,...,n\}$, $s_{ih} = s_h$.  By definition, the diagonal term $hh$ of $\Esp_g[\Ubf^\intercal \Ubf$ is as follows:
 
 \begin{align*}
 & M_h^\intercal M_h+ n\:s_h = n\\
 \iff &\boxed{s_h = 1-\frac{ M_h^\intercal M_h}{n}}
 \end{align*}
-
+\subsubsection{SSD matrix}
+The SSD matrix is a product of the VE step, computed as:
+$$ SSD = M^\intercal M+ S$$
  \subsection{M step: optimizing in $(\beta, \Omega_T)$}
  The M step aims at maximizing the lower bound in the parameters referring to original distributions for $T$ and $\Ubf|T$, therefore $\beta$ and $\Omega_T$. From Eq.(\ref{firstJ}) we obtain that: 
 $$ \argmax_{\beta, \Omega} \mathcal{J}(\Ybf ; g,h) =\argmax_{\beta, \Omega} \left\{ \Esp_{gh} [\log (p_\beta(T)p_{\Omega_T}(\Ubf\mid T) ]\right\} $$
@@ -340,6 +344,13 @@ $$\frac{\partial}{\partial_{\beta_{kl}}} \mathcal{J}(\Ybf ; g,h)
 =0 \iff  \boxed{\widehat{\beta}_{kl} = \frac{P_{kl}}{ Q(\betabf)_{kl}} }$$
 
  \subsubsection{Update formula for $\Omega_T$ and $R$}
+\paragraph{Justification\\}
+
+As $g$ is a discrete distribution on the space of spanning trees, maximizing an expectation in $g$ is equivalent to maximizing the expression for each tree. Thus,
+$$ \max\big(\Esp_g[\mathcal{J}_T(\Ybf;h)]\big) = \Esp_g\big[\max(\mathcal{J}_T(\Ybf;h))\big]$$
+and as soon as a maximum likelihood estimator exists for a parameter of $\mathcal{J}_T(\Ybf;h)$, using it will maximize $\mathcal{J}(\Ybf;h,g)$ as well. 
+
+
  \paragraph{Notations\\}
 In what follows, for any $q\times q$  matrix $A$, $A_{kl}$ will refer to the bloc $kl$ of $A$: $A_{kl}=(a_{ij})_{\{i,j\}\in\{k,l\}}$.   $[A_{kl}]^q$ will then denote the matrix obtained by filling up with zero entries to obtain full dimension $q\times q$, so that:
 $$([A_{kl}]^q )_{ij}=\left\{ \begin{array}{rl}
@@ -347,12 +358,6 @@ a_{ij} & \text{if } \{i,j\}\in\{k,l\}\\
 0 &  \text{if } \{i,j\}\in\{1,..., q\}_{\setminus kl}
 \end{array}\right.$$
 
- 
-\paragraph{Justification\\}
-
-As $g$ is a discrete distribution on the space of spanning trees, maximizing an expectation in $g$ is equivalent to maximizing the expression for each tree. Thus,
-$$ \max\big(\Esp_g[\mathcal{J}_T(\Ybf;h)]\big) = \Esp_g\big[\max(\mathcal{J}_T(\Ybf;h))\big]$$
-and as soon as a maximum likelihood estimator exists for a parameter of $\mathcal{J}_T(\Ybf;h)$, using it will maximize $\mathcal{J}(\Ybf;h,g)$ as well. 
 
 \paragraph{Computation\\}
  We use the maximum likelihood estimates $\hat{\rho}$ and $\hat{\Omega}_T$ established in \citet{Lau96}, which depends only on the $SSD$ matrix and the underlying dependency structure.

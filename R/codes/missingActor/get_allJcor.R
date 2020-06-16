@@ -1,12 +1,16 @@
 
 AllJcor = data.frame(Jcor=numeric(), diff=numeric(), detEg=numeric(), sumP=numeric(), auc=numeric(), ppvh=numeric(), tprh=numeric(), seed=numeric())
-N=400
+N=403
 simus=lapply(1:N, function(seed){
-  file= paste0("/Users/raphaellemomal/simulations/15nodes_V2/SF_seed",seed,".rds")
+  file= paste0("/Users/raphaellemomal/simulations/15nodes_V4_oracle/SF_seed",seed,".rds")
   simu=readRDS(file)
   #G=simu$G
+  # diff=do.call(rbind,lapply(simu$ListVEM, function(vem){
+  #   if(length(vem)==12){
+  #     getJcor(vem,p=14,1e-14,1e-14)
+  #   }else{ NaN}}))
   J=do.call(rbind,lapply(simu$ListVEM, function(vem){
-    if(length(vem)==14){
+    if(length(vem)==12){
       tail(vem$lowbound$J,1)
   }else{ NaN}}))
   # Jcor_data=data.frame(do.call(rbind,lapply(simu$ListVEM, function(vem){
@@ -41,12 +45,12 @@ simus=lapply(1:N, function(seed){
   return(simu)
 })
 for(i in 1:N){
-  names(simus[[i]])<-c("G" ,"UH"  , "VEM_1","time_boots", "nbinit"  )
+  names(simus[[i]])<-c("G" ,"UH"  , "VEM_1"  )
   simus[[i]]$VEM_1=unlist(simus[[i]]$VEM_1, recursive = FALSE)
   }
  
 saveRDS(AllJcor, "/Users/raphaellemomal/these/R/codes/missingActor/SimResults/AllJcor_14.rds")
-saveRDS(simus, "/Users/raphaellemomal/these/R/codes/missingActor/SimResults/simus_V2_400.rds")
+saveRDS(simus, "/Users/raphaellemomal/these/R/codes/missingActor/SimResults/simus_V4_oracle.rds")
 simus=readRDS("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/simus_V2_216.rds")
 which(do.call(rbind, lapply(simus, function(seed){
   length(seed)

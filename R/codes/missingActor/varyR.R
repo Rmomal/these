@@ -13,15 +13,16 @@ library(gridExtra)
 library(kableExtra)
 library(parallel)
 library(sparsepca)
-source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
+source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-V2.R")
+source("/Users/raphaellemomal/these/R/codes/missingActor/modif_pkg.R")
+source("/Users/raphaellemomal/these/R/codes/missingActor/VEM_tools.R")
 source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-exactDet.R")
-
 #-- function
-simu_vary_r<-function(p,n,r,B,rMax,maxIter,seed,type,alpha,eps=1e-3, cores=3, plot){
+simu_vary_r<-function(p,n,r,rMax,maxIter,seed,type,alpha,eps=1e-3, cores=3, plot){
   set.seed(seed)
   # sim data
   missing_data<-missing_from_scratch(n,p,r=r,type,plot)
-  counts=missing_data$Y 
+  counts=missing_data$Y ; G=missing_data$G
   # Observed parameters
   PLNfit<-PLN(counts~1, control=list(trace=0))
   MO<-PLNfit$var_par$M  ; SO<-PLNfit$var_par$S ; 
@@ -35,40 +36,47 @@ simu_vary_r<-function(p,n,r,B,rMax,maxIter,seed,type,alpha,eps=1e-3, cores=3, pl
   init0=initVEM(counts , initviasigma = NULL,  cov2cor(sigma_obs),r = 0)
   Wginit= init0$Wginit; Winit= init0$Winit; upsinit=init0$upsinit 
   # vem with original counts
-  VEM_r0<-VEMtree(counts, MO, SO, MH=NULL,upsinit,W_init =Winit,eps=eps,
-                  Wg_init =Wginit,plot = FALSE, maxIter = maxIter,print.hist = FALSE,
-                  alpha=alpha, verbatim=FALSE, trackJ=FALSE )
+  VEM_r0<-tryCatch({VEMtree(counts, MO, SO, MH=NULL,upsinit,W_init =Winit,eps=eps,
+                            Wg_init =Wginit,plot = FALSE, maxIter = maxIter,print.hist = FALSE,
+                            alpha=alpha, verbatim=FALSE, trackJ=FALSE )},
+                   error=function(e){e}, finally={})
   
   #  vary r
   VEMr<-lapply(1:rMax, function(r){
     cat(paste0(r," missing actors: "))
     t1<-Sys.time()
-    cliques_spca <- boot_FitSparsePCA((MO),B,r=r,cores=3)
-    ListVEM<-List.VEM(cliquesObj =cliques_spca, counts, cov2cor(sigma_obs), MO,SO,r=r,alpha=alpha, cores=cores,
+    #  cliques_spca <- boot_FitSparsePCA(scale(MO),B,r=r,cores=3)
+    cliques_spca<-FitSparsePCA(counts, r=2)$cliques
+    complement=lapply(cliques_spca, function(clique){setdiff(1:p,clique)})
+    clique=list()
+    clique$cliqueList=lapply(c(cliques_spca,complement), function(cl) list(cl))
+    ListVEM<-List.VEM(cliquesObj =clique, counts, cov2cor(sigma_obs), MO,SO,r=r,alpha=alpha, cores=cores,
                       eps=eps,maxIter,trackJ=FALSE)
     t2<-Sys.time()
     runtime=difftime(t2,t1)
     cat(paste0(round(runtime,3), attr(runtime, "units"),"\n"))
     return(ListVEM)
   })
-  saveRDS(list(VEM_r0=VEM_r0, VEMr=VEMr, counts=counts, theta=theta),
+  saveRDS(list(VEM_r0=VEM_r0, VEMr=VEMr, counts=counts, G=G),
           file=paste0("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/",type,"_seed",
                       seed,"_r",r,"_1-",rMax ,".rds") )
 }
 
 ############
 #-- run
-seed=7; p=14 ; B=100; type="scale-free" ; n=200 
-t1<-Sys.time()
-simu_vary_r(seed=seed,B=B, n=n, p=p,r=0,maxIter=200,rMax=2, 
-            type = type, plot=FALSE , cores=3, alpha=0.1)
-t2<-Sys.time()
-difftime(t2, t1)
-t1<-Sys.time()
-simu_vary_r(seed=seed,B=B, n=n, p=p,r=1,maxIter=200,
-            rMax=2, type = type,  plot=FALSE, cores=3, alpha=0.1)
-t2<-Sys.time()
-difftime(t2, t1)
+
+mclapply(36:100, function(seed){
+  cat(paste0("\n seed ",seed, " : "))
+  t1<-Sys.time()
+  for(r in c(0,1)){
+    simu_vary_r(seed=seed,n=200, p=14,r=r,maxIter=200,rMax=1, 
+                type = "scale-free", plot=FALSE , cores=3, alpha=0.1)
+  }
+  t2<-Sys.time()
+  runtime=difftime(t2, t1)
+  cat(paste0("\nseed ", seed," in ",round(runtime,3), attr(runtime, "units"),"\n"))
+}, mc.cores=1)
+
 
 #--
 
@@ -79,74 +87,134 @@ get_allData<-function(seed, rMax,eps1=1e-14,eps2=1e-14){
   Data123<-lapply(1:rMax, function(r){
     do.call(rbind,lapply(seq_along(simr0$VEMr[[r]]),function(num){
       vem=simr0$VEMr[[r]][[num]]
-      if(length(vem)==14){
+      if(length(vem)==12){
         penT=-( 0.5*sum( vem$Pg * log(vem$Wg+(vem$Wg==0)) ) - logSumTree(vem$Wg)$det) 
         
-        penZH=0.5*sum(apply(matrix(vem$S[,(p+1):(p+r)],n,r),2,
-                            function(x){ log(sum(x))}))+0.5*r*n*(1+log(2*pi))
+        penZH= 0.5*sum(log(vem$S))+(p+r)*n*0.5*(1+log(2*pi))
         sumPg = sum(vem$Pg)-2*(p+r-1)
-        values=c(J=tail(vem$lowbound$J,1),getJcor(vem,p=p,eps1,eps2),penT=penT,penZH=penZH,sumPg=sumPg)
+        values=c(J=tail(vem$lowbound$J,1),diff=getJcor(vem,p) ,penT=penT,penZH=penZH,sumPg=sumPg)
       }else{
-        values=c(J=NaN,Jcor=NaN, diff=NaN,detEg=NaN, delta=NaN,penT=NaN,penZH=NaN,sumPg=NaN)
+        values=c(J=NaN,diff=NaN,penT=NaN,penZH=NaN,sumPg=NaN)
       }
       return(c(values,r=r, trueR=0, num=num))
     }))}) 
   Data123=do.call(rbind,Data123) %>%  as_tibble()
-  Data0<-c(J=tail(simr0$VEM_r0$lowbound$J,1),
-           getJcor(simr0$VEM_r0,p=14,eps1,eps2),
-           penT=-(0.5*sum( simr0$VEM_r0$Pg * log(simr0$VEM_r0$Wg+(simr0$VEM_r0$Wg==0)) ) - 
-                    logSumTree(simr0$VEM_r0$Wg)$det) ,
-           penZH=0,sumPg=sum(simr0$VEM_r0$Pg)-26,
-           r=0, trueR=0, num=1)
+  if(length(simr0$VEM_r0)==11){
+    Data0<-c(J=tail(simr0$VEM_r0$lowbound$J,1) ,diff=getJcor(simr0$VEM_r0,p),
+             penT=-(0.5*sum( simr0$VEM_r0$Pg * log(simr0$VEM_r0$Wg+(simr0$VEM_r0$Wg==0)) ) - 
+                      logSumTree(simr0$VEM_r0$Wg)$det) ,
+             penZH=0.5*sum(log(simr0$VEM_r0$S))+(p)*n*0.5*(1+log(2*pi)),sumPg=sum(simr0$VEM_r0$Pg)-26,
+             r=0, trueR=0, num=1)
+  }else{ Data0<-c(J=NaN ,diff=NaN,
+                  penT=NaN ,
+                  penZH=NaN,sumPg=NaN,
+                  r=0, trueR=0, num=1)}
+  
   Data_r0 = rbind(Data0, Data123)
   
   Data123<-lapply(1:rMax, function(r){
     do.call(rbind,lapply(seq_along(simr1$VEMr[[r]]),function(num){
       vem=simr1$VEMr[[r]][[num]]
-      if(length(vem)==14){
+      if(length(vem)==12){
         penT=-( 0.5*sum( vem$Pg * log(vem$Wg+(vem$Wg==0)) ) - logSumTree(vem$Wg)$det) 
-        penZH=0.5*sum(apply(matrix(vem$S[,(p+1):(p+r)],n,r),2,
-                            function(x){ log(sum(x))}))+0.5*r*n*(1+log(2*pi))
+        penZH= 0.5*sum(log(vem$S))+(p+r)*n*0.5*(1+log(2*pi))
         sumPg = sum(vem$Pg)-2*(p+r-1)
-        values=c(J=tail(vem$lowbound$J,1),getJcor(vem,p=p,eps1,eps2),penT=penT,penZH=penZH,sumPg=sumPg)
+        values=c(J=tail(vem$lowbound$J,1),diff=getJcor(vem,p), penT=penT,penZH=penZH,sumPg=sumPg)
       }else{
-        values=c(J=NaN,Jcor=NaN, diff=NaN,detEg=NaN, delta=NaN,penT=NaN,penZH=NaN,sumPg=NaN)
+        values=c(J=NaN,diff=NaN,penT=NaN,penZH=NaN,sumPg=NaN)
       }
       return(c(values,r=r, trueR=1, num=num))
     }))}) 
   Data123=do.call(rbind,Data123) %>%  as_tibble()
-  Data0<-c(J=tail(simr1$VEM_r0$lowbound$J,1),getJcor(simr1$VEM_r0,p=14,eps1,eps2),
-           penT=-(0.5*sum( simr1$VEM_r0$Pg * log(simr1$VEM_r0$Wg+(simr1$VEM_r0$Wg==0)) ) -logSumTree(simr1$VEM_r0$Wg)$det) ,
-           penZH=0,sumPg=sum(simr1$VEM_r0$Pg)-26,
-           r=0, trueR=1, num=1)
+ 
+  if(length(simr1$VEM_r0)==11){
+    Data0<-c(J=tail(simr1$VEM_r0$lowbound$J,1),diff=getJcor(simr1$VEM_r0,p),
+             penT=-(0.5*sum( simr1$VEM_r0$Pg * log(simr1$VEM_r0$Wg+(simr1$VEM_r0$Wg==0)) ) -logSumTree(simr1$VEM_r0$Wg)$det) ,
+             penZH=0.5*sum(log(simr1$VEM_r0$S))+(p)*n*0.5*(1+log(2*pi)),sumPg=sum(simr1$VEM_r0$Pg)-26,
+             r=0, trueR=1, num=1)
+  }else{ Data0<-c(J=NaN ,diff=NaN,
+                  penT=NaN ,
+                  penZH=NaN,sumPg=NaN,
+                  r=0, trueR=0, num=1)}
   Data_r1 = rbind(Data0, Data123)
   
   allData = rbind(Data_r0, Data_r1)
-  allData=allData %>% mutate(goodsumP = abs(sumPg)<1e-3, 
-                             penvBIC=0.5*log(n)*(p+ (p*(p+1)/2 +r*p)+((p+r)*(p+r-1)/2 - 1)),
-                             ICL = Jcor-penT-penZH-penvBIC)
+  allData=allData %>% mutate( penvBIC=0.5*log(n)*(p+ (p*(p+1)/2 +r*p)+((p+r)*(p+r-1)/2 - 1)),
+                              vBIC = J-penvBIC,ICL0=J-penT-penZH-penvBIC, ICL1=J-penT-penZH, ICL2=J-penT,
+                              ICL3=J-penZH)
   return(allData)
 }
-allData1<-get_allData(1, rMax=2)
-allData2<-get_allData(2, rMax=2)
-allData7<-get_allData(7, rMax=2)
-summarise=allData7 %>% filter(!is.na(ICL)) %>% #filter(detEg>-25) %>% #filter(goodsumP) %>% 
-  group_by(r, trueR) %>%
-  summarize( maxICL=max(ICL, na.rm=TRUE),
-             maxJCor=max(Jcor, na.rm=TRUE),maxJ=max(J, na.rm=TRUE)) 
+
+####################################
+nH=do.call(rbind,lapply(1:100, function(seed){
+  G=simus[[seed]]$G
+  return(data.frame(seed=seed, nH=sum(G[,15])))
+}))
+
+choiceR=lapply(1:100, function(seed){
+  print(seed)
+  allData<-get_allData(seed, rMax=1)
+  res=allData %>%  group_by(trueR,r) %>% 
+    summarize( maxICL0=max(ICL0, na.rm=TRUE),maxICL1=max(ICL1, na.rm=TRUE), maxICL2=max(ICL2, na.rm=TRUE),
+               maxICL3=max(ICL3, na.rm=TRUE), maxvBIC=max(vBIC, na.rm=TRUE), 
+               mindiff=min(diff, na.rm=TRUE), minpenT = min(penT, na.rm=TRUE)) %>% group_by(trueR) %>%
+    summarize(choice_ICL0=r[which.max(maxICL0)],choice_ICL1=r[which.max(maxICL1)],choice_ICL2=r[which.max(maxICL2)],
+              choice_ICL3=r[which.max(maxICL3)],choice_vBIC=r[which.max(maxvBIC)],
+               choice_diff=r[which.min(mindiff)], choice_penT=r[which.min(minpenT)]) %>%
+    mutate(seed=seed) 
+})
+choiceR=do.call(rbind, choiceR)
+choiceR=left_join(choiceR, nH, by="seed")
+#choiceR %>% mutate(right_Icl = trueR==choice_ICL, right_vBIC= trueR==choice_vBIC) %>% 
+#  group_by(trueR) %>% summarise(rICL = sum(right_Icl),rvBIC = sum(right_vBIC))
+
+choiceR=choiceR %>% mutate(influence=unlist(purrr::map(nH, function(x){
+  if(x<=5) res="Minor"
+  if(x>5 & x<=7) res="Medium"
+  if(x>7) res="Major"
+  return(res)}))) 
+
+sapply(unique(choiceR$influence), function(x){
+  TPFN=c( table(choiceR[choiceR$influence==x,]$trueR, 
+                choiceR[choiceR$influence==x,]$choice_ICL1) )
+  TN = TPFN[1] ; FN = TPFN[3] ; TP = TPFN[4] ; FP = TPFN[2] 
+  err1 = FN/TN # fausse detection d'un acteur manquant
+  err2 = FP/TP # fausse non-détection 
+  return(c(err1, err2))
+})
+
+table(choiceR$trueR, choiceR$choice_penT)
+table(choiceR$trueR, choiceR$choice_diff)
+table(choiceR$trueR, choiceR$choice_ICL1)
+table(choiceR$trueR, choiceR$choice_ICL0)
+table(choiceR$trueR, choiceR$choice_ICL2)
+table(choiceR$trueR, choiceR$choice_ICL3)
+choiceR %>% filter(trueR==0, choice_ICL1==1)
+
+
+
+
+
+##########
+# archives
+allData1<-get_allData(1, rMax=1)
+allData2<-get_allData(2, rMax=1)
+allData7<-get_allData(7, rMax=1)
+summarise=allData2 %>% filter(!is.na(ICL)) %>% #filter(detEg>-25) %>% #filter(goodsumP) %>% 
+  group_by(trueR,r) %>% filter(diff==min(diff)) %>% 
+  summarize( maxICL=max(ICL, na.rm=TRUE), maxJ=max(J, na.rm=TRUE)) %>% group_by(trueR) %>%
+  summarize(choice=r[which.max(maxICL)]) %>% mutate(seed=seed)
 
 summarise %>%   gather(key, value, -r,-trueR) %>% 
   ggplot(aes(as.factor(r), value, color=as.factor(trueR)))+
-  facet_wrap(~key, scales="free")+
-  geom_point(shape=16, size=3)+mytheme.dark("True r:")+
+  geom_point(shape=16, size=3)+geom_line()+ facet_wrap(~key, scales="free")+mytheme.dark("True r:")+
   labs(x="r")
 
 allData %>% ggplot(aes(Jcor, diff, color=as.factor(trueR)))+geom_point()+
   facet_wrap(~r)+mytheme.dark("")
 
-allData %>% 
-  #--- closer look
-  vem = simr0$VEMr[[2]][[40]]
+#--- closer look
+vem = simr0$VEMr[[2]][[40]]
 vem$lowbound$J
 
 JfiltreDelta=Jdata %>% group_by(trueR, r) %>% 
