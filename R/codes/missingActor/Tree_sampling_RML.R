@@ -22,18 +22,26 @@ hist(betaVec, breaks=p); hist(probVec, breaks=p)
 plot(betaVec, probVec); abline(0, 1); abline(0, sqrt(p)); abline(0, max(prob/beta, na.rm=TRUE))
 
 # Function
-# rSpanTreeV0 <- function(prob){
-#    # Approximate sampling of a spanning according to edge probabilities
-#    # Frequency of edge selection empricially OK
-#    # No guaranty about the actual distribution if the whole tree
-#    p <- nrow(prob)
-#    graph <- F_Vec2Sym(F_Sym2Vec(matrix(rbinom(p^2, 1, prob), p, p)))
-#    while(!is.connected(graph)){graph <- F_Vec2Sym(F_Sym2Vec(matrix(rbinom(p^2, 1, prob), p, p)))}
-#    w <- F_Vec2Sym(F_Sym2Vec(matrix(runif(p^2), p, p)))
-#    w <- -log(w)
-#    w[which(graph==0)] <- Inf
-#    return(mst(w))
-# }
+rSpanTreeV0 <- function(prob){
+   # Approximate sampling of a spanning according to edge probabilities
+   # Frequency of edge selection empricially OK
+   # No guaranty about the actual distribution if the whole tree
+   p <- nrow(prob)
+   graph <- F_Vec2Sym(F_Sym2Vec(matrix(rbinom(p^2, 1, prob), p, p)))
+   while(!is.connected(graph)){graph <- F_Vec2Sym(F_Sym2Vec(matrix(rbinom(p^2, 1, prob), p, p)))}
+   w <- F_Vec2Sym(F_Sym2Vec(matrix(runif(p^2), p, p)))
+   w <- -log(w)
+   w[which(graph==0)] <- Inf
+   return(mst(w))
+}
+rSpanTreeV2 <- function(beta){ 
+  p <- nrow(beta)
+  w <- F_Vec2Sym(F_Sym2Vec(matrix(runif(p^2,0,beta), p, p)))
+ 
+  w <- -(w)
+ # w[which(graph==0)] <- Inf
+  return(mst(w))
+}
 
 rSpanTreeV1 <- function(beta, prob){
   # Approximate sampling of a spanning according to edge probabilities
@@ -59,7 +67,7 @@ rSpanTreeV1 <- function(beta, prob){
     # qGraph <- prod(dbinom(graphVec, 1, probVec))
     
     # tree = uniform spanning tree
-    w <- F_Vec2Sym(F_Sym2Vec(matrix(runif(p^2), p, p)))
+    w <- F_Vec2Sym(F_Sym2Vec(matrix(runif(p^2,0,beta), p, p)))
     w[which(graph==0)] <- Inf
     tree <- mst(w)
     treeVec <- F_Sym2Vec(tree)

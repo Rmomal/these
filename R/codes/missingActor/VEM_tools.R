@@ -34,8 +34,9 @@ compute_nSNR<-function(K, indexmissing){
 }
 computeFPN<-function(cliqueList, trueClique,p){
   N=setdiff(1:p,trueClique)
-  FP=unlist(lapply(cliqueList, function(init){sum(init%in%N)/length(N)}))
-  FN=unlist(lapply(cliqueList, function(init){
+  FP=unlist(lapply(cliqueList, function(init){init=init[[1]]
+  sum(init%in%N)/length(N)}))
+  FN=unlist(lapply(cliqueList, function(init){init=init[[1]]
     sum(setdiff(1:p,init)%in%trueClique)/length(trueClique)}))
   return(data.frame(FP=FP, FN=FN))
 }
@@ -156,4 +157,132 @@ cond_lap<-function(W,index){
   lambda=svd(L)$d
   cond=min(abs(lambda))/max(abs(lambda))
   return(cond)
+}
+init.mclust<-function(S,nb.missing=1, n.noise=50,plot=TRUE, title="",trueClique=NULL){
+  Scomp=prcomp(S,scale. = TRUE)
+  data=data.frame(Scomp$rotation[,1:2]%*%diag(Scomp$sdev[1:2]))
+  datapolar=cart2pol(x=data[,1],y=data[,2])[,1:2] # recup r et theta
+  datapolar_half=datapolar %>% mutate(theta2=ifelse(theta>pi,theta-pi,theta)) %>%
+    dplyr::select(r,theta2)
+  
+  # noise in polar coords
+  r <- sqrt(runif(n.noise))
+  theta2 <- runif(n.noise, 0, pi)
+  datapolarall=rbind(datapolar_half,cbind(r,theta2)) 
+  newdata=pol2cart(datapolarall$r,datapolarall$theta2)[,1:2]#plot(newdata,col=col, xlim=c(-1,1),ylim=c(-1,1), pch=20)
+  noiseInit<-sample(c(T,F), size=ncol(S), replace=T, prob=c(3, 1)) # noiseInit<-c(rep(F,ncol(S)),rep(T,n.noise))
+  
+  clust= tryCatch({
+    Mclust(data=newdata, initialization = list(noise=noiseInit),  G=nb.missing, verbose = FALSE)
+  }, error = function(e) {
+    message("new noise")
+    r <- sqrt(runif(n.noise))
+    theta2 <- runif(n.noise, 0, pi)
+    datapolarall=rbind(datapolar_half,cbind(r,theta2)) 
+    newdata=pol2cart(datapolarall$r,datapolarall$theta2)[,1:2]
+    Mclust(data=newdata, initialization = list(noise=noiseInit),  G=nb.missing, verbose = FALSE)
+  }, finally = { })
+  groups<-mclust::map(clust$z)[1:nrow(S)]
+  res<-lapply(1:nb.missing, function(c){
+    which(groups==c)
+  })
+  
+  return(list(init=res, data=data))
+}
+plotInitMclust<-function(res, title){
+  tmp=sapply(res$init, function(c){
+    res=1*(1:p) %in% c
+  })
+  tmp=tmp %>% as_tibble() %>% mutate(null=ifelse(rowSums(tmp)==0,1,0))
+  colors= as.matrix((tmp))%*%matrix(1:ncol(tmp), ncol(tmp), 1)
+  g= ggplot(res$data,aes(X1,X2, label=1:p,color=as.factor(colors)))+geom_point(size=0.1)+
+    theme_light()+geom_text()+labs(x="eig vect 1",y="eig vect 2", title=title)+
+    guides(color=FALSE)+scale_color_brewer(palette="Dark2")+
+    geom_hline(yintercept=0, color="gray50")+geom_vline(xintercept=0, color="gray50")
+  print(g)
+  
+}
+
+# Variable clustering from hierachical PCA
+
+###############################################################################
+WhichMinMat <- function(A){
+  jmin = apply(A, 1, which.min)
+  imin = which.min(sapply(1:nrow(A), function(i){A[i, jmin[i]]}))
+  jmin = jmin[imin]
+  return(c(imin, jmin))
+}
+
+###############################################################################
+MinMat <- function(A){ijmin = WhichMinMat(A); return(A[ijmin[1], ijmin[2]])}
+
+###############################################################################
+F_VarClustPCA <- function(S,traceS=FALSE){
+  p = ncol(S)
+  
+  # Cost matrix
+  C = matrix(Inf, p, p); PC = array(dim=c(n, p, p))
+  sapply(1:(p-1), function(j){sapply((j+1):p, function(k){
+    C[j, k] <<- eigen(S[c(j, k), c(j, k)])$values[2]
+  })})
+  # image(1:p, 1:p, C)
+  
+  # Hierarchical clustering
+  if(traceS){listS = list()}
+  Stmp = S; Ctmp = C; 
+  clustPath = matrix(0, (p-1), 8); colnames(clustPath) = c('j', 'k', 'j.num', 'k.num', 'clust.num', 'coef.j', 'coef.k', 'cost')
+  clustContent = as.list(1:p)
+  varNum = 1:p; step = 0; 
+  while(step < p-2){
+    step = step + 1; 
+    # Pair to merge
+    jkmin = sort(WhichMinMat(Ctmp)); 
+    clustPath[step, 1:2] = varNum[jkmin]; 
+    clustPath[step, 3:4] = jkmin; 
+    clustPath[step, 5] = p+step; 
+    clustContent[[p+step]] = sort(c(clustContent[[varNum[jkmin][1]]], clustContent[[varNum[jkmin][2]]]))
+    # Update covariance
+    eigenSjk = eigen(Stmp[jkmin, jkmin]); 
+    clustPath[step, 6:7] = eigenSjk$vectors[, 1]
+    Spp = Stmp[, jkmin]%*%eigenSjk$vectors[, 1]
+    Stmp = rbind(cbind(Stmp, Spp), cbind(t(Spp), eigenSjk$values[1])); 
+    # Update distances
+    Cpp = sapply(1:(ncol(Stmp)-1), function(j){
+      eigen(Stmp[c(j, ncol(Stmp)), c(j, ncol(Stmp))])$values[2]
+    }); 
+    Ctmp = rbind(cbind(Ctmp, Cpp), rep(Inf, (ncol(Ctmp)+1))); 
+    clustPath[step, 8] = eigenSjk$values[2]
+    # Removing merges rows and columns
+    Stmp = Stmp[-jkmin[2], ]; Stmp = Stmp[, -jkmin[2]]; 
+    Stmp = Stmp[-jkmin[1], ]; Stmp = Stmp[, -jkmin[1]]; 
+    if(traceS){listS[[step]]=Stmp}
+    Ctmp = as.matrix(Ctmp)[-jkmin[2], ]; Ctmp = as.matrix(Ctmp)[, -jkmin[2]]; 
+    Ctmp = as.matrix(Ctmp)[-jkmin[1], ]; Ctmp = as.matrix(Ctmp)[, -jkmin[1]]; 
+    varNum = varNum[-jkmin]; varNum[p-step] = p+step
+    #cat(step, ':', clustPath[step, ], '\n')
+    # image(Ctmp, main=paste(step, dim(Ctmp)[1]), xlab='', ylab='')
+  }
+  # Last step
+  eigenSjk = eigen(Stmp); 
+  clustPath[p-1, ] = c(varNum, c(1, 2), 2*p-1, eigenSjk$vectors[, 1], eigenSjk$values[2])
+  clustContent[[2*p-1]] = sort(c(clustContent[[varNum[jkmin][1]]], clustContent[[varNum[jkmin][2]]]))
+  clustPath = as.data.frame(clustPath); clustPath$height = cumsum(clustPath$cost)
+  
+  # Clustering matrix
+  clustMatrix = (1:p) %o% rep(1, (p-1))
+  sapply(1:(p-1), function(h){
+    if(h>1){clustMatrix[, h] <<- clustMatrix[, (h-1)]}
+    clustMatrix[clustContent[[p+h]], h] <<- p+h
+  })
+  
+  # Merging path 
+  clustMerge = clustPath[, 1:2]
+  sapply(1:2, function(c){
+    clustMerge[which(clustMerge[, c] <= p), c] <<- -clustMerge[which(clustMerge[, c] <= p), c]
+    clustMerge[which(clustMerge[, c] > p), c] <<- clustMerge[which(clustMerge[, c] > p), c] - p
+  })
+  
+  
+  return(list(clustPath=clustPath, clustContent=clustContent, clustMatrix=clustMatrix, 
+              lastCost=eigenSjk$values[1], clustMerge=clustMerge))
 }

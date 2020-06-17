@@ -74,8 +74,9 @@ pY_condT<-function(Ytest,beta, prob, Omega_hat,D, r=1, plot=FALSE){
   beta <- beta / SumTree(beta)^(1/(ncol(beta)-1))
  
   #--- calcul critere : tirer T, calculer omega et sigma puis Uo et p(Y)
-  obj.tree = rSpanTreeV1(beta=beta,prob=prob)
-  tree=obj.tree$tree
+  # obj.tree = rSpanTreeV1(beta=beta,prob=prob)
+  # tree=obj.tree$tree
+  tree=rSpanTreeV2(beta)
   OmegaT=(tree+diag(ncol(prob)))*Omega_hat
   #  OmegaT = (Pg+diag(ncol(Pg)))*VEM$Upsilon
   if(r!=0){
@@ -87,9 +88,9 @@ pY_condT<-function(Ytest,beta, prob, Omega_hat,D, r=1, plot=FALSE){
   
   PLNfit_test<-PLN(Ytest~1, control=list(trace=0)) # calcul des theta test
   X=matrix(1, n, 1) ; theta= PLNfit_test$model_par$Theta
-  lambda = exp(X%*%t(theta)+UO*(rep(1, nrow(UO))%o%D))
-  logpY= sum(dpois(Ytest, (lambda), log=TRUE))
-  if(plot) plot(log(lambda), log(Ytest+1), pch=20);abline(0,1)
+  lambda = (X%*%t(theta)+UO*(rep(1, nrow(UO))%o%D))
+  logpY= sum(dpois(Ytest, exp(lambda), log=TRUE))
+  if(plot) plot((lambda), log(Ytest+1), pch=20);abline(0,1)
   
   return(list(logpY=logpY, tree=tree))
 }
@@ -101,12 +102,13 @@ O=1:p
 missing_data<-missing_from_scratch(n,p,r,type,plot)
 counts=missing_data$Y
 tic()
-VEMfit=split_fit(counts, v=0.8,r=1)
+VEMfit=split_fit(counts, v=0.8,r=0)
 toc()#6sec
+saveRDS(VEMfit, file="/Users/raphaellemomal/these/R/codes/missingActor/SimResults/VEMfit.R")
 tic()
-res=lapply(1:50, function(x){#4min
+res=lapply(1:50, function(x){#1min
   pY_condT(Ytest = VEMfit$Ytest,beta = VEMfit$beta,prob = VEMfit$Pg,
-           Omega_hat = VEMfit$Omega_hat,D=VEMfit$D, r = 1,plot = FALSE)
+           Omega_hat = VEMfit$Omega_hat,D=VEMfit$D, r = 0,plot = TRUE)
 })
 toc()
 

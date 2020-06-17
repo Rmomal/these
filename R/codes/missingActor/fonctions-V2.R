@@ -482,33 +482,28 @@ exactMeila<-function (W,r){ # for edges weight beta
               )
   )
   Mei = 0.5 * (Mei + t(Mei))
-  if(sum(Mei<0)!=0)  browser()
+  if(sum(Mei<0)!=0) stop("unstable Laplacian") # browser()
   return(Mei=Mei)
 }
 
-Kirshner <- function(W,r){# for edges probability from weights W (Kirshner (07) formulas)
+Kirshner <- function(W,r, it1){# for edges probability from weights W (Kirshner (07) formulas)
  p = nrow(W);  index=1  
   L = Laplacian(W)[-index,-index]
-  if(cond_lap(W, 1)<1e-16 && min(Re(eigen(L)$values))<0){ 
-    # L=as.matrix(nearPD(L, eig.tol = 1e-14, posd.tol = 1e-14)$mat)
-    #  stop("L in Kirshner is singular")
-    message("L no PD")
-    # W[W>exp(45)]=exp(45)
-    # L = Laplacian(W)[-index,-index]
-  }
+  # if(cond_lap(W, 1)<1e-16 && min(Re(eigen(L)$values))<0){ 
+  #   message("L no PD")
+  # }
   K = inverse.gmp(L)
   K =  rbind(c(0, diag(K)),
              cbind(diag(K), (diag(K)%o%rep(1, p-1) + rep(1, p-1)%o%diag(K) - 2*K))) 
   K = .5*(K + t(K))
   P = W * K
   P = .5*(P + t(P)) 
-  if(sum(P<(-1e-16))!=0){ 
-   if(min(P)<(-0.1)){
-     cat(paste0(" ",sum(P<0)/2,"neg. prob, min=", min(P),", max=",max(P[P<0])))
-     stop("Instabilities leading to neg. proba")
-   }}
-  if(sum(P>1.001)!=0){  message("approximative inverse")
-    P[P>1]=1  }# instabilities
+  if(!it1){
+    if(sum(P<(-1e-16))!=0){ 
+        stop("Instabilities leading to neg. proba")
+    }
+    P[P>1]=1
+  }
   P[P<1e-16]=0 # numerical zero
   return(P)
 }
@@ -526,10 +521,10 @@ logSumTree<-function(W){# exact computation of matrix tree log determinant
 
 
 #===========
-VE<-function(MO,SO,SH,Upsilon,W,Wg,MH,Pg,logSTW,logSTWg,eps, alpha, verbatim,trackJ=FALSE, hist=FALSE){
+VE<-function(MO,SO,SH,Upsilon,W,Wg,MH,Pg,logSTW,logSTWg,eps, alpha,it1, verbatim,trackJ=FALSE, hist=FALSE){
   #--Setting up
   t1=Sys.time()
-  n=nrow(MO); q=ncol(Upsilon) ;  p=ncol(MO);  O=1:ncol(MO); trim=FALSE
+  n=nrow(MO); q=ncol(Upsilon) ;  p=ncol(MO);  O=1:ncol(MO); trim=FALSE ; 
   hidden=(q!=p)
   if(hidden){
     H=(p+1):ncol(Upsilon); r=length(H)
@@ -550,9 +545,9 @@ VE<-function(MO,SO,SH,Upsilon,W,Wg,MH,Pg,logSTW,logSTWg,eps, alpha, verbatim,tra
     }else{
       MH.new<- (-MO) %*% (Pg[O,H] * Upsilon[O,H])/diag(Upsilon)[H]
     }
-    if(diag(t(MH.new)%*%MH.new)<n){#filtre numérique pour la mise à jour de MH
+   # if(diag(t(MH.new)%*%MH.new)<n){#filtre numérique pour la mise à jour de MH
       MH=MH.new 
-    }else{ message("no MH update")}
+    #}else{ message("no MH update")}
     vec_null<-apply(as.matrix(MH,n,r),2,function(x){
       vec=(x==0)
       return(sum(vec))
@@ -578,7 +573,7 @@ VE<-function(MO,SO,SH,Upsilon,W,Wg,MH,Pg,logSTW,logSTWg,eps, alpha, verbatim,tra
   logSTWg.new=logSTWg.tot$det
   max.prec=logSTWg.tot$max.prec
   
-  Pg.new=Kirshner(Wg.new,r)
+  Pg.new=Kirshner(Wg.new,r,it1)
   sumP=signif(sum(Pg.new)-2*(q-1),3)
   
   if(verbatim) cat(paste0(" sumP=", sumP))
@@ -668,7 +663,7 @@ VEMtree<-function(counts,MO,SO,MH,upsi_init,W_init,Wg_init, maxIter=20,eps=1e-2,
     if(verbatim) cat(paste0("\n Iter n°", iter))
     #--- VE
     resVE<-VE(MO=MO,SO=SO,SH=SH,Upsilon=Upsilon,W=W,Wg=Wg,MH=MH,Pg=Pg,logSTW,logSTWg,eps=1e-3,
-              verbatim=verbatim, alpha=alpha, trackJ=trackJ, hist=print.hist)
+              it1=(iter==1),verbatim=verbatim, alpha=alpha, trackJ=trackJ, hist=print.hist)
     M=resVE$M 
     S=resVE$S 
     Pg.new=resVE$Pg
@@ -709,8 +704,8 @@ VEMtree<-function(counts,MO,SO,MH,upsi_init,W_init,Wg_init, maxIter=20,eps=1e-2,
     J<-c(J, Jiter)
   }
   ########################
-  resVE<-VE(MO=MO,SO=SO,SH=SH,Upsilon=Upsilon,W=W,Wg=Wg,logSTW,logSTWg,MH=MH,Pg=Pg,eps=1e-3,verbatim=verbatim,
-            alpha=alpha, trackJ=trackJ, hist=print.hist)
+  resVE<-VE(MO=MO,SO=SO,SH=SH,Upsilon=Upsilon,W=W,Wg=Wg,logSTW,logSTWg,MH=MH,Pg=Pg,eps=1e-3,it1=(iter==1),
+            verbatim=verbatim, alpha=alpha, trackJ=trackJ, hist=print.hist)
   M=resVE$M 
   S=resVE$S 
   Pg=resVE$Pg

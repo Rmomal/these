@@ -28,19 +28,21 @@ library(gridExtra)
 library(kableExtra)
 library(parallel)
 library(sparsepca)
-source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-missing.R")
-#source("/home/mmip/Raphaelle/these/R/codes/missingActor/fonctions-missing.R")
+source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-V2.R")
+source("/Users/raphaellemomal/these/R/codes/missingActor/modif_pkg.R")
+source("/Users/raphaellemomal/these/R/codes/missingActor/VEM_tools.R")
+source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-exactDet.R")
+```
 
+```{r}
 # simu parameters
-set.seed(seed) # mauvais 2, 4, 5 on a 2 lié à plein de gens donc pas trouvé et mauvais precrec H,
+set.seed(1) # mauvais 2, 4, 5 on a 2 lié à plein de gens donc pas trouvé et mauvais precrec H,
 # 6 pas assez de voisins
 n=200 ;p=14;r=1;type="scale-free";plot=TRUE
 O=1:p
 
 missing_data<-missing_from_scratch(n,p,r,type,plot)
 counts=missing_data$Y
-sigmaO= missing_data$Sigma
-omega=missing_data$Omega
 trueClique=missing_data$TC
 hidden=missing_data$H
 
@@ -52,14 +54,12 @@ sigma_obs=PLNfit$model_par$Sigma
 clique_mclust=init.mclust((cov2cor(sigma_obs)),title="Sigma", nb.missing = r,
                           trueClique = trueClique,n.noise=3*p)
 clique_mclust$init
-computeFPN(res = clique_mclust,trueClique = trueClique)
+computeFPN(cliqueList = clique_mclust$init,trueClique = trueClique,p=p)
 plotInitMclust(res=clique_mclust,title = "")
-init=initVEM(counts = counts, trueClique = trueClique,initviasigma=clique_mclust$init, sigma_obs,r = r)
-Wginit= init$Wginit; Winit= init$Winit; omegainit=init$omegainit ; MHinit=init$MHinit
+init=initVEM(counts = counts,  initviasigma=clique_mclust$init, sigma_obs,MO=MO,r = r)
+Wginit= init$Wginit; Winit= init$Winit; omegainit=init$upsinit ; MHinit=init$MHinit
 
-plot(sigmaO ,sigma_obs)
-ome_init=omega[c(setdiff(1:(p+r), hidden), hidden),c(setdiff(1:(p+r), hidden), hidden)]
-ome=ome_init ; diag(ome)=0
+ G=missing_data$G
 ```
 
 
@@ -80,7 +80,7 @@ for(i in 1:B){
   res<- init.mclust((cov2cor(sigma_obs)),title="Sigma",
                     trueClique = trueClique,n.noise=3*p,plot = FALSE)$init
   
-  if(length(res)>1){
+  if(length(res[[1]])>1){
     print(res)
     List.init[[c]]<-res 
     c=c+1
