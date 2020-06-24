@@ -18,7 +18,7 @@ source("/Users/raphaellemomal/these/R/codes/missingActor/modif_pkg.R")
 source("/Users/raphaellemomal/these/R/codes/missingActor/VEM_tools.R")
 
 #-- data simulation
-set.seed(184) # n voisins de 35  73  89 120 162 206 342 367 395
+set.seed(89) # n voisins de 35  73  89 120 162 206 342 367 395
 n=200 ;p=14;r=1;type="scale-free";plot=TRUE
 O=1:p
 missing_data<-missing_from_scratch(n,p,r,type,plot)
@@ -99,13 +99,14 @@ plotVEM(ListVEM[[2]]$Pg, missing_data$G,r=1, seuil=0.5)
 plotVEM(ListVEM[[3]]$Pg, missing_data$G,r=1, seuil=0.5)
 plotVEM(ListVEM[[4]]$Pg, missing_data$G,r=1, seuil=0.5)
 
-##-- single VEM
+##-- single VEM trueClique
 init=initVEM(counts = counts,initviasigma=trueClique, cov2cor(sigma_obs),MO,r = 1) 
 Wginit= init$Wginit; Winit= init$Winit; upsinit=init$upsinit ; MHinit=init$MHinit
 resVEM<- VEMtree(counts,MO,SO,MH=MHinit,upsinit,Winit,Wginit, eps=1e-3, alpha=0.1,
                  maxIter=30, plot=TRUE,print.hist=FALSE, verbatim = TRUE,trackJ=TRUE)
 
  
+
 plotVEM(resVEM$Pg,G,r=1,seuil=0.5)
 resVEM$features
 tail(resVEM$lowbound$J,1)

@@ -18,6 +18,12 @@ D=diag(sigma_obs)
 matsig=(matrix(rep(1/sqrt(D),n),n,p, byrow = TRUE))
 MO=MO*matsig
 SO=SO*matsig^2
+# no missing actor
+init0=initVEM(counts , initviasigma = NULL,  cov2cor(sigma_obs),r = 0)
+Wginit= init0$Wginit; Winit= init0$Winit; upsinit=init0$upsinit 
+VEM<-VEMtree(counts, MO, SO, MH=NULL,upsinit,W_init =Winit,eps=1e-3,
+                       Wg_init =Wginit,plot = FALSE, maxIter = 100,print.hist = FALSE,
+                       alpha=0.05, verbatim=TRUE, trackJ=FALSE )
 
 #- cliques
 # cliques_spca<-(FitSparsePCA(counts, r=2)$cliques)

@@ -1,0 +1,76 @@
+We now describe how to infer the model parameters. We gather the edges weights into the $p \times p$ matrix $\betab$ and the vectors of regression coefficients into a $d \times p$ matrix $\thetab$. The $p \times p$ matrix $\Sigmab$ contains the variances and covariances between the coordinates of each latent vector $\Zb_i$. Hence, the set of parameters to be inferred is $(\betab, \Sigmab, \thetab)$.
+
+\paragraph{Likelihood.} 
+The model described above is an incomplete data model, as it involves two hidden layers: the random tree $T$ and the latent Gaussian vectors $\Zb_i$. The most classical approach to achieve maximum likelihood inference in this context is to use the Expectation-Maximization algorithm \citep[EM:][]{DLR77}. Rather than the likelihood of the observed data $p(\Yb)$, the EM algorithm deals with the often more tractable likelihood $p(T, \Zb, \Yb)$ of the complete data (which consists of both the observed and the latent variables). It can be decomposed as 
+\begin{linenomath*}
+\begin{equation} \label{eq:PTZY}
+    p_{\betab, \Sigmab, \thetab}(T, \Zb, \Yb) = p_{\betab}(T) \times p_{\Sigmab}(\Zb \; | \; T) \times p_{\thetab}(\Yb \; | \; \Zb),
+\end{equation}
+\end{linenomath*}
+where the subscripts indicate on which parameter each distribution depends. \\
+Observe that the dependency structure between the species is only involved in the first two terms, whereas the third term only depends on the regression coefficients $\thetab$. 
+We take advantage of this decomposition to propose a two-stage estimation algorithm. The first stage deals with the observed layer $p_{\thetab}(\Yb \; | \; \Zb)$, the second with the two hidden layers $p_{\betab}(T)$ and  $p_{\Sigmab}(\Zb \; | \; T)$. The network inference itself takes place in the second step.
+
+\paragraph{Inference in the observed layer.} 
+The variational EM (VEM) algorithm that provides an estimate of the regression coefficients matrix $\thetab$ is described in Appendix \ref{app:VEM} (along with a reminder on EM and VEM). It also provides the (approximate) conditional means $\Esp(Z_{ij} | \Yb_i)$, variances $\Var(Z_{ij} | \Yb_i)$ and covariances $\Cov(Z_{ij}, Z_{ik} | \Yb_i)$ required for the inference in the hidden layer. As a consequence, this first step provides the estimates $\widehat{\thetab}$ and $\widehat{\Sigmab}$.
+
+\paragraph{Inference in the hidden layer.} The second step is dedicated to the estimation of $\betab$. The EM algorithm actually deals with the conditional expectation of the complete log-likelihood, namely $\Esp\left(\log p_{\betab, \Sigmab, \thetab}(T, \Zb, \Yb) \; | \; \Yb\right)$. 
+As shown in Appendix \ref{app:EM}, this  reduces to
+\begin{linenomath*}
+\begin{equation} \label{expectation}
+    \Esp\left(\log p_{\betab, \Sigmab, \thetab}(T, \Zb, \Yb) \; | \; \Yb\right)
+    \simeq
+    \sum_{1 \leq j < k \leq p} P_\jk \log \left(\beta_\jk \widehat{\psi}_\jk\right) - \log B + \cst
+\end{equation}
+\end{linenomath*}
+where $\widehat{\psi}_\jk$ is the estimate of $\psi_\jk$ defined in Eq.~\eqref{eq:pZfact}, and the '$\cst$' term depends on $\thetab$ and $\Sigmab$ but not on $\betab$. 
+$P_\jk$ is the approximate conditional probability (given the data) for the edge $(j, k)$ to be part of the network:
+$P_\jk \simeq \prob\{(j, k) \in T \; | \; Y\}$.
+It is also shown in Appendix~\ref{app:EM} that $\widehat{\psi}_\jk = (1-\widehat{\rho}_\jk^2)^{-n/2}$, where the estimated correlation $\widehat{\rho}_\jk$ depends on the conditional mean, variance and covariances of the $Z_{ij}$'s provided by the first step.
+ Eq.~\eqref{expectation} is maximized via an EM algorithm iterating the calculation of the $P_\jk$ and the maximization with respect to the $\beta_\jk$:
+\begin{description}
+
+\item[Expectation step: Computing the $P_\jk$ with tree averaging.] The conditional probability of an edge is simply the sum of the conditional probabilities of the trees that contain this edge. Hence, computing $P_\jk$ amounts to averaging over all spanning trees.
+Fig.~\ref{fig:treeaveraging} illustrates the principle of tree averaging for a toy network with $p=4$ nodes. Here, five arbitrary spanning trees $t_1$ to $t_5$ (among the $p^{p-2} = 16$ spanning trees) are displayed, with their respective conditional probability $p(T \mid Y)$. 
+The edge $(1, 3)$ has a high conditional probability $P_{13}$ because it is part of likely trees such as $t_3$ and $t_4$, whereas $P_{23}$ is small because the edge $(2, 3)$ is only part of unlikely trees (e.g. $t_1$, $t_2$). \\
+Averaging over all spanning at the cost of a determinant calculus (i.e. with complexity $O(p^3)$) is possible using the Matrix Tree theorem \citep[][recalled as Theorem~\ref{thm:MTT} in Appendix~\ref{app:MTT}]{matrixtree}. 
+\citet{kirshner} further shows that all the $P_\jk$'s can be computed at once with the same complexity $O(p^3)$, although the calculation may lead to numerical instabilities for large $n$ and $p$.
+
+
+
+\begin{figure}[H]
+   \begin{center}
+    \begin{tabular}{cccccc}
+        \input{figs/FigTreeAveraging-p4-tree1-seed2} &
+        \input{figs/FigTreeAveraging-p4-tree2-seed2} &
+        \input{figs/FigTreeAveraging-p4-tree3-seed2} &
+        \input{figs/FigTreeAveraging-p4-tree4-seed2} &
+        \input{figs/FigTreeAveraging-p4-tree5-seed2} \\
+        $t_1: 2.1\%$ & 
+        $t_2: 3.5\%$ & 
+        $t_3: 34.1\%$ & 
+        $t_4: 15.6\%$ & 
+        $t_5:  <.1\%$ \\ \\
+        & 
+        \input{figs/FigTreeAveraging-p4-avgtree-seed2} &
+        \qquad \qquad &
+        \input{figs/FigTreeAveraging-p4-graph-seed2} \\
+        \multicolumn{3}{c}{Edge conditional probabilities} & Estimated graph \\
+    \end{tabular}
+    \caption{Tree averaging principle. 
+    \textit{Top:} 5 spanning trees with 4 nodes  $(t_1, \dots t_5)$, with their respective conditional probability given the data $P(T = t \mid Y)$.
+    \textit{Bottom left:} Weighted graph resulting from tree averaging. Each edge  has width proportional to its conditional probability. \textit{ Bottom right:} Estimated graph (obtained by thresholding edge probabilities) is not a tree.}
+    \label{fig:treeaveraging}
+   \end{center}
+\end{figure}
+
+\item[Maximization step: Estimating the $\beta_\jk$.] 
+\modif{This step is not straightforward, as the normalizing constant $B = \sum_T \prod_{(j, k) \in T} \beta_\jk$ involves all $\beta_\jk$'s. We propose an exact maximization built upon the Matrix Tree theorem (see Appendix~\ref{app:EM}). }
+\end{description}
+
+
+\paragraph{Algorithm output: edge scoring and network inference} 
+%As a side product, 
+EMtree provides the (approximate) conditional probability $P_\jk$ for each edge $(j, k)$ to be part of the network. 
+Whenever an actual inferred network $\widehat{G}$ is needed (e.g. for a graphical purpose), it can be obtained by thresholding the $P_\jk$ (see Fig.~\ref{fig:treeaveraging}, bottom right). Because we are dealing with trees, a natural threshold is the density of a spanning tree, which is  $2/p$.
+More robust results can be obtained using a resampling procedure similar to the stability selection proposed by \citet{LRW10}. It simply consists in sampling a series of subsamples $s = 1 \dots S$, to get an estimate $\widehat{G}^s$ from each of them and to collect the selection frequency for each edge. Again, these edge selection frequencies can be thresholded if needed.

@@ -1,7 +1,7 @@
 #############
 ## initialization
 # find cliques
-FitSparsePCA <- function(Y, r=1, alphaGrid=10^(seq(-4, 0, by=.1))){
+FitSparsePCA <- function(Y, r=1,minV=1, alphaGrid=10^(seq(-4, 0, by=.1))){
   # Fit sparse PCA on a grid of alpha
   # Needs an estimate o Sigma: empirical variance of the rotated scores 
   #    + diagonal risidual variances (why not?)
@@ -26,7 +26,7 @@ FitSparsePCA <- function(Y, r=1, alphaGrid=10^(seq(-4, 0, by=.1))){
     
     good<-do.call(rbind,lapply(sPCA, function(spca){# entre 2 et p-1 voisins
       vec_col<-apply(spca$loadings, 2,function(col){
-        (sum(col!=0)>1 && sum(col!=0)<p)})
+        (sum(col!=0)>minV && sum(col!=0)<p)})
       return(sum(vec_col)==r)
     }))
     good2<- do.call(rbind,lapply(sPCA, function(spca){# des axes différents
@@ -51,12 +51,12 @@ FitSparsePCA <- function(Y, r=1, alphaGrid=10^(seq(-4, 0, by=.1))){
               loglik=loglik, bic=bic, cliques=cliques))
 }
 
-boot_FitSparsePCA<-function(Y, B,r, cores=3, unique=TRUE){
+boot_FitSparsePCA<-function(Y, B,r, minV=1,cores=3, unique=TRUE){
   cliqueList<-mclapply(1:B, function(x){
     n=nrow(Y); v=0.8; n.sample=round(0.8*n, 0)
     ech=sample(1:n,n.sample,replace = FALSE)
     Y.sample=Y[ech,]
-    c=FitSparsePCA(Y.sample,r=r)$cliques
+    c=FitSparsePCA(Y.sample,r=r,minV=minV)$cliques
     return(c)
   }, mc.cores=cores)
   
@@ -70,13 +70,19 @@ boot_FitSparsePCA<-function(Y, B,r, cores=3, unique=TRUE){
 init_blockmodels<-function(k, counts, sigma_obs, MO, SO, alpha=0.1){
   init=initVEM(counts = counts,initviasigma=NULL, cov2cor(sigma_obs),MO,r = 0) 
   Wginit= init$Wginit; Winit= init$Winit; upsinit=init$upsinit ; MHinit=init$MHinit
-  
   #--- fit VEMtree with 0 missing actor
-  resVEM0<- VEMtree(counts,MO,SO,MH=MHinit,upsinit,Winit,Wginit, eps=1e-3, alpha=alpha,
-                    maxIter=100, plot=FALSE,print.hist=FALSE, verbatim = FALSE,trackJ=FALSE)
-  sbm.vem <- BM_bernoulli("SBM_sym",1*(resVEM0$Pg>0.5), plotting="", verbosity=0)
-  sbm.vem$estimate()
-  paramEstimSBMPoisson <- extractParamBM(sbm.vem,k)
+  resVEM0<- tryCatch(VEMtree(counts,MO,SO,MH=MHinit,upsinit,Winit,Wginit, eps=1e-3, alpha=alpha,
+                    maxIter=100, plot=FALSE,print.hist=FALSE, verbatim = FALSE,trackJ=FALSE),
+                    error=function(e){e}, finally={})
+  if(length(resVEM0)>3){
+     sbm.0 <- BM_bernoulli("SBM_sym",1*(resVEM0$Pg>0.5), plotting="", verbosity=0)
+  }else{ 
+    p=ncol(counts)
+    resEM0 = EMtree(cov2cor(sigma_obs))
+    sbm.0 <- BM_bernoulli("SBM_sym",1*(resEM0$edges_prob>2/p), plotting="", verbosity=0)
+  }
+  sbm.0$estimate()
+  paramEstimSBMPoisson <- extractParamBM(sbm.0,k)
   #--- extract k groups from inferred probabilities
   clique=list()
   clique$cliqueList= lapply(1:k, function(z){
@@ -231,9 +237,12 @@ initVEM<-function(counts,initviasigma,sigma_obs,MO,r){
     #   return(res)
     # })
     MHinit<-sapply(initviasigma, function(clique){
-      res=matrix(rowMeans(MO[,clique]), n, 1)
+      if(length(clique)>1){
+         res=matrix(rowMeans(MO[,clique]), n, 1)
+      }else{   res=matrix(MO[,clique], n, 1)}
       return(res)
     })
+ 
   }else{#init with no missing actors
     upsinit=solve(sigma_obs)
     MHinit=NULL
@@ -486,9 +495,8 @@ exactMeila<-function (W,r){ # for edges weight beta
   return(Mei=Mei)
 }
 
-Kirshner <- function(W,r, it1){# for edges probability from weights W (Kirshner (07) formulas)
- p = nrow(W);  index=1  
-  L = Laplacian(W)[-index,-index]
+Kirshner <- function(W,r, it1, verbatim=FALSE){# for edges probability from weights W (Kirshner (07) formulas)
+ p = nrow(W);   L = Laplacian(W)[-1,-1]
   # if(cond_lap(W, 1)<1e-16 && min(Re(eigen(L)$values))<0){ 
   #   message("L no PD")
   # }
@@ -499,11 +507,15 @@ Kirshner <- function(W,r, it1){# for edges probability from weights W (Kirshner 
   P = W * K
   P = .5*(P + t(P)) 
   if(!it1){
-    if(sum(P<(-1e-16))!=0){ 
-        stop("Instabilities leading to neg. proba")
+    if(sum(P<(-1e-16))!=0){ #browser()
+      stop("Instabilities leading to neg. proba")
+      #P[P<1e-16]=0 
     }
-    P[P>1]=1
   }
+  if(verbatim){
+    if(length(P[P>1])!=0) cat(paste0(" / range(P-1>0)= ",min(signif(P[P>1]-1,1))," ; ", max(signif(P[P>1]-1,1))," / "))
+  }
+ # P[P>1]=1
   P[P<1e-16]=0 # numerical zero
   return(P)
 }
@@ -514,11 +526,34 @@ logSumTree<-function(W){# exact computation of matrix tree log determinant
   output=det.fractional(mat, log=TRUE)
   if(output==log(.Machine$double.xmax )){
     max.prec=TRUE
-    message("max.prec!")
+  #  message("max.prec!")
   }
   return(list(det=output,max.prec=max.prec))
 }
 
+EdgeProba <- function(W, verbatim=FALSE, p.min=1e-16){
+  logWcum = logSumTree(W)$det
+  if(!isSymmetric(W))  cat('Pb: W non symmetric!')
+  p = nrow(W); P = matrix(0, p, p)
+  #core of computation
+  sapply(1:(p-1),
+         function(j){
+           sapply((j+1):p,
+                  function(k){
+                    W_jk = W; W_jk[j, k] = W_jk[k, j] = 0 #kills kj edge in W_kj
+                    P[k, j] <<- 1 - exp(logSumTree(W_jk)$det - logWcum )
+                    P[j, k] <<- P[k, j]
+                  })
+         })
+  # if(sum(is.na(P))!= 0) browser()
+  if(length(which(P<p.min))!=0){
+    
+    P[which(P<p.min)]= 0
+  }
+  
+  diag(P)=0
+  return(P)
+}
 
 #===========
 VE<-function(MO,SO,SH,Upsilon,W,Wg,MH,Pg,logSTW,logSTWg,eps, alpha,it1, verbatim,trackJ=FALSE, hist=FALSE){
@@ -572,8 +607,15 @@ VE<-function(MO,SO,SH,Upsilon,W,Wg,MH,Pg,logSTW,logSTWg,eps, alpha,it1, verbatim
   logSTWg.tot=logSumTree(Wg.new)
   logSTWg.new=logSTWg.tot$det
   max.prec=logSTWg.tot$max.prec
-  
-  Pg.new=Kirshner(Wg.new,r,it1)
+  if(max.prec){
+    Wg.new=Wg.new/10
+    logSTWg.tot=logSumTree(Wg.new)
+    logSTWg.new=logSTWg.tot$det
+    max.prec=logSTWg.tot$max.prec
+    if(max.prec) message("max.prec!")
+  }
+  Pg.new=Kirshner(Wg.new,r,it1, verbatim=verbatim)
+  #Pg.new=EdgeProba(Wg.new,verbatim = verbatim,p.min = 0)
   sumP=signif(sum(Pg.new)-2*(q-1),3)
   
   if(verbatim) cat(paste0(" sumP=", sumP))
@@ -625,7 +667,14 @@ Mstep<-function(M, S, Pg, Upsilon,W, logSTW, logSTWg, eps, Wg, p, trackJ=FALSE){
   logSTW=logSTW.tot$det
   if(trackJ) LB2=c(LowerBound(Pg = Pg, Upsilon=Upsilon, M=M, S=S,W=W, Wg=Wg,p,logSTW=logSTW,logSTWg=logSTWg),"W")
   max.prec=logSTW.tot$max.prec
-  if(max.prec) browser()
+  if(max.prec){
+    W=W.new/10
+    logSTW.tot=logSumTree(W.new)
+    logSTW.new=logSTW.tot$det
+    max.prec=logSTW.tot$max.prec
+    if(max.prec) message("max.prec!")
+  }
+ 
   if(trackJ){LB=rbind(LB1,LB2)}else{LB=LowerBound(Pg = Pg, Upsilon=Upsilon, M=M, S=S,W=W, Wg=Wg,p,logSTW=logSTW,logSTWg=logSTWg)}
   res=list(W=W, Upsilon=Upsilon, LB=LB , logSTW=logSTW,max.prec=max.prec) 
   

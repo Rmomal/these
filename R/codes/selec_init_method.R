@@ -13,6 +13,7 @@ library(gridExtra)
 library(kableExtra)
 library(parallel)
 library(sparsepca)
+library(blockmodels)
 source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-V2.R")
 source("/Users/raphaellemomal/these/R/codes/missingActor/modif_pkg.R")
 source("/Users/raphaellemomal/these/R/codes/missingActor/VEM_tools.R")
@@ -80,25 +81,26 @@ run.method<-function(cliques,method,counts,sigma_obs,MO,SO, MHinit,ome,r, trueCl
       auc=round(auc(pred = x$Pg, label = ome),4)
       h=(p+1):(p+r)
       PPVH=accppvtpr(x$Pg,ome,h=h,seuil=0.5)[5]
+      TPRH=accppvtpr(x$Pg,ome,h=h,seuil=0.5)[8]
       J=  tail(x$lowbound$J,1)
-      res=c(auc=auc, PPVH=PPVH,J=J)
-    }else{ res=c(auc=NaN, PPVH=NaN,J=NaN) }
+      res=c(auc=auc, PPVH=PPVH,TPRH=TPRH,J=J)
+    }else{ res=c(auc=NaN, PPVH=NaN, TPRH=NaN,J=NaN) }
     return(res)
   })))
   data=computeFPN(cliques, trueClique[[1]], p) %>% 
-    mutate( J=vec.perf$J, sizes=unlist(lapply(cliques, length)),
-            auc=vec.perf$auc, PPVH=vec.perf$PPVH,method=c(method))
-  best=which.max(vec.perf$J)
-  choice=data[best,]
-
-  return(choice)
+    mutate(crit=FP+FN, crit.rank=rank(crit, ties.method = "min"), J=vec.perf$J, sizes=unlist(lapply(cliques, function(x) length(x[[1]]))),
+            auc=vec.perf$auc, PPVH=vec.perf$PPVH, TPRH=vec.perf$TPRH, nbinit=length(cliques),method=c(method))
+  # best=which.max(vec.perf$J)
+  # choice=data[best,]
+  
+  return(data)
 }
 SelectInitClique<-function(seed, B, n=200, p=14, r=1){
   t1<-Sys.time()
   cat(paste0("\n seed ",seed, "\n"))
   set.seed(seed)
   type="scale-free" ;O=1:p;plot=FALSE
-  
+  #browser()
   missing_data<-missing_from_scratch(n,p,r,type,plot)
   counts=missing_data$Y;  omega=missing_data$Upsilon;
   trueClique=missing_data$TC; h=(p+1):(p+r)
@@ -113,14 +115,23 @@ SelectInitClique<-function(seed, B, n=200, p=14, r=1){
   
   #true perfs
   vem=run.VEM(clique = trueClique ,counts=counts, sigma_obs, MO=MO, SO=SO,r=r)
-  oracle.perf<-data.frame(auc=round(auc(pred =vem$Pg, label = ome),4),
-                        PPVH=accppvtpr(vem$Pg,ome,h=h,seuil=0.5)[5],
-                        J= tail(vem$lowbound$J,1))
-  
+  if(length(vem)>5){
+    oracle.perf<-data.frame(auc=round(auc(pred =vem$Pg, label = ome),4),
+                            PPVH=accppvtpr(vem$Pg,ome,h=h,seuil=0.5)[5],
+                            TPRH=accppvtpr(vem$Pg,ome,h=h,seuil=0.5)[8],
+                            J= tail(vem$lowbound$J,1))
+  }else{oracle.perf<-data.frame(auc=NaN,
+                                PPVH=NaN,TPRH=NaN,
+                                J= NaN)}
+
+
   #=== MCLUST
   cat(paste0("\n ------ MCLUST ------ \n"))
   cliques_mclust<-mclust.init(sigma_obs, trueClique[[1]],B, n)
-  vem_mclust=mclapply(cliques_mclust, function(init){
+  goodinit=which(do.call(rbind , lapply(cliques_mclust, function(x) length(x[[1]])))>1)
+  cliques_mclust2=cliques_mclust[goodinit]
+  cat(paste0("   Fitting ",length(cliques_mclust2)," VEM..."))
+  vem_mclust=mclapply(cliques_mclust2, function(init){
     run.VEM(clique = (init),counts=counts,sigma_obs, MO=MO, SO=SO, r=r)
   }, mc.cores=3)
 
@@ -129,81 +140,99 @@ SelectInitClique<-function(seed, B, n=200, p=14, r=1){
       auc=round(auc(pred = x$Pg, label = ome),4)
       h=(p+1):(p+r)
       PPVH=accppvtpr(x$Pg,ome,h=h,seuil=0.5)[5]
+      TPRH=accppvtpr(x$Pg,ome,h=h,seuil=0.5)[8]
       J=tail(x$lowbound$J,1)
-      res=c(auc=auc,PPVH= PPVH,J=J)
-    }else{ res=c(auc=NaN,PPVH=NaN,J=NaN)}
+      res=c(auc=auc,PPVH= PPVH,TPRH= TPRH,J=J)
+    }else{ res=c(auc=NaN,PPVH=NaN,TPRH= NaN,J=NaN)}
     return(res)
   })))
 
-  FPN_mclust<-computeFPN(cliques_mclust, trueClique[[1]], p)
-  data=FPN_mclust %>% mutate(crit=FP+FN, crit.rank=rank(crit, ties.method = "min"),
-                             J=vec.perf$J,sizes=unlist(lapply(cliques_mclust, length)),
-                             auc=vec.perf$auc, PPVH=vec.perf$PPVH)
-  mclust.choice<-data[which.max(data$J),-c(3, 4)]
-  mclust.choice$method="mclust"
-  data3<-data %>% filter(sizes>2) %>% dplyr::select(-crit, -crit.rank)
-  if(nrow(data3)!=0){
-    mclust.choice.min3<- data3%>% filter(J==max(J, na.rm=TRUE))
-    mclust.choice.min3$method="mclust.min3"
-    mclust.choice<-rbind(mclust.choice,mclust.choice.min3)
-  }
+  FPN_mclust<-computeFPN(cliques_mclust2, trueClique[[1]], p)
+  mclust.choice=FPN_mclust %>% mutate(crit=FP+FN, crit.rank=rank(crit, ties.method = "min"),
+                             J=vec.perf$J,sizes=unlist(lapply(cliques_mclust2, function(x) length(x[[1]]))),
+                             auc=vec.perf$auc, PPVH=vec.perf$PPVH,TPRH=vec.perf$TPRH,
+                             nbinit=length(cliques_mclust2),  method="mclust")
+  # mclust.choice<-data[which.max(data$J),-c(3, 4)]
+  # mclust.choice$method="mclust"
+  # data3<-data %>% filter(sizes>2) %>% dplyr::select(-crit, -crit.rank)
+  #
+  # if(nrow(data3)!=0){
+  #   mclust.choice.min3<- data3%>% filter(J==max(J, na.rm=TRUE))
+  #   mclust.choice.min3$method="mclust.min3"
+  #   mclust.choice<-rbind(mclust.choice,mclust.choice.min3)
+  # }
 
   #=== sPCA
   cat(paste0("\n ------ sPCA ------ \n"))
   cat(paste0("\n bootstrap \n"))
-  cliques_boot_spca <- boot_FitSparsePCA(scale(MO),B,r=r)$cliqueList
+  cliques_boot_spca <- boot_FitSparsePCA(scale(MO),B,r=r,minV = 1)$cliqueList
+  cat(paste0("   Fitting ",length(cliques_boot_spca)," VEM..."))
   boot.spca.choice=run.method(cliques_boot_spca,"boot.sPCA",counts,sigma_obs,MO,SO,MHinit,
                               ome,r,trueClique )
-  
+
   #---
   cat(paste0("\n two axes sPCA \n"))
-  cliques_spca<-FitSparsePCA(scale(MO), r=2)$cliques
+  cliques_spca<-FitSparsePCA(scale(MO), r=2,minV = 1)$cliques
   complement=lapply(cliques_spca, function(clique){setdiff(1:p,clique)})
   cliques_spca=lapply(c(cliques_spca,complement), function(cl) list(cl))
+  cat(paste0("   Fitting ",length(cliques_spca)," VEM..."))
   spca.choice=run.method(cliques_spca,"sPCA",counts,sigma_obs,MO,SO, MHinit,ome,r,
                          trueClique )
-  
+
   #=== varClust
   cat(paste0("\n ------ VarClust ------ \n"))
   cliques_varclust<-varClust.init(sigma_obs)
+  cat(paste0("   Fitting ",length(cliques_varclust)," VEM..."))
   varclust.choice<-run.method(cliques_varclust,"VarClust",counts,sigma_obs,MO,SO,MHinit,
                               ome,r,trueClique )
-  
+
   #---
   #=== Blockmodels
   cat(paste0("\n ------ BlockModels ------ \n"))
-  cliques_bm<-init_blockmodels(k=3, counts, sigma_obs, MO, SO)$cliqueList
-  bm.choice<-run.method(cliques_bm,"BM",counts,sigma_obs,MO,SO,MHinit,ome,r,
-                        trueClique )
-
+  cliques_bm<-tryCatch({init_blockmodels(k=3, counts, sigma_obs, MO, SO)$cliqueList},
+                       error=function(e){e},finally={})  
+  #if(typeof(cliques_bm[[1]])!="character"){
+    goodinit=which(do.call(rbind , lapply(cliques_bm, function(x) length(x[[1]])))>1)
+    cliques_bm2=cliques_bm[goodinit]
+    cat(paste0("   Fitting ",length(cliques_bm2)," VEM..."))
+    bm.choice<-run.method(cliques_bm2,"BM",counts,sigma_obs,MO,SO,MHinit,ome,r,
+                          trueClique )
+  # }else{
+  #   bm.choice<- data.frame(FP=NaN,FN=NaN, J=NaN,sizes=NaN, 
+  #                          auc=NaN,PPVH=NaN,nbinit=NaN,  method="BM")
+  #}
+  
+  
   #---
   choices<-rbind(boot.spca.choice,spca.choice,bm.choice, mclust.choice , varclust.choice,
-                 data.frame(FP=0,FN=0, J=oracle.perf$J,sizes=length(trueClique), 
-                            auc=oracle.perf$auc,PPVH=oracle.perf$PPVH,  method="Oracle"))
+                 data.frame(FP=0,FN=0,crit=0, crit.rank=1, J=oracle.perf$J,sizes=length(trueClique[[1]]), 
+                            auc=oracle.perf$auc,PPVH=oracle.perf$PPVH,TPRH=oracle.perf$TPRH,nbinit=1,  method="Oracle"))
   choices$seed=seed
   t2<-Sys.time()
   runtime=difftime(t2, t1)
+  saveRDS(choices, paste0("/Users/raphaellemomal/simulations/selecInit/choices_seed",seed,".rds"))
   cat(paste0("\nseed ", seed," in ",round(runtime,3), attr(runtime, "units"),"\n"))
   return(list(choice=choices))
 }
 
-seed=1:100
+seed=101:200
 t1<-Sys.time()
-res<-lapply(seed, function(x){ SelectInitClique(x, B=100)})
+res2<-lapply(seed, function(x){ SelectInitClique(x, B=100)})
 t2<-Sys.time()
 difftime(t2, t1)
 
-saveRDS(object = res, file = "/Users/raphaellemomal/simulations/Simu/selectInit_V2.rds" )
+saveRDS(object = res2, file = "/Users/raphaellemomal/simulations/Simu/selectInit_V2_p2.rds" )
 # rank.size<-unlist(lapply(res, function(x){rank(x$perf$clique.size)}))
 # rank.crit<-unlist(lapply(res, function(x){ x$perf$crit.rank}))
 # plot(rank.crit, rank.size)
 # quality<-unlist(lapply(res, function(x){x$quality}))
 # quality %>% as_tibble() %>% ggplot(aes(value, y=..prop..))+geom_bar(width=0.5, alpha=0.6, fill="deepskyblue3")+mytheme+labs(x="rank of FN+FP", y="choice with max vBIC")
 
-quality<-do.call(rbind,lapply(res, function(x){x$choice}))
+quality<-do.call(rbind,lapply(res, function(x){x$choice})) %>% as_tibble()
 
 
-test=quality %>% dplyr::select(-FN, -FP, -auc, -vBIC, -PPVH) %>% spread(method, sizes) %>%dplyr::select(Truth) 
+test=quality %>% dplyr::select(-FN, -FP, -auc,-J, -PPVH) %>% 
+  spread(method, sizes) %>%dplyr::select(Oracle) 
 truthSizes=sort(unique(test$Truth), decreasing = FALSE)
 lapply(truthSizes, function(x){
   which(test$Truth==x)
@@ -211,22 +240,22 @@ lapply(truthSizes, function(x){
 #filter by the number of original neighbors
 index=which(test$Truth>2)
 # FPN
-p1<-quality %>% filter(method!="Truth") %>%  
-  gather(key, value, -method, -sizes, -vBIC, -seed) %>%  
-  mutate(method = fct_relevel(method, 
-                              "VarClust","mclust","spca.Z","mclust.min3","spca.Y")) %>% 
+p1<-quality %>% filter(method!="Oracle") %>%  
+  gather(key, value, -method, -sizes, -J, -seed,-nbinit) %>%  
+  mutate(key = fct_relevel(key,
+                             "auc","PPVH","FN","FP")) %>%
   ggplot(aes(as.factor(method), value, color=as.factor(key),fill=as.factor(key)))+
   geom_hline(yintercept = 0.5, linetype="dashed")+
-  geom_boxplot(alpha=0.3, width=0.6) +theme_light()+labs(x="",y="",title="On 200 scale-free graphs")+
-  scale_color_hp_d("",option = "Gryffindor")+
-  scale_fill_hp_d("",option = "Gryffindor")
+  geom_boxplot(alpha=0.3, width=0.6) +theme_light()+labs(x="",y="",title="On 100 scale-free graphs")+
+  scale_color_hp_d("",option = "Ravenclaw")+
+  scale_fill_hp_d("",option = "Ravenclaw")
 # AUC PPVH
-quality %>% filter(method!="Truth") %>% gather(key, value, -method, -sizes, -vBIC, -seed,-FN, -FP) %>%
+quality %>% filter(method!="Oracle") %>% gather(key, value, -method, -sizes, -J,-nbinit, -seed,-FN, -FP) %>%
   ggplot(aes(as.factor(method), value, color=as.factor(key),fill=as.factor(key)))+
   geom_boxplot(alpha=0.3) +theme_light()+labs(x="",y="",title="On 200 scale-free graphs")+
-  scale_color_hp_d("",option = "Gryffindor")+
-  scale_fill_hp_d("",option = "Gryffindor")
-test=quality %>% filter(method!="Truth")%>% dplyr::select(-FN, -FP, -sizes, -vBIC, -PPVH) %>% spread(method, auc)
+  scale_color_hp_d("",option = "Ravenclaw")+
+  scale_fill_hp_d("",option = "Ravenclaw")
+test=quality %>% filter(method!="Oracle")%>% dplyr::select(-FN, -FP, -sizes, -J,-nbinit, -PPVH) %>% spread(method, auc)
 AUCranks<-t(apply(test[,-1],1,function(x){
   rank(x, ties.method = "max")
 }))
@@ -234,6 +263,16 @@ AUCranks %>%as_tibble() %>%  gather(key, value) %>%
   ggplot(aes( x=value, y=..prop..,color=key, fill=key ))+
   geom_bar(position = position_dodge(),width = 0.7)+#stat="binline",bins=14, scale=0.8, draw_baseline=FALSE)
   theme_light()+labs(x="",y="",title="AUC ranks (max is best)")+
+  scale_color_hp_d("",option = "Ravenclaw")+ scale_fill_hp_d("",option = "Ravenclaw")
+
+test=quality %>% filter(method!="Oracle")%>% dplyr::select(-FN, -FP, -sizes, -J,-nbinit, -auc) %>% spread(method, PPVH)
+PPVHranks<-t(apply(test[,-1],1,function(x){
+  rank(x, ties.method = "max")
+}))
+PPVHranks %>%as_tibble() %>%  gather(key, value) %>% 
+  ggplot(aes( x=value, y=..prop..,color=key, fill=key ))+
+  geom_bar(position = position_dodge(),width = 0.7)+#stat="binline",bins=14, scale=0.8, draw_baseline=FALSE)
+  theme_light()+labs(x="",y="",title="PPVH ranks (max is best)")+
   scale_color_hp_d("",option = "Ravenclaw")+ scale_fill_hp_d("",option = "Ravenclaw")
 
 # Sizes
@@ -248,26 +287,32 @@ p2<-quality %>%
   theme_light()+labs(x="",y="",title="Size of found cliques compared to truth")+
   scale_color_hp_d("",option = "Ravenclaw")+ scale_fill_hp_d("",option = "Ravenclaw")
 
+quality %>% filter(method!="Oracle") %>% 
+  ggplot(aes( x=auc, y=method,color=method, fill=method ))+
+  geom_density_ridges()+#stat="binline",bins=14, scale=0.8, draw_baseline=FALSE)
+  theme_light()+labs(x="",y="",title="PPVH")+
+  scale_color_hp_d("",option = "Ravenclaw")+ scale_fill_hp_d("",option = "Ravenclaw")
+
 # Gap in vBIC
-test=quality %>% dplyr::select(-FN, -FP, -sizes, -auc, -PPVH) %>% spread(method, vBIC)
-vBICdiff<-apply(test[,-c(1,ncol(test))],2,function(x){
-  x-test$Truth
+test=quality %>% dplyr::select(-FN, -FP, -sizes,-nbinit, -auc, -PPVH) %>% spread(method, J)
+Jdiff<-apply(test[,-c(1)],2,function(x){
+  x-test$Oracle
 })
-vBICdiff %>%as_tibble() %>%  gather(key, value) %>% 
+p3<-Jdiff %>%as_tibble() %>% dplyr::select(-Oracle)%>%  gather(key, value) %>% 
   ggplot(aes( x=key, y=value,color=key, fill=key ))+
   geom_boxplot(width=0.4)+#stat="binline",bins=14, scale=0.8, draw_baseline=FALSE)
-  theme_light()+labs(x="",y="",title="vBIC - trueVBIC")+
+  theme_light()+labs(x="",y="",title="J - Oracle.J")+
   geom_hline(yintercept = 0, linetype="dashed")+
   scale_color_hp_d("",option = "Ravenclaw")+ scale_fill_hp_d("",option = "Ravenclaw")+ coord_flip()
 
 # Best vBic in rank
-vBICranks<-t(apply(test[,-c(1,ncol(test))],1,function(x){
+Jranks<-t(apply(test %>% dplyr::select(-seed, -Oracle),1,function(x){
   rank(x, ties.method = "max")
 }))
-p3<-vBICranks %>%as_tibble() %>%  gather(key, value) %>% 
+Jranks %>%as_tibble() %>%  gather(key, value) %>% 
   ggplot(aes( x=value, y=..prop..,color=key, fill=key ))+
   geom_bar(position = position_dodge(),width = 0.7)+#stat="binline",bins=14, scale=0.8, draw_baseline=FALSE)
-  theme_light()+labs(x="",y="",title="vBIC ranks (max is best)")+
+  theme_light()+labs(x="",y="",title="J ranks (max is best)")+
   scale_color_hp_d("",option = "Ravenclaw")+ scale_fill_hp_d("",option = "Ravenclaw")
 
 

@@ -116,11 +116,7 @@ ListVEM[[4]]$features
 #-------------
 # les voisins sont corrélés aussi
 p=30
-p=25
-VEM_all_nofiltrec
-VEM_all_nofiltre_01
-VEM_all_filtreprec
-VEM_all_filtreprec_01
+ 
 vois<-which(VEM_spca_200$Pg[,p+1]>5e-1)
 data_fit=t(apply(VEM_all_filtreprec$M, 2, function(Mk){
   fit=lm(Mk~X$Temperature)

@@ -1,25 +1,50 @@
-\documentclass[11pt,a4paper]{book}
-\usepackage[utf8]{inputenc}
-\usepackage{amsmath}
-\usepackage{amsfonts}
-\usepackage{amssymb}
-\usepackage{graphicx}
-\usepackage[left=2cm,right=2cm,top=2cm,bottom=2cm]{geometry}
- 
-\title{Network Inference from Abundance data with Missing Actors: Application to ecology.}
-\begin{document}
-\maketitle
-\tableofcontents
-\chapter*{Introduction}
-\input{intro.tex}
 
+
+\input{debut.tex}
+ 
+
+\backgroundsetup{contents={}}
+
+\setcounter{chapter}{-1}
+\begin{document}
+\frontmatter
+\input{titleUPS}
+\setcounter{tocdepth}{1}
+\selectlanguage{english}
+%\dominitoc
+\tableofcontents 
+ \mainmatter
+
+ 
+
+\chapter{Introduction}
+%\minitoc
+\input{intro.tex}
+ \clearemptydoublepage
+\ActivateBG 
 \chapter{Mathematical Framework}
 \input{chap1}
-	
-	
-\chapter{Network inference from abundance data}
+ 
+\chapter{Tree-based Inference of Species Interaction Networks from Abundance Data}
 \input{chap2}
-	
+ 
 \chapter{Detection and inference of a missing actor}
 \input{chap3}
+
+\clearemptydoublepage
+ 
+\chapter{Conclusion}
+\input{Conclusion}
+
+
+\selectlanguage{french}
+ \clearemptydoublepage
+\DeactivateBG 
+\chapter{Résumé}
+\bibliographystyle{plainnat}  
+\bibliography{biblio.bib}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 4eme de couverture
+\input{dos}
 \end{document}

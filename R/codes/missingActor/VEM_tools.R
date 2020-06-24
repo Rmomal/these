@@ -286,3 +286,53 @@ F_VarClustPCA <- function(S,traceS=FALSE){
   return(list(clustPath=clustPath, clustContent=clustContent, clustMatrix=clustMatrix, 
               lastCost=eigenSjk$values[1], clustMerge=clustMerge))
 }
+
+rSpanTreeV1 <- function(beta, prob){
+  # Approximate sampling of a spanning according to edge probabilities
+  # Rejection sampling approach
+  # !!! Beta's must be normalized !!! (constant B = 1)
+  # Max ratio between proposal and target heuristicaly set to p^2
+  p <- nrow(prob); P <- p*(p-1)/2
+  prob <- prob / max(prob) # To enforce connectivity
+  probVec <- F_Sym2Vec(prob); betaVec <- F_Sym2Vec(beta)
+  # # Optimal constant
+  # w <- log(prob/beta); optTreeVec <- F_Sym2Vec(mst(w)); 
+  # M <- p^(p-2) / exp(sum(F_Sym2Vec(w)[which(optTreeVec==1)]))
+  M <- p
+  OK <- FALSE; tries <- 0; pTree <- qTree <- rep(0, 1e4)
+  while(!OK){
+    tries <- tries + 1
+    
+    # graph = heterogeneous ER connected graph
+    graph <- F_Vec2Sym(matrix(rbinom(P, 1, probVec)))
+    while(!is.connected(graph)){graph <- F_Vec2Sym(matrix(rbinom(P, 1, probVec)))}
+    # gplot(graph, gmode='graph', main=round(SumTree(graph)))
+    graphVec <- F_Sym2Vec(graph)
+    # qGraph <- prod(dbinom(graphVec, 1, probVec))
+    
+    # tree = uniform spanning tree
+    w <- F_Vec2Sym(F_Sym2Vec(matrix(runif(p^2), p, p)))
+    w[which(graph==0)] <- Inf
+    tree <- mst(w)
+    treeVec <- F_Sym2Vec(tree)
+    
+    # Monte-Carlo sample of graphs containing the tree
+    biasedProbVec <- probVec; biasedProbVec[which(treeVec==1)] <- 1
+    invSpanTreeMean <- 0; G <- 1e3
+    for(g in 1:G){invSpanTreeMean <- invSpanTreeMean + 1/SumTree(F_Vec2Sym(matrix(rbinom(P, 1, biasedProbVec))))}
+    invSpanTreeMean <- invSpanTreeMean/G
+    qTree[tries] <- prod(probVec[which(treeVec==1)]) * invSpanTreeMean
+    
+    # qTree[tries] <- qGraph / SumTree(graph)
+    # Actually qTree should be qGraph / SumTree(graph)
+    # qTree[tries] <- prod(probVec[which(treeVec==1)]) / SumTree(graph)
+    pTree[tries] <- prod(betaVec[which(treeVec==1)])
+    
+    if(pTree[tries] > (M * qTree[tries])){cat('[*] ')}
+    if(runif(1) < pTree[tries] / (M * qTree[tries])){OK <- TRUE}
+  }
+  pTree <- pTree[1:tries]; qTree <- qTree[1:tries]
+  cat(tries, '')
+  
+  return(list(tree=tree, qTree=qTree, pTree=pTree, qTree=qTree, M=M))
+}

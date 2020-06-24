@@ -1,0 +1,35 @@
+Let us first describe the typical type of data we consider. We assume that $p$ species have been observed in $n$ sites. \validSR{The abundances are gathered in the $n \times p$ matrix $\Yb$. $Y_{ij}$ is the abundance of species $j$ in site $i$, and  $\Yb_i$ the abundance vector collected in site $i$ ($i$th row of $\Yb$).} We further assume that a vector of covariates $\xb_i$ \validSR{of size $d$} has been measured in each site $i$ and that all covariates are gathered in the $n \times d$ matrix $\Xb$. The sites are supposed to be independent.
+
+Our aim is to decipher the dependency structure between the $p$ species, accounting for the effect of the environmental covariates encoded in $\Xb$. As explained above, ignoring environmental covariates is more than likely to result in spurious edges. 
+
+\paragraph{Mixed model.}
+To distinguish between covariates effects and species interactions, we consider a mixed model which states that each abundance $Y_{ij}$ has a (conditional) Poisson distribution
+ 
+\begin{equation} \label{eq:pY.Z}
+    Y_{ij} \sim \Pcal\left(\exp(\xb_i^\intercal \thetab_j + o_{ij} + Z_{ij})\right).
+\end{equation}
+ 
+In model (\ref{eq:pY.Z}), $o_{ij}$ is the sample- and species-specific offset which accounts for the sampling effort. $\thetab_j$ is the vector of fixed regression coefficients measuring the effect of each covariate on species $j$ abundance. The regression part is similar to a general linear model as used in niche modeling \citep[see e.g.][]{austin2007species}. 
+\modif{$Z_{ij}$ is the random effect associated with species $j$ in site $i$. 
+Importantly, the coordinates of the site-specific random vector $\Zb_i = (Z_{i1}, \dots Z_{ip})$ are not independant: the multivariate random term $\Zb_i$ precisely accounts for the interactions that are not due to environmental fluctuations. 
+For each site $i$, a vector $\Zb_i$ is associated with the corresponding abundance vector $\Yb_i$.}
+The distribution given in Eq.~\eqref{eq:pY.Z} is over-dispersed as the Poisson parameter is itself random, which suits ecological modeling of abundance data \citep{Eco_overdisp}.
+
+\bigskip
+We now describe the distribution of the latent vector $\Zb_i$. To this aim, we adopt a version of Kirshner's model \citep{kirshner}, which states that a spanning tree $T$ is first drawn with probability
+ 
+\begin{equation} \label{eq:pT}
+    p(T) = \prod_{(j, k) \in T} \beta_{jk} / B,
+\end{equation}
+ 
+where $(j, k) \in T$ means that the edge connecting species $j$ and $k$ is part of the tree $T$ and where $B$ is a normalizing constant. Each edge weight $\beta_{jk}$ controls the probability for the edge $(j, k)$ to be in the interaction network. \\
+Then for each site $i$, a vector $\Zb_i$ is drawn independently with conditional Gaussian distribution $(\Zb_i \mid T) \sim \Ncal(0, \Sigma_T)$, where the subscript T means that the distribution of $\Zb_i$ is {faithful} to $T$. When $T$ is a spanning tree, this faithfulness simply means this distribution can be factorized on the nodes and edges of $T$ as follows \citep[see][]{kirshner}:
+ 
+\begin{equation} \label{eq:pZfact}
+p(\Zb_i \mid T) = \prod_{j=1}^p p(Z_{ij}|T) \prod_{(j, k) \in T} \psi_{jk}(\Zb_i),
+\end{equation}
+ 
+where $\psi_{jk}(\Zb_i)$ does not depend on $T$. This factorization means that each edge of $T$ corresponds to a species pair in direct interaction;  all other pairs are conditionally independent. Experiments are independent, and in the sequel we consider the product of all $p(\Zb_i)$ and use the simpler notation $\psi_{jk} = \prod_i \psi_{jk}(\Zb_i)$ instead.\\
+
+According to Eq.~\eqref{eq:pT}, each $\Zb_i$ has a Gaussian distribution conditional on the tree $T$, so its marginal distribution is a mixture of Gaussians: $\Zb_i \sim \sum_{T \in\mathcal{T}} p(T) \Ncal(0, \Sigma_T)$, where $\mathcal{T}$ is the set of all spanning trees. As a consequence, the joint distribution of the $\Zb_i$ is modeled by a mixture of distributions with tree-shaped dependency structure. \\
+Besides, for all trees including the edge $(j, k)$, the estimate of the covariance term between the coordinates $j$ and $k$ is the same \citep[see][]{Lau96,SRS19}. Hence, we may define a global covariance matrix $\Sigmab$, filled with covariances that are each common to spanning trees containing a same edge. Each $\Sigmab_T$ is then built by extracting from $\Sigmab$ the covariances corresponding to the edges of $T$.

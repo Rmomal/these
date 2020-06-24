@@ -1,5 +1,88 @@
 %network inference in ecology
-\section{Graphical Models}
-\section{Spanning trees}
-\section{Algebra}
-\section{Abundance data modelling}
+ \section{Graphical Models}
+ \begin{itemize}
+ \item definition : Markov properties
+ \item factorization
+ \item GGM: covariance selection glasso
+ \item GGM Lauritzen  ML estimators
+ \end{itemize}
+ inférence réseaux vs inférence des paramètres
+  
+\section{Statistical modeling for network inference}
+ \subsection{Modeling count data}
+\begin{itemize}
+ \item JSDM
+ \item PLN
+ \end{itemize}
+ 
+ \subsection{Variational approach}
+ \subsubsection{Expectation-Maximization algorithm}
+ Expectation-Maximisation \citep[EM:][]{DLR77} has become the standard algorithm for the maximum likelihood inference of latent variable models. Denoting $\gammab$ the unknown parameter, $\Yb$ the observed variables and $\Hb$ the latent variables, the aim of EM is to maximise the {\sl observed} (log-)likelihood $\log p_\gammab(\Yb)$. 
+In the model defined in Section \ref{sec:model}, the set of parameter to estimate is $\gammab = (\betab, \Sigmab, \thetab)$ and the latent variables are $\Hb = (\Zb, T)$.
+Because the {\sl complete} (log-)likelihood $\log p_\gammab(\Yb, \Hb)$ is often much easier to handle, EM alternatively evaluates the conditional distribution of the latent variables $p_\gammab(\Hb \mid \Yb)$ (E step) and updates the parameter estimates by maximizing the conditional expectation of the complete log-likelihood (M step).
+ \subsubsection{Variational version}
+Unfortunately, for many models, the conditional distribution $p_\gammab(\Hb \mid \Yb)$ is intractable. The variational EM (VEM) algorithm has been designed to deal with such cases. Briefly speaking, the E step (during which the intractable conditional distribution should be evaluated) is replaced with a VE step, during which an approximate distribution $\pt(\Yb) \simeq p_\gammab(\Hb \mid \Yb)$ is determined. Actually, the VEM algorithm maximizes a lower bound of the genuine log-likelihood, similar to this given in Eq.~\eqref{eq:LowerBound} \citep[see][for an introduction]{OrW10,BKM17}.
+
+\subsubsection{Application to the Poisson log-normal model.} 
+To estimate the fixed regression parameters gathered in $\thetab$, we resort to a surrogate model where the entries of the abundance matrix $\Yb$ still have the conditional distribution given in Eq.~\eqref{eq:pY.Z}, but where the distribution of the $\Zb_i$ is not constrained to be faithful to a specific graphical model. Namely, the latent vectors $\Zb_i$ are only supposed to be independent and identically distributed (iid) Gaussian with distribution $\Ncal(0, \Sigmab)$, without any restriction on $\Sigmab$. 
+
+This surrogate model is actually a Poisson log-normal model as introduced by \cite{AiH89}, the parameters of which can be estimated using a variational approximation similar to this introduced in \cite{CMR18}. 
+%Namely, instead of maximizing the log-likelihood $\log p(\Yb)$ with respect to the parameters $\thetab$ and $\Sigmab$ using a regular EM algorithm, we maximize the lower bound of it
+\modif{More specifically, we maximize with respect to the parameters $\thetab$ and $\Sigmab$ the following lower bound of the log-likelihood $\log p(\Yb)$:}
+
+\begin{equation}\label{eq:LowerBound}
+\mathcal{J}(\Yb; \thetab, \Sigmab, \pt) := \log p_{\thetab, \Sigmab}(\Yb) - KL\left(\pt(\Zb) || p_{\thetab, \Sigmab}(\Zb \mid \Yb)\right),
+\end{equation}
+
+where $KL(q||p)$ stands for Küllback-Leibler divergence between distributions $q$ and $p$ and where the approximate distribution $\pt(\Zb)$ 
+%(which approximates $\pt_{\thetab, \Sigmab}(\Zb \mid \Yb)$) 
+is chosen to be Gaussian. This means that each conditional distribution $p(\Zb_i \mid \Yb_i)$ is approximated with a normal distribution $\Ncal(\mbt_i, \Sbt_i)$. As shown in \cite{CMR18}, $\mathcal{J}(\Yb, \thetab, \Sigmab, \pt)$ is bi-concave in $(\thetab, \Sigmab)$ and $\{(\mbt_i, \Sbt_i)_i\}$, so that gradient ascent can be used. The {\tt PLNmodels} R-package --available on GitHub-- provides an efficient implementation of it.
+
+The entries of the $\mbt_i$ and $\Sbt_i$ provide us with approximations of the conditional expectation,  variance and covariance of the $Z_{ij}$ conditionally on the $\Yb$, which we use to get the estimates $\widehat{\sigma}_j^2$ and $\widehat{\rho}_{jk}$ given in Eq.~\eqref{eq:sigma.rho}. More specifically, we use $\Esp(Z_{ij} \mid \Yb_i) \simeq \mt_{ij}$, $\Esp(Z^2_{ij} \mid \Yb_i) \simeq \mt_{ij}^2 + \St_{i,jj}$ and $\Esp(Z_{ij} Z_{ik} \mid \Yb_i) \simeq \mt_{ij} \mt_{ik} + \St_{i, jk}$.
+
+
+\section{Algebraic results}
+ We define the Laplacian matrix $\Qbf$ of a symmetric matrix $\Wbf=[w_{jk} ]_{1\leq j,k\leq p}$ as follows :
+ 
+\[
+ [\Qbf]_{jk}  =\begin{cases}
+    -w_{jk}  & 1\leq j<k \leq p\\
+    \sum_{u=1}^p w_{ju} & 1\leq j=k \leq p.
+    \end{cases}
+\]
+ 
+We further denote $\Wbf^{uv}$ the matrix $\Wbf$ deprived from its $u$th row and $v$th column and we remind that the $(u, v)$-minor of $\Wbf$ is the determinant of this deprived matrix, that is $|\Wbf^{uv}|$.
+
+\begin{theorem}[Matrix Tree Theorem  \cite{matrixtree,MeilaJaak}] \label{thm:MTT}
+    For any symmetric weight matrix W with all positive entries, the sum over all spanning trees of the product of the weights of their edges is equal to any minor of its Laplacian. That is, for any $1 \leq u, v \leq p$,
+ 
+   \[
+    W := \sum_{T\in\mathcal{T}} \prod_{(j, k)\in T} w_{jk} = |\Qbf^{uv}|.
+    \]
+   
+\end{theorem}    
+
+In the following, without loss of generality, we will choose $\Qbf^{11}$. As an extension of this result, \cite{MeilaJaak} provide a close form expression for the derivative of $W$ with respect to each entry of $\Wbf$. 
+
+\begin{lemma} [\cite{MeilaJaak}] \label{lem:Meila}
+    Define the entries of the symmetric matrix $\Mbf$ as
+ 
+\[    
+ [\Mbf]_{jk} =\begin{cases}
+    \left[(\Qbf^{11})^{-1}\right]_{jj} + \left[(\Qbf^{11})^{-1}\right]_{kk} -2\left[(\Qbf^{11})^{-1}\right]_{jk} & 1< j<k \leq p\\
+    \left[(\Qbf^{11})^{-1}\right]_{jj} & k=1, 1< j \leq p  \\
+    0 &  j=k .
+    \end{cases}
+\]
+ 
+it holds that
+ 
+$$
+\partial_{w_{jk}} W = [\Mbf]_{jk}  \times W.
+$$
+\end{lemma}
+\begin{lemma} [\cite{kirshner}] \label{lem:Kirshner}
+    Let $p_W$ be a distribution on the space of spanning trees, such that $p_W(T)=\prod_{kl\in T} w_{kl} / W$, where $W$ is defined as in Theorem \ref{thm:MTT}. Taking the symmetric matrix $\Mbf$ as defined in Lemma  \ref{lem:Meila}, the probability for an edge $kl$ to be in the tree $T$ writes:
+ 
+$$\mathds{P}\{kl\in T\} = \sum_{T\in \mathcal{T}} p_W(T)= w_{kl}\: \Mbf_{kl}$$
+\end{lemma}

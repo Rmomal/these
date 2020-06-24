@@ -1,0 +1,48 @@
+{\reset@font\mtcSfont\mtc@string\contentsline{section}{\noexpand \leavevmode \numberline {3.1}Introduction}{\reset@font\mtcSfont 5}{section.3.1}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Network reconstruction.}{\reset@font\mtcPfont 5}{section*.1}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Network inference.}{\reset@font\mtcPfont 5}{section*.2}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Joint species distribution models.}{\reset@font\mtcPfont 6}{section*.4}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Graphical models: a generic framework for network inference.}{\reset@font\mtcPfont 7}{section*.6}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Network inference: the general problem.}{\reset@font\mtcPfont 7}{section*.7}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Network inference from species abundance data.}{\reset@font\mtcPfont 8}{section*.8}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Contribution.}{\reset@font\mtcPfont 8}{section*.9}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Outline.}{\reset@font\mtcPfont 8}{section*.10}}
+{\reset@font\mtcSfont\mtc@string\contentsline{section}{\noexpand \leavevmode \numberline {3.2}Material and methods}{\reset@font\mtcSfont 9}{section.3.2}}
+{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode \numberline {3.2.1}Model}{\reset@font\mtcSSfont 9}{subsection.3.2.1}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Mixed model.}{\reset@font\mtcPfont 9}{section*.11}}
+{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode \numberline {3.2.2}Inference with EMtree}{\reset@font\mtcSSfont 10}{subsection.3.2.2}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Likelihood.}{\reset@font\mtcPfont 10}{section*.12}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Inference in the observed layer.}{\reset@font\mtcPfont 11}{section*.13}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Inference in the hidden layer.}{\reset@font\mtcPfont 11}{section*.14}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Algorithm output: edge scoring and network inference}{\reset@font\mtcPfont 12}{section*.16}}
+{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode \numberline {3.2.3}Simulation and illustrations}{\reset@font\mtcSSfont 13}{subsection.3.2.3}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Alternative inference methods}{\reset@font\mtcSSSfont 13}{section*.17}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Edge scoring.}{\reset@font\mtcPfont 13}{section*.18}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Covariates.}{\reset@font\mtcPfont 13}{section*.19}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Comparison criteria}{\reset@font\mtcSSSfont 13}{section*.20}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode False Discovery Rate (FDR) and density ratio criteria.}{\reset@font\mtcPfont 13}{section*.21}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Area Under the Curve (AUC) criterion.}{\reset@font\mtcPfont 14}{section*.22}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Simulation design}{\reset@font\mtcSSSfont 14}{section*.23}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Simulated graphs.}{\reset@font\mtcPfont 14}{section*.24}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Simulated counts.}{\reset@font\mtcPfont 14}{section*.25}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Experiments.}{\reset@font\mtcPfont 14}{section*.26}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Illustrations}{\reset@font\mtcSSSfont 15}{section*.27}}
+{\reset@font\mtcSfont\mtc@string\contentsline{section}{\noexpand \leavevmode \numberline {3.3}Results}{\reset@font\mtcSfont 16}{section.3.3}}
+{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode \numberline {3.3.1}On simulated data}{\reset@font\mtcSSfont 16}{subsection.3.3.1}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Effect of dataset dimensions}{\reset@font\mtcSSSfont 16}{section*.28}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Effect of network structure}{\reset@font\mtcSSSfont 16}{section*.31}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Effect of network density}{\reset@font\mtcSSSfont 18}{section*.34}}
+{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode \numberline {3.3.2}Illustrations}{\reset@font\mtcSSfont 19}{subsection.3.3.2}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Fish populations in the Fatala River estuary}{\reset@font\mtcSSSfont 20}{section*.37}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Oak powdery mildew}{\reset@font\mtcSSSfont 20}{section*.39}}
+{\reset@font\mtcSfont\mtc@string\contentsline{section}{\noexpand \leavevmode \numberline {3.4}Discussion}{\reset@font\mtcSfont 21}{section.3.4}}
+{\reset@font\mtcSfont\mtc@string\contentsline{section}{\noexpand \leavevmode \numberline {3.5}Complements}{\reset@font\mtcSfont 23}{section.3.5}}
+{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode \numberline {3.5.1}Computation details}{\reset@font\mtcSSfont 23}{subsection.3.5.1}}
+{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode \numberline {3.5.2}Additional tables and figures}{\reset@font\mtcSSfont 25}{subsection.3.5.2}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Simulations: dataset dimensions}{\reset@font\mtcSSSfont 25}{section*.44}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Simulations: network density}{\reset@font\mtcSSSfont 27}{section*.51}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Illustrations: edge frequency threshold}{\reset@font\mtcSSSfont 27}{section*.53}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Illustrations: Fatala River fishes}{\reset@font\mtcSSSfont 27}{section*.55}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Species names with highest betweenness scores:}{\reset@font\mtcPfont 27}{section*.56}}
+{\reset@font\mtcSfont\mtc@string\contentsline{section}{\noexpand \leavevmode \numberline {3.6}Comments}{\reset@font\mtcSfont 28}{section.3.6}}
+{\reset@font\mtcSfont\mtc@string\contentsline{section}{\noexpand \leavevmode \numberline {3.7}Add-ins}{\reset@font\mtcSfont 28}{section.3.7}}

@@ -1,0 +1,223 @@
+---
+title: "Finding initial neighbors: a study of 5 methods"
+output: 
+  html_document: 
+    theme: cosmo
+    toc: yes
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message=FALSE)
+library(tidyverse)
+library(kableExtra)
+mytheme.dark <-function(legend){
+  list= list(theme_light(), scale_color_brewer(legend,palette="Dark2"), 
+             scale_fill_brewer(legend,palette="Dark2"), 
+             theme(strip.background=element_rect(fill="gray50",colour ="gray50"),
+                   plot.title = element_text(hjust = 0.5)))
+  return(list)}
+mytheme.bg <- list(theme_light(), 
+             theme(strip.background=element_rect(fill="gray50",colour ="gray50"),
+                   plot.title = element_text(hjust = 0.5)))
+
+
+```
+
+All sets of initial cliques from methods mClust, boot.sPCA, sPCA, VarCLust and BM (blockmodels) were collected on 200 scale-free graphs, and tested with the VEMtree algorithm. The true clique was also recorded and tested for each seed, and denoted as the oracle.
+
+The questions we adress here are:
+
+- How each methods behaves in terms of the cliques it finds: which size, which proximity to the oracle, how many cliques found
+- Which is the performance of the clique corresponding to the maximal value of the lower bound for each method ?
+- Does the best proximity to the oracle gives the best performances ?
+- Does the best lower bound gives the best performances ?
+- For methods yielding a variable number of initial cliques (nbinit), does a high value means that the oracle is hard to find ?
+- Are failed runs (J is NaN) due to a too bad initialisation ?
+
+All questions are studied with a special regard for the size of the oracle $nH$ (influence of the missing actor). We define minor, medium and major influence classes as the oracle as follows: 
+
+- minor: $nH \leq 5$
+- medium: $5<nH\leq 7$
+- major: $nH>7$
+
+# Data collected
+
+
+```{r}
+
+res1<-readRDS("/Users/raphaellemomal/simulations/Simu/selectInit_V2.rds")
+res2<-readRDS("/Users/raphaellemomal/simulations/Simu/selectInit_V2_p2.rds")
+quality<-do.call(rbind,lapply(c(res1, res2), function(x){x$choice})) %>% as_tibble()
+# creating influence covariate
+id_sizes<-quality %>% filter(method=="Oracle") %>% dplyr::select(seed, sizes) %>% rename(nH=sizes) %>%  mutate( influence=unlist(purrr::map(nH, function(x){
+  if(x<=5) res="Minor"
+  if(x>5 & x<=7) res="Medium"
+  if(x>7) res="Major"
+  return(res)})))
+quality=left_join(quality, id_sizes, by="seed") 
+ 
+
+id_sizes %>% group_by(influence) %>% summarise(n=n()) %>% kable() %>% kable_styling()
+```
+
+# Behavior and performance
+
+## All initial cliques
+### Sizes and roximity to oracle (description)
+What features has the set of cliques found by each method ?
+
+```{r}
+data1=quality %>% filter(method!="Oracle") %>% dplyr::select(FP, FN, sizes, nbinit, method,influence, seed) %>%  group_by(influence, method, seed) %>%
+  summarise(mFP=mean(FP),mFN=mean(FN),msizes=mean(sizes),minit=mean(nbinit)) %>% ungroup() %>% 
+  group_by(influence,method) %>% 
+  summarize(mmFP=mean(mFP),mmFN=mean(mFN),mmsizes=mean(msizes),mminit=mean(minit),
+            sdmFP=sd(mFP), sdmFN=sd(mFN), sdmsizes=sd(msizes), sdminit=sd(minit) ) %>%
+  mutate_if(is.numeric,~signif(.,2)) %>% ungroup() %>% mutate(FP=paste0(mmFP," (",sdmFP,") "),FN=paste0(mmFN," (",sdmFN,") "),
+                       sizes=paste0(mmsizes," (",sdmsizes,") "),nbinit=paste0(mminit," (",sdminit,") ")) %>% dplyr::select(influence, method, FP, FN, sizes, nbinit) 
+
+data1 %>% dplyr::select(influence, method, nbinit) %>% spread(method, nbinit) %>% kable(caption = "Nb initial cliques") %>% kable_styling()
+data1 %>% dplyr::select(influence, method, FP) %>% spread(method, FP)%>% kable(caption="False Positives") %>% kable_styling()
+data1 %>% dplyr::select(influence, method, FN) %>% spread(method, FN)%>% kable(caption="False Negatives") %>% kable_styling()
+data1 %>% dplyr::select(influence, method, sizes) %>% spread(method, sizes)%>% kable(caption="Cliques sizes") %>% kable_styling()
+```
+
+### Performances
+What performances has the set of cliques found by each method ?
+
+```{r}
+data2=quality %>% filter(method!="Oracle", !is.nan(J)) %>% dplyr::select(auc, PPVH, TPRH, method,influence, seed) %>%  group_by(influence, method, seed) %>%
+  summarise(mauc=mean(auc),mPPVH=mean(PPVH, na.rm=TRUE),mTPRH=mean(TPRH)) %>% ungroup() %>% 
+  group_by(influence,method) %>% 
+  summarize(mmauc=mean(mauc),mmPPVH=mean(mPPVH),mmTPRH=mean(mTPRH),
+            sdmauc=sd(mauc), sdmPPVH=sd(mPPVH), sdmTPRH=sd(mTPRH)) %>%
+  mutate_if(is.numeric,~signif(.,2)) %>% ungroup() %>% mutate(auc=paste0(mmauc," (",sdmauc,") "),PPVH=paste0(mmPPVH," (",sdmPPVH,") "),TPRH=paste0(mmTPRH," (",sdmTPRH,") ")) %>% dplyr::select(influence, method, auc, PPVH, TPRH) 
+
+data2 %>% dplyr::select(influence, method, auc) %>% spread(method, auc)%>% kable(caption="AUC") %>% kable_styling()
+data2 %>% dplyr::select(influence, method, PPVH) %>% spread(method, PPVH)%>% kable(caption="PPVH") %>% kable_styling()
+data2 %>% dplyr::select(influence, method, TPRH) %>% spread(method, TPRH)%>% kable(caption="TPRH") %>% kable_styling()
+```
+
+## Selection with best J
+### Sizes and proximity to oracle
+
+What feature has the clique corresponding to the maximal value of the lower bound for each method ?
+
+```{r}
+data1=quality %>% filter(method!="Oracle") %>% dplyr::select(J,FP,FN,sizes, method,influence, seed) %>%  group_by(influence, method, seed) %>%
+  filter(J==max(J, na.rm=TRUE)) %>%  ungroup() %>% 
+  group_by(influence,method) %>% 
+  summarize(mmFP=mean(FP),mmFN=mean(FN),mmsizes=mean(sizes),
+            sdmFP=sd(FP), sdmFN=sd(FN), sdmsizes=sd(sizes)) %>%
+  mutate_if(is.numeric,~signif(.,2)) %>% ungroup() %>% mutate(FP=paste0(mmFP," (",sdmFP,") "),FN=paste0(mmFN," (",sdmFN,") "), sizes=paste0(mmsizes," (",sdmsizes,") ")) %>% dplyr::select(influence, method, FP, FN, sizes) 
+
+data1 %>% dplyr::select(influence, method, FP) %>% spread(method, FP)%>% kable(caption="False Positives") %>% kable_styling()
+data1 %>% dplyr::select(influence, method, FN) %>% spread(method, FN)%>% kable(caption="False Negatives") %>% kable_styling()
+data1 %>% dplyr::select(influence, method, sizes) %>% spread(method, sizes)%>% kable(caption="Cliques sizes") %>% kable_styling()
+```
+
+### Performances 
+What is the performance of the clique corresponding to the maximal value of the lower bound for each method ?
+
+```{r}
+data2=quality %>% filter(method!="Oracle") %>% dplyr::select(J,auc, PPVH,TPRH, method,influence, seed) %>%  group_by(influence, method, seed) %>%
+  filter(J==max(J, na.rm=TRUE)) %>%  ungroup() %>% 
+  group_by(influence,method) %>% 
+  summarize(mmauc=mean(auc),mmPPVH=mean(PPVH, na.rm=TRUE),mmTPRH=mean(TPRH),
+            sdmauc=sd(auc), sdmPPVH=sd(PPVH, na.rm=TRUE), sdmTPRH=sd(TPRH))  %>%
+  mutate_if(is.numeric,~signif(.,2)) %>% ungroup() %>% mutate(auc=paste0(mmauc," (",sdmauc,") "),PPVH=paste0(mmPPVH," (",sdmPPVH,") "), TPRH=paste0(mmTPRH," (",sdmTPRH,") ")) %>% dplyr::select(influence, method,auc, PPVH,TPRH) 
+
+data2 %>% dplyr::select(influence, method, auc) %>% spread(method, auc)%>% kable(caption="AUC") %>% kable_styling()
+data2 %>% dplyr::select(influence, method, PPVH) %>% spread(method, PPVH)%>% kable(caption="PPVH") %>% kable_styling()
+data2 %>% dplyr::select(influence, method, TPRH) %>% spread(method, TPRH)%>% kable(caption="TPRH") %>% kable_styling()
+```
+
+
+
+# Proximity and performance {.tabset}
+
+PPVH:
+
+FP=0 yields a very good PPVH for all influences and all methods. Higher values of FP are likely to give uniform to rather small values of PPVH.
+FN=1 yields very small values of PPVH, and FN=0 gives better PPVH values as the influence increases.
+
+TPRH:
+
+The relationship between TPRH and FP is unclear. However, TPRH decreases when FN increases for all methods and influences, with better TPRH values as the influence grows.
+
+AUC:
+
+There is no clear link of AUC to FP, however there exists a negative relationship of AUC and FN.
+
+
+These results show that false positives in the initial cliques are linked with PPVH, so increase the confidence in the result, and false negatives on the other hand are linked with TPRH, so increase the completeness of the result. As expected, a better proximity of the initial clique to the oracle gives better performances.
+
+## PPVH/FP
+```{r}
+quality %>% filter(method!="Oracle",!is.na(PPVH)) %>% group_by(influence,method,  FP,PPVH) %>%  mutate(n=n()) %>% ungroup() %>% group_by(influence,method ) %>% 
+  mutate(ntot=n(),prop=n/ntot) %>% 
+  ggplot(aes(FP,PPVH,color=prop, size=prop))+geom_point() +
+  facet_grid(method~influence) +mytheme.bg
+
+```
+
+## PPVH/FN
+```{r}
+quality %>% filter(method!="Oracle",!is.na(PPVH)) %>% group_by(influence,method,  FN,PPVH) %>%  mutate(n=n()) %>% ungroup() %>% group_by(influence,method ) %>% 
+  mutate(ntot=n(),prop=n/ntot) %>% 
+  ggplot(aes(FN,PPVH,color=prop, size=prop))+geom_point() +
+  facet_grid(method~influence) +mytheme.bg
+
+```
+
+## TPRH/FP
+```{r}
+quality %>% filter(method!="Oracle") %>% group_by(influence,method,  FP,TPRH) %>%  mutate(n=n()) %>% ungroup() %>% group_by(influence,method ) %>% 
+  mutate(ntot=n(),prop=n/ntot) %>% 
+  ggplot(aes(FP,TPRH,color=prop, size=prop))+geom_point() +
+  facet_grid(method~influence) +mytheme.bg
+
+```
+
+## TPRH/FN
+```{r}
+quality %>% filter(method!="Oracle") %>% group_by(influence,method,  FN,TPRH) %>%  mutate(n=n()) %>% ungroup() %>% group_by(influence,method ) %>% 
+  mutate(ntot=n(),prop=n/ntot) %>% 
+  ggplot(aes(FN,TPRH,color=prop, size=prop))+geom_point() +
+  facet_grid(method~influence) +mytheme.bg
+
+```
+
+## AUC/FP
+```{r}
+quality %>% filter(method!="Oracle") %>% group_by(influence,method,  FP,auc) %>%  mutate(n=n()) %>% ungroup() %>% group_by(influence,method ) %>% 
+  mutate(ntot=n(),prop=n/ntot) %>% 
+  ggplot(aes(FP,auc,color=prop, size=prop))+geom_point() +
+  facet_grid(method~influence) +mytheme.bg
+
+```
+
+## AUC/FP
+```{r}
+quality %>% filter(method!="Oracle") %>% group_by(influence,method,  FN,auc) %>%  mutate(n=n()) %>% ungroup() %>% group_by(influence,method ) %>% 
+  mutate(ntot=n(),prop=n/ntot) %>% 
+  ggplot(aes(FN,auc,color=prop, size=prop))+geom_point() +
+  facet_grid(method~influence) +mytheme.bg
+```
+
+
+# Failed runs
+
+```{r}
+data3=quality %>% group_by(influence, method,seed) %>% filter(is.nan(J)) %>%
+  summarise(n=n()/nbinit, mFP=mean(FP),mFN=mean(FN)) %>% ungroup() %>%  group_by(influence, method) %>% 
+  summarise(mJnan = mean(n), mmFP=mean(mFP), sdmFP=sd(mFP), mmFN=mean(mFN), sdmFN=sd(mFN)) %>% 
+  mutate_if(is.numeric,~signif(.,2)) %>% 
+  mutate(FP=paste0(mmFP," (",sdmFP,") "),FN=paste0(mmFN," (",sdmFN,") ")) %>% 
+  dplyr::select(influence, method, mJnan,FP,FN)
+
+data3 %>% dplyr::select(influence, method, mJnan) %>% spread(method, mJnan)%>% kable(caption="mJnan") %>% kable_styling()
+data3 %>% dplyr::select(influence, method, FP) %>% spread(method, FP)%>% kable(caption="FP") %>% kable_styling()
+data3 %>% dplyr::select(influence, method, FN) %>% spread(method, FN)%>% kable(caption="FN") %>% kable_styling()
+```
+

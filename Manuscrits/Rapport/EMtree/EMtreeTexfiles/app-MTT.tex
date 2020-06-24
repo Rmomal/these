@@ -1,0 +1,40 @@
+For any matrix $\Wb$, we denote its entry in row $u$ and column $v$ by $[\Wb]_{uv}$. We define the Laplacian matrix $\Qb$ of a symmetric matrix $\Wb=[w_\jk ]_{1\leq j,k\leq p}$ as follows :
+\begin{linenomath*}
+\[
+ [\Qb]_\jk =\begin{cases}
+    -w_\jk  & 1\leq j<k \leq p\\
+    \sum_{u=1}^p w_{ju} & 1\leq j=k \leq p.
+    \end{cases}
+\]
+\end{linenomath*}
+We further denote $\Wb^{uv}$ the matrix $\Wb$ deprived from its $u$th row and $v$th column and we remind that the $(u, v)$-minor of $\Wb$ is the determinant of this deprived matrix, that is $|\Wb^{uv}|$.
+
+\begin{theorem}[Matrix Tree Theorem  \cite{matrixtree,MeilaJaak}] \label{thm:MTT}
+    For any symmetric weight matrix W, the sum over all spanning trees of the product of the weights of their edges is equal to any minor of its Laplacian. That is, for any $1 \leq u, v \leq p$,
+   \begin{linenomath*}
+   \[
+    W := \sum_{T\in\mathcal{T}} \prod_{(j, k)\in T} w_\jk  = |\Qb^{uv}|.
+    \]
+    \end{linenomath*}
+\end{theorem}    
+
+In the following, without loss of generality, we will choose $\Qb^{pp}$. As an extension of this result, \cite{MeilaJaak} provide a close form expression for the derivative of $W$ with respect to each entry of $\Wb$. 
+
+\begin{lemma} [\cite{MeilaJaak}] \label{lem:Meila}
+    Define the entries of the symmetric matrix $\Mb$ as
+\begin{linenomath*}
+\[    
+ [\Mb]_\jk =\begin{cases}
+    \left[(\Qb^{pp})^{-1}\right]_{jj} + \left[(\Qb^{pp})^{-1}\right]_{kk} -2\left[(\Qb^{pp})^{-1}\right]_\jk & 1\leq j<k < p\\
+    \left[(\Qb^{pp})^{-1}\right]_{jj} & k=p, 1\leq j \leq p  \\
+    0 & 1\leq j=k \leq p.
+    \end{cases}
+\]
+\end{linenomath*}
+it holds that
+\begin{linenomath*}
+$$
+\partial_{w_\jk} W = [\Mb]_\jk  \times W.
+$$
+\end{linenomath*}
+\end{lemma}

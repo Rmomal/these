@@ -1,0 +1,7 @@
+  \begin{tikzpicture}
+  \node[observed] (1) at (0*\edgeunit, 0*\edgeunit) {$1$};
+  \node[observed] (2) at (0*\edgeunit, 1*\edgeunit) {$2$};
+  \node[observed] (3) at (1*\edgeunit, 1*\edgeunit) {$3$};
+  \node[observed] (4) at (1*\edgeunit, 0*\edgeunit) {$4$};
+  \draw[edge] (1) to (3); \draw[edge] (2) to (4); \draw[edge] (3) to (4);
+  \end{tikzpicture}

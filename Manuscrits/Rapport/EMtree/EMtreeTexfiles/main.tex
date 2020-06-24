@@ -1,0 +1,116 @@
+\documentclass[a4paper,11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb,amsthm,mathrsfs,amsfonts,dsfont,bm} 
+\usepackage[dvipsnames,table,xcdraw]{xcolor}
+\usepackage{array,graphicx}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage[toc]{appendix}
+\usepackage{enumerate}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage[round, sort]{natbib}
+\usepackage{setspace}
+%\doublespacing
+\usepackage{lineno}
+
+%\linenumbers
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{commands}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage[affil-it]{authblk}
+
+
+\title{\textbf{
+\modif{Tree-based Inference of Species Interaction \validSR{Networks} from Abundance Data}
+}}
+
+\author{Raphaëlle Momal$^1$%
+  \thanks{Electronic address: \texttt{raphaelle.momal@agroparistech.fr}; Corresponding author}, \hspace{0.3cm} Stéphane Robin$^1$, \hspace{0.3cm} Christophe Ambroise$^2$}
+\affil{1: UMR MIA-Paris, AgroParisTech, INRA, Université Paris-Saclay, 75005 Paris, France\\
+2: Laboratoire de Mathématiques et Modélisation d'Évry, 23 bvd de France, Évry, France}
+
+
+\date{Dated: \today}
+
+
+
+\date{\today}
+
+\begin{document}
+\setlength{\parindent}{0ex}
+\maketitle
+
+% \tableofcontents \bigskip
+\newpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{abstract}
+%Point 1: set the context for and purpose of the work;
+%Point 2: indicate the approach and methods;
+%Point 3: outline the main results;
+%Point 4: identify the conclusions and the wider implications.
+%\modif{A REPRENDRE}
+\noindent 1. The behavior of ecological systems mainly relies on the interactions between the species it involves. 
+%In many situations, these interactions are not observed and have to be inferred from species abundance data. 
+We consider the problem of inferring the species interaction network from abundance data.\\
+2. To be relevant, any  network inference methodology needs to handle count data and to account for possible environmental effects. It also needs to distinguish between direct interactions and indirect associations and graphical models provide a convenient framework for this purpose. \\
+3. A simulation study shows that the proposed methodology compares well with state-of-the-art approaches, even when the underlying graph strongly differs from a tree. The analysis of two datasets highlights the influence of covariates on the inferred network. \\
+4. Accounting for covariates is critical to avoid spurious edges. 
+The proposed approach could be extended to perform network comparison or to look for missing species. 
+
+
+\paragraph{Key-words: } abundance data, covariates adjustment, 
+%ecological networks, 
+EM algorithm, graphical models, matrix tree theorem, Poisson log-Normal model, 
+%species interactions
+\modif{species interaction network}
+\end{abstract}
+
+
+% \section*{Notations} \input{notations}
+\newpage
+\section{Introduction}
+\input{introduction}
+%\input{framework}
+
+\section{Material and methods}
+\subsection{Model} \label{sec:model} \input{model}
+\subsection{Inference with EMtree} \label{sec:inference} \input{inference}
+\subsection{Simulation and illustrations} \input{simulation}
+ 
+\section{Results}
+\subsection{On simulated data} \input{results} \label{sec:simul}
+\subsection{Illustrations} \input{illustration} \label{sec:illustration}
+
+\section{Discussion} \input{discussion}
+\paragraph{Data accessibility.}
+The method developed in this paper is implemented in the R package EMtree available on GitHub: \url{https://github.com/Rmomal/EMtree} (DOI: 10.5281/zenodo.3660627). Simulation code is available at \url{https://github.com/Rmomal/MEE\_supplement\_code} (DOI: 10.5281/zenodo.3662705).
+
+\paragraph{Acknowledgement.}
+The authors thank P. Gloaguen and M. Authier for helpful discussions and C. Vacher for providing the oak data set. This work is partly funded by ANR-17-CE32-0011 NGB and by a public grant as part of the Investissement d'avenir project, reference ANR-11-LABX-0056-LMH, LabEx LMH.
+
+\paragraph{Author's contributions statement.}
+
+All authors conceived the ideas and designed methodology; R. Momal developed and tested the algorithm. All authors led the writing of the manuscript, contributed critically to the drafts and gave final approval for publication.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\bibliographystyle{science}
+\bibliographystyle{apsrev} %tested plainnat
+%\bibliographystyle{apsrev} % tested apsrev
+\bibliography{biblio.bib}
+
+
+\begin{appendix}
+\newpage
+\resetlinenumber
+\section{Supplement: Methods}
+\subsection{Variational EM in the observed layer} \label{app:VEM} \input{app-VEM}
+\subsection{EM in the latent layer} \label{app:EM} \input{app-EM}
+\subsection{Matrix tree theorem}\label{app:MTT} \input{app-MTT}
+
+\section{Supplement: Results}
+\label{app:results} \input{app-results}
+
+\end{appendix}
+\end{document}

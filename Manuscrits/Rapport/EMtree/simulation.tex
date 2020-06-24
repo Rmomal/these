@@ -1,0 +1,68 @@
+Because network inference is an unsupervised problem (as opposed to network reconstruction), we compare the accuracy of the methods described above on synthetic abundance datasets, for which the true underlying network is known.
+
+\subsubsection{Alternative inference methods} \label{altmethods}
+ 
+We consider network inference methods dedicated to both 
+metagenomics (SPIEC-EASI, gCoda and MInt) and ecology (MRFcov, ecoCopula). All methods can handle count data and rely on some (implicit) Gaussian setting. SPIEC-EASI \citep{kurtz}, gCoda \citep{gcoda} and MRFcov \citep{CWL18} resort to data transformation to fit a Gaussian framework. MInt \citep{MInt} considers a Poisson mixed model similar to the one  we consider and ecoCopula \citep{PWT19} defines a multivariate count distribution, the dependency structure of which is encoded in a Gaussian copula. These methods all rely on a Gaussian graphical model (GGM) or a Gaussian copula, so that the network inference problem amounts to estimating a sparse version of the inverse covariance matrix (also named {\sl precision} matrix). 
+ 
+
+\paragraph{Edge scoring.}
+ These methods build upon glasso penalization \citep{FHT08}. For each edge, there exists a minimal penalty value above which it is eliminated from the network. The higher this minimal penalty, the more reliable the edge in the network, so it can be used as a score reflecting the importance of an edge. Only SpiecEasi and gCoda provide unthresholded quantities (namely the glasso regularization path) that can be used for edge scoring; the other methods only return their optimal graph.
+ \modif{\paragraph{Covariates.} Only MInt, MRFcov and ecoCopula may include covariates. In order to draw a fair comparison, we give SPIEC-EASI and gCoda access to the covariate information by feeding them with residuals of the linear regression of the transformed data onto the covariates.}
+
+\subsubsection{Comparison criteria}
+ 
+\paragraph{False Discovery Rate (FDR) and density ratio criteria.}
+Inferred networks are mostly useful to detect potential interactions between species, which then need to be studied by experts to determine their exact nature. Falsely including an edge lead to meaningless interpretation or useless validation experiments. 
+
+A network with a few reliable edges will be preferred to one having more edges with a larger risk of possible false discoveries. Therefore we choose the FDR as an evaluation criterion, which should be close to 0. Comparing FDR's only makes sense for networks with similar densities. We then compute the ratio between the densities of the inferred and the true network ({\sl density ratio}).
+
+\paragraph{Area Under the Curve (AUC) criterion.}
+The AUC criterion allows to evaluate the inferences quality without resorting to any threshold. It evaluates the probability for a method to score the presence of a present edge higher than that of an absent one; it should be close to 1. Note that this criterion cannot be computed for MRFcov, ecoCopula and MInt as they provide a unique 
+\modif{network}. 
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Simulation design}
+ 
+\paragraph{Simulated graphs.}
+We consider three typical graph structures: Scale-free, Erdös (short for Erdös-Reyni) and Cluster.
+Scale-free structure bears the closest similarity to the tree one, with almost the same density and no loops; it is popular in social networks and in genomics as it corresponds to a preferential-attachment behavior. 
+It is simulated following the Barb\'{a}si-Albert model as implemented in the \textit{huge} R package \citep{huge}. The degree distribution of Scale-free structure follows a power law, which constrains the edges probabilities such that the network density cannot be controlled.
+Erdös structure is the most even as the edges all have the same existence probability. It is a step away from the tree as it may contain loops and its density can be increased arbitrarily.
+Cluster structure spreads edges into highly connected clusters, with few connections between the clusters; the \textit{ratio} parameter controls the intra/inter connection probability ratio.
+
+
+
+
+\paragraph{Simulated counts.}
+The datasets are simulated under the Poisson mixed model described in Eq.~\eqref{eq:pY.Z}. We first build the covariance matrix $\Sigma_G$ associated with a graph $G$ following \citet{huge} and randomly choosing the sign of the link, so that in our simulations we consider both positive and negative interactions. For each site $i$, we simulate $\Zb_i \sim \Ncal(0,\Sigma_G)$, then use these parameters together with a set of covariates to generate count data $\Yb$. We use three covariates (one continuous, one ordinal and one categorical), with their regression coefficients $\theta$ drawn from a standard uniform distribution to create heterogeneity in environmental response across species.
+
+\paragraph{Experiments.}
+For each set of parameters and type of structure we generate 100 graphs, simulate a dataset under a heterogeneous environment and infer the dependency structure using EMtree, gCoda, SpiecEasi MInt, ecoCopula and MRFcov (the three latter only for Exp. 1). 
+The settings of all methods are set to default, except for ecoCopula for which we use the "AIC" selection criterion ("BIC" gives too many empty results).
+All computation times are obtained with a 2.5 GH Intel Core 17 processor and 8G of RAM.
+
+\begin{description}
+\item[Exp. 1: effect of the data dimensions on the inferred network.] We compare performances in terms of FDR and density ratios on two scenarios: \textit{easy} ($n=100$, $p=20$), and \textit{hard} ($n=50$, $p=30$). The network density for Erdös and Cluster structures is set to $\log(p)/p$.
+\item[Exp. 2: effect of the network structure on edge rankings.] AUC measures are collected for alternate variations of $n$ and $p$ to get a general idea of each performance. For comparison's sake, the same density is fixed for all structures in this case,  so that only $n$ and $p$ vary in turn; the scale-free structure imposes a common density of $2/p$. The default values are $n=100$, $p=20$. 
+\item[Exp. 3:  effect of the graph density on edge rankings.] AUC measures are collected for variations of $n$ and $p$ with a density of $5/p$ (5 neighbors per node on average), and for variations of density parameters. The default values are $n=100$, $p=20$.
+\end{description}
+
+
+ \subsubsection{Illustrations} \label{sec:datasets}
+ 
+The first application deals with fish population measurements in the estuary of the Fatala River, Guinea, \citep[][available in the R package \textit{ade4}]{baran1995dynamique}. The data consists of 95 count samples of 33 fish species, and two covariates {\it date} and {\it site}. 
+We infer the network using four models including no covariates, either one  or both covariates (i.e. respectively the \textit{null}, \textit{site}, \textit{date} and \textit{site+date} models)
+
+The second example is a metabarcoding experiment designed to study oak powdery mildew \citep{jakuch}, caused by the fungal pathogen \textit{Erysiphe alphitoides} (Ea). To study the pathobiome of oak leaves, measurements were done on three trees with different infection status. The resulting dataset is composed of 116 count samples of 114 fungal and bacterial  operational taxonomic units (OTUs) of oak leaves, including the Ea agent.  The original raw data are available at \url{https://www.ebi.ac.uk/ena/data/view/PRJEB7319}. Several covariates are available, among which the tree status, the orientation of the branch, and three covariates measuring the distances of oak leaves to the ground (D1), to the base of the branch (D2), and to the tree trunk (D3). The experiment used different depths of coverage for bacteria and fungi, which we account for via the offset term. We fitted three Poisson mixed models including either none, the tree status or all of the covariates (i.e. respectively \textit{null}, \textit{tree}, and \textit{tree+D1+D2+D3} models).
+
+To further analyze the inferred networks, we use the betweenness  centrality \citep{centrality}, a centrality measure popular in social network analysis. It measures a node's ability to act as a bridge in the network. High betweenness scores  identify sensitive nodes that can efficiently describe a network structure. We compute these using the R package \textit{igraph}.
+
+
+
+
