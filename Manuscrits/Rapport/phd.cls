@@ -39,6 +39,7 @@
 \RequirePackage{rotating}
 \RequirePackage{dsfont}
 \RequirePackage{frcursive}
+\RequirePackage{appendix}
 \RequirePackage{enumerate, enumitem}
 \renewcommand{\normalsize}{\fontsize{11}{12}\selectfont}
 
@@ -531,7 +532,20 @@ contents={
 	\fancyfoot[C]{\thepage}	% marque la page au centre
 }
 
+%%%%%%%%%%%%% Appendices après chaque chapitre %%%%%%%%%%%%%%%%
+% Start of subappendices environment
+\AtBeginEnvironment{subappendices}{%
+\chapter*{Appendices}
+\addcontentsline{toc}{chapter}{Appendices}
+\counterwithin{figure}{section}
+\counterwithin{table}{section}
+}
 
+% End of subappendices environment
+\AtEndEnvironment{subappendices}{%
+\counterwithout{figure}{section}
+\counterwithout{table}{section}
+}
 %%%%%%%%%%%%%% FAIRE DES ENCARTS %%%%%%%%%%%%%%%%%%%%%%%%%%
 % Couleurs :
 

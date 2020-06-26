@@ -1,49 +1,71 @@
 %network inference in ecology
  \section{Graphical Models}
- \begin{itemize}
- \item definition : Markov properties
- \item factorization
- \item GGM: covariance selection glasso
- \item GGM Lauritzen  ML estimators
- \end{itemize}
- inférence réseaux vs inférence des paramètres
-  
-\section{Statistical modeling for network inference}
- \subsection{Modeling count data}
+ 
+ \subsection{Definitions}
+ A graph is defined as a pair $\G=(V,E)$ such that $V$ is a finite set of vertices, and the set of edges $E$ is a subset of $V\times V$ such that vertices are not linked to themselves and there are no multiple edges between two vertices. In the litterature, $V$ can be composed of both quantitative and qualitative variables. However here we  only use quantitative variables and so $V$ is called pure. The following definitions are adapted from \citet{Lau96}.
+ \begin{definition}[Subgraphs]
+ Let $A$ be a subset of the vertex set $V$. Then the subgraph $\G_A$ is obtained from $\G$ by keeping edges with both endpoints in $A$.
+ \end{definition}
+ 
+ \begin{definition}[Cliques and complete subsets]
+ A subset of a graph is complete if all the vertices it contains are linked. A complete subset of maximal size is called a clique.
+ \end{definition}
+ 
+ \begin{definition}[proper decomposition]
+ A triple $(A, B, C)$ of disjoint subsets of the pure vertex set $V$ of an undirected graph $\G$ form a decomposition of $\G$ if $V=A\cup B \cup C$, and if $C$ verifies:
+ \begin{enumerate}[label=(\roman*)]
+ \item $C$ is a complete subset of  $V$,
+ \item $C$ separates $A$ from $B$.
+ \end{enumerate}
+ If $A$ and $B$ are both non-empty, the decomposition is proper.
+ \end{definition}
+ 
+ \begin{definition}[decomposable graph]
+ An undirected graph is decomposable if it is complete, or if there exists a proper decomposition $(A, B, C)$ into decomposable subgraphs $\G_{A\cup B}$ and $\G_{B\cup C}$.
+ \end{definition}
+ This recursive definition thus states that a decomposable graph can be successively decomposed into its cliques.
+ 
+ \begin{definition}[perfect sequence]
+ Let $B_1,...,B_k$ be a sequence of subsets of the pure set of vertex $V$ of the undirected graph $\G$. Let $H_j=B_1\cup .. \cup B_j$, $S_j = H_{j-1} \cap B_J$. The sequence is perfect if it satisfies the following conditions:
+ \begin{enumerate}[label=(\roman*)]
+ \item for all $i>1$ there is a $j<i$ such that $S_i \subseteq B_j$ (running intersection property),
+ \item each $S_i$ is a complete subset
+ \end{enumerate}
+ $H_j$ are called the histories and $S_j$ the separators.
+ \end{definition}
+% \begin{definition}[perfect numbering]
+% A perfect numbering of the vertices $V$ of $\G$ is a numbering $\alpha_1,...,\alpha_k$ such that the sequence $B_1,...,B_k$ with 
+% $$B_j = cl(\alpha_j) \cap \{\alpha_1,...,\alpha_j\}, j\geq 1 $$ is a perfect sequence. This implies that each $B_j$ is a complete subset.
+% \end{definition}
+ \begin{definition}[multiplicity of a separator]
+ The multiplicity $\nu (S)$ of the separator $S$ is an index counting the number of times $S$ occurs in a perfect sequence.
+ \end{definition}
+ \citet{Lau96} further demonstrates that the set of cliques of an undirected decomposable graph can be numbered to form a perfect sequence. 
+ 
+ \subsection{Characterization of conditional independance}
 \begin{itemize}
- \item JSDM
- \item PLN
+\item conditional independance
+\item markov properties
+\item factorisation
+\item hamersay clifford : conclusion si on trouve une factorisation, on a un graphe
+\end{itemize}
+ 
+ \subsection{Gaussian Graphical Models}
+  \begin{itemize}
+ \item magical factorization on non-nul terms of precision matrix
+ \item utilisation des définitions pour les expressions de la densité et precision K et det K
+ \item ML estimators
  \end{itemize}
- 
- \subsection{Variational approach}
- \subsubsection{Expectation-Maximization algorithm}
- Expectation-Maximisation \citep[EM:][]{DLR77} has become the standard algorithm for the maximum likelihood inference of latent variable models. Denoting $\gammab$ the unknown parameter, $\Yb$ the observed variables and $\Hb$ the latent variables, the aim of EM is to maximise the {\sl observed} (log-)likelihood $\log p_\gammab(\Yb)$. 
-In the model defined in Section \ref{sec:model}, the set of parameter to estimate is $\gammab = (\betab, \Sigmab, \thetab)$ and the latent variables are $\Hb = (\Zb, T)$.
-Because the {\sl complete} (log-)likelihood $\log p_\gammab(\Yb, \Hb)$ is often much easier to handle, EM alternatively evaluates the conditional distribution of the latent variables $p_\gammab(\Hb \mid \Yb)$ (E step) and updates the parameter estimates by maximizing the conditional expectation of the complete log-likelihood (M step).
- \subsubsection{Variational version}
-Unfortunately, for many models, the conditional distribution $p_\gammab(\Hb \mid \Yb)$ is intractable. The variational EM (VEM) algorithm has been designed to deal with such cases. Briefly speaking, the E step (during which the intractable conditional distribution should be evaluated) is replaced with a VE step, during which an approximate distribution $\pt(\Yb) \simeq p_\gammab(\Hb \mid \Yb)$ is determined. Actually, the VEM algorithm maximizes a lower bound of the genuine log-likelihood, similar to this given in Eq.~\eqref{eq:LowerBound} \citep[see][for an introduction]{OrW10,BKM17}.
 
-\subsubsection{Application to the Poisson log-normal model.} 
-To estimate the fixed regression parameters gathered in $\thetab$, we resort to a surrogate model where the entries of the abundance matrix $\Yb$ still have the conditional distribution given in Eq.~\eqref{eq:pY.Z}, but where the distribution of the $\Zb_i$ is not constrained to be faithful to a specific graphical model. Namely, the latent vectors $\Zb_i$ are only supposed to be independent and identically distributed (iid) Gaussian with distribution $\Ncal(0, \Sigmab)$, without any restriction on $\Sigmab$. 
-
-This surrogate model is actually a Poisson log-normal model as introduced by \cite{AiH89}, the parameters of which can be estimated using a variational approximation similar to this introduced in \cite{CMR18}. 
-%Namely, instead of maximizing the log-likelihood $\log p(\Yb)$ with respect to the parameters $\thetab$ and $\Sigmab$ using a regular EM algorithm, we maximize the lower bound of it
-\modif{More specifically, we maximize with respect to the parameters $\thetab$ and $\Sigmab$ the following lower bound of the log-likelihood $\log p(\Yb)$:}
-
-\begin{equation}\label{eq:LowerBound}
-\mathcal{J}(\Yb; \thetab, \Sigmab, \pt) := \log p_{\thetab, \Sigmab}(\Yb) - KL\left(\pt(\Zb) || p_{\thetab, \Sigmab}(\Zb \mid \Yb)\right),
-\end{equation}
-
-where $KL(q||p)$ stands for Küllback-Leibler divergence between distributions $q$ and $p$ and where the approximate distribution $\pt(\Zb)$ 
-%(which approximates $\pt_{\thetab, \Sigmab}(\Zb \mid \Yb)$) 
-is chosen to be Gaussian. This means that each conditional distribution $p(\Zb_i \mid \Yb_i)$ is approximated with a normal distribution $\Ncal(\mbt_i, \Sbt_i)$. As shown in \cite{CMR18}, $\mathcal{J}(\Yb, \thetab, \Sigmab, \pt)$ is bi-concave in $(\thetab, \Sigmab)$ and $\{(\mbt_i, \Sbt_i)_i\}$, so that gradient ascent can be used. The {\tt PLNmodels} R-package --available on GitHub-- provides an efficient implementation of it.
-
-The entries of the $\mbt_i$ and $\Sbt_i$ provide us with approximations of the conditional expectation,  variance and covariance of the $Z_{ij}$ conditionally on the $\Yb$, which we use to get the estimates $\widehat{\sigma}_j^2$ and $\widehat{\rho}_{jk}$ given in Eq.~\eqref{eq:sigma.rho}. More specifically, we use $\Esp(Z_{ij} \mid \Yb_i) \simeq \mt_{ij}$, $\Esp(Z^2_{ij} \mid \Yb_i) \simeq \mt_{ij}^2 + \St_{i,jj}$ and $\Esp(Z_{ij} Z_{ik} \mid \Yb_i) \simeq \mt_{ij} \mt_{ik} + \St_{i, jk}$.
-
-
-\section{Algebraic results}
+  \subsection{Spanning trees}
+  \begin{itemize}
+  \item definition and properties (multiplicity)
+  \item specific writing of ML estimators ? or in article
+  \item algebra 
+  \end{itemize}
+  
  We define the Laplacian matrix $\Qbf$ of a symmetric matrix $\Wbf=[w_{jk} ]_{1\leq j,k\leq p}$ as follows :
- 
+
 \[
  [\Qbf]_{jk}  =\begin{cases}
     -w_{jk}  & 1\leq j<k \leq p\\
@@ -86,3 +108,20 @@ $$
  
 $$\mathds{P}\{kl\in T\} = \sum_{T\in \mathcal{T}} p_W(T)= w_{kl}\: \Mbf_{kl}$$
 \end{lemma}
+
+  \section{Incomplete data inference}
+  here different type of data that are incomplete: counts, gaussian latent variables, trees (discrete )
+ JSDM ? partie sur modèles à variables latentes ?
+
+ \subsection{Expectation-Maximization algorithm}
+ 
+ \subsection{Variational version}
+  
+\section{Statistical modeling for network inference}
+What's the purpose of this chapter ??? It is chapter 2.
+  inférence réseaux vs inférence des paramètres (on n'observe pas le réseau)
+ \subsection{Modeling count data}
+PLN
+ 
+
+ 

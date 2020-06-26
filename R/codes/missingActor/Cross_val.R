@@ -56,22 +56,51 @@ split_fit<-function(Y,v=0.8,r=1,alpha=0.1, bloc=1){#shuffle data prior to this
   
   if(r!=0){
     # init
-    if(r==1){
-      cliques_spca<-FitSparsePCA(Ytrain, r=2)$cliques
-      complement=lapply(cliques_spca, function(clique){setdiff(1:p,clique)})
-      clique=list()
-      clique$cliqueList=lapply(c(cliques_spca,complement), function(cl) list(cl))
-    }else{
-      clique=boot_FitSparsePCA(counts, B=50,r=r,minV=0)# B=50 pou r=2, 20 pour r=3
-    }
+    # if(r==1){
+    #   cliques_spca<-FitSparsePCA(Ytrain, r=2)$cliques
+    #   complement=lapply(cliques_spca, function(clique){setdiff(1:p,clique)})
+    #   clique=list()
+    #   clique$cliqueList=lapply(c(cliques_spca,complement), function(cl) list(cl))
+    # }else{
+    if(r==1){minV=2
+    }else{minV=0}
+      clique=boot_FitSparsePCA(counts, B=200,r=r,minV=minV)
+    #}
     #VEM
     cat(paste0("\n   Fitting ",length(clique$cliqueList)," VEM..."))
     ListVEM<-List.VEM(cliquesObj =clique, Ytrain, cov2cor(sigma_obs), MO,SO,r=r,alpha=alpha,
                       eps=1e-3,maxIter=100, cores=3, trackJ=FALSE)
-    vecJ=do.call(rbind, lapply(ListVEM, function(vem){
-      if(length(vem)>5){ J=tail(vem$lowbound$J, 1)
-      }else{ J=NaN} }))
-    VEM=ListVEM[[which.max(vecJ)]]
+
+    if(r>1){# select best J among models which gives r Mh with reasonabe sd 
+      vec_sdMH_J=do.call(rbind, lapply(ListVEM, function(vem){
+        if(length(vem)>5){
+          J=tail(vem$lowbound$J, 1)
+          sdM=apply(vem$M,2, function(x) sd(x))
+          sdMH=tail(sdM,r)
+          res=data.frame(sdMH,J=J)
+        }else{
+          J=NaN ;sdMH = c(NaN,NaN)
+          res=data.frame(sdMH,J=J)}
+        return(res)
+      }))
+      data_sd=data.frame(vec_sdMH_J) %>% dplyr::select(-J)
+      AllActors=apply(data_sd, 1, function(x){
+        sum(log(x)>-20)==r
+      })
+      index=unlist(data.frame(vec_sdMH_J,AllActors=AllActors,num=1:nrow(data_sd)) %>% as_tibble() %>% 
+                     filter(AllActors) %>% filter(J==max(J,na.rm=TRUE)) %>% dplyr::select(num))
+      
+    }else{
+      vec_J=do.call(rbind, lapply(ListVEM, function(vem){
+        if(length(vem)>5){
+          J=tail(vem$lowbound$J, 1)
+        }else{
+          J=NaN }
+      }))
+      index=which.max(vec_J)
+    }
+    
+    VEM=ListVEM[[index]]
   }else{
     cat(paste0("\n   Fitting 1 VEM with r=0..."))
     init0=initVEM(Ytrain , initviasigma = NULL,  cov2cor(sigma_obs),r = 0)
@@ -84,22 +113,32 @@ split_fit<-function(Y,v=0.8,r=1,alpha=0.1, bloc=1){#shuffle data prior to this
   T2<-Sys.time()
   runtime=difftime(T2, T1)
   cat(paste0(round(runtime,3)," ", attr(runtime, "units")))
-  return(list(Ytest=Ytest,Pg=VEM$Pg,beta=VEM$Wg,Omega_hat=VEM$Upsilon,D=D, theta=PLNfit$model_par$Theta ))
+  return(list(Ytest=Ytest,Pg=VEM$Pg,beta=VEM$Wg,M=VEM$M,S=VEM$S,Omega_hat=VEM$Upsilon,D=D, theta=PLNfit$model_par$Theta ))
 }
 
-pY_condT<-function(Ytest,beta, prob, Omega_hat,D,theta, r=1, plot=FALSE){
+pY_condT<-function(Ytest,beta, prob,M,S, Omega_hat,D,theta, r=1, plot=FALSE){
   p=ncol(Ytest) ;n=nrow(Ytest); O=1:p ; H=(p+1):(p+r)
   prob[prob>1]=1
-  beta <- beta / SumTree(beta)^(1/(ncol(beta)-1))
+  if(is.finite(SumTree(beta))){
+    beta <- beta / SumTree(beta)^(1/(ncol(beta)-1))
+  }else{
+    beta=beta/100
+    beta <- beta / SumTree(beta)^(1/(ncol(beta)-1))
+  }
+
   
-  #--- calcul critere : tirer T, calculer omega et sigma puis Uo et p(Y)
+  #--- calcul critere : tirer T, calculer omega et sigma et p(Y)
   obj.tree = rSpanTreeV1(beta=beta,prob=prob)
   tree=obj.tree$tree
   #tree=rSpanTreeV1(beta)
-  OmegaT=(tree+diag(ncol(prob)))*Omega_hat
-  #  OmegaT = (Pg+diag(ncol(Pg)))*VEM$Upsilon
-  
+  OmegaT=tree*Omega_hat
+  Rho = cov2cor((t(M)%*%M+diag(colSums(S)))/n)
+  quantity<-tree*Rho^2/(1-Rho^2)
+  diag(quantity)=NA
+  vectorSuml=colSums(quantity, na.rm=TRUE)
+  diag(OmegaT) = 1+vectorSuml
   attr(OmegaT,"class")="matrix"
+  
   if(r!=0){
     SigmaTm=cov2cor(solve(nearPD(OmegaT[O,O]- OmegaT[O,H]%*%solve(OmegaT[H,H])%*%OmegaT[H,O], 
                                  eig.tol = 1e-14, posd.tol = 1e-14)$mat))
@@ -131,11 +170,11 @@ pY_condT<-function(Ytest,beta, prob, Omega_hat,D,theta, r=1, plot=FALSE){
 }
 
 #cross_val0 pour r=0 et trueR=1
-cross_val<-function(counts,r, nblocs=10,B=50,alpha=0.1, cores=3){
+cross_val<-function(counts,r, nblocs=10,B=50,alpha=0.1, cores=3,dir){
   T0<-Sys.time()
   res=lapply(1:nblocs, function(i){
     cat(paste0("Bloc ",i,":"))
-    file=paste0("/Users/raphaellemomal/simulations/Barents_missing/VEMfit_r",r,"_bloc",i,".rds")
+    file=paste0("/Users/raphaellemomal/simulations/",dir,"/VEMfit_r",r,"_bloc",i,".rds")
     if(!file.exists(file)){
       VEMfit=split_fit(counts, v=1-(1/nblocs),r=r,alpha=alpha, bloc=i)
       saveRDS(VEMfit, file=file)
@@ -143,9 +182,10 @@ cross_val<-function(counts,r, nblocs=10,B=50,alpha=0.1, cores=3){
     cat(paste0("\n   Estimating pairwise composite likelihood..."))
     T1<-Sys.time()
     res=mclapply(1:B, function(x){#1min
-      VEMfit=readRDS(paste0("/Users/raphaellemomal/simulations/Barents_missing/VEMfit_r",r,"_bloc",i,".rds"))
-      pY_condT(Ytest = VEMfit$Ytest,beta = VEMfit$beta,prob = VEMfit$Pg,
-               Omega_hat = VEMfit$Omega_hat,D=VEMfit$D,theta = VEMfit$theta,
+    
+      VEMfit=readRDS(paste0("/Users/raphaellemomal/simulations/",dir,"/VEMfit_r",r,"_bloc",i,".rds"))
+      pY_condT(Ytest = VEMfit$Ytest,beta = VEMfit$beta,prob = VEMfit$Pg,M = VEMfit$M,S = VEMfit$S,
+              Omega_hat = VEMfit$Omega_hat,D=VEMfit$D,theta = VEMfit$theta,
                r = r,plot = FALSE)
     }, mc.cores=cores)
     edge_freq=colSums(do.call(rbind,lapply(res, function(x){
@@ -163,29 +203,53 @@ cross_val<-function(counts,r, nblocs=10,B=50,alpha=0.1, cores=3){
   return(res)
 }
 #-- data simulation
-set.seed(1) 
-n=200 ;p=14;r=0;type="scale-free";plot=TRUE
-O=1:p
+set.seed(1) ;n=200 ;p=14;type="scale-free";plot=TRUE;O=1:p
+r=0
 missing_data<-missing_from_scratch(n,p,r,type,plot)
 counts=missing_data$Y
 reorder=sample(1:n, n,replace=FALSE)
-counts=counts[reorder,]
+counts0=counts[reorder,]
+cross_val00<-cross_val(counts0,r=0,dir="CV_example/trueR0")#5min
+cross_val01<-cross_val(counts0,r=1,dir="CV_example/trueR0")#6min
+cross_val02<-cross_val(counts0,r=2,dir="CV_example/trueR0")#10.5min
 
-cross_val00<-cross_val(counts,r=0)
-cross_val01<-cross_val(counts,r=1)
-mean(do.call(rbind, lapply(cross_val00, function(bloc){
-  mean(bloc$vec_logpY)
-})))
-CV01=data.frame(VCp=do.call(rbind, lapply(cross_val01, function(bloc){
-  mean(bloc$vec_logpY)
-})),r=1,trueR=0, bloc=1:10)
-CV00=data.frame(VCp=do.call(rbind, lapply(cross_val00, function(bloc){
-  mean(bloc$vec_logpY)
-})),r=0,trueR=0, bloc=1:10)
-data=rbind(CV01,CV00)
+r=1;set.seed(1)
+missing_data<-missing_from_scratch(n,p,r,type,plot)
+counts=missing_data$Y
+reorder=sample(1:n, n,replace=FALSE)
+counts1=counts[reorder,]
 
-data %>% 
-  ggplot(aes(bloc,VCp, color=as.factor(r)))+geom_point()+theme_light()
+cross_val10<-cross_val(counts1,r=0,dir="CV_example/trueR1")#5.6min
+cross_val11<-cross_val(counts1,r=1,dir="CV_example/trueR1")#6.8min
+cross_val12<-cross_val(counts1,r=2,dir="CV_example/trueR1")#12.8min
+
+
+get_plot<-function(listmodels){
+  res=data.frame(VCp=numeric(), r=numeric())
+  rMax=length(listmodels)-1
+  for(r in 0:rMax){
+    data=listmodels[[r+1]]
+    VCp=do.call(rbind, lapply(data , function(x){
+      m=mean(x$vec_logpY)
+      if(!is.finite(m)) m=NA
+      return(m)}))
+    res=rbind(res,data.frame(VCp, r=r))
+  }
+  data = res %>% as_tibble() %>% group_by(r) %>% summarize(mean.PCL=mean(VCp), sd.PCL= sd(VCp),
+                                                           inf=mean.PCL - 1.96*sd.PCL/sqrt(10),
+                                                           sup=mean.PCL + 1.96*sd.PCL/sqrt(10))
+  g1<-data %>% ggplot( aes(y=mean.PCL,x=r))+
+    geom_errorbar(aes(ymin=inf, ymax=sup), width=0,position=position_dodge(0))+
+    geom_point(size=2.5)+theme_light()
+  g2<-data %>% ggplot( aes(y=mean.PCL,x=r))+ geom_line()+
+    geom_point(size=2.5)+theme_light()
+  return(list(g1, g2))
+}
+
+g1<-get_plot(list(cross_val00,cross_val01,cross_val02))[[2]]+labs(title="True r=0")
+g2<-get_plot(list(cross_val10,cross_val11,cross_val12))[[2]]+labs(title="True r=1")
+g=grid.arrange(g1, g2, top="Selection model : simulation seed=1")
+ggsave(plot=g,filename = "selecR_simu.png", path =  "/Users/raphaellemomal/these/R/images", width=5, height=5 )
 
 #########
 # Fatala
@@ -193,43 +257,24 @@ library(ade4)
 data(baran95)
 counts=as.matrix(baran95$fau)
 p=ncol(counts); n=nrow(counts)
+set.seed(1)
 reorder=sample(1:n, n,replace=FALSE)
 counts=counts[reorder,]
-CV_fatala_0<-cross_val(counts,r=0,B=100,nblocs=10,alpha=0.05,cores=3)#1.6h
-do.call(cbind, lapply(CV_fatala_0, function(x) x$edge_freq))
-mean(do.call(cbind, lapply(CV_fatala_2, function(x){
-  m=mean(x$vec_logpY)
-  if(!is.finite(m)) m=NA
-  return(m)})), na.rm=TRUE)
-saveRDS(CV_fatala_0, file="/Users/raphaellemomal/simulations/Fatala_missing/CV_fatala_0.rds")
-CV_fatala_1<-cross_val(counts,r=1,B=100,nblocs=10,alpha=0.05,cores=3)
-saveRDS(CV_fatala_1, file="/Users/raphaellemomal/simulations/Fatala_missing/CV_fatala_1.rds")
-CV_fatala_2<-cross_val(counts,r=2,B=100,nblocs=10,alpha=0.05,cores=3)
-saveRDS(CV_fatala_2, file="/Users/raphaellemomal/simulations/Fatala_missing/CV_fatala_2.rds")
-CV_fatala_3<-cross_val(counts,r=3,B=100,nblocs=10,alpha=0.05,cores=3)
+CV_fatala_0<-cross_val(counts,r=0,B=100,nblocs=10,alpha=0.05,cores=3,dir="Fatala_missing")
+CV_fatala_1<-cross_val(counts,r=1,B=100,nblocs=10,alpha=0.05,cores=3,dir="Fatala_missing")
+CV_fatala_2<-cross_val(counts,r=2,B=100,nblocs=10,alpha=0.05,cores=3,dir="Fatala_missing")
+CV_fatala_3<-cross_val(counts,r=3,B=100,nblocs=10,alpha=0.05,cores=3,dir="Fatala_missing")
+
+#saveRDS(CV_fatala_0, file="/Users/raphaellemomal/simulations/Fatala_missing/CV_fatala_0.rds")
+# saveRDS(CV_fatala_1, file="/Users/raphaellemomal/simulations/Fatala_missing/CV_fatala_1.rds")
+# saveRDS(CV_fatala_2, file="/Users/raphaellemomal/simulations/Fatala_missing/CV_fatala_2.rds")
 saveRDS(CV_fatala_3, file="/Users/raphaellemomal/simulations/Fatala_missing/CV_fatala_3.rds")
 
 #-- figure
-res=data.frame(VCp=numeric(), r=numeric())
-for(r in 0:3){
-  data=list(CV_fatala_0,CV_fatala_1,CV_fatala_2,CV_fatala_3)[[r+1]]
-  VCp=do.call(rbind, lapply(data , function(x){
-    m=mean(x$vec_logpY)
-    if(!is.finite(m)) m=NA
-    return(m)}))
-  res=rbind(res,data.frame(VCp, r=r))
-}
- 
- 
-data=res %>% as_tibble() %>% group_by(r) %>% summarize(mean.PCL=mean(VCp),med.PCL=median(VCp),
-                                                  inf=quantile(VCp, 0.25),
-                                                  sup=quantile(VCp, 0.75))
-g1=data %>% ggplot( aes(y=mean.PCL,x=r))+geom_point(size=2.5)+ geom_line()+theme_light()
-g2<-data %>%  ggplot( aes(y=med.PCL,x=r))+
-  geom_errorbar(aes(ymin=inf, ymax=sup), width=0,position=position_dodge(0))+
-  geom_point(size=2.5)+theme_light()
-g=grid.arrange(g1, g2, top="Fatala selection model with pairwise composite likelihood")
-ggsave(plot=g,filename = "selecR_Fatala.png", path =  "/Users/raphaellemomal/these/R/images", width=5, height=5 )
+g=get_plot(list(CV_fatala_0,CV_fatala_1,CV_fatala_2))[[2]]+
+  labs(title="Fatala selection model with pairwise composite likelihood")
+ggsave(plot=g,filename = "selecR_Fatala.png", path =  "/Users/raphaellemomal/these/R/images",
+       width=5, height=3 )
 
 #############
 # Barents
@@ -238,25 +283,22 @@ counts=Data$count
 p=ncol(counts); n=nrow(counts)
 reorder=sample(1:n, n,replace=FALSE)
 counts=counts[reorder,]
-CV_barents_0<-cross_val(counts,r=0,B=100,nblocs=10,alpha=0.05,cores=3)#1.6h
-CV_barents_1<-cross_val(counts,r=1,B=100,nblocs=10,alpha=0.05,cores=3)#1.6h
-saveRDS(CV_barents_0, file="/Users/raphaellemomal/simulations/Fatala_missing/CV_barents_0.rds")
-saveRDS(CV_barents_1, file="/Users/raphaellemomal/simulations/Fatala_missing/CV_barents_1.rds")
-res=data.frame(VCp=numeric(), r=numeric())
-for(r in 0:2){
-  data=list(CV_barents_0,CV_barents_1,CV_barents_2)[[r+1]]
-  VCp=do.call(rbind, lapply(data , function(x){
-    m=mean(x$vec_logpY)
-    if(!is.finite(m)) m=NA
-    return(m)}))
-  res=rbind(res,data.frame(VCp, r=r))
-}
-data=res %>% as_tibble() %>% group_by(r) %>% summarize(mean.PCL=mean(VCp),med.PCL=median(VCp),
-                                                       inf=quantile(VCp, 0.25),
-                                                       sup=quantile(VCp, 0.75))
-data %>% ggplot( aes(y=med.PCL,x=r))+geom_point(size=2.5)+ geom_line()+theme_light()
+countsBar=counts # trace du réarangement
+#CV_barents_0<-cross_val(counts,r=0,B=100,nblocs=10,alpha=0.05,cores=3,dir="Barents_missing")
+#CV_barents_1<-cross_val(counts,r=1,B=100,nblocs=10,alpha=0.05,cores=3,dir="Barents_missing")
+CV_barents_2<-cross_val(counts,r=2,B=100,nblocs=10,alpha=0.05,cores=3,dir="Barents_missing")
+CV_barents_3<-cross_val(counts,r=3,B=100,nblocs=10,alpha=0.05,cores=3,dir="Barents_missing")
+#saveRDS(CV_barents_0, file="/Users/raphaellemomal/simulations/Barents_missing/CV_barents_0.rds")
+#saveRDS(CV_barents_1, file="/Users/raphaellemomal/simulations/Barents_missing/CV_barents_1.rds")
+saveRDS(CV_barents_2, file="/Users/raphaellemomal/simulations/Barents_missing/CV_barents_2.rds")
+saveRDS(CV_barents_3, file="/Users/raphaellemomal/simulations/Barents_missing/CV_barents_3.rds")
 
-CV_barents_2<-cross_val(counts,r=2,B=100,nblocs=10,alpha=0.05,cores=3)#1.6h
-saveRDS(CV_barents_2, file="/Users/raphaellemomal/simulations/Fatala_missing/CV_barents_2.rds")
+# see what's inside
+summary(do.call(rbind,lapply(CV_barents_0, function(x) x$vec_logpY)))
+#-- figure
+g=get_plot(list(CV_barents_0,CV_barents_1))[[2]]+
+  labs(title="Barents selection model with pairwise composite likelihood")
+ggsave(plot=g,filename = "selecR_Barents.png", path =  "/Users/raphaellemomal/these/R/images",
+       width=5, height=3 )
 
-CV_barents_3<-cross_val(counts,r=3,B=100,nblocs=10,alpha=0.05,cores=3)#1.6h
+

@@ -2,8 +2,7 @@
 
 rm(list=ls());
 library(sna); library(ape)
-source('Functions/FunctionsMatVec.R')
-source('Functions/FunctionsTree.R')
+ 
 par(mfcol=c(3, 2), mex=.6, pch=20)
 
 # Dims
@@ -23,27 +22,27 @@ plot(betaVec, probVec); abline(0, 1); abline(0, sqrt(p)); abline(0, max(prob/bet
 
 # Function
 rSpanTreeV0 <- function(prob){
-   # Approximate sampling of a spanning according to edge probabilities
-   # Frequency of edge selection empricially OK
-   # No guaranty about the actual distribution if the whole tree
-   p <- nrow(prob)
-   graph <- F_Vec2Sym(F_Sym2Vec(matrix(rbinom(p^2, 1, prob), p, p)))
-   while(!is.connected(graph)){graph <- F_Vec2Sym(F_Sym2Vec(matrix(rbinom(p^2, 1, prob), p, p)))}
-   w <- F_Vec2Sym(F_Sym2Vec(matrix(runif(p^2), p, p)))
-   w <- -log(w)
-   w[which(graph==0)] <- Inf
-   return(mst(w))
+  # Approximate sampling of a spanning according to edge probabilities
+  # Frequency of edge selection empricially OK
+  # No guaranty about the actual distribution if the whole tree
+  p <- nrow(prob)
+  graph <- F_Vec2Sym(F_Sym2Vec(matrix(rbinom(p^2, 1, prob), p, p)))
+  while(!is.connected(graph)){graph <- F_Vec2Sym(F_Sym2Vec(matrix(rbinom(p^2, 1, prob), p, p)))}
+  w <- F_Vec2Sym(F_Sym2Vec(matrix(runif(p^2), p, p)))
+  w <- -log(w)
+  w[which(graph==0)] <- Inf
+  return(mst(w))
 }
 rSpanTreeV2 <- function(beta){ 
   p <- nrow(beta)
   w <- F_Vec2Sym(F_Sym2Vec(matrix(runif(p^2,0,beta), p, p)))
- 
+  
   w <- -(w)
- # w[which(graph==0)] <- Inf
+  # w[which(graph==0)] <- Inf
   return(mst(w))
 }
 
-rSpanTreeV1 <- function(beta, prob){
+rSpanTreeV1 <- function(beta, prob,maxTries=30){
   # Approximate sampling of a spanning according to edge probabilities
   # Rejection sampling approach
   # !!! Beta's must be normalized !!! (constant B = 1)
@@ -61,7 +60,17 @@ rSpanTreeV1 <- function(beta, prob){
     
     # graph = heterogeneous ER connected graph
     graph <- F_Vec2Sym(matrix(rbinom(P, 1, probVec)))
-    while(!is.connected(graph)){graph <- F_Vec2Sym(matrix(rbinom(P, 1, probVec)))}
+    c=0
+    while(!is.connected(graph)){
+      c=c+1
+      cat(paste0("\n---- c=",c," ----"))
+      if(c<maxTries){
+        graph <- F_Vec2Sym(matrix(rbinom(P, 1, probVec)))
+      }else{
+        probVec2=probVec; probVec2[probVec2<0.05]=0.05
+        graph <- F_Vec2Sym(matrix(rbinom(P, 1, probVec2)))
+      }
+    }
     # gplot(graph, gmode='graph', main=round(SumTree(graph)))
     graphVec <- F_Sym2Vec(graph)
     # qGraph <- prod(dbinom(graphVec, 1, probVec))
@@ -77,6 +86,7 @@ rSpanTreeV1 <- function(beta, prob){
     invSpanTreeMean <- 0; G <- 1e3
     for(g in 1:G){invSpanTreeMean <- invSpanTreeMean + 1/SumTree(F_Vec2Sym(matrix(rbinom(P, 1, biasedProbVec))))}
     invSpanTreeMean <- invSpanTreeMean/G
+  
     qTree[tries] <- prod(probVec[which(treeVec==1)]) * invSpanTreeMean
     
     # qTree[tries] <- qGraph / SumTree(graph)

@@ -134,77 +134,107 @@ data2 %>% dplyr::select(influence, method, TPRH) %>% spread(method, TPRH)%>% kab
 
 
 
-# Proximity and performance {.tabset}
+# Proximity and global performance {.tabset}
 
-PPVH:
+FN seems to control all performances.
 
-FP=0 yields a very good PPVH for all influences and all methods. Higher values of FP are likely to give uniform to rather small values of PPVH.
-FN=1 yields very small values of PPVH, and FN=0 gives better PPVH values as the influence increases.
-
-TPRH:
-
-The relationship between TPRH and FP is unclear. However, TPRH decreases when FN increases for all methods and influences, with better TPRH values as the influence grows.
-
-AUC:
-
-There is no clear link of AUC to FP, however there exists a negative relationship of AUC and FN.
-
-
-These results show that false positives in the initial cliques are linked with PPVH, so increase the confidence in the result, and false negatives on the other hand are linked with TPRH, so increase the completeness of the result. As expected, a better proximity of the initial clique to the oracle gives better performances.
-
-## PPVH/FP
+## PPVH
 ```{r}
-quality %>% filter(method!="Oracle",!is.na(PPVH)) %>% group_by(influence,method,  FP,PPVH) %>%  mutate(n=n()) %>% ungroup() %>% group_by(influence,method ) %>% 
+quality %>% filter(method!="Oracle", !is.na(PPVH)) %>% group_by(influence,method,  FP,FN) %>%  mutate(n=n()) %>% ungroup() %>% group_by(influence,method ) %>% 
   mutate(ntot=n(),prop=n/ntot) %>% 
-  ggplot(aes(FP,PPVH,color=prop, size=prop))+geom_point() +
+  ggplot(aes(FP,FN,color=PPVH, size=prop))+geom_point() +
   facet_grid(method~influence) +mytheme.bg
 
 ```
+ 
 
-## PPVH/FN
+## TPRH
 ```{r}
-quality %>% filter(method!="Oracle",!is.na(PPVH)) %>% group_by(influence,method,  FN,PPVH) %>%  mutate(n=n()) %>% ungroup() %>% group_by(influence,method ) %>% 
+quality %>% filter(method!="Oracle", !is.na(TPRH)) %>% group_by(influence,method,  FP,FN) %>%  mutate(n=n()) %>% ungroup() %>% group_by(influence,method ) %>% 
   mutate(ntot=n(),prop=n/ntot) %>% 
-  ggplot(aes(FN,PPVH,color=prop, size=prop))+geom_point() +
+  ggplot(aes(FP,FN,color=TPRH, size=prop))+geom_point() +
   facet_grid(method~influence) +mytheme.bg
-
-```
-
-## TPRH/FP
-```{r}
-quality %>% filter(method!="Oracle") %>% group_by(influence,method,  FP,TPRH) %>%  mutate(n=n()) %>% ungroup() %>% group_by(influence,method ) %>% 
-  mutate(ntot=n(),prop=n/ntot) %>% 
-  ggplot(aes(FP,TPRH,color=prop, size=prop))+geom_point() +
-  facet_grid(method~influence) +mytheme.bg
-
-```
-
-## TPRH/FN
-```{r}
-quality %>% filter(method!="Oracle") %>% group_by(influence,method,  FN,TPRH) %>%  mutate(n=n()) %>% ungroup() %>% group_by(influence,method ) %>% 
-  mutate(ntot=n(),prop=n/ntot) %>% 
-  ggplot(aes(FN,TPRH,color=prop, size=prop))+geom_point() +
-  facet_grid(method~influence) +mytheme.bg
-
 ```
 
 ## AUC/FP
 ```{r}
-quality %>% filter(method!="Oracle") %>% group_by(influence,method,  FP,auc) %>%  mutate(n=n()) %>% ungroup() %>% group_by(influence,method ) %>% 
+quality %>% filter(method!="Oracle", !is.na(auc)) %>% group_by(influence,method,  FP,FN) %>%  mutate(n=n()) %>% ungroup() %>% group_by(influence,method ) %>% 
   mutate(ntot=n(),prop=n/ntot) %>% 
-  ggplot(aes(FP,auc,color=prop, size=prop))+geom_point() +
+  ggplot(aes(FP,FN,color=auc, size=prop))+geom_point() +
   facet_grid(method~influence) +mytheme.bg
 
 ```
 
-## AUC/FP
+# Proximity and performance of best FN {.tabset}
+
+We filter all seeds by their minimum FN reached, for each method and influence.
+
+##PPVH
 ```{r}
-quality %>% filter(method!="Oracle") %>% group_by(influence,method,  FN,auc) %>%  mutate(n=n()) %>% ungroup() %>% group_by(influence,method ) %>% 
+quality %>% filter(method!="Oracle", !is.na(PPVH)) %>% group_by(influence,method ,seed) %>%
+  filter(FN==min(FN)) %>% 
+  ungroup()%>% group_by(influence,method,  FP,FN) %>%  mutate(n=n()) %>% ungroup() %>% group_by(influence,method ) %>% 
   mutate(ntot=n(),prop=n/ntot) %>% 
-  ggplot(aes(FN,auc,color=prop, size=prop))+geom_point() +
+  ggplot(aes(FP,FN,color=PPVH, size=prop))+geom_point() +
   facet_grid(method~influence) +mytheme.bg
 ```
 
+##TPRH
+```{r}
+quality %>% filter(method!="Oracle", !is.na(TPRH)) %>% group_by(influence,method ,seed) %>%
+  filter(FN==min(FN)) %>% 
+  ungroup()%>% group_by(influence,method,  FP,FN) %>%  mutate(n=n()) %>% ungroup() %>% group_by(influence,method ) %>% 
+  mutate(ntot=n(),prop=n/ntot) %>% 
+  ggplot(aes(FP,FN,color=TPRH, size=prop))+geom_point() +
+  facet_grid(method~influence) +mytheme.bg
+```
+
+##AUC
+```{r}
+quality %>% filter(method!="Oracle", !is.na(auc)) %>% group_by(influence,method ,seed) %>%
+  filter(FN==min(FN)) %>% 
+  ungroup()%>% group_by(influence,method,  FP,FN) %>%  mutate(n=n()) %>% ungroup() %>% group_by(influence,method ) %>% 
+  mutate(ntot=n(),prop=n/ntot) %>% 
+  ggplot(aes(FP,FN,color=auc, size=prop))+geom_point() +
+  facet_grid(method~influence) +mytheme.bg
+```
+
+# Proximity and performance of best J {.tabset}
+
+We filter all seeds by their maximum lower bound value J reached, for each method and influence.
+
+##PPVH
+
+```{r}
+quality %>% filter(method!="Oracle", !is.na(PPVH)) %>% group_by(influence,method ,seed) %>%
+  filter(J==max(J)) %>% 
+  ungroup()%>% group_by(influence,method,  FP,FN) %>%  mutate(n=n()) %>% ungroup() %>% group_by(influence,method ) %>% 
+  mutate(ntot=n(),prop=n/ntot) %>% 
+  ggplot(aes(FP,FN,color=PPVH, size=prop))+geom_point() +
+  facet_grid(method~influence) +mytheme.bg
+```
+
+##TPRH
+
+```{r}
+quality %>% filter(method!="Oracle", !is.na(TPRH)) %>% group_by(influence,method ,seed) %>%
+  filter(J==max(J)) %>% 
+  ungroup()%>% group_by(influence,method,  FP,FN) %>%  mutate(n=n()) %>% ungroup() %>% group_by(influence,method ) %>% 
+  mutate(ntot=n(),prop=n/ntot) %>% 
+  ggplot(aes(FP,FN,color=TPRH, size=prop))+geom_point() +
+  facet_grid(method~influence) +mytheme.bg
+```
+
+##AUC
+
+```{r}
+quality %>% filter(method!="Oracle", !is.na(auc)) %>% group_by(influence,method ,seed) %>%
+  filter(J==max(J)) %>% 
+  ungroup()%>% group_by(influence,method,  FP,FN) %>%  mutate(n=n()) %>% ungroup() %>% group_by(influence,method ) %>% 
+  mutate(ntot=n(),prop=n/ntot) %>% 
+  ggplot(aes(FP,FN,color=auc, size=prop))+geom_point() +
+  facet_grid(method~influence) +mytheme.bg
+```
 
 # Failed runs
 
@@ -219,5 +249,32 @@ data3=quality %>% group_by(influence, method,seed) %>% filter(is.nan(J)) %>%
 data3 %>% dplyr::select(influence, method, mJnan) %>% spread(method, mJnan)%>% kable(caption="mJnan") %>% kable_styling()
 data3 %>% dplyr::select(influence, method, FP) %>% spread(method, FP)%>% kable(caption="FP") %>% kable_styling()
 data3 %>% dplyr::select(influence, method, FN) %>% spread(method, FN)%>% kable(caption="FN") %>% kable_styling()
+```
+
+Filtering by failed runs, we observe:
+
+```{r}
+quality %>% filter(method!="Oracle") %>% group_by(influence,method ,seed) %>%
+  filter(is.na(J)) %>% 
+  ungroup()%>% group_by(influence,method,  FP,FN) %>%  mutate(n=n()) %>% ungroup() %>% group_by(influence,method ) %>% 
+  mutate(ntot=n(),prop=n/ntot) %>% 
+  ggplot(aes(FP,FN, size=prop))+geom_point() +
+  facet_grid(method~influence) +mytheme.bg
+```
+
+
+# other viz
+
+```{r}
+quality %>% filter(method!="Oracle") %>%  group_by(seed,influence, method) %>% 
+  summarize(moy=mean(FP),maxJ=FP[which(J==max(J, na.rm=TRUE))],min=min(FP), fail=mean(FP[which(is.na(J))]), Jna=mean(is.na(J))) %>%
+  dplyr::select(-Jna) %>% gather(key, FP,-influence, -method,-seed) %>% 
+  ggplot(aes(x=influence,y=FP, color=key, fill=key))+geom_boxplot(alpha=0.3)+facet_wrap(~method)+mytheme.dark("")
+
+
+quality %>% filter(method!="Oracle") %>%  group_by(seed,influence, method) %>% 
+  summarize(moy=mean(FN),maxJ=FN[which(J==max(J, na.rm=TRUE))],min=min(FN), fail=mean(FN[which(is.na(J))]), Jna=mean(is.na(J))) %>%
+  dplyr::select(-Jna) %>% gather(key, FN,-influence, -method,-seed) %>% 
+  ggplot(aes(x=influence,y=FN, color=key, fill=key))+geom_boxplot(alpha=0.3)+facet_wrap(~method)+mytheme.dark("")
 ```
 
