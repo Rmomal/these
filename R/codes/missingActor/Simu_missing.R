@@ -21,7 +21,7 @@ source("/Users/raphaellemomal/these/R/codes/missingActor/fonctions-exactDet.R")
 ##### function
 
 Simu_missing<-function(p,B,N,n,cores,r, maxIter, eps){
-  lapply(1:N, function(seed){
+  lapply(22:N, function(seed){
     cat(paste0("\n seed ",seed, " : "))
     T1<-Sys.time()
     set.seed(seed)
@@ -53,7 +53,7 @@ Simu_missing<-function(p,B,N,n,cores,r, maxIter, eps){
     #--- init oracle
     clique=list()
     clique$cliqueList=list(list(trueClique))
-
+if(N==2) browser()
     ListVEM<-List.VEM(cliquesObj =clique, counts, cov2cor(sigma_obs), MO,SO,r=1,alpha=0.1,
                       eps=eps,maxIter=maxIter, cores=3, trackJ = FALSE)
     
@@ -89,7 +89,7 @@ Simu_missing<-function(p,B,N,n,cores,r, maxIter, eps){
     Sim=list(G=G,UH=UH,
              ListVEM=ListVEM)#,#VEM_1=VEM_1,
              #time_spca=time_spca)#, nbinit=nbinit )
-    saveRDS(Sim, file=paste0("/Users/raphaellemomal/simulations/15nodes_V4_oracle/SF_seed",
+    saveRDS(Sim, file=paste0("/Users/raphaellemomal/simulations/15nodes_V5_oracle/SF_seed",
                              seed,".rds"))
     
     return(Sim)
@@ -98,7 +98,7 @@ Simu_missing<-function(p,B,N,n,cores,r, maxIter, eps){
 
 ######### run
 tic()
-Sim15<-Simu_missing(p = 14, n = 200, B = 100,N = 403,eps = 1e-3, cores=3,r=1,maxIter=200)
+Sim15<-Simu_missing(p = 14, n = 200, B = 100,N = 403,eps = 1e-3, cores=1,r=1,maxIter=200)
 toc()
 saveRDS(Sim15, file="/Users/raphaellemomal/these/R/codes/missingActor/SimResults/Sim15_r1_200SF.rds")
 # Sim30<-Simu_missing(p = 29, n = 200, B = 40,N = 200)

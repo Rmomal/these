@@ -139,3 +139,11 @@ g4<-data %>%
 g=grid.arrange(g1, g3,g2, g4, ncol=2)
 ggsave(filename = "Fatala_MH2.png", plot = g,
        path ="/Users/raphaellemomal/these/R/images/", width = 7, height = 5)
+########
+# infos
+
+ListVEM_boot_200=readRDS("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/Fatala_VEM_200.rds" )
+sum(do.call(rbind,lapply(ListVEM_boot_200, function(vem){
+vem$finalIter
+}))==100)
+

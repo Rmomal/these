@@ -11,7 +11,7 @@ Offset=Data$offset#[,-empty_sp]
 n=nrow(counts)
 p=ncol(counts)
 
-PLNfit<-PLN(counts~1)
+PLNfit<-PLN(counts~1+offset(log(Offset)))
 MO<-PLNfit$var_par$M # MiO = ith row of MO
 SO<-PLNfit$var_par$S # SiO = diag(ith row of SO)
 sigma_obs=PLNfit$model_par$Sigma
@@ -22,38 +22,40 @@ MO=MO*matsig
 SO=SO*matsig^2
 
 #-------- spca
-cliques_spca<-FitSparsePCA(counts, r=2)$cliques
-complement=lapply(cliques_spca, function(clique){setdiff(1:p,clique)})
-clique=list()
-clique$cliqueList=lapply(c(cliques_spca,complement), function(cl) list(cl))
+# cliques_spca<-FitSparsePCA(counts, r=2)$cliques
+# complement=lapply(cliques_spca, function(clique){setdiff(1:p,clique)})
+# clique=list()
+# clique$cliqueList=lapply(c(cliques_spca,complement), function(cl) list(cl))
 #-------- spca boot
 clique=boot_FitSparsePCA(counts, B=200, r=1)
 #-------- blockmodels
-init=initVEM(counts = counts,initviasigma=NULL, cov2cor(sigma_obs),MO,r = 0) 
-Wginit= init$Wginit; Winit= init$Winit; upsinit=init$upsinit ; MHinit=init$MHinit
-resVEM0<- VEMtree(counts,MO,SO,MH=MHinit,upsinit,Winit,Wginit, eps=1e-3, alpha=0.05,
-                  maxIter=100, plot=TRUE,print.hist=FALSE, verbatim = TRUE,trackJ=FALSE)
-init=initVEM(counts = filtre_counts,initviasigma=NULL, cov2cor(sigma_obs),MO,r = 0) 
-Wginit= init$Wginit; Winit= init$Winit; upsinit=init$upsinit ; MHinit=init$MHinit
-resVEM0_filtrecounts<- VEMtree(filtre_counts,MO,SO,MH=MHinit,upsinit,Winit,Wginit, eps=1e-3, alpha=0.05,
-                  maxIter=100, plot=TRUE,print.hist=FALSE, verbatim = TRUE,trackJ=FALSE)
-sbm.vem <- BM_bernoulli("SBM_sym",resVEM0_filtrecounts$Pg, plotting="", verbosity=0)
-sbm.vem$estimate()
-clique_filtre=list();c=1
-sapply(2:4, function(k){
-  paramEstimSBMPoisson <- extractParamBM(sbm.vem,k)
-   sapply(1:k, function(z){
-     clique_filtre$cliqueList[[c]]<<-list(which(paramEstimSBMPoisson$Z==z))
-    c<<-c+1
-  })
-})
-clique_filtre$cliqueList=unique(clique_filtre$cliqueList)
+# init=initVEM(counts = counts,initviasigma=NULL, cov2cor(sigma_obs),MO,r = 0) 
+# Wginit= init$Wginit; Winit= init$Winit; upsinit=init$upsinit ; MHinit=init$MHinit
+# resVEM0<- VEMtree(counts,MO,SO,MH=MHinit,upsinit,Winit,Wginit, eps=1e-3, alpha=0.05,
+#                   maxIter=100, plot=TRUE,print.hist=FALSE, verbatim = TRUE,trackJ=FALSE)
+# init=initVEM(counts = filtre_counts,initviasigma=NULL, cov2cor(sigma_obs),MO,r = 0) 
+# Wginit= init$Wginit; Winit= init$Winit; upsinit=init$upsinit ; MHinit=init$MHinit
+# resVEM0_filtrecounts<- VEMtree(filtre_counts,MO,SO,MH=MHinit,upsinit,Winit,Wginit, eps=1e-3, alpha=0.05,
+#                   maxIter=100, plot=TRUE,print.hist=FALSE, verbatim = TRUE,trackJ=FALSE)
+# sbm.vem <- BM_bernoulli("SBM_sym",resVEM0_filtrecounts$Pg, plotting="", verbosity=0)
+# sbm.vem$estimate()
+# clique_filtre=list();c=1
+# sapply(2:4, function(k){
+#   paramEstimSBMPoisson <- extractParamBM(sbm.vem,k)
+#    sapply(1:k, function(z){
+#      clique_filtre$cliqueList[[c]]<<-list(which(paramEstimSBMPoisson$Z==z))
+#     c<<-c+1
+#   })
+# })
+# clique_filtre$cliqueList=unique(clique_filtre$cliqueList)
 #--------- run
 # all counts
 # spca boot
 ListVEM_all_nofiltre_spca200<-List.VEM(cliquesObj =clique, counts, cov2cor(sigma_obs), MO,SO,r=1,alpha=0.05,
                                     eps=1e-3,maxIter=100, cores=3, trackJ=FALSE)
- 
+saveRDS(ListVEM_all_nofiltre_spca200,
+        file ="/Users/raphaellemomal/these/R/codes/missingActor/SimResults/Barents_VEM_200.rds" )
+
 vecJ=do.call(rbind, lapply(ListVEM_all_nofiltre_spca200, function(vem){
   if(length(vem)==14){
     J=tail(vem$lowbound$J, 1) 
@@ -103,7 +105,7 @@ ggsave(filename = "Barents_MH_temp_white.png", plot = g,
        path ="/Users/raphaellemomal/these/R/images/", width = 3, height = 3)
 
 i=i+1
-ListVEM[[1]]$lowbound %>% rowid_to_column() %>%  
+ListVEM_all_nofiltre_spca200[[12]]$lowbound %>% rowid_to_column() %>%  
   ggplot(aes(rowid,J ))+geom_line()+geom_point(aes(color=as.factor(parameter)),size=2, alpha=0.8)+
   labs(x="iteration",y="", title="Lower bound")+theme_light()+ scale_color_manual("",values="#2976d6")+
   guides(color=FALSE)

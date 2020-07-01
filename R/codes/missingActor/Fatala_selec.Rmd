@@ -25,17 +25,31 @@ vec_sdMH_J=do.call(rbind, lapply(ListVEM_boot_200, function(vem){
     J=tail(vem$lowbound$J, 1)
     sdM=apply(vem$M,2, function(x) sd(x))
     sdMH=tail(sdM,2)
-    res=c(sdMH,J)
+    q=ncol(vem$M) ; r=2 ; H=(q-r+1):q
+    entrUH=-0.5*sum(log(vem$S[,H]))
+    Sbar1=mean(vem$S[,H[1]])
+    Sbar2=mean(vem$S[,H[2]])
+    res=c(sdMH,J,entrUH,Sbar1,Sbar2)
   }else{
-   J=NaN ;sdMH = c(NaN,NaN)
-     res=c(sdMH,J)}
+   J=NaN ;sdMH = c(NaN,NaN); entrUH=NaN; Sbar1=NaN; Sbar2=NaN
+     res=c(sdMH,J,entrUH,Sbar1,Sbar2)}
 }))
 
 dataFatala=data.frame(vec_sdMH_J)
-colnames(dataFatala) = c("sd1","sd2","J")
+colnames(dataFatala) = c("sd1","sd2","J","penUH","S1","S2")
 dataFatala=dataFatala %>% as_tibble() %>% 
   mutate(num=1:nrow(dataFatala), TwoActors=ifelse(log(sd1)>-15 & log(sd2) >-15,"on", "off"))
 
+dataFatala %>% ggplot(aes(J,J-penUH, color=TwoActors))+geom_point()+mytheme.dark("")
+dataFatala %>% ggplot(aes(TwoActors,penUH))+geom_boxplot()+mytheme.dark("")
+
+dataFatala %>% ggplot(aes(TwoActors,J+penUH))+geom_boxplot()+mytheme.dark("") # le meilleur modèle pénalisé est dans les off donc ça marche pas
+dataFatala %>% ggplot(aes(sd1, sd2, color=penUH))+geom_point()+theme_light()
+dataFatala %>% ggplot(aes(log(sd1), log(S1)))+geom_point()+theme_light()
+dataFatala %>% ggplot(aes(sd2, S2))+geom_point()+theme_light()
+dataFatala %>% ggplot(aes(log(S1),log(S2)))+geom_point()+theme_light()
+
+dataFatala %>% filter(log(S1)<(-0.1),log(S2)<(-0.1))
 ```
 
 # Visualisation and selection

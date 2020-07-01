@@ -42,10 +42,9 @@ split_fit<-function(Y,v=0.8,r=1,alpha=0.1, bloc=1){#shuffle data prior to this
   vec_blocs[1:((nblocs-1)*ntest)]=rep(1:(nblocs-1), each=ntest)
   vec_blocs[vec_blocs==0]=nblocs
   samp=which(vec_blocs==bloc)
-  Ytrain =counts[-samp,] ; Ytest=counts[samp,]
+  Ytrain =Y[-samp,] ; Ytest=Y[samp,]
   ntrain=nrow(Ytrain)
-  # Ytrain=Ytest=Y
-  # ntrain=ntest=n
+
   #-- normalized PLN outputs
   PLNfit<-PLN(Ytrain~1, control=list(trace=0))
   MO<-PLNfit$var_par$M  ;SO<-PLNfit$var_par$S  ;sigma_obs=PLNfit$model_par$Sigma
@@ -55,40 +54,40 @@ split_fit<-function(Y,v=0.8,r=1,alpha=0.1, bloc=1){#shuffle data prior to this
   SO=SO*matsig^2
   
   if(r!=0){
-    # init
-    # if(r==1){
-    #   cliques_spca<-FitSparsePCA(Ytrain, r=2)$cliques
-    #   complement=lapply(cliques_spca, function(clique){setdiff(1:p,clique)})
-    #   clique=list()
-    #   clique$cliqueList=lapply(c(cliques_spca,complement), function(cl) list(cl))
-    # }else{
     if(r==1){minV=2
     }else{minV=0}
-      clique=boot_FitSparsePCA(counts, B=200,r=r,minV=minV)
-    #}
+      clique=boot_FitSparsePCA(Ytrain, B=200,r=r,minV=minV)
+      if(length(clique$cliqueList)>50){
+        clique_spca<-FitSparsePCA(counts, r=2)$cliques
+        complement=lapply(clique_spca, function(clique){setdiff(1:p,clique)})
+        clique=list()
+        clique$cliqueList=lapply(c(clique_spca,complement), function(cl) list(cl))
+      }
     #VEM
     cat(paste0("\n   Fitting ",length(clique$cliqueList)," VEM..."))
     ListVEM<-List.VEM(cliquesObj =clique, Ytrain, cov2cor(sigma_obs), MO,SO,r=r,alpha=alpha,
-                      eps=1e-3,maxIter=100, cores=3, trackJ=FALSE)
+                      eps=1e-2,maxIter=100, cores=3, trackJ=FALSE)
 
-    if(r>1){# select best J among models which gives r Mh with reasonabe sd 
+    if(r>1){ # select best J among models which gives r Mh with reasonabe sd 
       vec_sdMH_J=do.call(rbind, lapply(ListVEM, function(vem){
         if(length(vem)>5){
           J=tail(vem$lowbound$J, 1)
           sdM=apply(vem$M,2, function(x) sd(x))
           sdMH=tail(sdM,r)
-          res=data.frame(sdMH,J=J)
+          res=c(sdMH,J=J)
         }else{
-          J=NaN ;sdMH = c(NaN,NaN)
-          res=data.frame(sdMH,J=J)}
+          J=NaN ;sdMH =rep(NaN,r)
+          res=c(sdMH,J=J)}
         return(res)
       }))
       data_sd=data.frame(vec_sdMH_J) %>% dplyr::select(-J)
       AllActors=apply(data_sd, 1, function(x){
         sum(log(x)>-20)==r
       })
-      index=unlist(data.frame(vec_sdMH_J,AllActors=AllActors,num=1:nrow(data_sd)) %>% as_tibble() %>% 
+      if(sum(AllActors, na.rm=TRUE)!=0){
+        index=unlist(data.frame(vec_sdMH_J,AllActors=AllActors,num=1:nrow(data_sd)) %>% as_tibble() %>% 
                      filter(AllActors) %>% filter(J==max(J,na.rm=TRUE)) %>% dplyr::select(num))
+      }else{ index=which.max(vec_sdMH_J$J)}
       
     }else{
       vec_J=do.call(rbind, lapply(ListVEM, function(vem){
@@ -105,7 +104,7 @@ split_fit<-function(Y,v=0.8,r=1,alpha=0.1, bloc=1){#shuffle data prior to this
     cat(paste0("\n   Fitting 1 VEM with r=0..."))
     init0=initVEM(Ytrain , initviasigma = NULL,  cov2cor(sigma_obs),r = 0)
     Wginit= init0$Wginit; Winit= init0$Winit; upsinit=init0$upsinit 
-    VEM<-tryCatch({VEMtree(Ytrain, MO, SO, MH=NULL,upsinit,W_init =Winit,eps=1e-3,
+    VEM<-tryCatch({VEMtree(Ytrain, MO, SO, MH=NULL,upsinit,W_init =Winit,eps=1e-2,
                            Wg_init =Wginit,plot = FALSE, maxIter = 100,print.hist = FALSE,
                            alpha=alpha, verbatim=FALSE, trackJ=FALSE )},
                   error=function(e){e}, finally={})
@@ -113,7 +112,8 @@ split_fit<-function(Y,v=0.8,r=1,alpha=0.1, bloc=1){#shuffle data prior to this
   T2<-Sys.time()
   runtime=difftime(T2, T1)
   cat(paste0(round(runtime,3)," ", attr(runtime, "units")))
-  return(list(Ytest=Ytest,Pg=VEM$Pg,beta=VEM$Wg,M=VEM$M,S=VEM$S,Omega_hat=VEM$Upsilon,D=D, theta=PLNfit$model_par$Theta ))
+  return(list(Ytest=Ytest,Pg=VEM$Pg,beta=VEM$Wg,M=VEM$M,S=VEM$S,
+              Omega_hat=VEM$Upsilon,D=D, theta=PLNfit$model_par$Theta ))
 }
 
 pY_condT<-function(Ytest,beta, prob,M,S, Omega_hat,D,theta, r=1, plot=FALSE){
@@ -126,7 +126,7 @@ pY_condT<-function(Ytest,beta, prob,M,S, Omega_hat,D,theta, r=1, plot=FALSE){
     beta <- beta / SumTree(beta)^(1/(ncol(beta)-1))
   }
 
-  
+
   #--- calcul critere : tirer T, calculer omega et sigma et p(Y)
   obj.tree = rSpanTreeV1(beta=beta,prob=prob)
   tree=obj.tree$tree
@@ -146,7 +146,7 @@ pY_condT<-function(Ytest,beta, prob,M,S, Omega_hat,D,theta, r=1, plot=FALSE){
     SigmaTm=cov2cor(solve(nearPD(OmegaT[O,O], eig.tol = 1e-14, posd.tol = 1e-14)$mat))
   }
   #pour chaque site testiet chaque paire d’especes (j,k),
-  #on calcule la densit ́e Poissonlog-normale
+  #on calcule la densit́e Poissonlog-normale
   p=ncol(Ytest)
   mat_dens=matrix(0,p,p)
   sapply(1:(p-1), function(i){
@@ -235,7 +235,7 @@ get_plot<-function(listmodels){
       return(m)}))
     res=rbind(res,data.frame(VCp, r=r))
   }
-  data = res %>% as_tibble() %>% group_by(r) %>% summarize(mean.PCL=mean(VCp), sd.PCL= sd(VCp),
+  data = res %>% as_tibble() %>% filter(VCp>-200000) %>% group_by(r) %>% summarize(mean.PCL=mean(VCp), sd.PCL= sd(VCp),
                                                            inf=mean.PCL - 1.96*sd.PCL/sqrt(10),
                                                            sup=mean.PCL + 1.96*sd.PCL/sqrt(10))
   g1<-data %>% ggplot( aes(y=mean.PCL,x=r))+
@@ -243,7 +243,7 @@ get_plot<-function(listmodels){
     geom_point(size=2.5)+theme_light()
   g2<-data %>% ggplot( aes(y=mean.PCL,x=r))+ geom_line()+
     geom_point(size=2.5)+theme_light()
-  return(list(g1, g2))
+  return(list(g1, g2, data))
 }
 
 g1<-get_plot(list(cross_val00,cross_val01,cross_val02))[[2]]+labs(title="True r=0")
@@ -262,43 +262,54 @@ reorder=sample(1:n, n,replace=FALSE)
 counts=counts[reorder,]
 CV_fatala_0<-cross_val(counts,r=0,B=100,nblocs=10,alpha=0.05,cores=3,dir="Fatala_missing")
 CV_fatala_1<-cross_val(counts,r=1,B=100,nblocs=10,alpha=0.05,cores=3,dir="Fatala_missing")
-CV_fatala_2<-cross_val(counts,r=2,B=100,nblocs=10,alpha=0.05,cores=3,dir="Fatala_missing")
+CV_fatala_2<-cross_val(counts,r=2,B=100,nblocs=10,alpha=0.05,cores=3,dir="Fatala_missing")#5h
 CV_fatala_3<-cross_val(counts,r=3,B=100,nblocs=10,alpha=0.05,cores=3,dir="Fatala_missing")
 
 #saveRDS(CV_fatala_0, file="/Users/raphaellemomal/simulations/Fatala_missing/CV_fatala_0.rds")
 # saveRDS(CV_fatala_1, file="/Users/raphaellemomal/simulations/Fatala_missing/CV_fatala_1.rds")
-# saveRDS(CV_fatala_2, file="/Users/raphaellemomal/simulations/Fatala_missing/CV_fatala_2.rds")
+#saveRDS(CV_fatala_2, file="/Users/raphaellemomal/simulations/Fatala_missing/CV_fatala_2.rds")
 saveRDS(CV_fatala_3, file="/Users/raphaellemomal/simulations/Fatala_missing/CV_fatala_3.rds")
 
 #-- figure
-g=get_plot(list(CV_fatala_0,CV_fatala_1,CV_fatala_2))[[2]]+
+g=get_plot(list(CV_fatala_0,CV_fatala_1,CV_fatala_2,CV_fatala_3))[[2]]+
   labs(title="Fatala selection model with pairwise composite likelihood")
 ggsave(plot=g,filename = "selecR_Fatala.png", path =  "/Users/raphaellemomal/these/R/images",
        width=5, height=3 )
 
 #############
 # Barents
-load("/Users/raphaellemomal/these/Data_SR/BarentsFish.Rdata")
-counts=Data$count
-p=ncol(counts); n=nrow(counts)
-reorder=sample(1:n, n,replace=FALSE)
-counts=counts[reorder,]
-countsBar=counts # trace du réarangement
-#CV_barents_0<-cross_val(counts,r=0,B=100,nblocs=10,alpha=0.05,cores=3,dir="Barents_missing")
-#CV_barents_1<-cross_val(counts,r=1,B=100,nblocs=10,alpha=0.05,cores=3,dir="Barents_missing")
-CV_barents_2<-cross_val(counts,r=2,B=100,nblocs=10,alpha=0.05,cores=3,dir="Barents_missing")
-CV_barents_3<-cross_val(counts,r=3,B=100,nblocs=10,alpha=0.05,cores=3,dir="Barents_missing")
+# load("/Users/raphaellemomal/these/Data_SR/BarentsFish.Rdata")
+# counts=Data$count
+# p=ncol(counts); n=nrow(counts)
+# reorder=sample(1:n, n,replace=FALSE)
+# counts=counts[reorder,]
+#countsBar=counts # trace du réarangement
+CV_barents_0<-cross_val(countsBar,r=0,B=100,nblocs=10,alpha=0.05,cores=3,dir="Barents_missing")
+CV_barents_1<-cross_val(countsBar,r=1,B=100,nblocs=10,alpha=0.05,cores=1,dir="Barents_missing")
+#CV_barents_2<-cross_val(countsBar,r=2,B=100,nblocs=10,alpha=0.05,cores=3,dir="Barents_missing")#5.5h
+CV_barents_3<-cross_val(countsBar,r=3,B=100,nblocs=10,alpha=0.05,cores=3,dir="Barents_missing")
 #saveRDS(CV_barents_0, file="/Users/raphaellemomal/simulations/Barents_missing/CV_barents_0.rds")
-#saveRDS(CV_barents_1, file="/Users/raphaellemomal/simulations/Barents_missing/CV_barents_1.rds")
-saveRDS(CV_barents_2, file="/Users/raphaellemomal/simulations/Barents_missing/CV_barents_2.rds")
+saveRDS(CV_barents_1, file="/Users/raphaellemomal/simulations/Barents_missing/CV_barents_1.rds")
+#saveRDS(CV_barents_2, file="/Users/raphaellemomal/simulations/Barents_missing/CV_barents_2.rds")
 saveRDS(CV_barents_3, file="/Users/raphaellemomal/simulations/Barents_missing/CV_barents_3.rds")
+#saveRDS(countsBar, file="/Users/raphaellemomal/simulations/Barents_missing/shuffle_counts.rds")
 
 # see what's inside
-summary(do.call(rbind,lapply(CV_barents_0, function(x) x$vec_logpY)))
+p=ncol(countsBar)
+(do.call(rbind,lapply(CV_barents_0, function(x) mean(x$vec_logpY))))
+(do.call(rbind,lapply(1:10, function(x){
+  VEMfit=readRDS(paste0("/Users/raphaellemomal/simulations/Barents_missing/VEMfit_r1_bloc",x,".rds"))
+  sd(VEMfit$M[,31])
+  })))
+
 #-- figure
-g=get_plot(list(CV_barents_0,CV_barents_1))[[2]]+
+g=get_plot(list(CV_barents_1,CV_barents_2,CV_barents_3))[[2]]+
   labs(title="Barents selection model with pairwise composite likelihood")
 ggsave(plot=g,filename = "selecR_Barents.png", path =  "/Users/raphaellemomal/these/R/images",
        width=5, height=3 )
 
-
+dataFat=get_plot(list(CV_fatala_0,CV_fatala_1,CV_fatala_2,CV_fatala_3))[[3]] %>% mutate(dat="Fatala")
+dataBar=get_plot(list(CV_barents_0,CV_barents_1,CV_barents_2,CV_barents_3))[[3]] %>% mutate(dat="Barents")
+rbind(dataFat, dataBar) %>% 
+  ggplot(aes(r, mean.PCL))+geom_point()+geom_line()+facet_wrap(~dat, scales="free")+
+  labs(y="PCL")+mytheme.dark("")
