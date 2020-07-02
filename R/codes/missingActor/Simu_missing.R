@@ -53,7 +53,7 @@ Simu_missing<-function(p,B,N,n,cores,r, maxIter, eps){
     #--- init oracle
     clique=list()
     clique$cliqueList=list(list(trueClique))
-if(N==2) browser()
+if(seed==22) browser()
     ListVEM<-List.VEM(cliquesObj =clique, counts, cov2cor(sigma_obs), MO,SO,r=1,alpha=0.1,
                       eps=eps,maxIter=maxIter, cores=3, trackJ = FALSE)
     

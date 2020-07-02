@@ -64,6 +64,7 @@ vecJ=do.call(rbind, lapply(ListVEM_all_nofiltre_spca200, function(vem){
 }))
 VEM_spca_200=ListVEM_all_nofiltre_spca200[[which.max(vecJ)]]
  
+mean(do.call(rbind,lapply(ListVEM_all_nofiltre_spca200, function(vem){vem$time})))
 
 init=initVEM(counts = counts,initviasigma=clique$cliqueList[[7]], cov2cor(sigma_obs),MO,r = 1) 
 Wginit= init$Wginit; Winit= init$Winit; upsinit=init$upsinit ; MHinit=init$MHinit

@@ -2,7 +2,7 @@
 AllJcor = data.frame(Jcor=numeric(), diff=numeric(), detEg=numeric(), sumP=numeric(), auc=numeric(), ppvh=numeric(), tprh=numeric(), seed=numeric())
 N=403
 simus=lapply(1:N, function(seed){
-  file= paste0("/Users/raphaellemomal/simulations/15nodes_V4_oracle/SF_seed",seed,".rds")
+  file= paste0("/Users/raphaellemomal/simulations/15nodes_V5_oracle/SF_seed",seed,".rds")
   simu=readRDS(file)
   #G=simu$G
   # diff=do.call(rbind,lapply(simu$ListVEM, function(vem){
@@ -50,7 +50,7 @@ for(i in 1:N){
   }
  
 saveRDS(AllJcor, "/Users/raphaellemomal/these/R/codes/missingActor/SimResults/AllJcor_14.rds")
-saveRDS(simus, "/Users/raphaellemomal/these/R/codes/missingActor/SimResults/simus_V4_oracle.rds")
+saveRDS(simus, "/Users/raphaellemomal/these/R/codes/missingActor/SimResults/simus_V5_oracle.rds")
 simus=readRDS("/Users/raphaellemomal/these/R/codes/missingActor/SimResults/simus_V2_216.rds")
 which(do.call(rbind, lapply(simus, function(seed){
   length(seed)

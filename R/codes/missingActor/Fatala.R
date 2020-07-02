@@ -99,7 +99,10 @@ resVEM<- VEMtree(counts,MO,SO,MH=MHinit,upsinit,Winit,Wginit, eps=1e-2, alpha=0.
 ggimage(resVEM$Pg)
 #---------------
 r=2
+p=33
 H=(p+1):(p+r)
+sum(VEM_fatala_200$Pg[,H[1]])
+VEM_fatala_200$Pg[,H[2]]
 MH=VEM_fatala_200$M[,H]
 data=MH %>% as_tibble() %>% mutate(Site=baran95$plan$site, date=baran95$plan$date,
                               Season=unlist(purrr::map(date, function(x){

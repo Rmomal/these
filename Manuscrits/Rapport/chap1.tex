@@ -1,8 +1,8 @@
 %network inference in ecology
  \section{Graphical Models}
- 
+ A graphical model is a probabilistic model which conditional dependence structure is given by a graph.
  \subsection{Definitions}
- A graph is defined as a pair $\G=(V,E)$ such that $V$ is a finite set of vertices, and the set of edges $E$ is a subset of $V\times V$ such that vertices are not linked to themselves and there are no multiple edges between two vertices. In the litterature, $V$ can be composed of both quantitative and qualitative variables. However here we  only use quantitative variables and so $V$ is called pure. The following definitions are adapted from \citet{Lau96}.
+ A graph is defined as a pair $\G=(V,E)$ such that $V$ is a finite set of vertices, and the set of edges $E$ is a subset of $V\times V$ such that vertices are not linked to themselves and there are no multiple edges between two vertices. In the literature, $V$ can be composed of both quantitative and qualitative variables. However here we  only use quantitative variables and so $V$ is called pure. The following definitions are adapted from \citet{Lau96}.
  \begin{definition}[Subgraphs]
  Let $A$ be a subset of the vertex set $V$. Then the subgraph $\G_A$ is obtained from $\G$ by keeping edges with both endpoints in $A$.
  \end{definition}
@@ -10,7 +10,9 @@
  \begin{definition}[Cliques and complete subsets]
  A subset of a graph is complete if all the vertices it contains are linked. A complete subset of maximal size is called a clique.
  \end{definition}
- 
+  \begin{definition}[separation]
+  Let A,B and S be disjoint subset of V. S is said to separate A from B if any path from A to B intersects S.
+  \end{definition}
  \begin{definition}[proper decomposition]
  A triple $(A, B, C)$ of disjoint subsets of the pure vertex set $V$ of an undirected graph $\G$ form a decomposition of $\G$ if $V=A\cup B \cup C$, and if $C$ verifies:
  \begin{enumerate}[label=(\roman*)]
@@ -26,7 +28,7 @@
  This recursive definition thus states that a decomposable graph can be successively decomposed into its cliques.
  
  \begin{definition}[perfect sequence]
- Let $B_1,...,B_k$ be a sequence of subsets of the pure set of vertex $V$ of the undirected graph $\G$. Let $H_j=B_1\cup .. \cup B_j$, $S_j = H_{j-1} \cap B_J$. The sequence is perfect if it satisfies the following conditions:
+ Let $B_1,...,B_k$ be a sequence of subsets of the pure set of vertex $V$ of the undirected graph $\G$. Let $H_j=B_1\cup .. \cup B_j$, and $S_j = H_{j-1} \cap B_J$. The sequence is perfect if it satisfies the following conditions:
  \begin{enumerate}[label=(\roman*)]
  \item for all $i>1$ there is a $j<i$ such that $S_i \subseteq B_j$ (running intersection property),
  \item each $S_i$ is a complete subset
@@ -37,18 +39,76 @@
 % A perfect numbering of the vertices $V$ of $\G$ is a numbering $\alpha_1,...,\alpha_k$ such that the sequence $B_1,...,B_k$ with 
 % $$B_j = cl(\alpha_j) \cap \{\alpha_1,...,\alpha_j\}, j\geq 1 $$ is a perfect sequence. This implies that each $B_j$ is a complete subset.
 % \end{definition}
+Note that the empty set can be included in the set of separators. An example where separators are complete but the sequence is not perfect is the following: consider the sequence $B=\big\{B_1=\{1,2\}, B_2=\{3,4\},B_3=\{2,3,5\}\big\}$. The separators are $S_2=\varnothing, S_3=\{2,3\}$. As $\{2,3\}$ is not a subset of any of the $B_i$, the running intersection property is violated and $B$ is not perfect.
  \begin{definition}[multiplicity of a separator]
  The multiplicity $\nu (S)$ of the separator $S$ is an index counting the number of times $S$ occurs in a perfect sequence.
  \end{definition}
- \citet{Lau96} further demonstrates that the set of cliques of an undirected decomposable graph can be numbered to form a perfect sequence. 
  
- \subsection{Characterization of conditional independance}
-\begin{itemize}
-\item conditional independance
-\item markov properties
-\item factorisation
-\item hamersay clifford : conclusion si on trouve une factorisation, on a un graphe
-\end{itemize}
+\begin{figure}[H]
+ \begin{center}
+	\begin{tikzpicture}	
+      \tikzstyle{every edge}=[-,>=stealth',shorten >=1pt,auto,thin,draw]
+		\node[basic, label=left:1] (A1) at (-0.2*\edgeunit,-0.7*\edgeunit) {};
+		\node[basic, label=left:2] (A2) at (0.1,0) {};
+		\node[basic, label=left:3] (A3) at (-0.2*\edgeunit,0.7*\edgeunit) {};
+		\node[basic, label=above:4] (A4) at (1*\edgeunit,0) {};
+		\node[basic, label=right:5] (A5) at (2.2*\edgeunit,0.7*\edgeunit) {};
+		\node[basic, label=right:6] (A6) at (1.9*\edgeunit,0) {};
+		\node[basic, label=right:7] (A7) at (2.2*\edgeunit,-0.7*\edgeunit) {};
+		\node[basic, label=right:8] (A8) at (1*\edgeunit,-1.2*\edgeunit) {};
+		\path (A1) edge  (A2)
+        (A2) edge [] (A4)
+        (A4) edge [] (A1)
+        (A2) edge [] (A3)
+        (A4) edge [] (A3)
+        (A4) edge [] (A5)
+        (A4) edge [] (A6)
+        (A5) edge [] (A6)
+        (A7) edge [] (A6)
+        (A4) edge [] (A7)
+        (A4) edge [] (A8);
+	\end{tikzpicture} 
+ \caption{An undirected decomposable graph with 8 variables}
+  \label{ex:graph}
+    \end{center}
+\end{figure}
+ Let's consider the graph of Figure \ref{ex:graph}. A perfect sequence of its cliques is 
+$C_1=\{1,2,4\}, C_2=\{2,3,4\}, C_3=\{4,5,6\}, C_4=\{4,6,7\}, C_5=\{4,8\}. $
+The corresponding separators are $S_2=\{2,4\}, S_3=S_5=\{4\}, S_4=\{4,6\},$
+which gives the following multiplicities: $\nu(\{2,4\})=1,  \nu(\{4,6\})=1, \nu(\{4\})=2$.  
+
+\begin{prop}
+An undirected graph $\G$ is decomposable if and only if the set of its cliques can form a perfect sequence
+\end{prop}
+
+This characterization of a decomposable graph is used to get the factorization property.
+ 
+\subsection{Characterization of conditional independence}
+The notion of conditional independence is central to understand graphical models. Let's consider random variables $X,Y$ and $Z$ with joint distribution $f$. The conditional independence of $X$ and $Y$ conditional on $Z$ is linked to the factorization of $f$. More precisely: 
+$$X \independent Y \mid Z \iff f(x,y,z) = f(x,z) \, f(y,z)/f(z). $$
+It is very useful to understand conditional independence in terms of information. That is, $X \independent Y \mid Z$ means that knowing $Z$, $Y$ will not bring any new information on $X$, and conversely.
+
+The Markov property below is the link between conditional independence of variables and its representation in an undirected graph. Let's consider a collection of random variables $(X_v)_{v\in V}$ taking values in probability spaces $(\mathcal{X}_v)_{v\in V}$, and $\mathcal{X}=\otimes_{v\in V} \mathcal{X}_v$. We further denote for any subset $A$ of $V$, $X_A=(X_v)_{v\in A}$, and $\G$ a graph with vertex set $V$. 
+
+\begin{definition}[Markov property]
+A probability measure P on $\mathcal{X}$ is \textit{global} Markov relative to the undirected graph $\G$ if for any triple $(A, B, S)$ of disjoint subset of $V$ such that:
+ $$ \text{S separates A from B } \Rightarrow X_A\independent X_B \mid X_S$$
+ If additionally $X_A\independent X_B \mid X_S \Rightarrow \text{S separates A from B}  $, then P is \textit{faithful} Markov and $\G$ perfectly describes the conditional dependence structure of P.
+\end{definition}
+\begin{definition}[Factorization]
+A probability measure P on $\mathcal{X}$ factorizes according to $\G$ if it has density $f$ with respect to measure $\mu = \otimes_{v\in V} \mu_v$, where $f$ can be written as
+$$f(x) = \prod_{c\in \mathcal{C} }\psi_c(x),$$
+where $\mathcal{C}$ denotes the set of cliques of $\G$, and far any subset $a$ of the vertex set $V$, $\psi_a$ is a positive function of realizations of $X_a$ only.
+\end{definition}
+
+\begin{prop}[Hammersley and Clifford]
+For any undirected graph $\G$ and probability distribution P with positive and continuous density $f$ with respect to a product measure $\mu$, it holds that:
+$$P\text{ factorizes according to } \G \iff P\text{ is global Markov relative to }\G $$
+\end{prop}
+
+ 
+ 
+ 
  
  \subsection{Gaussian Graphical Models}
   \begin{itemize}

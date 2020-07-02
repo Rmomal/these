@@ -80,16 +80,22 @@ run.method<-function(cliques,method,counts,sigma_obs,MO,SO, MHinit,ome,r, trueCl
     if(length(x)>5){
       auc=round(auc(pred = x$Pg, label = ome),4)
       h=(p+1):(p+r)
-      PPVH=accppvtpr(x$Pg,ome,h=h,seuil=0.5)[5]
-      TPRH=accppvtpr(x$Pg,ome,h=h,seuil=0.5)[8]
+      vec=accppvtpr(x$Pg,ome,h=h,seuil=0.5)
+      PPVH=vec[5]
+      TPRH=vec[8]
+      FPRH=vec[10]
+      FNRH=vec[11]
       J=  tail(x$lowbound$J,1)
-      res=c(auc=auc, PPVH=PPVH,TPRH=TPRH,J=J)
-    }else{ res=c(auc=NaN, PPVH=NaN, TPRH=NaN,J=NaN) }
+      res=c(auc=auc, PPVH=PPVH,TPRH=TPRH,FPRH=FPRH,FNRH=FNRH,J=J)
+    }else{ res=c(auc=NaN, PPVH=NaN, TPRH=NaN,FPRH=NaN,FNRH=NaN, J=NaN) }
     return(res)
   })))
   data=computeFPN(cliques, trueClique[[1]], p) %>% 
-    mutate(crit=FP+FN, crit.rank=rank(crit, ties.method = "min"), J=vec.perf$J, sizes=unlist(lapply(cliques, function(x) length(x[[1]]))),
-            auc=vec.perf$auc, PPVH=vec.perf$PPVH, TPRH=vec.perf$TPRH, nbinit=length(cliques),method=c(method))
+    mutate(crit=FP+FN, crit.rank=rank(crit, ties.method = "min"), J=vec.perf$J, 
+           sizes=unlist(lapply(cliques, function(x) length(x[[1]]))),
+            auc=vec.perf$auc, PPVH=vec.perf$PPVH, TPRH=vec.perf$TPRH, 
+           FPRH=vec.perf$FPRH, FNRH=vec.perf$FNRH,
+           nbinit=length(cliques),method=c(method))
   # best=which.max(vec.perf$J)
   # choice=data[best,]
   
@@ -116,42 +122,42 @@ SelectInitClique<-function(seed, B, n=200, p=14, r=1){
   #true perfs
   vem=run.VEM(clique = trueClique ,counts=counts, sigma_obs, MO=MO, SO=SO,r=r)
   if(length(vem)>5){
+    vec=accppvtpr(vem$Pg,ome,h=h,seuil=0.5)
     oracle.perf<-data.frame(auc=round(auc(pred =vem$Pg, label = ome),4),
-                            PPVH=accppvtpr(vem$Pg,ome,h=h,seuil=0.5)[5],
-                            TPRH=accppvtpr(vem$Pg,ome,h=h,seuil=0.5)[8],
+                            PPVH=vec[5],  TPRH=vec[8], FPRH=vec[10],FNRH=vec[11],
                             J= tail(vem$lowbound$J,1))
   }else{oracle.perf<-data.frame(auc=NaN,
-                                PPVH=NaN,TPRH=NaN,
+                                PPVH=NaN,TPRH=NaN,FPRH=NaN,FNRH=NaN,
                                 J= NaN)}
 
 
   #=== MCLUST
-  cat(paste0("\n ------ MCLUST ------ \n"))
-  cliques_mclust<-mclust.init(sigma_obs, trueClique[[1]],B, n)
-  goodinit=which(do.call(rbind , lapply(cliques_mclust, function(x) length(x[[1]])))>1)
-  cliques_mclust2=cliques_mclust[goodinit]
-  cat(paste0("   Fitting ",length(cliques_mclust2)," VEM..."))
-  vem_mclust=mclapply(cliques_mclust2, function(init){
-    run.VEM(clique = (init),counts=counts,sigma_obs, MO=MO, SO=SO, r=r)
-  }, mc.cores=3)
-
-  vec.perf<-data.frame(t(sapply(vem_mclust, function(x){
-    if(length(x)>5){
-      auc=round(auc(pred = x$Pg, label = ome),4)
-      h=(p+1):(p+r)
-      PPVH=accppvtpr(x$Pg,ome,h=h,seuil=0.5)[5]
-      TPRH=accppvtpr(x$Pg,ome,h=h,seuil=0.5)[8]
-      J=tail(x$lowbound$J,1)
-      res=c(auc=auc,PPVH= PPVH,TPRH= TPRH,J=J)
-    }else{ res=c(auc=NaN,PPVH=NaN,TPRH= NaN,J=NaN)}
-    return(res)
-  })))
-
-  FPN_mclust<-computeFPN(cliques_mclust2, trueClique[[1]], p)
-  mclust.choice=FPN_mclust %>% mutate(crit=FP+FN, crit.rank=rank(crit, ties.method = "min"),
-                             J=vec.perf$J,sizes=unlist(lapply(cliques_mclust2, function(x) length(x[[1]]))),
-                             auc=vec.perf$auc, PPVH=vec.perf$PPVH,TPRH=vec.perf$TPRH,
-                             nbinit=length(cliques_mclust2),  method="mclust")
+  # cat(paste0("\n ------ MCLUST ------ \n"))
+  # cliques_mclust<-mclust.init(sigma_obs, trueClique[[1]],B, n)
+  # goodinit=which(do.call(rbind , lapply(cliques_mclust, function(x) length(x[[1]])))>1)
+  # cliques_mclust2=cliques_mclust[goodinit]
+  # cat(paste0("   Fitting ",length(cliques_mclust2)," VEM..."))
+  # vem_mclust=mclapply(cliques_mclust2, function(init){
+  #   run.VEM(clique = (init),counts=counts,sigma_obs, MO=MO, SO=SO, r=r)
+  # }, mc.cores=3)
+  # 
+  # vec.perf<-data.frame(t(sapply(vem_mclust, function(x){
+  #   if(length(x)>5){
+  #     auc=round(auc(pred = x$Pg, label = ome),4)
+  #     h=(p+1):(p+r)
+  #     PPVH=accppvtpr(x$Pg,ome,h=h,seuil=0.5)[5]
+  #     TPRH=accppvtpr(x$Pg,ome,h=h,seuil=0.5)[8]
+  #     J=tail(x$lowbound$J,1)
+  #     res=c(auc=auc,PPVH= PPVH,TPRH= TPRH,J=J)
+  #   }else{ res=c(auc=NaN,PPVH=NaN,TPRH= NaN,J=NaN)}
+  #   return(res)
+  # })))
+  # 
+  # FPN_mclust<-computeFPN(cliques_mclust2, trueClique[[1]], p)
+  # mclust.choice=FPN_mclust %>% mutate(crit=FP+FN, crit.rank=rank(crit, ties.method = "min"),
+  #                            J=vec.perf$J,sizes=unlist(lapply(cliques_mclust2, function(x) length(x[[1]]))),
+  #                            auc=vec.perf$auc, PPVH=vec.perf$PPVH,TPRH=vec.perf$TPRH,
+  #                            nbinit=length(cliques_mclust2),  method="mclust")
   # mclust.choice<-data[which.max(data$J),-c(3, 4)]
   # mclust.choice$method="mclust"
   # data3<-data %>% filter(sizes>2) %>% dplyr::select(-crit, -crit.rank)
@@ -163,12 +169,12 @@ SelectInitClique<-function(seed, B, n=200, p=14, r=1){
   # }
 
   #=== sPCA
-  cat(paste0("\n ------ sPCA ------ \n"))
-  cat(paste0("\n bootstrap \n"))
-  cliques_boot_spca <- boot_FitSparsePCA(scale(MO),B,r=r,minV = 1)$cliqueList
-  cat(paste0("   Fitting ",length(cliques_boot_spca)," VEM..."))
-  boot.spca.choice=run.method(cliques_boot_spca,"boot.sPCA",counts,sigma_obs,MO,SO,MHinit,
-                              ome,r,trueClique )
+  # cat(paste0("\n ------ sPCA ------ \n"))
+  # cat(paste0("\n bootstrap \n"))
+  # cliques_boot_spca <- boot_FitSparsePCA(scale(MO),B,r=r,minV = 1)$cliqueList
+  # cat(paste0("   Fitting ",length(cliques_boot_spca)," VEM..."))
+  # boot.spca.choice=run.method(cliques_boot_spca,"boot.sPCA",counts,sigma_obs,MO,SO,MHinit,
+  #                             ome,r,trueClique )
 
   #---
   cat(paste0("\n two axes sPCA \n"))
@@ -180,23 +186,23 @@ SelectInitClique<-function(seed, B, n=200, p=14, r=1){
                          trueClique )
 
   #=== varClust
-  cat(paste0("\n ------ VarClust ------ \n"))
-  cliques_varclust<-varClust.init(sigma_obs)
-  cat(paste0("   Fitting ",length(cliques_varclust)," VEM..."))
-  varclust.choice<-run.method(cliques_varclust,"VarClust",counts,sigma_obs,MO,SO,MHinit,
-                              ome,r,trueClique )
-
-  #---
-  #=== Blockmodels
-  cat(paste0("\n ------ BlockModels ------ \n"))
-  cliques_bm<-tryCatch({init_blockmodels(k=3, counts, sigma_obs, MO, SO)$cliqueList},
-                       error=function(e){e},finally={})  
-  #if(typeof(cliques_bm[[1]])!="character"){
-    goodinit=which(do.call(rbind , lapply(cliques_bm, function(x) length(x[[1]])))>1)
-    cliques_bm2=cliques_bm[goodinit]
-    cat(paste0("   Fitting ",length(cliques_bm2)," VEM..."))
-    bm.choice<-run.method(cliques_bm2,"BM",counts,sigma_obs,MO,SO,MHinit,ome,r,
-                          trueClique )
+  # cat(paste0("\n ------ VarClust ------ \n"))
+  # cliques_varclust<-varClust.init(sigma_obs)
+  # cat(paste0("   Fitting ",length(cliques_varclust)," VEM..."))
+  # varclust.choice<-run.method(cliques_varclust,"VarClust",counts,sigma_obs,MO,SO,MHinit,
+  #                             ome,r,trueClique )
+  # 
+  # #---
+  # #=== Blockmodels
+  # cat(paste0("\n ------ BlockModels ------ \n"))
+  # cliques_bm<-tryCatch({init_blockmodels(k=3, counts, sigma_obs, MO, SO)$cliqueList},
+  #                      error=function(e){e},finally={})  
+  # #if(typeof(cliques_bm[[1]])!="character"){
+  #   goodinit=which(do.call(rbind , lapply(cliques_bm, function(x) length(x[[1]])))>1)
+  #   cliques_bm2=cliques_bm[goodinit]
+  #   cat(paste0("   Fitting ",length(cliques_bm2)," VEM..."))
+  #   bm.choice<-run.method(cliques_bm2,"BM",counts,sigma_obs,MO,SO,MHinit,ome,r,
+  #                         trueClique )
   # }else{
   #   bm.choice<- data.frame(FP=NaN,FN=NaN, J=NaN,sizes=NaN, 
   #                          auc=NaN,PPVH=NaN,nbinit=NaN,  method="BM")
@@ -204,24 +210,29 @@ SelectInitClique<-function(seed, B, n=200, p=14, r=1){
   
   
   #---
-  choices<-rbind(boot.spca.choice,spca.choice,bm.choice, mclust.choice , varclust.choice,
-                 data.frame(FP=0,FN=0,crit=0, crit.rank=1, J=oracle.perf$J,sizes=length(trueClique[[1]]), 
-                            auc=oracle.perf$auc,PPVH=oracle.perf$PPVH,TPRH=oracle.perf$TPRH,nbinit=1,  method="Oracle"))
+  # choices<-rbind(boot.spca.choice,spca.choice,bm.choice, mclust.choice , varclust.choice,
+  #                data.frame(FP=0,FN=0,crit=0, crit.rank=1, J=oracle.perf$J,sizes=length(trueClique[[1]]), 
+  #                           auc=oracle.perf$auc,PPVH=oracle.perf$PPVH,TPRH=oracle.perf$TPRH,nbinit=1,  method="Oracle"))
+  choices<-rbind(spca.choice, data.frame(FP=0,FN=0,crit=0, crit.rank=1, 
+                                         J=oracle.perf$J,sizes=length(trueClique[[1]]),
+                                         auc=oracle.perf$auc,PPVH=oracle.perf$PPVH,
+                                         TPRH=oracle.perf$TPRH,FPRH=oracle.perf$FPRH,
+                                         FNRH=oracle.perf$FNRH,nbinit=1,  method="Oracle"))
   choices$seed=seed
   t2<-Sys.time()
   runtime=difftime(t2, t1)
-  saveRDS(choices, paste0("/Users/raphaellemomal/simulations/selecInit/choices_seed",seed,".rds"))
+  saveRDS(choices, paste0("/Users/raphaellemomal/simulations/selecInit/sPCA_choices_seed",seed,".rds"))
   cat(paste0("\nseed ", seed," in ",round(runtime,3), attr(runtime, "units"),"\n"))
   return(list(choice=choices))
 }
 
-seed=101:200
+seed=1:200
 t1<-Sys.time()
 res2<-lapply(seed, function(x){ SelectInitClique(x, B=100)})
 t2<-Sys.time()
 difftime(t2, t1)
 
-saveRDS(object = res2, file = "/Users/raphaellemomal/simulations/Simu/selectInit_V2_p2.rds" )
+saveRDS(object = res2, file = "/Users/raphaellemomal/simulations/Simu/selecInit_sPCA.rds" )
 # rank.size<-unlist(lapply(res, function(x){rank(x$perf$clique.size)}))
 # rank.crit<-unlist(lapply(res, function(x){ x$perf$crit.rank}))
 # plot(rank.crit, rank.size)

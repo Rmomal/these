@@ -70,11 +70,11 @@ Qual1=Qual1 %>% mutate(nH =nH, influence=unlist(purrr::map(nH, function(x){
   if(x>7) res="Major"
   return(res)}))) 
 Qual1=Qual1[1:300,]
-g=Qual1  %>%dplyr::select(-tmp) %>%  rename(TPRH=tprh, AUC=auc, PPVH=ppvh) %>%  gather(key, value, -nH,  -influence) %>% 
+g=Qual1  %>%dplyr::select(-tmp) %>%  rename(Recall=tprh, AUC=auc, Precision=ppvh) %>%  gather(key, value, -nH,  -influence) %>% 
   ggplot(aes(value, fct_rev(key), color=key, fill=key))+geom_density_ridges(alpha=0.5)+
   facet_grid(~as.factor(influence))+
-  scale_fill_manual(breaks = c("AUC", "PPVH", "TPRH","Cor."),  values=pal)+
-  scale_color_manual(breaks =c("AUC", "PPVH", "TPRH","Cor."),  values=pal)+
+  scale_fill_manual(breaks = c("AUC", "Precision", "Recall","Cor."),  values=pal)+
+  scale_color_manual(breaks =c("AUC", "Precision", "Recall","Cor."),  values=pal)+
   labs(x="", y="" )+guides(color=FALSE, fill=FALSE)+
   theme_light()+ theme(strip.background=element_rect(fill="gray50",colour ="gray50"),
                        strip.text = element_text(size=12))

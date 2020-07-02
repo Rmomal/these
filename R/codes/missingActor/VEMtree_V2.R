@@ -18,7 +18,7 @@ source("/Users/raphaellemomal/these/R/codes/missingActor/modif_pkg.R")
 source("/Users/raphaellemomal/these/R/codes/missingActor/VEM_tools.R")
 
 #-- data simulation
-set.seed(89) # n voisins de 35  73  89 120 162 206 342 367 395
+set.seed(22) # n voisins de 35  73  89 120 162 206 342 367 395
 n=200 ;p=14;r=1;type="scale-free";plot=TRUE
 O=1:p
 missing_data<-missing_from_scratch(n,p,r,type,plot)
@@ -42,7 +42,6 @@ MO=MO*matsig
 SO=SO*matsig^2
  
 #-- VEM initialisation
-tic()
 init=initVEM(counts = counts,initviasigma=NULL, cov2cor(sigma_obs),MO,r = 0) 
 Wginit= init$Wginit; Winit= init$Winit; upsinit=init$upsinit ; MHinit=init$MHinit
 

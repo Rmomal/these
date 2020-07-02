@@ -137,14 +137,27 @@ data2 %>% dplyr::select(influence, method, TPRH) %>% spread(method, TPRH)%>% kab
 # Proximity and global performance {.tabset}
 
 FN seems to control all performances.
+```{r}
+quality=quality %>% mutate(initFN = FN*nH, initTP = nH-trueFN, initFP = (trueFN*FP)/(1-FP),
+                   PPVHinit=initTP/(initTP+initFP), TPRHinit = initTP/nH)
+```
 
 ## PPVH
 ```{r}
-quality %>% filter(method!="Oracle", !is.na(PPVH)) %>% group_by(influence,method,  FP,FN) %>%  mutate(n=n()) %>% ungroup() %>% group_by(influence,method ) %>% 
-  mutate(ntot=n(),prop=n/ntot) %>% 
-  ggplot(aes(FP,FN,color=PPVH, size=prop))+geom_point() +
-  facet_grid(method~influence) +mytheme.bg
 
+g=quality %>% filter(method!="Oracle", !is.na(PPVH), method=="sPCA") %>% group_by(influence,  PPVHinit,TPRHinit) %>%  mutate(n=n()) %>% ungroup() %>% group_by(influence ) %>% 
+  mutate(ntot=n(),prop=n/ntot) %>% dplyr::select(prop,PPVH,TPRH, PPVHinit, TPRHinit, influence) %>% 
+  gather(key, value, -prop, -PPVHinit,-TPRHinit,-influence) %>% 
+  ggplot(aes(PPVHinit,TPRHinit,color=value, size=prop))+geom_point() +
+  facet_grid(key~influence) +mytheme.bg
+
+g=quality %>% filter(method!="Oracle", !is.na(PPVH), method=="sPCA") %>% group_by(influence,  FN, FP) %>%  mutate(n=n()) %>% ungroup() %>% group_by(influence ) %>% 
+  mutate(ntot=n(),prop=n/ntot) %>% dplyr::select(prop,PPVH,TPRH, FN, FP, influence) %>% 
+  gather(key, value, -prop, -FN,-FP,-influence) %>% 
+  ggplot(aes(FP,1-FN,color=value, size=prop))+geom_point() +
+  facet_grid(key~influence) +mytheme.bg+labs(x="initial FPR", y="initial TPRH")
+ggsave(plot=g,filename = "quali_init2.png", path =  "/Users/raphaellemomal/these/R/images",
+       width=7, height=5 )
 ```
  
 

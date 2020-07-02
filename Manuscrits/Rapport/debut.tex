@@ -36,7 +36,7 @@
 
 
 % Functions
-\def\independenT#1#2{\mathrel{\rlap{$#1#2$}\mkern2mu{#1#2}}}
+\def\independenT#1#2{\mathrel{\rlap{$#1 #2$}\mkern2mu{#1 #2}}}
 \DeclareMathOperator*{\argmax}{arg\,max}
 \DeclareMathOperator*{\Esp}{\mathbb{E}}
 \DeclareMathOperator*{\Var}{\mathbb{V}}
@@ -96,16 +96,17 @@
 \newcommand\et{\widetilde{\mathds{E}}}
 \newcommand\e{{\mathds{E}}}
 % TikZ
-\newcommand{\nodesize}{1em}
-\newcommand{\edgeunit}{4*\nodesize}
+\newcommand{\nodesize}{0.4em}
+\newcommand{\edgeunit}{6*\nodesize}
 \tikzstyle{covariate}=[draw, rectangle, minimum width=\nodesize, minimum height=\nodesize, inner sep=0, color=black]
 \tikzstyle{covmiss}=[draw, minimum width=\nodesize, minimum height=\nodesize, inner sep=0, color=gray, text=gray]
 \tikzstyle{observed}=[draw, circle, minimum width=\nodesize, inner sep=0, color=black]
 \tikzstyle{edge}=[-, line width=1pt, color=black]
 \tikzstyle{edgemiss}=[-, line width=1pt, dashed, color=gray]
+\tikzstyle{basic}=[draw, circle, minimum width=\nodesize, inner sep=0, color=black, fill=black]
 
 \newtheorem{theorem}{Theorem}[chapter]
-%\newtheorem{prop}[theo]{Proposition}
+\newtheorem{prop}[theorem]{Proposition}
 %\newtheorem{corollary}[theo]{Corollary}
 \newtheorem{lemma}[theorem]{Lemma}
 \newtheorem{definition}{Definition}[chapter]

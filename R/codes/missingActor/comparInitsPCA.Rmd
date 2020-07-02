@@ -1,0 +1,67 @@
+---
+title: "sPCA : init vs final"
+output: 
+  html_document: 
+    theme: cosmo
+    toc: yes
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message=FALSE)
+library(tidyverse)
+library(kableExtra)
+mytheme.dark <-function(legend){
+  list= list(theme_light(), scale_color_brewer(legend,palette="Dark2"), 
+             scale_fill_brewer(legend,palette="Dark2"), 
+             theme(strip.background=element_rect(fill="gray50",colour ="gray50"),
+                   plot.title = element_text(hjust = 0.5)))
+  return(list)}
+mytheme.bg <- function(legend){list(theme_light(), 
+                                    theme(strip.background=element_rect(fill="gray50",colour ="gray50"),
+                                          plot.title = element_text(hjust = 0.5)),
+                                    scale_colour_gradient2(legend, low ="#008080",
+                                                          mid = "#FA7E1E",
+                                                          high = "#D62976",
+                                                          space = "Lab",midpoint = 0.5,
+                                                          na.value = "grey50",
+                                                          guide = "colourbar",
+                                                          aesthetics = "colour"
+                                    )) }
+
+#viridis inferno
+mytheme.viridis <- function(legend){list(theme_light(), 
+                                    theme(strip.background=element_rect(fill="gray50",colour ="gray50"),
+                                          plot.title = element_text(hjust = 0.5)),
+                                    scale_colour_viridis(legend,option="D", end=0.9, begin=0.1)) }
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+res<-readRDS("/Users/raphaellemomal/simulations/Simu/selecInit_sPCA.rds")
+quality<-do.call(rbind,lapply(res, function(x){x$choice})) %>% as_tibble()
+# creating influence covariate
+id_sizes<-quality %>% filter(method=="Oracle") %>% dplyr::select(seed, sizes) %>% rename(nH=sizes) %>%  mutate( influence=unlist(purrr::map(nH, function(x){
+  if(x<=5) res="Minor"
+  if(x>5 & x<=7) res="Medium"
+  if(x>7) res="Major"
+  return(res)})))
+quality=left_join(quality, id_sizes, by="seed") 
+
+```
+
+```{r}
+g=quality %>% filter(method!="Oracle", !is.na(PPVH)) %>% group_by(influence,  FN, FP) %>%  mutate(n=n()) %>% ungroup() %>% group_by(influence ) %>% 
+  mutate(ntot=n(),prop=n/ntot) %>% dplyr::select(prop,FPRH,FNRH, FN, FP, influence) %>% 
+  rename(`FPR -f`=FPRH, `FNR -f`=FNRH) %>% 
+  gather(key, value, -prop, -FN,-FP,-influence) %>% 
+  ggplot(aes(FP,FN,color=value, size=prop))+geom_point() +
+  facet_grid(key~influence) +mytheme.viridis("Final \nmeasures:\n")+labs(x="FPR -i", y="FNR -i")+guides(size=FALSE)
+ggsave(plot=g,filename = "quali_init_spca.png", path =  "/Users/raphaellemomal/these/R/images",
+       width=7, height=5 )
+```
+

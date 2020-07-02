@@ -16,8 +16,12 @@ accppvtpr<-function(probs,omega,h, seuil=0.5){
   TPR=round(sum((omega!=0)*(probs>seuil))/sum(omega!=0), 2)
   TPRH=round(sum((omega[h,]!=0)*(probs[h,]>seuil))/sum(omega[h,]!=0), 2)
   TPRO=round(sum((omega[-h,-h]!=0)*(probs[-h,-h]>seuil))/sum(omega[-h,-h]!=0), 2)
-  
-  return(c(Acc,AccH,AccO,PPV,PPVH,PPVO,TPR,TPRH,TPRO))
+  P=(omega[h,]!=0) ; N=(omega[h,]==0)
+  FP=sum((probs[h,]>seuil)*(omega[h,]==0))
+  TN=sum((probs[h,]<seuil)*(omega[h,]==0))
+  FPRH=FP/(FP+TN)
+  FNRH=1-TPRH
+  return(c(Acc,AccH,AccO,PPV,PPVH,PPVO,TPR,TPRH,TPRO,FPRH,FNRH))
 }
 courbes_seuil<-function(probs,omega,h,seq_seuil){
   tmp=sapply(seq_seuil,function(x)  accppvtpr(seuil=x,probs=probs,omega=omega,h=h))
@@ -39,6 +43,15 @@ computeFPN<-function(cliqueList, trueClique,p){
   FN=unlist(lapply(cliqueList, function(init){init=init[[1]]
     sum(setdiff(1:p,init)%in%trueClique)/length(trueClique)}))
   return(data.frame(FP=FP, FN=FN))
+}
+compute_TPPV<-function(cliqueList, trueClique,p){
+  N=setdiff(1:p,trueClique)
+  TP= sum(init%in%trueClique)
+  FN= sum(setdiff(1:p,init)%in%trueClique)
+  FP= sum(init%in%N)
+  TPR = TP/(TP+FN)
+  PPV=TP/(TP+FP)
+  return(data.frame(TPRH=TPR, PPVH=PPV))
 }
 ################
 # graphics
