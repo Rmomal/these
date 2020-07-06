@@ -34,7 +34,7 @@
 %%block
 \usepackage{multirow}
 
-
+\setlength\parindent{0pt}
 % Functions
 \def\independenT#1#2{\mathrel{\rlap{$#1 #2$}\mkern2mu{#1 #2}}}
 \DeclareMathOperator*{\argmax}{arg\,max}
@@ -53,7 +53,19 @@
 \newcommand{\remove}[1]{\textcolor{gray}{#1}}
 \newcommand\independent{\protect\mathpalette{\protect\independenT}{\perp}}
 \newcommand{\STAB}[1]{\begin{tabular}{@{}c@{}}#1\end{tabular}}
-
+\newcommand*\xbar[1]{%
+   \hbox{%
+     \vbox{%
+       \hrule height 0.5pt % The actual bar
+       \kern0.5ex%         % Distance between bar and symbol
+       \hbox{%
+         \kern-0.1em%      % Shortening on the left side
+         \ensuremath{#1}%
+         \kern-0.1em%      % Shortening on the right side
+       }%
+     }%
+   }%
+} 
 
 
 % Notations pairs
@@ -80,6 +92,7 @@
 \newcommand\Hb{{\bf H}}
 \newcommand\Mbf{{\bf M}}
 \newcommand\Qbf{{\bf Q}}
+\newcommand\Abf{{\bf A}}
 \newcommand\Wbf{{\bf W}}
 \newcommand\Mb{{\bf M}}
 \newcommand\Qb{{\bf Q}}
