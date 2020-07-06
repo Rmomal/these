@@ -232,18 +232,30 @@ $$\mathds{P}\{kl\in T\} = \sum_{T\in \mathcal{T}} p_{\Wbf}(T).$$
 $$\mathds{P}\{kl\in T\} =  w_{kl}\: \Mbf_{kl}$$
 \end{lemma}
 The Lemma above states that it is possible to compute all edges probabilities at the same time at the cost of the inversion of the weights matrix Laplacian.
-  \section{Incomplete data inference}
-  here different type of data that are incomplete: counts, gaussian latent variables, trees (discrete )
-  partie sur modèles à variables latentes ?
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Incomplete data inference}
 
  \subsection{Expectation-Maximization algorithm}
  
  \subsection{Variational version}
   
-\section{Statistical modeling for network inference}
+\section{Network inference from count data}
   inférence réseaux vs inférence des paramètres (on n'observe pas le réseau)
- \subsection{Modeling count data}
-PLN
- JSDM ?
-\subsection{State of the art}
- 
+  
+ \subsection{Linking count data to Gaussian data} 
+\subsubsection{Transformations}
+\begin{itemize}
+\item copulas
+\item clr : compositional data, loss of the variability
+\end{itemize}
+
+\subsubsection{Latent variables}
+\begin{itemize}
+\item JSDM : PLN
+\end{itemize}
+\subsection{Network inference from Gaussian data}
+ \subsubsection{Penalized estimation}
+ \subsubsection{Averaging on trees}
