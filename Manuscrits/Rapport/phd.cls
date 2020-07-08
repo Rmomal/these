@@ -88,7 +88,7 @@ contents={
 \begin{tikzpicture}[remember picture,overlay]
 \node[rotate=90,minimum width=\paperheight,minimum height=0.5cm,fill=gray!40,font=\large\bfseries,text=white,anchor=south west] at ($(current page.south east)$) {};
 \node[rotate=90,minimum width=1/\ChapNum*\paperheight,minimum height=0.5cm,fill=\BoxColor,font=\large\bfseries,text=white,anchor=south west] at ([yshift=(\ChapNum-(\thechapter))/\ChapNum*\paperheight]$(current page.south east)$) 
-{\ifthenelse{\equal{\thechapter}{4}}{Conclusion}{Chapter \thechapter}};
+{\ifthenelse{\equal{\thechapter}{4}}{Perspectives}{Chapter \thechapter}};
 %{\ifthenelse{\equal{\thechapter}{1}}{Introduction}{\ifthenelse{\equal{\thechapter}{4}}{Conclusion}{Chapter \thechapter}}};
 \end{tikzpicture}
 \else
@@ -136,6 +136,9 @@ contents={
 %\renewcommand{\cftsecfont}{\sffamily}
 %\renewcommand{\cftsubsecfont}{\sffamily}
 \renewcommand{\cfttoctitlefont}{\sffamily\Huge\bfseries}
+\renewcommand{\mtifont}{\sffamily\large\bfseries}
+%\renewcommand{\mtctitle}{}
+%\mtcsetrules{mini-table|*}{off}
 \contentsmargin[1cm]{0cm}
 \titlecontents{chapter}[0em]{\vskip12pt\bfseries\sffamily}
 {\thecontentslabel\enspace}
@@ -236,9 +239,12 @@ contents={
 			\interlinepenalty\@M
 		\Huge  \sffamily \scshape{\color{\BoxColor}{#1}}\par\nobreak
 		\vspace*{-10\p@}%
-		{\color{\BoxColor}\hrulefill}
 		\par\nobreak
 		\vskip 10\p@
+		\ifthenelse{\equal{\thechapter}{0}\or\equal{\thechapter}{6}}{}{ {\color{\BoxColor}\hrulefill}
+		\vspace{-0.2cm}
+		{\color{black}\minitoc} \vspace{-1cm}
+		{\color{\BoxColor}\hrulefill}}
 	}}
 %\def\@makeschapterhead#1{%
 %	\vspace*{-10\p@}%
@@ -535,12 +541,12 @@ contents={
 %%%%%%%%%%%%% Appendices après chaque chapitre %%%%%%%%%%%%%%%%
 % Start of subappendices environment
 \AtBeginEnvironment{subappendices}{%
-\chapter*{Appendices}
-\addcontentsline{toc}{chapter}{Appendices}
-\counterwithin{figure}{section}
-\counterwithin{table}{section}
+  \clearpage
+  \section*{Appendices}
+  \addcontentsline{toc}{section}{Appendices}
+  \counterwithin{figure}{section}
+  \counterwithin{table}{section}
 }
-
 % End of subappendices environment
 \AtEndEnvironment{subappendices}{%
 \counterwithout{figure}{section}
