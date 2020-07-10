@@ -241,7 +241,7 @@ contents={
 		\vspace*{-10\p@}%
 		\par\nobreak
 		\vskip 10\p@
-		\ifthenelse{\equal{\thechapter}{0}\or\equal{\thechapter}{6}}{}{ {\color{\BoxColor}\hrulefill}
+		\ifthenelse{\equal{\thechapter}{0}\or\equal{\thechapter}{5}}{}{ {\color{\BoxColor}\hrulefill}
 		\vspace{-0.2cm}
 		{\color{black}\minitoc} \vspace{-1cm}
 		{\color{\BoxColor}\hrulefill}}

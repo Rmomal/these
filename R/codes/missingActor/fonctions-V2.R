@@ -251,9 +251,9 @@ initVEM<-function(counts,initviasigma,sigma_obs,MO,r){
 }
 
 ## simulate data and parameters
-missing_from_scratch<-function(n,p,r,type,plot){
+missing_from_scratch<-function(n,p,r,type,plot, dens=2/p){
   #generate a graph and data Y and U
-  data=data_from_scratch(type = type,p = p+r,n = n,signed = FALSE,prob = 2/p,v = 0)
+  data=data_from_scratch(type = type,p = p+r,n = n,signed = FALSE,dens = dens,v = 0)
   omega=data$omega
   G=1*(omega!=0)
   

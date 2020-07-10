@@ -229,7 +229,7 @@ Theorem \ref{thmm:MTT} allows to easily sum over all possible spanning trees and
   
 \subsection{From count to Gaussian data} 
 \subsubsection{Transformations}
-Transforming count data (for example log-transform) to use analysis tools from the Gaussian world is generally a bad idea \citep{OK10}. However in some cases, the data present with some constraint from the experiment setting, which need to be accounted for.
+The first idea when transforming counts is to add a small constant to avoid zero-counts, (pseudo-counts) and then apply the $\log$ function. In some cases, the data present with some constraint from the experiment setting, which need to be accounted for.
 Typically, the sum of observed counts from a sample obtained with high throughput sequencing is the library size, which is a technical parameter from the machine used for the experiment. Each observed count depend on this constant; it can be accounted for by an offset or by considering the relative representation of counts \citet{GMP17}. The latter approach is quite popular, and recent works use the centered log-ratio transformation described in \citet{A82} to model raw data \citep{kurtz}, or the logistic normal distribution \citep{AS80} to model relative counts \citep{gcoda}.
 \subsubsection{Copulas}
 Copulas are  joint  distributions which map the marginal  cumulative distribution functions of a multivariate random vector. They are used to describe the dependence between random variables, and in particular for Gaussian copulas the correlation matrix can be estimated. In their original form, they only apply to continuous marginals, and their extension to discrete data has been controversial \citep{F17}. However recent development made the use of  Gaussian copula coupled with discrete marginal distributions possible \citep{PHW18}, opening the way to the application of copulas in the analysis of multivariate count data \citep{AVP19}. It's application seems very promising in the network inference framework \citep{PWT19}, even if the computation cost remains substantial as it requires  Monte Carlo expectation maximization algorithms.
@@ -239,8 +239,9 @@ Copulas are  joint  distributions which map the marginal  cumulative distributio
  
 \subsection{Network inference from Gaussian data}
  \subsubsection{Penalized estimation}
+ glasso: the graphical model is supposed to be fixed
  \subsubsection{Averaging on trees}
- 
+ Here the graphical model is considered to be random, and is a  parameter of a latent variable model.
 \begin{definition}[decomposable tree distribution]
 For any symmetric weight matrix $\Wbf$ with all positive entries, we denote $W$ the sum-product form defined in Theorem \ref{thmm:MTT} A decomposable  distribution for the tree $T$ is then defined as follows:
 $$p_{\Wbf}(T) = \prod_{k,\ell \in T} w_{k\ell} / W $$

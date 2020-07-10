@@ -22,7 +22,9 @@ generator_PLN<-function(Sigma,covariates=NULL, n=50){
   return(list(Y=Y, U=U))
 }
 generator_param<-function(G,signed=FALSE,v=0){
-  lambda = 1;  p=ncol(G);  sumlignes=rowSums(matrix(G,p,p));  D=diag(sumlignes+v)
+  lambda = 1;  p=ncol(G);  sumlignes=rowSums(matrix(G,p,p)); 
+  if(sum(sumlignes==0)!=0) sumlignes[sumlignes==0]=0.1
+  D=diag(sumlignes+v)
   if(signed){
     Gsign = F_Vec2Sym(F_Sym2Vec(G * matrix(2*rbinom(p^2, 1, .3)-1, p, p)))
     omega = lambda*D - Gsign
@@ -45,7 +47,7 @@ generator_param<-function(G,signed=FALSE,v=0){
 library(huge)
 library(Matrix)
 #qu'il se taise
-generator_graph<-function(p = 20, graph = "tree", prob = 0.1, dens=0.3, r=5){
+generator_graph<-function(p = 20, graph = "tree", dens=0.3, r=2){# prob = 0.1,
   theta = matrix(0, p, p)
   if (graph == "cluster") {
     theta<-SimCluster(p,3,dens,r)
@@ -58,13 +60,13 @@ generator_graph<-function(p = 20, graph = "tree", prob = 0.1, dens=0.3, r=5){
     theta<-SpannTree(p)
   }
   if(graph=="erdos"){
-    theta<- erdos(p=p,prob=prob)
+    theta<- erdos(p=p,prob=dens)
   }
   return(theta = Matrix(theta, sparse = TRUE))
 }
-data_from_scratch<-function(type, p=20,n=50, ratio=5, covariates=NULL, prob=log(p)/p,
-                            dens=log(p)/p, signed=FALSE,v=0,draw=FALSE){
-  graph<- generator_graph(graph=type,p=p,prob=prob,dens=dens,r=ratio)
+data_from_scratch<-function(type, p=20,n=50, ratio=10, covariates=NULL,
+                            dens=5/p, signed=FALSE,v=0,draw=FALSE){
+  graph<- generator_graph(graph=type,p=p,dens=dens,r=ratio)
   param<-generator_param(G=as.matrix(graph),signed=signed,v=v)
   data<-generator_PLN(param$sigma,covariates,n)
   Y=data$Y
@@ -124,4 +126,23 @@ computeAlpha<-function(omegainitO,default=0.6, MO, SO, plot=TRUE){
     print(g)
   }
   return(alpha)
+}
+
+
+SimCluster <- function(p, k, dens, r){
+  beta = dens / (r / k + (k - 1) / k)
+  alpha = r * beta
+  while (alpha > 1) {
+    r = .9 * r
+    beta = dens / (r / k + (k - 1) / k)
+    alpha = r * beta
+  }
+  Z = t(rmultinom(p, 1, rep(1 / k, k)))
+  groupe=Z%*%1:k
+  Z = Z %*% t(Z)
+  diag(Z) = 0
+  ZZ = F_Sym2Vec(Z)
+  G = F_Vec2Sym(rbinom(p * (p - 1) / 2, 1, alpha * ZZ + beta * (1 - ZZ)))
+  res=G
+  return(res)
 }

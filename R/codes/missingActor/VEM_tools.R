@@ -26,7 +26,7 @@ accppvtpr<-function(probs,omega,h, seuil=0.5){
 courbes_seuil<-function(probs,omega,h,seq_seuil){
   tmp=sapply(seq_seuil,function(x)  accppvtpr(seuil=x,probs=probs,omega=omega,h=h))
   res=data.frame(cbind(t(tmp),seq_seuil))
-  colnames(res)=c("Acc","AccH","AccO","PPV","PPVH","PPVO","TPR","TPRH","TPRO","seuil")
+  colnames(res)=c("Acc","AccH","AccO","PPV","PPVH","PPVO","TPR","TPRH","TPRO","FPRH","FNRH","seuil")
   return(as_tibble(res))
 }
 compute_nSNR<-function(K, indexmissing){
