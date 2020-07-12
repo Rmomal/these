@@ -18,7 +18,8 @@ library(parallel)
 sapply(c("erdos","cluster"), function(type){
   type=type
   sapply(1:2, function(numdens){
-    cat(paste0("Type ",type,", density ", numdens,"...\n"))
+    cat(paste0("Type ",type,", density ", numdens,"..."))
+    t1<-Sys.time()
     lapply(1:100, function(seed){
       file=paste0("/Users/raphaellemomal/simulations/compar_PLNnet_EM_VEM/simu_seed",seed,"_",type,"_dens",numdens,".rds")
       if(!file.exists(file)){
@@ -47,7 +48,7 @@ sapply(c("erdos","cluster"), function(type){
                           error=function(e){e}, finally={})
         
         # RUN PLNnetwork
-        network_models<-PLNnetwork(counts~1, control_init = list(nPenalties=100), control_main =list(trace=0))
+        network_models<-PLNnetwork(counts~1, control_init = list(nPenalties=200), control_main =list(trace=0, cores=2))
         PLNnet.path=lapply(network_models$penalties, function(pen){
           model_pen <- getModel(network_models, pen) 
           pen*(model_pen$latent_network(type="precision")!=0)  
@@ -62,6 +63,9 @@ sapply(c("erdos","cluster"), function(type){
                 file = paste0("/Users/raphaellemomal/simulations/compar_PLNnet_EM_VEM/simu_seed",seed,"_",type,"_dens",numdens,".rds"))
       } 
     })
+    t2<-Sys.time()
+    time=difftime(t2, t1)
+    cat(paste0(round(time,3), attr(time, "units"),"\n"))
   })
 })
 
@@ -146,6 +150,11 @@ pooled %>% as_tibble() %>%
   ggplot(aes(type, value,color=as.factor(numdens), fill=as.factor(numdens)))+
   geom_boxplot(width=0.4, notch = FALSE, alpha=0.6)+
   facet_grid(key~method)+mytheme.dark("")+labs(x="")
+pooled %>% as_tibble() %>%
+  mutate(method=factor(method, levels=c("PLNnetwork","EMtree","VEMtree"))) %>% 
+  ggplot(aes(type, AUC,color=as.factor(numdens), fill=as.factor(numdens)))+
+  geom_boxplot(width=0.4, notch = FALSE, alpha=0.6)+
+  facet_grid(~method)+mytheme.dark("")+labs(x="")
 
 pooled %>% as_tibble() %>% dplyr::select(-maxseuil, -minseuil) %>% 
   ggplot(aes(maxTPR, maxPPV, color=method))+
@@ -166,25 +175,26 @@ prec_rec=do.call(rbind,lapply(c("erdos","cluster"), function(type){
       if(length(listFit$VEM)>5){
         VEMprob=listFit$VEM$Pg
         G=listFit$G
-        values=rbind(seq_PPV_TPR(probs = PLNscores, omega=G) %>% mutate(method="PLNnetwork"),
-                     seq_PPV_TPR(probs = EMprob, omega=G) %>% mutate(method="EMtree"),
-                     seq_PPV_TPR(probs = VEMprob, omega=G) %>% mutate(method="VEMtree"))  %>%  mutate( seed=seed, numdens=numdens, type=type)
+        values=rbind(seq_PPV_TPR(probs = PLNscores, omega=G,seq_seuil=seq(0,max(PLNscores),max(PLNscores)/200)) %>% mutate(method="PLNnetwork"),
+                     seq_PPV_TPR(probs = EMprob, omega=G,seq_seuil=seq(0,max(EMprob),max(EMprob)/200)) %>% mutate(method="EMtree"),
+                     seq_PPV_TPR(probs = VEMprob, omega=G,seq_seuil=seq(0,max(VEMprob),max(VEMprob)/200)) %>% mutate(method="VEMtree"))  %>%  mutate( seed=seed, numdens=numdens, type=type)
         return(values)
       }}))
   }))
 }))  
-g1<-prec_rec %>% as_tibble() %>% filter(method=="PLNnetwork") %>% 
-  ggplot(aes(TPR, PPV, group=seed))+geom_hline(yintercept=0.5, linetype="dashed", color="gray")+geom_vline(xintercept=0.5, linetype="dashed", color="gray")+
-  geom_point(alpha=0.2, size=1)+labs(title="PLNnetwork")+
+g1<-prec_rec %>% as_tibble() %>% filter(method=="PLNnetwork") %>% group_by(type, numdens) %>% arrange(seuil, by_group=TRUE) %>% 
+  ggplot(aes(TPR, PPV))+geom_hline(yintercept=0.5, linetype="dashed", color="gray")+geom_vline(xintercept=0.5, linetype="dashed", color="gray")+
+  geom_point(alpha=0.2, size=1)+geom_line()+labs(title="PLNnetwork")+
   facet_grid(type~numdens)+mytheme.dark("")
-g2<-prec_rec %>% as_tibble() %>% filter(method=="EMtree") %>% 
-  ggplot(aes(TPR, PPV, group=seed))+geom_hline(yintercept=0.5, linetype="dashed", color="gray")+geom_vline(xintercept=0.5, linetype="dashed", color="gray")+
-  geom_point(alpha=0.2, size=1)+facet_grid(type~numdens)+mytheme.dark("")+labs(title="EMtree")
-g3<-prec_rec %>% as_tibble() %>% filter(method=="VEMtree") %>% 
-  ggplot(aes(TPR, PPV, group=seed))+geom_hline(yintercept=0.5, linetype="dashed", color="gray")+geom_vline(xintercept=0.5, linetype="dashed", color="gray")+
-  geom_point(alpha=0.2, size=1)+facet_grid(type~numdens)+mytheme.dark("")+labs(title="VEMtree")
+g2<-prec_rec %>% as_tibble() %>% filter(method=="EMtree") %>% group_by(type, numdens) %>% arrange(seuil, by_group=TRUE) %>% 
+  ggplot(aes(TPR, PPV))+geom_hline(yintercept=0.5, linetype="dashed", color="gray")+geom_vline(xintercept=0.5, linetype="dashed", color="gray")+
+  geom_point(alpha=0.2, size=1)+geom_line()+facet_grid(type~numdens)+mytheme.dark("")+labs(title="EMtree")
+g3<-prec_rec %>% as_tibble() %>% filter(method=="VEMtree")%>% group_by(type, numdens) %>% arrange(seuil, by_group=TRUE) %>% 
+  ggplot(aes(TPR, PPV))+geom_hline(yintercept=0.5, linetype="dashed", color="gray")+geom_vline(xintercept=0.5, linetype="dashed", color="gray")+
+  geom_point(alpha=0.2, size=1)+geom_line()+facet_grid(type~numdens)+mytheme.dark("")+labs(title="VEMtree")
 grid.arrange(g1, g2, g3, ncol=3)
 # pour PLNnetwork
 model_StARS <- getBestModel(network_models, "StARS")
 my_graph <- plot(model_StARS, plot = FALSE)
 ggimage(as.matrix(as_adj(my_graph)))
+test
