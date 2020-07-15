@@ -1,16 +1,16 @@
 
-This first chapter of this work details the technical background extracted from the literature which is used in the latter chapters. It begins by covering all the required notions of graphical models, with a technical focus on Gaussian graphical models and spanning tree structures. 
+This first chapter  details the technical background extracted from the literature which is used in the latter chapters. It begins by covering all the required notions of graphical models, with a technical focus on Gaussian graphical models and spanning tree structures. Then, a state of the art both of how to infer networks from abundance data both in genomics and in ecology is drawn. The last part details the Expectation-Maximization algorithm and in particular its variational interpretation. This chapter is meant to be independent from the rest of this work, and to this aim some properties are repeated later on.
  % y a des répétitions par soucis de complétude
  \section{Graphical Models}
- A graphical model is classically described as a probabilistic model which conditional dependence structure is given by a graph. This first section gives all necessary notions and definitions from scratch, and presents the general framework of graphical models, the special case of the multivariate Gaussian distribution (Gaussian Graphical Models), and the special case of spanning tree graphs. Except from the section on spanning trees, all that follows is from \citet{Lau96}. Definitions and properties are adapted to focus on undirected graphs, and continuous and positive densities.
+ A graphical model is classically described as a probabilistic model which conditional dependence structure is given by a graph. This first section gives all the necessary notions and definitions, and presents the general framework of graphical models, the special case of the multivariate Gaussian distribution (Gaussian Graphical Models, GGM), and finally the special case of spanning tree graphs. Except from the section on spanning trees, all that follows is taken and adapted from \citet{Lau96}. 
  
  \subsection{General elements}
- A graph is defined as a pair $\G=(V,E)$ such that $V$ is a finite set of vertices, and the set of edges $E$ is a subset of $V\times V$ such that vertices are not linked to themselves and there are no multiple edges between two vertices. For any given pair of nodes $(k,\ell)$, we denote an edge by $k\sim\ell$ and an absence of edge by $k\nsim \ell$. In the literature, $V$ can be composed of both quantitative and qualitative variables. However here we  only use quantitative variables and so $V$ is called pure. The following definitions apply to the particular case of a pure vertex set $V$ and an undirected graph $\G$.
+ A graph is defined as a pair $\G=(V,E)$ such that $V$ is a finite set of vertices, and the set of edges $E$ is a subset of $V\times V$ such that vertices are not linked to themselves and there are no multiple edges between two vertices. For any given pair of nodes $(k,\ell)$, we denote an edge by $k\sim\ell$ and an absence of edge by $k\nsim \ell$. In the literature, $V$ can be composed of both quantitative and qualitative variables. However here we  only use variables of one kind (quantitative) and so $V$ is called pure. The following definitions apply to the particular case of a pure vertex set $V$ and an undirected graph $\G$.
 
-Let's first consider a subset $A$ of the vertex set $V$. $A$ is said to be \textit{complete} if all the nodes it contains are linked with each other. If $A$ is additionally of maximal size, it is then called a \textit{clique}. The \textit{subgraph} $\G_A$ defined by $A$  is obtained from $\G$ by keeping edges with both endpoints in $A$. Furthermore if $A$, $B$ and $S$ are disjoint subset of $V$, $S$ is said to \textit{separate} $A$ from $B$ if any path from $\G_A$ to $\G_B$ intersects with $\G_S$. The following notions of decomposable graphs and perfect sequences are central in the development of graphical models.
+Let's first consider a subset $A$ of the vertex set $V$. $A$ is said to be \textit{complete} if all the nodes it contains are linked with each other. If $A$ is additionally of maximal size, it is then called a \textit{clique}. This definition makes the expression "maximal clique" a pleonasm. The \textit{subgraph} $\G_A$ defined by $A$  is obtained from $\G$ by keeping edges with both endpoints in $A$. Furthermore if $A$, $B$ and $S$ are disjoint subsets of $V$, $S$ is said to \textit{separate} $A$ from $B$ if any path from $\G_A$ to $\G_B$ intersects with $\G_S$. The following notions of decomposable graphs and perfect sequences are central in the definition of a graphical model.
  
- \begin{definition}[proper decomposition]
- A triple $(A, B, C)$ of disjoint subsets of the pure vertex set $V$ of an undirected graph $\G$ form a decomposition of $\G$ if $V=A\cup B \cup C$, and if $C$ verifies:
+ \begin{definition}[Proper decomposition]
+ A triple $(A, B, C)$ of disjoint subsets of the pure vertex set $V$ of an undirected graph $\G$ form a decomposition of $\G$ if $V=A\cup B \cup C$, and if $C$ satisfies:
  \begin{enumerate}[label=(\roman*)]
  \item $C$ is a complete subset of  $V$,
  \item $C$ separates $A$ from $B$.
@@ -19,7 +19,7 @@ Let's first consider a subset $A$ of the vertex set $V$. $A$ is said to be \text
  \end{definition}
  
  
- \begin{definition}[decomposable graph]
+ \begin{definition}[Decomposable graph]
  An undirected graph is decomposable if it is complete, or if there exists a proper decomposition $(A, B, C)$ into decomposable subgraphs $\G_{A\cup B}$ and $\G_{B\cup C}$.
  \end{definition}
  This recursive definition proves to be very helpful in demonstrations of decomposable graphs properties, but not to prove that a graph is decomposable. The notion of triangulation will help.
@@ -27,11 +27,12 @@ Let's first consider a subset $A$ of the vertex set $V$. $A$ is said to be \text
  \begin{definition}[Triangulated graph]
  An undirected graph $\G$ is said to be triangulated if loops in $\G$ connect three nodes at most.
  \end{definition} 
- \begin{definition}[perfect sequence]
- Let $B_1,...,B_k$ be a sequence of subsets of the pure set of vertex $V$ of the undirected graph $\G$. Let $H_j=B_1\cup .. \cup B_j$, and $S_j = H_{j-1} \cap B_J$. The sequence is perfect if it satisfies the following conditions:
+ In other words in a triangulated graph, the loop of maximal size will form a triangle.
+ \begin{definition}[Perfect sequence]
+ Let $B_1,...,B_k$ be a sequence of subsets of the pure set of vertex $V$ of the undirected graph $\G$. Let $H_j=B_1\cup .. \cup B_j$, and $S_j = H_{j-1} \cap B_j$. The sequence is perfect if it satisfies the following conditions:
  \begin{enumerate}[label=(\roman*)]
  \item for all $i>1$ there is a $j<i$ such that $S_i \subseteq B_j$ (running intersection property),
- \item each $S_i$ is a complete subset
+ \item each $S_i$ is a complete subset.
  \end{enumerate}
  $H_j$ are called the histories and $S_j$ the separators.
  \end{definition}
@@ -39,7 +40,27 @@ Let's first consider a subset $A$ of the vertex set $V$. $A$ is said to be \text
 % A perfect numbering of the vertices $V$ of $\G$ is a numbering $\alpha_1,...,\alpha_k$ such that the sequence $B_1,...,B_k$ with 
 % $$B_j = cl(\alpha_j) \cap \{\alpha_1,...,\alpha_j\}, j\geq 1 $$ is a perfect sequence. This implies that each $B_j$ is a complete subset.
 % \end{definition}
-Note that the empty set can be included in the set of separators. An example where separators are complete but the sequence is not perfect is the following: consider the sequence $B=\big\{B_1=\{1,2\}, B_2=\{3,4\},B_3=\{2,3,5\}\big\}$. The separators are $S_2=\varnothing, S_3=\{2,3\}$. As $\{2,3\}$ is not a subset of any of the $B_i$, the running intersection property is violated and $B$ is not perfect.
+Note that the empty set can be included in the set of separators. An example where separators are complete but the sequence is not perfect is the following.
+\begin{figure}[H]
+ \begin{center}
+	\begin{tikzpicture}	
+      \tikzstyle{every edge}=[-,>=stealth',shorten >=1pt,auto,thin,draw]
+		\node[basic, label=above:1] (A1) at (-1*\edgeunit,0*\edgeunit) {};
+		\node[basic, label=below:2] (A2) at (0,0) {};
+		\node[basic, label=below:3] (A3) at (1*\edgeunit,0*\edgeunit) {};
+		\node[basic, label=above:4] (A4) at (2*\edgeunit,0) {};
+		\node[basic, label=right:5] (A5) at (0.5*\edgeunit,0.8*\edgeunit) {};
+		\path (A1) edge  (A2)
+        (A2) edge [] (A3)
+        (A3) edge [] (A4)
+        (A2) edge [] (A5)
+        (A5) edge [] (A3);
+	\end{tikzpicture} 
+ \caption{An undirected graph with 5 nodes.}
+  \label{ex:graph1}
+    \end{center}
+\end{figure}
+Consider the graph in Figure \ref{ex:graph1}. A sequence is $B=\big\{B_1=\{1,2\}, B_2=\{3,4\},B_3=\{2,3,5\}\big\}$, with the separators $S_2=\varnothing, S_3=\{2,3\}$. As $\{2,3\}$ is not a subset of any of the $B_i$ with $i$ less than 3, the running intersection property is violated and $B$ is not perfect.
  \begin{definition}[multiplicity of a separator]
  The multiplicity $\nu (S)$ of the separator $S$ is an index counting the number of times $S$ occurs in a perfect sequence.
  \end{definition}
@@ -86,22 +107,23 @@ The following conditions are equivalent for an undirected graph $\G$:
 \end{enumerate}
 \end{prop}
 
- This property is the most useful, as it states that as soon as a graph do not present with cycles of size 4 or more, it is decomposable on its cliques. This decomposition is essential to the graphical model properties, as we shall see in Gaussian graphical models.
+ This property is the most useful, as it states that as soon as a graph does not present with cycles of size 4 or more, it is decomposable on its cliques. This decomposition is essential to the graphical model properties, as we shall see in Gaussian graphical models.
  
 \subsection{Characterization of conditional independence}
-The notion of conditional independence is central to understand graphical models. All that follows focuses on the case of positive and continuous densities. Let's consider random variables $X,Y$ and $Z$ with joint distribution $f$. The conditional independence of $X$ and $Y$ conditional on $Z$ is linked to the factorization of $f$. More precisely: 
+The notion of conditional independence is central in the theory of graphical models. All that follows focuses on the case of variables associated with positive and continuous densities. Let's consider three random variables $X,Y$ and $Z$ with joint distribution $f$. The conditional independence of $X$ and $Y$ conditional on $Z$ is linked to the factorization of $f$. More precisely: 
 $$X \independent Y \mid Z \iff f(x,y,z) = f(x,z) \, f(y,z)/f(z). $$
-It is very useful to understand conditional independence in terms of information. That is, "$X$ is independent of $Y$, given $Z$" means that knowing $Z$, $Y$ will not bring any new information on $X$, and conversely. The Markov property below is the link between conditional independence of variables and its representation in an undirected graph. Let's consider a collection of random variables $(X_v)_{v\in V}$ taking values in probability spaces $(\mathcal{X}_v)_{v\in V}$, and $\mathcal{X}=\otimes_{v\in V} \mathcal{X}_v$. We further denote for any subset $A$ of $V$, $X_A=(X_v)_{v\in A}$, and $\G$ a graph with vertex set $V$. 
+Conditional independence can be understood in terms of information. That is, "$X$ is independent of $Y$, given $Z$" means that knowing $Z$, $Y$ will not bring any new information on $X$, and conversely. The Markov property below is the link between conditional independence of variables and its representation in an undirected graph. Let's consider a collection of random variables $(X_v)_{v\in V}$ taking values in probability spaces $(\mathcal{X}_v)_{v\in V}$, and $\mathcal{X}=\otimes_{v\in V} \mathcal{X}_v$. We further denote for any subset $A$ of $V$, $X_A=(X_v)_{v\in A}$, and $\G$ a graph with vertex set $V$. 
 
 \begin{definition}[Markov property]
 A probability measure P on $\mathcal{X}$ is \textit{global} Markov relative to the undirected graph $\G$ if for any triple $(A, B, S)$ of disjoint subset of $V$ such that:
  $$ \text{S separates A from B } \Rightarrow X_A\independent X_B \mid X_S$$
  If additionally $X_A\independent X_B \mid X_S \Rightarrow \text{S separates A from B}  $, then P is \textit{faithful} Markov and $\G$ perfectly describes the conditional dependence structure of P.
 \end{definition}
+Therefore if a distribution is only global Markov, its associated graph is possibly too dense: it can contain edges between variables which are actually conditionally independent from one another. 
 \begin{definition}[Factorization]
 A probability measure P on $\mathcal{X}$ factorizes according to $\G$ if it has density $f$ with respect to measure $\mu = \otimes_{v\in V} \mu_v$, where $f$ can be written as
 $$f(x) = \prod_{c\in \mathcal{C} }\psi_c(x),$$
-where $\mathcal{C}$ denotes the set of cliques of $\G$, and for any subset $C$ of the vertex set $V$, $\psi_C$ is a positive function of realizations of $X_C$ only.
+where $\mathcal{C}$ denotes the set of cliques of $\G$, and for any subset $C$ of the vertex set $V$, $\psi_C$ is a positive function of $X_C$ only.
 \end{definition}
 
 \begin{theorem}[Hammersley and Clifford]
@@ -109,14 +131,12 @@ For any undirected graph $\G$ and probability distribution P with positive and c
 $$P\text{ factorizes according to } \G \iff P\text{ is global Markov relative to }\G $$
 \end{theorem}
 
- 
- 
- 
+ The following two sub-sections are independent and cover the definitions and properties of Gaussian Graphical Models and spanning tree structures, which will be combined later on.
  
  \subsection{Gaussian Graphical Models}
- Gaussian graphical models describe the conditional dependency structure of a  multivariate Gaussian distribution. Let $X\sim \mathcal{N}(\mu, \Sigma)$ with precision matrix $\Omega=\Sigma^{-1}$ and density $f$. $X_k$ denote the $k^{th}$ variable and $X^i$ denotes the $i^{th}$ sample of $X$. An interesting property of the multivariate distribution is that it naturally factorizes on the non-null entries of its precision matrix:
+ Gaussian graphical models describe the conditional dependency structure of a  multivariate Gaussian distribution. Let $X\sim \mathcal{N}(\mu, \Sigma)$ with precision matrix $\Omega=\Sigma^{-1}$ and density $f$. $X_k$ denote the $k^{th}$ variable. An interesting property of the multivariate distribution is that it naturally factorizes on the non-null entries of its precision matrix:
  $$f(X) \propto \prod_{k,\ell, \omega_{kl}\neq 0} \exp(-X_{k}\omega_{k\ell}X_{\ell}/2)$$
- Therefore as stated by the Hammersley and Clifford Theorem, $f$ is global Markov and is associated with an undirected graph $\G$ which edges are determined by the non-null entries of $\Omega$.  Another useful property of the multivariate Gaussian distriubtion is that of the following:
+ Therefore as stated by the Hammersley and Clifford Theorem, $f$ is global Markov relative to an undirected graph $\G$ the edges of which are determined by the non-null entries of $\Omega$.  Another useful property of the multivariate Gaussian distribution is:
  
  \begin{prop}If  $X\sim \mathcal{N}_V(\mu, \Omega^{-1})$, then it holds for any $k,\ell\in V$ with $k\neq \ell$ that
 $$X_k \independent X_\ell \mid X_{V\setminus\{k,\ell\}} \iff \omega_{k\ell}=0 $$
@@ -145,10 +165,10 @@ Expression for $\Omega$ and its determinant can also be derived:
 \end{equation*}  
 \end{lemma}
 
-The GGM framework allows closed form expressions for the maximum likelihood estimators of the mean vector, the precision matrix, its determinant and the terms of the covariance matrix corresponding to edges in the graph. They all depend on the sum of squared deviances, defined as follows:
+The GGM framework allows closed form expressions for the maximum likelihood estimators of the mean vector, the precision matrix, its determinant and the terms of the covariance matrix corresponding to edges in the graph. They all depend on the sum of squared deviances, defined as follows where $X^i$ denotes the $i^{th}$ sample of $X$:
 \begin{definition}
 The sum of squared deviation matrix of a multivariate Gaussian $X$, also known as total sum of squares,  is given by:
-$$ssd = \sum_{i=1}^n (X^i - \xbar{X})(X^i - \xbar{X})^\intercal = X^\intercal X - n  \xbar{X} \xbar{X}^\intercal$$
+$$SSD = \sum_{i=1}^n (X^i - \xbar{X})(X^i - \xbar{X})^\intercal = X^\intercal X - n  \xbar{X} \xbar{X}^\intercal$$
 \end{definition}
 \begin{theorem}[\citet{Lau96} Theorem 5.3]
 In the Gaussian graphical model,  the maximum likelihood estimates of the unknown mean and covariance matrix exist if the ssd matrix is positive definite. If $n>|V|$ this happens with probability one. When they exist, the estimate of the mean is $\widehat{\mu} = \xbar{X}$, and the estimate of the unknown covariance matrix $\Sigma$ is determined as the unique solution of the system of equations

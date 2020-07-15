@@ -14,7 +14,14 @@ library(gridExtra)
 library(parallel)
 ##############
 # RUN
-
+pal<-c("#008080","#FA7E1E","#D62976","#358CC3")
+mytheme.dark <-function(legend){list= list(theme_light(), 
+                                           theme(strip.background=element_rect(fill="gray50",colour ="gray50"),
+                                                 plot.title = element_text(hjust = 0.5)),
+                                           scale_color_manual(legend, values=pal),
+                                           scale_fill_manual(legend, values=pal),
+                                           scale_shape(legend))}
+##############
 sapply(c("erdos","cluster"), function(type){
   type=type
   sapply(1:2, function(numdens){
@@ -150,16 +157,21 @@ pooled %>% as_tibble() %>%
   ggplot(aes(type, value,color=as.factor(numdens), fill=as.factor(numdens)))+
   geom_boxplot(width=0.4, notch = FALSE, alpha=0.6)+
   facet_grid(key~method)+mytheme.dark("")+labs(x="")
-pooled %>% as_tibble() %>%
+pooled %>% as_tibble() %>% mutate(dens=ifelse(numdens==1,"3/p","5/p")) %>%
   mutate(method=factor(method, levels=c("PLNnetwork","EMtree","VEMtree"))) %>% 
-  ggplot(aes(type, AUC,color=as.factor(numdens), fill=as.factor(numdens)))+
-  geom_boxplot(width=0.4, notch = FALSE, alpha=0.6)+
-  facet_grid(~method)+mytheme.dark("")+labs(x="")
+  ggplot(aes(type, AUC,color=as.factor(dens), fill=as.factor(dens)))+
+  geom_boxplot(width=0.4, notch = TRUE, alpha=0.8)+
+  facet_grid(~method)+mytheme.dark("Density:")+labs(x="")+
+  theme(axis.text.x = element_text(angle = 45, hjust=1))
 
-pooled %>% as_tibble() %>% dplyr::select(-maxseuil, -minseuil) %>% 
-  ggplot(aes(maxTPR, maxPPV, color=method))+
-  geom_rect(aes(xmin=0.5, xmax=1, ymin=0.5, ymax=1), fill="gray90", color="gray90",alpha=0.1)+
-  geom_point()+ facet_grid(numdens~type)+mytheme.dark("")
+g=pooled %>% as_tibble() %>% mutate(dens=ifelse(numdens==1,"3/p","5/p")) %>%
+  mutate(method=factor(method, levels=c("PLNnetwork","EMtree","VEMtree"))) %>% 
+  ggplot(aes(as.factor(dens),AUC,color=as.factor(method), fill=as.factor(method)))+
+  geom_boxplot(width=0.4, notch = TRUE, alpha=0.6)+
+  facet_grid(~type)+mytheme.dark("")+labs(x="")
+ggsave(plot=g,filename = "AUC_PLN_EM_VEM.png", path =  "/Users/raphaellemomal/these/R/images",
+       width=7, height=4 )
+
 
 pooled %>% as_tibble() %>% mutate(rangeSeuil=maxseuil-minseuil) %>% 
   ggplot(aes(rangeSeuil, method, color=method, fill=method))+guides(color=FALSE, fill=FALSE)+
@@ -181,17 +193,55 @@ prec_rec=do.call(rbind,lapply(c("erdos","cluster"), function(type){
         return(values)
       }}))
   }))
-}))  
+})) 
+
+
+All=do.call(rbind, lapply(c("erdos","cluster"), function(type){
+  do.call(rbind, lapply(1:2, function(numdens){
+    data=do.call(rbind, lapply(1:100, function(seed){
+      listFit=readRDS(paste0("/Users/raphaellemomal/simulations/compar_PLNnet_EM_VEM/simu_seed",seed,"_",type,"_dens",numdens,".rds"))
+      PLNscores=listFit$PLN
+      if(sum(!is.na(PLNscores))==0) PLNscores = matrix(0, 15, 15)
+      PLNscores=F_Sym2Vec(PLNscores)
+      EMprob=F_Sym2Vec(listFit$EM$edges_prob)
+      G=F_Sym2Vec(listFit$G)
+      return(data.frame(PLNscores=PLNscores, EMprob=EMprob,G=G))
+    }))
+    data_VEM=do.call(rbind, lapply(1:100, function(seed){
+      listFit=readRDS(paste0("/Users/raphaellemomal/simulations/compar_PLNnet_EM_VEM/simu_seed",seed,"_",type,"_dens",numdens,".rds"))
+      if(length(listFit$VEM)>5){
+        VEMprob=F_Sym2Vec(listFit$VEM$Pg)
+        G=F_Sym2Vec(listFit$G)
+        return(data.frame(VEMprob=VEMprob,G=G))
+      }}))
+    all_PLN=data.frame(seq_PPV_TPR(probs =data$PLNscores, omega = data$G,
+                                   seq_seuil = seq(0,max(data$PLNscores),max(data$PLNscores)/200)),
+                       type=type, numdens=numdens, method="PLNnetwork")
+    all_EM=data.frame(seq_PPV_TPR(probs =data$EMprob, omega = data$G,
+                                  seq_seuil = seq(0,max(data$EMprob),max(data$EMprob)/200)),
+                      type=type, numdens=numdens, method="EMtree")
+    all_VEM=data.frame(seq_PPV_TPR(probs =data_VEM$VEMprob, omega = data_VEM$G,
+                                   seq_seuil = seq(0,max(data_VEM$VEMprob),max(data_VEM$VEMprob)/200)),
+                       type=type, numdens=numdens, method="VEMtree")
+    return(rbind(all_PLN, all_EM,all_VEM))
+  }))
+})) %>% as_tibble()
+
+g=All %>% as_tibble()  %>% mutate(dens=ifelse(numdens==1,"3/p","5/p")) %>%  group_by(type, numdens) %>% arrange(seuil, by_group=TRUE) %>% 
+  ggplot(aes(TPR, PPV, color=method, shape=method))+geom_hline(yintercept=0.5, linetype="dashed", color="gray")+geom_vline(xintercept=0.5, linetype="dashed", color="gray")+
+  geom_point(alpha=0.4)+geom_line(alpha=0.4)+facet_grid(dens~type)+mytheme.dark("")
+ggsave(plot=g,filename = "precrec_PLN_EM_VEM.png", path =  "/Users/raphaellemomal/these/R/images",
+       width=7, height=5 )
 g1<-prec_rec %>% as_tibble() %>% filter(method=="PLNnetwork") %>% group_by(type, numdens) %>% arrange(seuil, by_group=TRUE) %>% 
   ggplot(aes(TPR, PPV))+geom_hline(yintercept=0.5, linetype="dashed", color="gray")+geom_vline(xintercept=0.5, linetype="dashed", color="gray")+
-  geom_point(alpha=0.2, size=1)+geom_line()+labs(title="PLNnetwork")+
+  geom_point(alpha=0.2, size=1)+labs(title="PLNnetwork")+
   facet_grid(type~numdens)+mytheme.dark("")
 g2<-prec_rec %>% as_tibble() %>% filter(method=="EMtree") %>% group_by(type, numdens) %>% arrange(seuil, by_group=TRUE) %>% 
   ggplot(aes(TPR, PPV))+geom_hline(yintercept=0.5, linetype="dashed", color="gray")+geom_vline(xintercept=0.5, linetype="dashed", color="gray")+
-  geom_point(alpha=0.2, size=1)+geom_line()+facet_grid(type~numdens)+mytheme.dark("")+labs(title="EMtree")
+  geom_point(alpha=0.2, size=1)+facet_grid(type~numdens)+mytheme.dark("")+labs(title="EMtree")
 g3<-prec_rec %>% as_tibble() %>% filter(method=="VEMtree")%>% group_by(type, numdens) %>% arrange(seuil, by_group=TRUE) %>% 
   ggplot(aes(TPR, PPV))+geom_hline(yintercept=0.5, linetype="dashed", color="gray")+geom_vline(xintercept=0.5, linetype="dashed", color="gray")+
-  geom_point(alpha=0.2, size=1)+geom_line()+facet_grid(type~numdens)+mytheme.dark("")+labs(title="VEMtree")
+  geom_point(alpha=0.2, size=1)+facet_grid(type~numdens)+mytheme.dark("")+labs(title="VEMtree")
 grid.arrange(g1, g2, g3, ncol=3)
 # pour PLNnetwork
 model_StARS <- getBestModel(network_models, "StARS")
