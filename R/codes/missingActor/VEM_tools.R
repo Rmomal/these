@@ -23,6 +23,17 @@ accppvtpr<-function(probs,omega,h, seuil=0.5){
   FNRH=1-TPRH
   return(c(Acc,AccH,AccO,PPV,PPVH,PPVO,TPR,TPRH,TPRO,FPRH,FNRH))
 }
+get_PPV_TPR<-function(probs, omega, seuil){
+  PPV=round(sum((omega!=0)*(probs>seuil))/(sum((omega!=0)*(probs>seuil))+ sum((omega==0)*(probs>seuil))),2)#TP/(TP+FP)
+  TPR=round(sum((omega!=0)*(probs>seuil))/sum(omega!=0), 2)
+  return(c(PPV=PPV, TPR=TPR))
+}
+seq_PPV_TPR<-function(probs,omega,seq_seuil=seq(0,max(probs),max(probs)/50)){
+  tmp=sapply(seq_seuil,function(x)  get_PPV_TPR(seuil=x,probs=probs,omega=omega))
+  res=data.frame(cbind(t(tmp),seq_seuil))
+  colnames(res)=c("PPV","TPR","seuil")
+  return(as_tibble(res))
+}
 courbes_seuil<-function(probs,omega,h,seq_seuil){
   tmp=sapply(seq_seuil,function(x)  accppvtpr(seuil=x,probs=probs,omega=omega,h=h))
   res=data.frame(cbind(t(tmp),seq_seuil))

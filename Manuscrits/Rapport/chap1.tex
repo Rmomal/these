@@ -241,18 +241,26 @@ Recent works on network inference use the clr transformation to model raw data \
 Copulas are  joint  distributions which map the marginal  cumulative distribution functions of a multivariate random vector.  They are used to describe the dependence between random variables, and in particular for Gaussian copulas the correlation matrix can be estimated. In their original form, they only apply to continuous marginals, and their extension to discrete data has been controversial \citep{F17}. However recent developments made the use of  Gaussian copula coupled with discrete marginal distributions possible \citep{PCJ12,PHW18}, opening the way to the application of copulas in the analysis of multivariate count data \citep{AVP19}. \citet{PWT19} proved that  Gaussian copulas are a relevant and promising approach to the problem of network inference from abundance data, even if the computation cost remains substantial as it requires  Monte Carlo expectation maximization algorithms.
 
 \subsubsection{Latent variables}
-Extensions of the generalized linear model, joint species distribution models  are models for the abundances of multiple species which account for the correlation between the species and  covariates. They require random effects to capture correlation in abundances, and there exist different way of including them in the model \citep{WBO15}. A popular approach in community ecology is the Multivariate Generalized Linear Mixed Model (GLMM) \citep{OHS10, PTM14}, in which a multivariate random effect $\zb_i$ is introduced to each data sample $\yb_i$. These random effect can be interpreted as unobserved predictors, or latent variables. For species $j$ and sample $i$, denoting $\xb_i$ the covariate vector, $\thetab_j$ the  regression coefficients, $o_{ij}$ a possible offset  and $g(\cdot)$ a link function, the mean abundance $m_{ij}$  is generally modeled as:
-$$g(m_{ij}) = o_{ij}+\xb_i ' \thetab_j + z_{ij}$$
+A joint species distribution model (JSDM) is an extension of the generalized linear model which jointly models  the abundances of multiple species. It captures  the correlation between the species and easily handles covariates and offsets. A JSDM resorts to random effects to account for the correlation in abundances, which can be viewed as unobserved predictors and also called latent factors. Therefore a first layer models the observed counts, and a second one models the latent variables, thus making a JSDM a hierarchical model. Two specifications of these latent variables in JSDM stand out in community ecology \citep{WBO15}:  the Multivariate Generalized Linear Mixed Model (GLMM) \citep{OHS10, PTM14}, and the Latent Variable Model (LVM)  \citep{OAP16}. The difference between these models lies in the dimension of their respective random effects: there are as many latent variables as there are species in the GLLVM, whereas in the LVM their number is a parameter of the model. In more details, a GLLVM can be stated in  general terms as follows. A multivariate random effect $\zb_i$ is introduced to each data sample $\yb_i$.  For species $j$ and sample $i$, denoting $\xb_i$ the covariate vector, $\thetab_j$ the  regression coefficients, $o_{ij}$ a possible offset  and $g(\cdot)$ a link function, the mean abundance $m_{ij}$  is modeled as:
+$$g(m_{ij}) = o_{ij}+\xb_i^\intercal  \thetab_j + z_{ij}.$$
  
  Latent variables and abundance are treated as random, and hierarchically modeled as:
  \begin{align*}
  y_{ij}\mid \zb_i &\sim F(m_{ij}, \phi_j)\\
  \zb_i &\sim \Ncal(0, \Sigmab),
  \end{align*} 
- where $F$ is a distribution with mean $m_{ij}$ and dispersion parameter $\phi_j$.
- \citep{OTN17}  \citep{OAP16, FR12} (application to network inference from abundance data)
+ where $F$ is a distribution with mean $m_{ij}$ and dispersion parameter $\phi_j$. The Poisson log-normal distribution (PLN, \citet{AiH89}), estimated in \citet{CMR18} and used in \citet{MRA20}, is a GLLVM where $F$ is Poisson and $g$ is the exponential function.  
  
- The Poisson log-normal distribution (PLN, \citet{AiH89}) is a GLLVM, where $F$ is Poisson and $g$ is the exponential function. 
+In the case of the LVM, the random effect associated to $m_{ij}$ is a linear combination of a latent variables set, and is generally specified as follows:
+ $$g(m_{ij}) = o_{ij}+\xb_i^\intercal  \thetab_j +\sum_{k=1}^K z_{ik} \lambda_{kj},$$
+ where $K$ is the number of latent factors included in the model, and the matrix $\Lambdab$ gathers the factors loadings $\lambdab_j$ in columns. Abundances are then assumed to follow
+ \begin{align*}
+ y_{ij}\mid \zb_i &\sim F(m_{ij}, \phi_j)\\
+\zb_i&\sim \Ncal(0, \boldsymbol{I}),
+ \end{align*}
+and the covariance matrix of the latent layer of random effects can be computed from the factor loadings as $\Sigmab=\Lambdab^\intercal \Lambdab$. The obvious advantage of  LVM compared to GLLVM is  its computational efficiency thanks to its fewer covariance parameters. This makes LVM readily usable for experiments dealing with a large number of species (e.g. in the context of microarrays), and recent developments have made it possible to take advantage of the latent variable approach to model spatio-temporal data \citep{OTN17}.
+ 
+ 
 \subsection{Network inference from Gaussian data}
  \subsubsection{Penalized estimation}
  glasso: the graphical model is supposed to be fixed
