@@ -55,7 +55,7 @@ sapply(c("erdos","cluster"), function(type){
                           error=function(e){e}, finally={})
         
         # RUN PLNnetwork
-        network_models<-PLNnetwork(counts~1, control_init = list(nPenalties=200), control_main =list(trace=0, cores=2))
+        network_models<-PLNnetwork(counts~1, control_init = list(min.ratio=1e-3), control_main =list(trace=0, cores=2))
         PLNnet.path=lapply(network_models$penalties, function(pen){
           model_pen <- getModel(network_models, pen) 
           pen*(model_pen$latent_network(type="precision")!=0)  
@@ -63,7 +63,7 @@ sapply(c("erdos","cluster"), function(type){
         K.score <- Reduce("+",PLNnet.path)
         diag(K.score)=0
         PLNscores<- as.matrix(K.score / max(K.score))
-        
+        plot(network_models)
         # RUN EMtree
         EMfit=EMtree(PLNfit,verbatim = FALSE)
         saveRDS(list(G=G, PLN=PLNscores,EM= EMfit, VEM=VEMfit),
@@ -229,7 +229,8 @@ All=do.call(rbind, lapply(c("erdos","cluster"), function(type){
 
 g=All %>% as_tibble()  %>% mutate(dens=ifelse(numdens==1,"3/p","5/p")) %>%  group_by(type, numdens) %>% arrange(seuil, by_group=TRUE) %>% 
   ggplot(aes(TPR, PPV, color=method, shape=method))+geom_hline(yintercept=0.5, linetype="dashed", color="gray")+geom_vline(xintercept=0.5, linetype="dashed", color="gray")+
-  geom_point(alpha=0.4)+geom_line(alpha=0.4)+facet_grid(dens~type)+mytheme.dark("")
+  geom_point(alpha=0.4)+geom_line(alpha=0.4)+facet_grid(dens~type)+mytheme.dark("")+
+  labs(x="Recall", y="Precision")
 ggsave(plot=g,filename = "precrec_PLN_EM_VEM.png", path =  "/Users/raphaellemomal/these/R/images",
        width=7, height=5 )
 g1<-prec_rec %>% as_tibble() %>% filter(method=="PLNnetwork") %>% group_by(type, numdens) %>% arrange(seuil, by_group=TRUE) %>% 

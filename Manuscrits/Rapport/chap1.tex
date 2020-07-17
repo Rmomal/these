@@ -1,10 +1,12 @@
 
+
 This first chapter  details the technical background extracted from the literature which is used in the latter chapters. It begins by covering all the required notions of graphical models, with a technical focus on Gaussian graphical models and spanning tree structures. Then, a state of the art both of how to infer networks from abundance data both in genomics and in ecology is drawn. The last part details the Expectation-Maximization algorithm and in particular its variational interpretation. This chapter is meant to be independent from the rest of this work, and to this aim some properties are repeated later on.
- % y a des répétitions par soucis de complétude
+
+
  \section{Graphical Models}
- A graphical model is classically described as a probabilistic model which conditional dependence structure is given by a graph. This first section gives all the necessary notions and definitions, and presents the general framework of graphical models, the special case of the multivariate Gaussian distribution (Gaussian Graphical Models, GGM), and finally the special case of spanning tree graphs. Except from the section on spanning trees, all that follows is taken and adapted from \citet{Lau96}. 
+ A graphical model is classically described as a probabilistic model which conditional dependence structure is given by a graph. This first section gives the general framework of graphical models, definitions and properties are adapted from \citet{Lau96}.  Then the special case of  spanning tree graphs is presented.
  
- \subsection{General elements}
+ \subsection{General framework}
  A graph is defined as a pair $\G=(V,E)$ such that $V$ is a finite set of vertices, and the set of edges $E$ is a subset of $V\times V$ such that vertices are not linked to themselves and there are no multiple edges between two vertices. For any given pair of nodes $(k,\ell)$, we denote an edge by $k\sim\ell$ and an absence of edge by $k\nsim \ell$. In the literature, $V$ can be composed of both quantitative and qualitative variables. However here we  only use variables of one kind (quantitative) and so $V$ is called pure. The following definitions apply to the particular case of a pure vertex set $V$ and an undirected graph $\G$.
 
 Let's first consider a subset $A$ of the vertex set $V$. $A$ is said to be \textit{complete} if all the nodes it contains are linked with each other. If $A$ is additionally of maximal size, it is then called a \textit{clique}. This definition makes the expression "maximal clique" a pleonasm. The \textit{subgraph} $\G_A$ defined by $A$  is obtained from $\G$ by keeping edges with both endpoints in $A$. Furthermore if $A$, $B$ and $S$ are disjoint subsets of $V$, $S$ is said to \textit{separate} $A$ from $B$ if any path from $\G_A$ to $\G_B$ intersects with $\G_S$. The following notions of decomposable graphs and perfect sequences are central in the definition of a graphical model.
@@ -103,7 +105,7 @@ The following conditions are equivalent for an undirected graph $\G$:
 \begin{enumerate}[label=(\roman*)]
 \item $\G$ is decomposable.
 \item The cliques of $\G$ can form a perfect sequence.
-\item Loops in $\G$ connect three nodes at most.
+\item $\G$ is triangulated.
 \end{enumerate}
 \end{prop}
 
@@ -132,70 +134,9 @@ For any undirected graph $\G$ and probability distribution P with positive and c
 $$P\text{ factorizes according to } \G \iff P\text{ is global Markov relative to }\G $$
 \end{theorem}
 
- The following two sub-sections are independent and cover the definitions and properties of Gaussian Graphical Models and spanning tree structures, which will be combined later on.
- 
- \subsection{Gaussian Graphical Models}
- Gaussian graphical models describe the conditional dependency structure of a  multivariate Gaussian distribution. An interesting property of the multivariate distribution is that it naturally factorizes on the non-null entries of its precision matrix: 
- 
- \begin{prop}\label{pp:ggm1}
- Let $X\sim \mathcal{N}(\mu, \Sigma)$ with precision matrix $\Omega=\Sigma^{-1}$ and $X_k$ denote the $k^{th}$ column of $X$. Then the associated density $f$ factorizes as:
- $$f(X) \propto \prod_{k,\ell, \omega_{kl}\neq 0} \exp(-X_{k}\omega_{k\ell}X_{\ell}/2)$$
- \end{prop}
- Therefore as stated by Theorem \ref{thm:ham}, $f$ is global Markov relative to an undirected graph $\G$, the edges of which are determined by the non-null entries of its precision matrix $\Omega$.  Another useful property of the multivariate Gaussian distribution is:
- 
- \begin{prop}\label{pp:ggm2}If  $X\sim \mathcal{N}_V(\mu, \Omega^{-1})$, then it holds for any $k,\ell\in V$ with $k\neq \ell$ that
-$$X_k \independent X_\ell \mid X_{V\setminus\{k,\ell\}} \iff \omega_{k\ell}=0 $$
- \end{prop}
-  Proposition \ref{pp:ggm2} is not a consequence of proposition \ref{pp:ggm1}, and comes directly from the fact that the $2\times 2$  covariance matrix of variables $k$ and $l$ conditional on all others expresses in terms of the precision matrix : $$\Sigma_{k,l\mid V\setminus\{k,l\}} = |\Omega_{\{k,l\}}|^{-1} \left(\begin{array}{cc}
-\omega_{kk} & -\omega_{kl}\\
--\omega_{kl} & \omega_{ll}  
-  \end{array}\right).$$
-Combining the above propositions \ref{pp:ggm1} and \ref{pp:ggm2}, we deduce that a conditional independence implies a null entry in $\Omega$, which in turn implies no edge between the corresponding nodes in $\G$. Therefore $f$ is faithful Markov and $\G$ perfectly represents the conditional dependency structure of $X$. In other words, in the framework of GGM we have the following equivalence:
- $$k\nsim \ell \iff  X_k \independent X_\ell \mid X_{V\setminus\{k,\ell\}} \iff \omega_{k\ell}=0.$$
- 
- Now that the GGM framework is in place, we turn to its parameters estimation. In what follows we first give the estimators expressions which come from likelihood equations, and then  exact results for their evaluation.\\
- 
-First some notations: for any  squared  matrix $A$ of dimension $V$ and $B$ a subset of $V$, we let $A_B$ refer to the bloc $B$ of $A$: $A_{B}=(a_{ij})_{\{i,j\}\in B}$.   $[A_B]^V$ then denotes the matrix obtained by filling up with zero entries to obtain full dimension $V\times V$, so that:
-$$([A_B]^q )_{ij}=\left\{ \begin{array}{rl}
-a_{ij} & \text{if } \{i,j\}\in B\\
-0 &  \text{if } \{i,j\}\in V_{\setminus B}
-\end{array}\right.$$
+This equivalence means in practice that writing a density in a product form on some combinations of its variable helps identify conditional independence relations.
 
-  If $X$ is associated with a decomposable graph $\G$, the Markov property \ref{def:markov} decomposes accordingly and reflects in a multiplicative property for the density, and additive property for the concentration matrix. Considering a perfect sequence of the cliques of $\G$ as in Definition \ref{def:seq}, we have that
- $$f(X)=\dfrac{\prod_{C\in \mathcal{C}} f(X_C)}{\prod_{S\in \mathcal{S}} f(X_S)^{\nu(S)}}.$$
-This general expression of the density across decomposition of the graph is very helpful in likelihood computations, especially when some hypotheses are made on the structure of $\G$. The following lemma gives the expressions for $\Omega$ and its determinant:
- \begin{lemma} In a decomposable Gaussian graphical model with precision matrix $\Omega = \Sigma^{-1}$ of dimension $V$, a perfect sequence of the cliques $\mathcal{C}$ of $\G$ gives:
- \begin{equation*}
- \left\{
- \begin{array}{rl}
- \Omega &= \sum_{C\in \mathcal{C}} \big[(\Sigma_C)^{-1}\big]^V - \sum_{S\in \mathcal{S}} \nu(S)  \big[(\Sigma_S)^{-1}\big]^V \\\\
- |\Omega| &=\dfrac{\prod_{C\in \mathcal{C}} |\Sigma_C|^{-1}}{\prod_{S\in \mathcal{S}} |\Sigma_S|^{-\nu(S)}}
- \end{array} \right.
-\end{equation*}  
-\end{lemma}
-
-The GGM framework allows exact results for the estimation of maximum likelihood estimators of the mean vector, the precision matrix, its determinant and the terms of the covariance matrix corresponding to edges in the graph. They all depend on the sum of squared deviations, defined as follows where $X^i$ denotes the $i^{th}$ sample of $X$:
-\begin{definition}
-The sum of squared deviations matrix of a multivariate Gaussian $X$, also known as total sum of squares,  is given by:
-$$SSD = \sum_{i=1}^n (X^i - \xbar{X})(X^i - \xbar{X})^\intercal = X^\intercal X - n  \xbar{X} \xbar{X}^\intercal$$
-\end{definition}
-Hereafter we let $ssd_ij$ denote then $ij$ entry of the $SSD$ matrix.
-\begin{theorem}[\citet{Lau96} Theorem 5.3]
-In the Gaussian graphical model,  the maximum likelihood estimates of the unknown mean and covariance matrix exist if the $SSD$ matrix is positive definite. If $n>|V|$ this happens with probability one. When they exist, the estimate of the mean is $\widehat{\mu} = \xbar{X}$, and the estimate of the unknown covariance matrix $\Sigma$ is determined as the unique solution of the system of equations
-$$n\widehat{\sigma}_{jj} = ssd_{jj}, n\widehat{\sigma}_{k\ell} = ssd_{k\ell}, j,k,\ell \in V, k\sim\ell,$$
-which also satisfies the model restriction $\omega_{k\ell}l =0 \iff k\nsim \ell $.
-\end{theorem}
-
-\begin{theorem}[\citet{Lau96} Proposition 5.9]
-In a Gaussian graphical model with graph $\G$, the maximum likelihood estimate of the precision matrix exists with probability one if $n>max_{C\in\mathcal{C}}|C|$. It is then given as
-$$\widehat{\Omega} = n \bigg\{\sum_{C\in\mathcal{C}} \big[(SSD_C)^{-1}\big]^V-\sum_{S\in\mathcal{S}} \nu(S) \big[(SSD_S)^{-1}\big]^V \bigg\},$$
-where $\mathcal{C}$ is the set of cliques of $\G$ and $\mathcal{S}$ the set of separators with multiplicities $\nu$ in any perfect sequence. The determinant of the estimate can be calculated as
-$$|\widehat{\Omega}| = n^{|V|} \dfrac{\prod_{C\in\mathcal{C}}|(SSD_C)^{-1}|}{\prod_{S\in\mathcal{S}} (|(SSD_S)^{-1}|)^{\nu(S)}}$$
-\end{theorem}
- 
-The necessary condition $n>max_{C\in\mathcal{C}}|C|$  ensures the positive-definitiveness of all $SSD_C$ (otherwise some might not have full rank). All of the above maximum likelihood estimators require the precise knowledge of the graph structure and is therefore rarely available. However relying on spanning tree structures greatly simplifies the expressions and make their use possible.
- 
-\subsection{Spanning trees}
+ \subsection{Spanning trees}
 Trees are graphs with no cycles, meaning that all cliques are edges only. When a tree connects all the nodes, it is called a spanning tree. This particular type of graph is both the sparsest connected graph, and the most connected graph without loops. This feature makes it a decomposable graph by definition, following condition $(iii)$ of Proposition \ref{decomp}.  The following result is obtained directly.
 
 \begin{prop}
@@ -250,13 +191,115 @@ it then holds that
 $$\partial_{w_{jk}} W = [\Mbf]_{jk}  \times W.$$
 \end{lemma}
 
+As we will see in the next section, it is possible to carry out network inference using average on trees, in which case  Theorem \ref{thmm:MTT} and Lemma \ref{lemm:Meila} are particularly useful.
 
+ \section{Gaussian Graphical Models}
+ Gaussian graphical models describe the conditional dependency structure of a  multivariate Gaussian distribution. An interesting property of the multivariate distribution is that it naturally factorizes on the non-null entries of its precision matrix: 
+ \subsection{Definition}
+ \begin{prop}\label{pp:ggm1}
+ Let $X\sim \mathcal{N}(\mu, \Sigma)$ with precision matrix $\Omega=\Sigma^{-1}$ and $X_k$ denote the $k^{th}$ column of $X$. Then the associated density $f$ factorizes as:
+ $$f(X) \propto \prod_{k,\ell, \omega_{kl}\neq 0} \exp(-X_{k}\omega_{k\ell}X_{\ell}/2)$$
+ \end{prop}
+ Therefore as stated by Theorem \ref{thm:ham}, $f$ is global Markov relative to an undirected graph $\G$, the edges of which are determined by the non-null entries of its precision matrix $\Omega$.  Another useful property of the multivariate Gaussian distribution is:
+ 
+ \begin{prop}\label{pp:ggm2}If  $X\sim \mathcal{N}_V(\mu, \Omega^{-1})$, then it holds for any $k,\ell\in V$ with $k\neq \ell$ that
+$$X_k \independent X_\ell \mid X_{V\setminus\{k,\ell\}} \iff \omega_{k\ell}=0 $$
+ \end{prop}
+  Proposition \ref{pp:ggm2} is not a consequence of proposition \ref{pp:ggm1}, and comes directly from the fact that the $2\times 2$  covariance matrix of variables $k$ and $l$ conditional on all others expresses in terms of the precision matrix : $$\Sigma_{k,l\mid V\setminus\{k,l\}} = |\Omega_{\{k,l\}}|^{-1} \left(\begin{array}{cc}
+\omega_{kk} & -\omega_{kl}\\
+-\omega_{kl} & \omega_{ll}  
+  \end{array}\right).$$
+Combining the above propositions \ref{pp:ggm1} and \ref{pp:ggm2}, we deduce that a conditional independence implies a null entry in $\Omega$, which in turn implies no edge between the corresponding nodes in $\G$. Therefore $f$ is faithful Markov and $\G$ perfectly represents the conditional dependency structure of $X$. In other words, in the framework of GGM we have the following equivalence:
+ $$k\nsim \ell \iff  X_k \independent X_\ell \mid X_{V\setminus\{k,\ell\}} \iff \omega_{k\ell}=0.$$
+ 
+ Now that the GGM framework is in place, we turn to its parameters estimation. In what follows we first give the estimators expressions which come from likelihood equations, and then  exact results for their evaluation.\\
+ \subsection{Estimation}
+First some notations: for any  squared  matrix $A$ of dimension $V$ and $B$ a subset of $V$, we let $A_B$ refer to the bloc $B$ of $A$: $A_{B}=(a_{ij})_{\{i,j\}\in B}$.   $[A_B]^V$ then denotes the matrix obtained by filling up with zero entries to obtain full dimension $V\times V$, so that:
+$$([A_B]^q )_{ij}=\left\{ \begin{array}{rl}
+a_{ij} & \text{if } \{i,j\}\in B\\
+0 &  \text{if } \{i,j\}\in V_{\setminus B}
+\end{array}\right.$$
+
+  If $X$ is associated with a decomposable graph $\G$, the Markov property \ref{def:markov} decomposes accordingly and reflects in a multiplicative property for the density, and additive property for the concentration matrix. Considering a perfect sequence of the cliques of $\G$ as in Definition \ref{def:seq}, we have that
+ $$f(X)=\dfrac{\prod_{C\in \mathcal{C}} f(X_C)}{\prod_{S\in \mathcal{S}} f(X_S)^{\nu(S)}}.$$
+This general expression of the density across decomposition of the graph is very helpful in likelihood computations, especially when some hypotheses are made on the structure of $\G$. The following lemma gives the expressions for $\Omega$ and its determinant:
+ \begin{lemma} In a decomposable Gaussian graphical model with precision matrix $\Omega = \Sigma^{-1}$ of dimension $V$, a perfect sequence of the cliques $\mathcal{C}$ of $\G$ gives:
+ \begin{equation*}
+ \left\{
+ \begin{array}{rl}
+ \Omega &= \sum_{C\in \mathcal{C}} \big[(\Sigma_C)^{-1}\big]^V - \sum_{S\in \mathcal{S}} \nu(S)  \big[(\Sigma_S)^{-1}\big]^V \\\\
+ |\Omega| &=\dfrac{\prod_{C\in \mathcal{C}} |\Sigma_C|^{-1}}{\prod_{S\in \mathcal{S}} |\Sigma_S|^{-\nu(S)}}
+ \end{array} \right.
+\end{equation*}  
+\end{lemma}
+
+The GGM framework allows exact results for the estimation of maximum likelihood estimators of the mean vector, the precision matrix, its determinant and the terms of the covariance matrix corresponding to edges in the graph. They all depend on the sum of squared deviations, defined as follows where $X^i$ denotes the $i^{th}$ sample of $X$:
+\begin{definition}
+The sum of squared deviations matrix of a multivariate Gaussian $X$, also known as total sum of squares,  is given by:
+$$SSD = \sum_{i=1}^n (X^i - \xbar{X})(X^i - \xbar{X})^\intercal = X^\intercal X - n  \xbar{X} \xbar{X}^\intercal$$
+\end{definition}
+Hereafter we let $ssd_{ij}$ denote then $ij$ entry of the $SSD$ matrix.
+\begin{theorem}[\citet{Lau96} Theorem 5.3]
+In the Gaussian graphical model,  the maximum likelihood estimates of the unknown mean and covariance matrix exist if the $SSD$ matrix is positive definite. If $n>|V|$ this happens with probability one. When they exist, the estimate of the mean is $\widehat{\mu} = \xbar{X}$, and the estimate of the unknown covariance matrix $\Sigma$ is determined as the unique solution of the system of equations
+$$n\widehat{\sigma}_{jj} = ssd_{jj}, n\widehat{\sigma}_{k\ell} = ssd_{k\ell}, j,k,\ell \in V, k\sim\ell,$$
+which also satisfies the model restriction $\omega_{k\ell}l =0 \iff k\nsim \ell $.
+\end{theorem}
+
+\begin{theorem}[\citet{Lau96} Proposition 5.9]
+In a Gaussian graphical model with graph $\G$, the maximum likelihood estimate of the precision matrix exists with probability one if $n>max_{C\in\mathcal{C}}|C|$. It is then given as
+$$\widehat{\Omega} = n \bigg\{\sum_{C\in\mathcal{C}} \big[(SSD_C)^{-1}\big]^V-\sum_{S\in\mathcal{S}} \nu(S) \big[(SSD_S)^{-1}\big]^V \bigg\},$$
+where $\mathcal{C}$ is the set of cliques of $\G$ and $\mathcal{S}$ the set of separators with multiplicities $\nu$ in any perfect sequence. The determinant of the estimate can be calculated as
+$$|\widehat{\Omega}| = n^{|V|} \dfrac{\prod_{C\in\mathcal{C}}|(SSD_C)^{-1}|}{\prod_{S\in\mathcal{S}} (|(SSD_S)^{-1}|)^{\nu(S)}}$$
+\end{theorem}
+ 
+The necessary condition $n>max_{C\in\mathcal{C}}|C|$  ensures the positive definiteness of all $SSD_C$ (otherwise some might not have full rank). All of the above maximum likelihood estimators require the precise knowledge of the graph structure and is therefore rarely available. However relying on spanning tree structures greatly simplifies the expressions and make their use possible.
+\subsection{Network inference from Gaussian data}
+ \subsubsection{Penalized estimation}
+ $$\ell_\lambda(\Omegab) =\log |\Omegab| - \tr ($$
+ glasso: the graphical model is supposed to be fixed
+ penalized likelihood
+ 
+ builds on the regression interpretation of the partial correlation
+ 
+ gradient ascent
+ 
+ 
+ \subsubsection{Chow \& Liu}
+ \subsubsection{Averaging on trees}
+ 
+ The idea behind using an average on spanning trees to perform network inference  is that the underlying graphical model is supposed to be random and is itself treated as a latent parameter of the model. This graph is also supposed to be a tree and to follow a distribution which is decomposable on its edges as in the definition below.
+\begin{definition}[decomposable tree distribution]
+For any symmetric weight matrix $\Wbf$ with all positive entries, we denote $W$ the sum-product form defined in Theorem \ref{thmm:MTT} A decomposable  distribution for the tree $T$ is then defined as follows:
+$$p_{\Wbf}(T) = \prod_{k,\ell \in T} w_{k\ell} / W ,$$
+so that the probability of a tree is proportional to the product of its edges weights.
+\end{definition}
+
+An interesting property of a decomposable tree distribution is that it is stable under a multiplicative transformation applied to its weight matrix. This is particularly useful during the implementation.
+
+Once a probability is assigned to each tree of the spanning tree space, the probability of an edge in a tree can be defined as the sum of the probabilities of trees containing this edge. Namely for the tree $T$:
+$$\mathds{P}\{kl\in T\} = \sum_{T\in \mathcal{T}} p_{\Wbf}(T).$$
+The following lemma  states that it is possible to compute all edges probabilities at the same time, and this at the cost of the inversion of the  Laplacian matrix of the edges weights.
+
+\begin{lemma} [\cite{kirshner}] \label{lem:Kirshner}
+    Let $p_{\Wbf}$ be a decomposable tree distribution with symmetric and positive weight matrix $\Wbf$. Taking the symmetric matrix $\Mbf$ as defined in Lemma  \ref{lemm:Meila}, the probability for an edge $kl$ to be in the tree $T$ writes:
+ 
+$$\mathds{P}\{kl\in T\} =  w_{kl}\: \Mbf_{kl}$$
+\end{lemma}
+
+The final output of a strategy using an average on trees is not the latent tree presenting with the highest probability, but the matrix filled with the edges probabilities obtained by summing on all trees. Therefore the output is a weighted network which has no reasons to be shaped as a tree itself.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Inference of latent variable models}
+
+ \subsection{Expectation-Maximization algorithm}
+ 
+ \subsection{Variational version}
+ dont champs moyen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Network inference from count data}
-  Network inference  in this work refers to the inference of the conditional dependence structure of $p$ variables jointly observed in $n$ sites. The interactions between the species are supposed unknown, therefore this is not to be confused with the art of inferring a network parameters. Network inference is classically carried out in the Gaussian framework, to take advantage of all the aforementioned results on Gaussian graphical models. Therefore the way to go when in presence of non-Gaussian data is to first transform them into Gaussian variables or compute Gaussian substitutes, and then apply the GGM framework to these new data.
+  Network inference  in this work refers to the inference of the conditional dependence structure of $p$ variables jointly observed in $n$ sites. The interactions between the species are supposed unknown, therefore this is not to be confused with the art of inferring a network parameters. Network inference is classically carried out in the Gaussian framework, to take advantage of all the aforementioned results on Gaussian graphical models. Therefore one way to go when in presence of non-Gaussian data is to first transform them into Gaussian variables or compute Gaussian substitutes, and then apply the GGM framework to these new data.
   
 \subsection{From count to Gaussian data} 
 \subsubsection{Transformations}
@@ -292,31 +335,8 @@ In the case of the LVM, the random effect associated to $m_{ij}$ is a linear com
 and the covariance matrix of the latent layer of random effects can be computed from the factor loadings as $\Sigmab=\Lambdab^\intercal \Lambdab$. The obvious advantage of  LVM compared to GLLVM is  its computational efficiency thanks to its fewer covariance parameters. This makes LVM readily usable for experiments dealing with a large number of species (e.g. in the context of microarrays), and recent developments have made it possible to take advantage of the latent variable approach to model spatio-temporal data \citep{OTN17}.
  
  
-\subsection{Network inference from Gaussian data}
- \subsubsection{Penalized estimation}
- glasso: the graphical model is supposed to be fixed
- \subsubsection{Averaging on trees}
- Here the graphical model is considered to be random, and is a  parameter of a latent variable model.
-\begin{definition}[decomposable tree distribution]
-For any symmetric weight matrix $\Wbf$ with all positive entries, we denote $W$ the sum-product form defined in Theorem \ref{thmm:MTT} A decomposable  distribution for the tree $T$ is then defined as follows:
-$$p_{\Wbf}(T) = \prod_{k,\ell \in T} w_{k\ell} / W $$
-Therefore the probability of a tree is proportional to the product of its edges weights.
-\end{definition}
-Observe that a decomposable tree distribution is stable under a multiplicative transformation applied to its weight matrix. Once a probability is assigned to each tree of the spanning tree space, the probability of an edge in a tree can be defined as the sum of the probabilities of trees containing this edge. Namely for the tree $T$:
-$$\mathds{P}\{kl\in T\} = \sum_{T\in \mathcal{T}} p_{\Wbf}(T).$$
 
-\begin{lemma} [\cite{kirshner}] \label{lem:Kirshner}
-    Let $p_{\Wbf}$ be a decomposable tree distribution with symmetric and positive weight matrix $\Wbf$. Taking the symmetric matrix $\Mbf$ as defined in Lemma  \ref{lemm:Meila}, the probability for an edge $kl$ to be in the tree $T$ writes:
- 
-$$\mathds{P}\{kl\in T\} =  w_{kl}\: \Mbf_{kl}$$
-\end{lemma}
-The Lemma above states that it is possible to compute all edges probabilities at the same time at the cost of the inversion of the weights matrix Laplacian.
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Incomplete data inference}
 
- \subsection{Expectation-Maximization algorithm}
- 
- \subsection{Variational version}
   
