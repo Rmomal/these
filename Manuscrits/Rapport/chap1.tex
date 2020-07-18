@@ -5,7 +5,7 @@ This first chapter  details the technical background extracted from the literatu
 
  \section{Graphical Models}
  A graphical model is classically described as a probabilistic model which conditional dependence structure is given by a graph. This first section gives the general framework of graphical models, definitions and properties are adapted from \citet{Lau96}.  Then the special case of  spanning tree graphs is presented.
- 
+ %%%%%%%%%%%%%%%%%%%%%%%%%%
  \subsection{General framework}
  A graph is defined as a pair $\G=(V,E)$ such that $V$ is a finite set of vertices, and the set of edges $E$ is a subset of $V\times V$ such that vertices are not linked to themselves and there are no multiple edges between two vertices. For any given pair of nodes $(k,\ell)$, we denote an edge by $k\sim\ell$ and an absence of edge by $k\nsim \ell$. In the literature, $V$ can be composed of both quantitative and qualitative variables. However here we  only use variables of one kind (quantitative) and so $V$ is called pure. The following definitions apply to the particular case of a pure vertex set $V$ and an undirected graph $\G$.
 
@@ -111,6 +111,7 @@ The following conditions are equivalent for an undirected graph $\G$:
 
  This property is the most useful, as it states that as soon as a graph does not present with cycles of size 4 or more, it is decomposable on its cliques. This decomposition is essential to the graphical model properties, as we shall see in Gaussian graphical models.
  
+ %%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Characterization of conditional independence}
 The notion of conditional independence is central in the theory of graphical models. All that follows focuses on the case of variables associated with positive and continuous densities. Let's consider three random variables $X,Y$ and $Z$ with joint distribution $f$. The conditional independence of $X$ and $Y$ conditional on $Z$ is linked to the factorization of $f$. More precisely: 
 $$X \independent Y \mid Z \iff f(x,y,z) = f(x,z) \, f(y,z)/f(z). $$
@@ -136,6 +137,7 @@ $$P\text{ factorizes according to } \G \iff P\text{ is global Markov relative to
 
 This equivalence means in practice that writing a density in a product form on some combinations of its variable helps identify conditional independence relations.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%
  \subsection{Spanning trees}
 Trees are graphs with no cycles, meaning that all cliques are edges only. When a tree connects all the nodes, it is called a spanning tree. This particular type of graph is both the sparsest connected graph, and the most connected graph without loops. This feature makes it a decomposable graph by definition, following condition $(iii)$ of Proposition \ref{decomp}.  The following result is obtained directly.
 
@@ -191,11 +193,15 @@ it then holds that
 $$\partial_{w_{jk}} W = [\Mbf]_{jk}  \times W.$$
 \end{lemma}
 
-As we will see in the next section, it is possible to carry out network inference using average on trees, in which case  Theorem \ref{thmm:MTT} and Lemma \ref{lemm:Meila} are particularly useful.
+As we will see later on, it is possible to carry out network inference using average on trees, in which case  Theorem \ref{thmm:MTT} and Lemma \ref{lemm:Meila} are particularly useful.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
  \section{Gaussian Graphical Models}
  Gaussian graphical models describe the conditional dependency structure of a  multivariate Gaussian distribution. An interesting property of the multivariate distribution is that it naturally factorizes on the non-null entries of its precision matrix: 
- \subsection{Definition}
+ 
+ %%%%%%%%%%%%%%%%%%%%%%%%%%
+ \subsection{Specific properties}
  \begin{prop}\label{pp:ggm1}
  Let $X\sim \mathcal{N}(\mu, \Sigma)$ with precision matrix $\Omega=\Sigma^{-1}$ and $X_k$ denote the $k^{th}$ column of $X$. Then the associated density $f$ factorizes as:
  $$f(X) \propto \prod_{k,\ell, \omega_{kl}\neq 0} \exp(-X_{k}\omega_{k\ell}X_{\ell}/2)$$
@@ -209,11 +215,18 @@ $$X_k \independent X_\ell \mid X_{V\setminus\{k,\ell\}} \iff \omega_{k\ell}=0 $$
 \omega_{kk} & -\omega_{kl}\\
 -\omega_{kl} & \omega_{ll}  
   \end{array}\right).$$
-Combining the above propositions \ref{pp:ggm1} and \ref{pp:ggm2}, we deduce that a conditional independence implies a null entry in $\Omega$, which in turn implies no edge between the corresponding nodes in $\G$. Therefore $f$ is faithful Markov and $\G$ perfectly represents the conditional dependency structure of $X$. In other words, in the framework of GGM we have the following equivalence:
+Combining the above propositions \ref{pp:ggm1} and \ref{pp:ggm2}, we deduce that a conditional independence implies a null entry in $\Omega$, which in turn implies no edge between the corresponding nodes in $\G$. This proves the following result.
+
+\begin{prop}[Faithfulness property]\label{ggm:faith}
+ Let $X\sim \mathcal{N}(\mu, \Omega^{-1})$ with associated density $f$, $\G$ the graph which edges represent the non-nul entries of $\Omega$. Then $f$ is faithful Markov relative to $\G$,  and it holds that:
  $$k\nsim \ell \iff  X_k \independent X_\ell \mid X_{V\setminus\{k,\ell\}} \iff \omega_{k\ell}=0.$$
- 
- Now that the GGM framework is in place, we turn to its parameters estimation. In what follows we first give the estimators expressions which come from likelihood equations, and then  exact results for their evaluation.\\
- \subsection{Estimation}
+\end{prop} 
+
+
+ Now that the GGM framework is in place, we turn to its parameters estimation made possible by the faithfulness property.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \subsection{Parameters estimation}
 First some notations: for any  squared  matrix $A$ of dimension $V$ and $B$ a subset of $V$, we let $A_B$ refer to the bloc $B$ of $A$: $A_{B}=(a_{ij})_{\{i,j\}\in B}$.   $[A_B]^V$ then denotes the matrix obtained by filling up with zero entries to obtain full dimension $V\times V$, so that:
 $$([A_B]^q )_{ij}=\left\{ \begin{array}{rl}
 a_{ij} & \text{if } \{i,j\}\in B\\
@@ -242,7 +255,7 @@ Hereafter we let $ssd_{ij}$ denote then $ij$ entry of the $SSD$ matrix.
 \begin{theorem}[\citet{Lau96} Theorem 5.3]
 In the Gaussian graphical model,  the maximum likelihood estimates of the unknown mean and covariance matrix exist if the $SSD$ matrix is positive definite. If $n>|V|$ this happens with probability one. When they exist, the estimate of the mean is $\widehat{\mu} = \xbar{X}$, and the estimate of the unknown covariance matrix $\Sigma$ is determined as the unique solution of the system of equations
 $$n\widehat{\sigma}_{jj} = ssd_{jj}, n\widehat{\sigma}_{k\ell} = ssd_{k\ell}, j,k,\ell \in V, k\sim\ell,$$
-which also satisfies the model restriction $\omega_{k\ell}l =0 \iff k\nsim \ell $.
+which also satisfies the model restriction $\omega_{k\ell} =0 \iff k\nsim \ell $.
 \end{theorem}
 
 \begin{theorem}[\citet{Lau96} Proposition 5.9]
@@ -253,18 +266,26 @@ $$|\widehat{\Omega}| = n^{|V|} \dfrac{\prod_{C\in\mathcal{C}}|(SSD_C)^{-1}|}{\pr
 \end{theorem}
  
 The necessary condition $n>max_{C\in\mathcal{C}}|C|$  ensures the positive definiteness of all $SSD_C$ (otherwise some might not have full rank). All of the above maximum likelihood estimators require the precise knowledge of the graph structure and is therefore rarely available. However relying on spanning tree structures greatly simplifies the expressions and make their use possible.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Network inference from Gaussian data}
+  Network inference here refers to the inference of the conditional dependence structure of multiple variables jointly observed in a series of sites. The interactions between the species are unknown, therefore this is not to be confused with the art of inferring a network parameters (e.g. sign and strength of the interactions) from observations of repeated interactions.
+  
+In the special framework of GGM, conditional dependence relations are perfectly represented by the non-nul entries of the precision matrix $\Omegab$, as specified in Proposition \ref{ggm:faith}. The general approach to network inference in GGM is then to perform a sparse estimation of $\Omegab$.
+
  \subsubsection{Penalized estimation}
- $$\ell_\lambda(\Omegab) =\log |\Omegab| - \tr ($$
- glasso: the graphical model is supposed to be fixed
- penalized likelihood
- 
- builds on the regression interpretation of the partial correlation
- 
- gradient ascent
- 
- 
- \subsubsection{Chow \& Liu}
+ In a standard linear regression model, penalized estimation is used to select predictors. The most popular penalized method is the Lasso \citep{lasso} which apply the $\ell_1$ penalty and estimates the $\beta$ coefficients as the solution of:
+ $$\argmin_{\beta \in \mathds{R}^p} \big\{ ||\Yb - \Xb\beta ||^2_2 + \lambda ||\beta||_1\big\}, \qquad ||\beta||_=\sum_{i=1}^p |\beta_i|,$$
+ where $\lambda$ is a penalty parameter. The form of the penalty forces some coefficients to be exactly zero. Penalized estimation in GGM is performed by the Graphical Lasso (glasso) \citep{glasso}, which introduces sparsity in the precision matrix by imposing Lasso penalties on its entries. The log-likelihood of a GGM writes:
+ $$L_\lambda(\Omegab) = \log |\Omegab| +\tr{\Yb^\intercal \Yb \Omegab}+cst .$$
+ The precision matrix is then estimated as the matrix which maximizes the penalized log-likelihood:
+ $$\argmax_{\Omegab\geq 0} \big\{L_\lambda(\Omegab) - \lambda ||\Omegab||_1\big\}, \qquad ||\Omegab||_1 = \sum_{j\neq k} |\omega_{jk}|.$$
+The glasso gives a sparse penalized maximum likelihood estimator of $\Omegab$, and select the network edges by forcing some of them to zero in the precision matrix. The greater the penalty $\lambda$, the less edges are included in the network and therefore choosing $\lambda$ is critical for the glasso. The selection of $\lambda$ can be performed using classical tools such as cross-validation, Akaike information criterion (AIC),  Bayesian information criterion (BIC) or its extended version.  Another popular approach is to perform a stability selection with StARS \ref{stars}, which aims the network robustness under random sampling.
+
+ %builds on the regression interpretation of the partial correlation
+
+ \subsubsection{Maximal tree}
+ Another way to foster sparsity in the graph is to assume a sparse structure from start. Spanning trees are the sparsest connected graphs, and  the Chow-Liu algorithm \citep{ChowLiu} computes the tree which maximizes the likelhood from observations
  \subsubsection{Averaging on trees}
  
  The idea behind using an average on spanning trees to perform network inference  is that the underlying graphical model is supposed to be random and is itself treated as a latent parameter of the model. This graph is also supposed to be a tree and to follow a distribution which is decomposable on its edges as in the definition below.
@@ -292,16 +313,35 @@ The final output of a strategy using an average on trees is not the latent tree 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Inference of latent variable models}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%
  \subsection{Expectation-Maximization algorithm}
- 
+\begin{itemize}
+\item exemple  classification, modèle de mélange
+\item étapes E et M
+\item propriété d'augmentation de la vraisemblance
+\end{itemize}
+%%%%%%%%%%%%%%%%%%%%%%%%%% 
  \subsection{Variational version}
- dont champs moyen
+ \begin{itemize}
+ \item  la loi des cachés sachant les observés n'est pas calculable
+ \item approcher la loi conditionnelle par une famille de lois
+ \item borne inf de la vraisemblance avec la distance entre les lois approchée et conditionnelle
+ \item def approximation champs moyen
+ \item résultat pour l'estimation des paramètres de lois variationnelles lors de l'hypothèse de champs moyen
+ \end{itemize}
+ 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Network inference from count data}
-  Network inference  in this work refers to the inference of the conditional dependence structure of $p$ variables jointly observed in $n$ sites. The interactions between the species are supposed unknown, therefore this is not to be confused with the art of inferring a network parameters. Network inference is classically carried out in the Gaussian framework, to take advantage of all the aforementioned results on Gaussian graphical models. Therefore one way to go when in presence of non-Gaussian data is to first transform them into Gaussian variables or compute Gaussian substitutes, and then apply the GGM framework to these new data.
+  Inferring a network directly from count data, would require to jointly model abundances with a multivariate discrete distribution. Unfortunately, such distribution is not available, and one way to go is to transpose the problem in the Gaussian framework, which enables the use of the multivariate Gaussian and all its ready-made properties.
   
-\subsection{From count to Gaussian data} 
+  \subsection{Joint species distribution models}
+Joint species distribution models (JSDM) are a general class of statistical parametric models for multiple discrete variables, for example the abundances of multiple species. JSDMs are an extension of the generalized linear model which thus  handle covariates and offsets, and additionally capture the correlation between the variables. A JSDM resorts to Gaussian random effects and a link function to do so. Hereafter we consider the input abundance data $\Yb$, and denote by the index $i$ the rows (samples) and the index $j$ the columns (species) of $\Yb$. A multivariate random effect $\zb_i$ is introduced to each data sample $\yb_i$.  Denoting $\xb_i$ the covariate vector with  regression coefficients $\thetab_j$, $o_{ij}$ a possible offset  and $g(\cdot)$ a link function, the mean abundance $m_{ij}$  in a JSDM can be specified in a general manner as follows:
+$$g(m_{ij}) = o_{ij}+\xb_i^\intercal  \thetab_j + z_{ij}, \qquad \zb_i \sim \Ncal(0, \Sigmab).$$
+
+The art of JSDMs resides in the specification of $g$ and the random effects. The following section presents some of the most used settings in ecology and genomics.
+
+\subsection{Shift to Gaussian universe} 
 \subsubsection{Transformations}
 The first idea when it comes to transforming counts is to apply the log function, with a  small constant added to counts to avoid zeros (pseudo-counts). Another class of transformations widely used in genomics are those designed for compositional data, where  data represent proportions of a whole, divided into $q$ parts \citep{A82}. A compositional vector $\bf{x}$ thus sums to a constant $\kappa$, and is sampled from the simplex
 $$\mathcal{S}^q = \bigg\{ \boldsymbol{u}=(u_1,...,u_q)\in \mathds{R}^q\bigg\rvert\sum_{i=1}^q u_i = \kappa\bigg\}.$$
@@ -315,7 +355,7 @@ Recent works on network inference use the clr transformation to model raw data \
 Copulas are  joint  distributions which map the marginal  cumulative distribution functions of a multivariate random vector.  They are used to describe the dependence between random variables, and in particular for Gaussian copulas the correlation matrix can be estimated. In their original form, they only apply to continuous marginals, and their extension to discrete data has been controversial \citep{F17}. However recent developments made the use of  Gaussian copula coupled with discrete marginal distributions possible \citep{PCJ12,PHW18}, opening the way to the application of copulas in the analysis of multivariate count data \citep{AVP19}. \citet{PWT19} proved that  Gaussian copulas are a relevant and promising approach to the problem of network inference from abundance data, even if the computation cost remains substantial as it requires  Monte Carlo expectation maximization algorithms.
 
 \subsubsection{Latent variables}
-A joint species distribution model (JSDM) is an extension of the generalized linear model which jointly models  the abundances of multiple species. It captures  the correlation between the species and easily handles covariates and offsets. A JSDM resorts to random effects to account for the correlation in abundances, which can be viewed as unobserved predictors and also called latent factors. Therefore a first layer models the observed counts, and a second one models the latent variables, thus making a JSDM a hierarchical model. Two specifications of these latent variables in JSDM stand out in community ecology \citep{WBO15}:  the Multivariate Generalized Linear Mixed Model (GLMM) \citep{OHS10, PTM14}, and the Latent Variable Model (LVM)  \citep{OAP16}. The difference between these models lies in the dimension of their respective random effects: there are as many latent variables as there are species in the GLLVM, whereas in the LVM their number is a parameter of the model. In more details, a GLLVM can be stated in  general terms as follows. A multivariate random effect $\zb_i$ is introduced to each data sample $\yb_i$.  For species $j$ and sample $i$, denoting $\xb_i$ the covariate vector, $\thetab_j$ the  regression coefficients, $o_{ij}$ a possible offset  and $g(\cdot)$ a link function, the mean abundance $m_{ij}$  is modeled as:
+ Therefore a first layer models the observed counts, and a second one models the latent variables, thus making a JSDM a hierarchical model. Two specifications of these latent variables in JSDM stand out in community ecology \citep{WBO15}:  the Multivariate Generalized Linear Mixed Model (GLMM) \citep{OHS10, PTM14}, and the Latent Variable Model (LVM)  \citep{OAP16}. The difference between these models lies in the dimension of their respective random effects: there are as many latent variables as there are species in the GLLVM, whereas in the LVM their number is a parameter of the model. In more details, a GLLVM can be stated in  general terms as follows. A multivariate random effect $\zb_i$ is introduced to each data sample $\yb_i$.  For species $j$ and sample $i$, denoting $\xb_i$ the covariate vector, $\thetab_j$ the  regression coefficients, $o_{ij}$ a possible offset  and $g(\cdot)$ a link function, the mean abundance $m_{ij}$  is modeled as:
 $$g(m_{ij}) = o_{ij}+\xb_i^\intercal  \thetab_j + z_{ij}.$$
  
  Latent variables and abundance are treated as random, and hierarchically modeled as:
@@ -334,8 +374,23 @@ In the case of the LVM, the random effect associated to $m_{ij}$ is a linear com
  \end{align*}
 and the covariance matrix of the latent layer of random effects can be computed from the factor loadings as $\Sigmab=\Lambdab^\intercal \Lambdab$. The obvious advantage of  LVM compared to GLLVM is  its computational efficiency thanks to its fewer covariance parameters. This makes LVM readily usable for experiments dealing with a large number of species (e.g. in the context of microarrays), and recent developments have made it possible to take advantage of the latent variable approach to model spatio-temporal data \citep{OTN17}.
  
+ \subsection{Network inference}
+ Network inference from count data generally moves the problem in the Gaussian framework  in order to  take advantage of all the aforementioned results on Gaussian graphical models. \\
  
-
+ 
+\begin{table}[H]
+\begin{tabular}{l|ccc|cc|cc|}
+\cline{2-8}
+ & \multicolumn{3}{c|}{ Gaussian shift} & \multicolumn{2}{c|}{Network inference} & \multicolumn{2}{c|}{Estimation} \\ \cline{2-8} 
+ & transform & latent variables & copulas & glasso & trees & MCMC & EM \\ \hline
+\multicolumn{1}{|l|}{gCoda} & x &  &  & x &  &  &  \\ \hline
+\multicolumn{1}{|l|}{ecoCopula} &  &  & x & x &  & x &  \\ \hline
+\multicolumn{1}{|l|}{(V)EMtree} &  & x &  &  & x &  & x \\ \hline
+\multicolumn{1}{|l|}{MInt} &  & x &  & x &  &  &  \\ \hline
+\multicolumn{1}{|l|}{MRFcov} &  &  &  & x &  &  &  \\ \hline
+\multicolumn{1}{|l|}{SpiecEasi} & x &  &  & x &  &  &  \\ \hline
+\end{tabular}
+\end{table}
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

@@ -146,3 +146,77 @@ SimCluster <- function(p, k, dens, r){
   res=G
   return(res)
 }
+
+draw_network<-function(adj_matrix,title="", size=4, curv=0.2,width=1, alpha=FALSE, filter_deg=FALSE,nb=3,layout=NULL,nodes_label=NULL,pal=NULL,
+         seed=200, groupes=NULL){
+  p=nrow(adj_matrix)
+  if(is.null(nb)) nb=round(p/8,0)
+  binary=FALSE
+  if(is.null(nodes_label)){ nodes_label=1:p ; bool=TRUE}else{bool=FALSE}
+  
+  if(sum(unique(unlist(adj_matrix)))==1) binary=TRUE
+  
+  res<- as_tbl_graph(adj_matrix, directed=FALSE) %>% activate(edges) %>%
+    mutate(btw.weights=ifelse(weight==0,0,log(1+1/weight))) %>%
+    activate(nodes) %>%
+    mutate(  btw=centrality_betweenness(weights=btw.weights),
+             bool_btw=(btw>sort(btw, decreasing = TRUE)[nb]),bool_deg=(centrality_degree()>0),
+             deg=centrality_degree(), title=title, name=nodes_label
+    )
+  if(!is.null(groupes)){
+    res<-res %>% mutate(groupes=as.factor(groupes))
+  }
+  if(bool){
+    res<-res %>% mutate(label=ifelse(bool_btw,name,""))
+  }else{
+    res<-res %>% mutate(label=ifelse(bool_deg,name,""))
+  }
+  if(filter_deg) res <- res %>% activate(nodes) %>% filter(deg!=0)
+  res<-res %>%
+    activate(edges)  %>%
+    filter(weight !=0) %>%
+    mutate(neibs=edge_is_incident(which(.N()$bool_btw)), title=title)
+  
+  
+  pal_edges <-  ifelse(is.null(pal), viridisLite::viridis(5, option = "C")[c(3,2,4,1)], pal)
+  if(!is.null(groupes)){
+    pal_nodes<-c("black","goldenrod1","brown1")
+    res<-res %>%
+      activate(nodes)  %>%
+      mutate(finalcolor=groupes)
+  }else{
+    pal_nodes<-c("black","goldenrod1")
+    res<-res %>%
+      activate(nodes)  %>%
+      mutate(finalcolor=bool_btw)
+  }
+  set_graph_style(family="sans")
+  layout = ifelse(is.null(layout), "circle", layout)
+  g=res %>%
+    ggraph(layout = layout)
+  if(alpha){
+    g<-g+
+      geom_edge_arc(aes(edge_width=weight, alpha=neibs,color = title), strength = curv, show.legend = FALSE) +
+      scale_edge_alpha_manual(values=c(0.2,1))
+    
+  }else{ g<-g+
+    geom_edge_arc(aes(edge_width=weight,color = title), strength = curv, show.legend = FALSE)
+  }
+  g<-g+
+    geom_node_point(aes(color = finalcolor, size = groupes), show.legend = FALSE) +
+    scale_edge_colour_manual(values = pal_edges) +
+    scale_color_manual(values = pal_nodes)+
+    scale_size_manual(values = c(2,5,6))+
+    geom_node_text(aes(label = label), color = "black", size = size) +#,nudge_x = 0.3
+    labs(title = title) + theme(plot.title = element_text(hjust = 0.5))
+  
+  if(!binary){ g=g+
+    scale_edge_width_continuous(range=c(0.1,width))
+  }else{
+    g=g+
+      scale_edge_width_continuous(range=c(0,width))
+  }
+  
+  return(list(G=g,graph_data=res))
+  
+}
