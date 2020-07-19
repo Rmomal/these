@@ -1,15 +1,10 @@
 \documentclass[12pt]{phd}
-%\usepackage{pdfpages}
  %%%%%%%%% PAckage %%%%%%%%%
 %% intro 
-%\usepackage[utf8]{inputenc}
-%\usepackage[british, frenchb]{babel}
-%\usepackage[OT1]{fontenc}
+
 \usepackage{enumerate}
 \usepackage{smartdiagram}
 \usepackage{graphicx,amsmath,amssymb,stmaryrd, amsthm}
-%\usepackage{url}
-%\usepackage{a4wide}
 \usepackage{ulem}
 \usepackage{pifont}
 \usepackage{amsfonts}
@@ -19,7 +14,6 @@
 \usepackage{multirow} %% Pour mettre un texte sur plusieurs rangées
 \usepackage{multicol} %% Pour mettre un texte sur plusieurs colonnes
 \usepackage{tikz}
-%\usepackage{graphicx}
 \usepackage[absolute]{textpos} 
 \usepackage{colortbl}
 \usepackage{array}
@@ -33,26 +27,35 @@
 
 %%block
 \usepackage{multirow}
-
 \setlength\parindent{0pt}
+
 % Functions
 \def\independenT#1#2{\mathrel{\rlap{$#1 #2$}\mkern2mu{#1 #2}}}
 \DeclareMathOperator*{\argmax}{arg\,max}
 \DeclareMathOperator*{\argmin}{arg\,min}
-\DeclareMathOperator*{\Esp}{\mathbb{E}}
-\DeclareMathOperator*{\Var}{\mathbb{V}}
+%\DeclareMathOperator*{\Esp}{\mathbb{E}}
+%\DeclareMathOperator*{\Var}{\mathbb{V}}
 \DeclareMathOperator*{\Cov}{\mathbb{C}\text{ov}}
 \DeclareMathOperator*{\prob}{\mathds{P}}
 \DeclareMathOperator*{\probt}{\widetilde{\mathds{P}}}
+\DeclareMathOperator{\sign}{sign}
+\def\lambdaMax{\lambda_{\rm{max}}}
+\def\lambdaMin{\lambda_{\rm{min}}}
 
-
-\newcommand{\review}[1]{\textcolor{black}{#1}}
-\newcommand{\validSR}[1]{\textcolor{black}{#1}}
-\newcommand{\questSR}[1]{\textcolor{black}{[#1]}}
-\newcommand{\newmodif}[1]{\textcolor{black}{#1}}
-\newcommand{\modif}[1]{\textcolor{black}{#1}}
-\newcommand{\remove}[1]{\textcolor{gray}{#1}}
-\newcommand\independent{\protect\mathpalette{\protect\independenT}{\perp}}
+% math
+\newtheorem{theorem}{Theorem}[chapter]
+\newtheorem{prop}[theorem]{Proposition} 
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}{Definition}[chapter]
+\newtheorem{remark}{Remark}[chapter]
+\newtheorem{example}{Example}[chapter]
+\newcommand{\Esp}{{\mathds{E}}}
+\newcommand{\Var}{{\mathds{V}}}
+\newcommand{\tr}[1]{\ensuremath{\rm tr}\left( #1 \right)}
+\newcommand{\ve}{\ensuremath{\rm vec}}
+\newcommand{\entr}{\mathcal{H}}
+\newcommand{\corHTemp}{{\rho(H, \text{temp})}}
+\newcommand{\corKTemp}{{\rho(k, \text{temp})}}
 \newcommand{\STAB}[1]{\begin{tabular}{@{}c@{}}#1\end{tabular}}
 \newcommand*\xbar[1]{%
    \hbox{%
@@ -78,10 +81,13 @@
 \newcommand\Pcal{\mathcal{P}}
 \newcommand\Tcal{\mathcal{T}}
 \newcommand\G{\mathcal{G}}
-\newcommand\mt{\widetilde{m}}
-\newcommand\St{\widetilde{S}}
-\newcommand\mbt{\widetilde{\bf m}}
-\newcommand\Sbt{\widetilde{\bf S}}
+%\newcommand\Ccal{{\mathcal{C}}}
+\newcommand\Hcal{{\mathcal{H}}}
+\newcommand\Jcal{{\mathcal{J}}}
+%\newcommand\Ncal{{\mathcal{N}}}
+%\newcommand\Pcal{{\mathcal{P}}}
+%\newcommand\Tcal{{\mathcal{T}}}
+\newcommand{\bound}{{\mathcal{J}}} 
 
 % Notations bf
 \newcommand\gammab{{\boldsymbol{\gamma}}}
@@ -107,11 +113,43 @@
 \newcommand\Zb{{\bf Z}}
 \newcommand\zb{{\boldsymbol{z}}}
 \newcommand\yb{{\boldsymbol{y}}}
+\newcommand\Ibb{\mathbb{I}}
+\newcommand{\betabf}{{\boldsymbol{\beta}}}
+\newcommand{\thetabf}{{\boldsymbol{\theta}}}
+\newcommand{\sigmabf}{{\boldsymbol{\sigma}}}
+\newcommand{\Omegabf}{{\boldsymbol{\Omega}}}
+\newcommand{\Sigmabf}{{\boldsymbol{\Sigma}}}
+\newcommand{\Gammabf}{{\boldsymbol{\Gamma}}}
+\newcommand{\zerobf}{{\boldsymbol{0}}}
+\newcommand{\Xbf}{{\boldsymbol{X}}}
+\newcommand{\xbf}{{\boldsymbol{x}}}
+\newcommand{\Ybf}{{\boldsymbol{Y}}}
+\newcommand{\Zbf}{{\boldsymbol{Z}}}
+\newcommand{\hbf}{{\boldsymbol{h}}}
+\newcommand{\Hbf}{{\boldsymbol{H}}}
+\newcommand{\Ubf}{{\boldsymbol{U}}}
+%\newcommand{\Mbf}{{\boldsymbol{M}}}
+%\newcommand{\Qbf}{{\boldsymbol{Q}}}
+\newcommand{\Rbf}{{\boldsymbol{R}}}
+\newcommand{\Sbf}{{\boldsymbol{S}}}
+\newcommand{\mbf}{{\boldsymbol{m}}}
+
 % Notations tilde
 \newcommand\Pt{\widetilde{P}}
 \newcommand\pt{\widetilde{p}}
 \newcommand\et{\widetilde{\mathds{E}}}
 \newcommand\e{{\mathds{E}}}
+\newcommand{\betabft}{{\widetilde{\betabf}}}
+\newcommand{\Mbft}{{\widetilde{\Mbf}}}
+\newcommand{\Sbft}{{\widetilde{\Sbf}}}
+\newcommand\mt{\widetilde{m}}
+\newcommand\St{\widetilde{S}}
+\newcommand\mbt{\widetilde{\bf m}}
+\newcommand\Sbt{\widetilde{\bf S}}
+\newcommand{\betat}{{\widetilde{\beta}}}
+\newcommand{\Bt}{{\widetilde{B}}}
+%\newcommand{\Pt}{{\widetilde{P}}}
+
 % TikZ
 \newcommand{\nodesize}{0.4em}
 \newcommand{\edgeunit}{6*\nodesize}
@@ -121,19 +159,15 @@
 \tikzstyle{edge}=[-, line width=1pt, color=black]
 \tikzstyle{edgemiss}=[-, line width=1pt, dashed, color=gray]
 \tikzstyle{basic}=[draw, circle, minimum width=\nodesize, inner sep=0, color=black, fill=black]
+\newcommand{\length}{1}
+ \tikzstyle{clique}=[draw, rectangle, minimum width=2*\nodesize, minimum height=2*\nodesize, inner sep=0, color=black]
+ \tikzstyle{variable}=[scale=0.9,rectangle,draw=white,transform shape,fill=white,font=\Large]
 
-\newtheorem{theorem}{Theorem}[chapter]
-\newtheorem{prop}[theorem]{Proposition}
-%\newtheorem{corollary}[theo]{Corollary}
-\newtheorem{lemma}[theorem]{Lemma}
-\newtheorem{definition}{Definition}[chapter]
-\newtheorem{remark}{Remark}[chapter]
-\newtheorem{example}{Example}[chapter]
-\DeclareMathOperator{\sign}{sign}
-\def\lambdaMax{\lambda_{\rm{max}}}
-\def\lambdaMin{\lambda_{\rm{min}}}
-\newcommand{\tr}[1]{\ensuremath{\rm tr}\left( #1 \right)}
-\newcommand{\ve}{\ensuremath{\rm vec}}
- 
-
-%\pagestyle{empty}
+%coloring
+\newcommand{\review}[1]{\textcolor{black}{#1}}
+\newcommand{\validSR}[1]{\textcolor{black}{#1}}
+\newcommand{\questSR}[1]{\textcolor{black}{[#1]}}
+\newcommand{\newmodif}[1]{\textcolor{black}{#1}}
+\newcommand{\modif}[1]{\textcolor{black}{#1}}
+\newcommand{\remove}[1]{\textcolor{gray}{#1}}
+\newcommand\independent{\protect\mathpalette{\protect\independenT}{\perp}}

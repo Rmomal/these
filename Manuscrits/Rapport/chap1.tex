@@ -311,29 +311,50 @@ The final output of a strategy using an average on trees is not the latent tree 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Inference of latent variable models}
-
+\section{Inference of incomplete data models}
+Incomplete data can refer either to unobserved variables due to experimental constraints, or latent variables in the model. The Expectation-Maximization (EM) algorithm \citep{DLR77} is the classic approach to compute the maximum likelihood estimate in presence of hidden variables. In this section we present the general principles of the EM algorithm, as well as its variational version. We let $\Ybf$ denote the observed incomplete data, $\Zbf$ the hidden variables, $p$ their joint distribution with parameter vector $\thetab$.
+ 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
  \subsection{Expectation-Maximization algorithm}
-\begin{itemize}
-\item exemple  classification, modèle de mélange
-\item étapes E et M
-\item propriété d'augmentation de la vraisemblance
-\end{itemize}
+ The EM algorithm is an iterative procedure which maximizes the expected value on  the complete log-likelihood $\log p_\thetab (\Ybf, \Zbf)$ conditional on the observed data $Y$. The iteration $t+1$ consists in two steps:
+ \begin{description}
+ \item [E step:] estimate $\Esp_{\thetab^t}[\log p_\thetab (\Ybf, \Zbf)\mid \Ybf]$
+ \item [M step:] $\thetab^{t+1} = \argmax_\thetab \{ \Esp_{\thetab^t}[\log p_\thetab (\Ybf, \Zbf)\mid \Ybf]\}$
+ \end{description} 
+ The  log-likelihood $\log p_{thetab} (\Ybf)$ increases with the iterations of the EM algorithm \citep{DLR77}. \\
+ 
+ 
+ Another formulation of the EM assumes a distribution $q$ for the hidden variables \citep{NH98} and defines a  lower bound $\bound$ as:
+ $$\bound(\thetabf, q) = \log p_\thetab (\Ybf) - KL(q(\Zbf) || p_\thetab(\Zbf\mid\Ybf)),$$
+ where $KL(p||q) = -\Esp_q[\log q - log p]$ is the Küllback-Leibler divergence. In this formulation, the link between the maximization of $\bound$ and that of the likelihood is made clear. The iteration $t+1$ of the EM can then be written as a double maximization :
+  \begin{description}
+ \item [E step:]  $q^{t+1}=\argmax_q \{ \bound(\thetabf^t, q^t)\}$
+ \item [M step:] $\thetab^{t+1} = \argmax_\thetab \{ \bound(\thetabf^t, q^{t+1})\}$
+ \end{description} 
+ 
+In the E step, the search space for $q^{t+1}$ is the whole set of distributions on the definition space of the hidden variables. The solution is the distribution which cancels the Küllback-Leibler divergence, and that is $p_\thetab(\Zbf\mid\Ybf)$. Unfortunately the latter is not always available, in which case one might resort to a variational computation.
+ 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%% 
  \subsection{Variational version}
- \begin{itemize}
- \item  la loi des cachés sachant les observés n'est pas calculable
- \item approcher la loi conditionnelle par une famille de lois
- \item borne inf de la vraisemblance avec la distance entre les lois approchée et conditionnelle
- \item def approximation champs moyen
- \item résultat pour l'estimation des paramètres de lois variationnelles lors de l'hypothèse de champs moyen
- \end{itemize}
+ When $p_\thetab(\Zbf\mid\Ybf)$ cannot be computed, the variational version of the EM reduces the search space of the $q$ distribution to a set $Q$, which is chosen to ease the computations of the M step. Doing so results in a variational approximation of $p_\thetab(\Zbf\mid\Ybf)$. Therefore in a  Variation EM (VEM) algorithm, the E step is replaced by a VE step, which is  
+ $$q^{t+1}=\argmax_{q\in Q} \{ \bound(\thetabf^t, q^t)\}.$$
+ 
+ A widely used choice for $Q$ are product-form distributions, such that for $K$ hidden variables $Q=\{q(\Zbf)=\prod_{k=1}^K q_k(z_k)\}$. This set of distribution results in a so-called a mean-field approximation. 
+ 
+In the variational bayesian setting, \citet{beal} derive update equations  for the hidden variables as well as the parameters. Random parameters are a specificity of the bayesian framework, and in fact they can be viewed as other hidden variables. Hidden entities in proposition \ref{beal} below can thus be latent factors, unobserved variables, or bayesian parameters.
+
+ \begin{prop}[\citet{beal}]\label{beal}
+ Let's consider a variational EM with observed data $\Ybf$ and $K$ hidden variables $\Zbf=\{z_1,...,z_K\}$. If the approximation is mean-field, then at step $t+1$ and for any $k$ in $\{1,...,p\}$ the update of the variational marginal distribution $q_k$ in the VE step is:
+$$ q_k^{(t+1)}(z_k)  \propto \exp \left\{ \Esp_{q_{\setminus k}^t} \left[ \log p_{\thetabf^{t+1}}(\Ybf, \Zbf) \right] \right\}.$$
+\end{prop}
+
+
  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Network inference from count data}
-  Inferring a network directly from count data would require to jointly model abundances with a multivariate discrete distribution. Unfortunately such distribution is not available, and the majority of techniques transposes the problem in the Gaussian framework, enabling the use of the multivariate Gaussian distribution and all its ready-made properties.
+  Inferring a network directly from count data would require to jointly model abundances with a multivariate discrete distribution. Unfortunately such distribution is not available, and the majority of techniques transposes the problem in the Gaussian framework, enabling to take advantage of the multivariate Gaussian distribution easy-handling and convenient properties.
   
   \subsection{Joint species distribution models}
 Joint species distribution models (JSDM) are a general class of statistical parametric models for multiple discrete variables, for example the abundances of multiple species. JSDMs are an extension of the generalized linear model and thus readily handle covariates and offsets. Additionally they capture the correlation between the variables, and resorts to Gaussian random effects and a link function to do so. Hereafter we consider the input abundance data $\Yb$, and denote by the index $i$ the rows (samples) and the index $j$ the columns (species) of $\Yb$. A multivariate random effect $\zb_i$ is introduced to each data sample $\yb_i$.  Denoting $\xb_i$ the vector of covariates with regression coefficients $\thetab_j$, $o_{ij}$ a possible offset  and $g(\cdot)$ a link function, the mean abundance $m_{ij}$  in a JSDM can be specified in a general manner as follows:
