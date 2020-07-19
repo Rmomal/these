@@ -280,14 +280,14 @@ In the special framework of GGM, conditional dependence relations are perfectly 
  $$L_\lambda(\Omegab) = \log |\Omegab| +\tr{\Yb^\intercal \Yb \Omegab}+cst .$$
  The precision matrix is then estimated as the matrix which maximizes the penalized log-likelihood:
  $$\argmax_{\Omegab\geq 0} \big\{L_\lambda(\Omegab) - \lambda ||\Omegab||_1\big\}, \qquad ||\Omegab||_1 = \sum_{j\neq k} |\omega_{jk}|.$$
-The glasso gives a sparse penalized maximum likelihood estimator of $\Omegab$, and select the network edges by forcing some of them to zero in the precision matrix. The greater the penalty $\lambda$, the less edges are included in the network and therefore choosing $\lambda$ is critical for the glasso. The selection of $\lambda$ can be performed using classical tools such as cross-validation, Akaike information criterion (AIC),  Bayesian information criterion (BIC) or its extended version.  Another popular approach is to perform a stability selection with StARS \ref{stars}, which aims the network robustness under random sampling.
+The glasso gives a sparse penalized maximum likelihood estimator of $\Omegab$, and select the network edges by forcing some of them to zero in the precision matrix. The greater the penalty $\lambda$, the less edges are included in the network and therefore choosing $\lambda$ is critical for the glasso. The selection of $\lambda$ can be performed using classical tools such as cross-validation, Akaike information criterion (AIC),  Bayesian information criterion (BIC) or its extended version.  Another popular approach is to perform a stability selection with StARS \citep{stars}, which aims the network robustness under random sampling.
 
  %builds on the regression interpretation of the partial correlation
 
- \subsubsection{Maximal tree}
- Another way to foster sparsity in the graph is to assume a sparse structure from start. Spanning trees are the sparsest connected graphs, and  the Chow-Liu algorithm \citep{ChowLiu} computes the tree which maximizes the likelhood from observations
- \subsubsection{Averaging on trees}
  
+ \subsubsection{Averaging on trees}
+  Another way to foster sparsity in the graph is to assume a sparse structure. Spanning trees are the sparsest connected graphs, and it is possible to computes the tree which maximizes the likelihood from observations using  the Chow-Liu algorithm \citep{ChowLiu}. However the data conditional dependency structure is unlikely to be a tree in general, and tree averages provide the opportunity to take advantage of all the spanning trees properties while being flexible on the data structure. \\
+
  The idea behind using an average on spanning trees to perform network inference  is that the underlying graphical model is supposed to be random and is itself treated as a latent parameter of the model. This graph is also supposed to be a tree and to follow a distribution which is decomposable on its edges as in the definition below.
 \begin{definition}[decomposable tree distribution]
 For any symmetric weight matrix $\Wbf$ with all positive entries, we denote $W$ the sum-product form defined in Theorem \ref{thmm:MTT} A decomposable  distribution for the tree $T$ is then defined as follows:
@@ -333,46 +333,48 @@ The final output of a strategy using an average on trees is not the latent tree 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Network inference from count data}
-  Inferring a network directly from count data, would require to jointly model abundances with a multivariate discrete distribution. Unfortunately, such distribution is not available, and one way to go is to transpose the problem in the Gaussian framework, which enables the use of the multivariate Gaussian and all its ready-made properties.
+  Inferring a network directly from count data would require to jointly model abundances with a multivariate discrete distribution. Unfortunately such distribution is not available, and the majority of techniques transposes the problem in the Gaussian framework, enabling the use of the multivariate Gaussian distribution and all its ready-made properties.
   
   \subsection{Joint species distribution models}
-Joint species distribution models (JSDM) are a general class of statistical parametric models for multiple discrete variables, for example the abundances of multiple species. JSDMs are an extension of the generalized linear model which thus  handle covariates and offsets, and additionally capture the correlation between the variables. A JSDM resorts to Gaussian random effects and a link function to do so. Hereafter we consider the input abundance data $\Yb$, and denote by the index $i$ the rows (samples) and the index $j$ the columns (species) of $\Yb$. A multivariate random effect $\zb_i$ is introduced to each data sample $\yb_i$.  Denoting $\xb_i$ the covariate vector with  regression coefficients $\thetab_j$, $o_{ij}$ a possible offset  and $g(\cdot)$ a link function, the mean abundance $m_{ij}$  in a JSDM can be specified in a general manner as follows:
+Joint species distribution models (JSDM) are a general class of statistical parametric models for multiple discrete variables, for example the abundances of multiple species. JSDMs are an extension of the generalized linear model and thus readily handle covariates and offsets. Additionally they capture the correlation between the variables, and resorts to Gaussian random effects and a link function to do so. Hereafter we consider the input abundance data $\Yb$, and denote by the index $i$ the rows (samples) and the index $j$ the columns (species) of $\Yb$. A multivariate random effect $\zb_i$ is introduced to each data sample $\yb_i$.  Denoting $\xb_i$ the vector of covariates with regression coefficients $\thetab_j$, $o_{ij}$ a possible offset  and $g(\cdot)$ a link function, the mean abundance $m_{ij}$  in a JSDM can be specified in a general manner as follows:
 $$g(m_{ij}) = o_{ij}+\xb_i^\intercal  \thetab_j + z_{ij}, \qquad \zb_i \sim \Ncal(0, \Sigmab).$$
 
-The art of JSDMs resides in the specification of $g$ and the random effects. The following section presents some of the most used settings in ecology and genomics.
+The art of JSDMs then resides in the specification of $g$ and the random effects. The following section presents some of the most used settings in ecology and genomics.
 
 \subsection{Shift to Gaussian universe} 
 \subsubsection{Transformations}
-The first idea when it comes to transforming counts is to apply the log function, with a  small constant added to counts to avoid zeros (pseudo-counts). Another class of transformations widely used in genomics are those designed for compositional data, where  data represent proportions of a whole, divided into $q$ parts \citep{A82}. A compositional vector $\bf{x}$ thus sums to a constant $\kappa$, and is sampled from the simplex
-$$\mathcal{S}^q = \bigg\{ \boldsymbol{u}=(u_1,...,u_q)\in \mathds{R}^q\bigg\rvert\sum_{i=1}^q u_i = \kappa\bigg\}.$$
+The first idea when it comes to transposing counts into the Gaussian framework is to transform them. Doing so allows to analyze the data without resorting to discrete modeling. A common transformation of counts is to apply the log function, with a  small constant $c$ added to counts to avoid zeros (pseudo-counts). In this case the mean abundance is simply modeled as $\log(m_{ij}+c)$ and assumed to follow a multivariate Gaussian distribution. 
 
-There exists several transformations for compositional data to remove the $\kappa$-sum constraint, the most popular being the centered log-ratio transformation, which writes:
-$$clr(\xb)=\left(\log \frac{x_1}{g(\boldsymbol{x})}, ..., \log \frac{x_q}{g(\boldsymbol{x})}\right), $$
-where $g(\cdot)$ is the geometric mean. A clr-transformed vector is constrained to a zero sum. In genomics, observed counts $x_{ij}$ from a sample $i$ obtained with high throughput sequencing are constrained by the library size $\kappa_i$, a technical parameter of the experiment, such that $\sum_j x_{ij}=\kappa_i$ \citep{GMP17}. This creates a dependence within sampled counts, corrected  by either including offsets or  considering the relative representation of counts $y_{ij}=\frac{x_{ij}}{\kappa_i}$ and treat them as compositional data. The transposed compositional representation is to consider  genes counts across all samples and to represent the relative gene expression per site, namely for gene $j$ and sample $i$: $y_{ij}=\frac{x_{ij}}{\sum_i x_{ij}}$. Inputs are then the expression profiles of each gene \citep{RMR18}, onto which transformations to break the unit-sum constraint can be applied. 
+In genomics, high throughput sequencing yields  samples $\yb_i$  of observed counts of $p$ species or taxa that are constrained by the library size $\kappa_i$, a technical parameter of the experiment, such that $\sum_j y_{ij}=\kappa_i$ \citep{GMP17}. Thus the available observations are not absolute counts but relative counts, and each sample can be viewed as a compositional vector \citep{A82} sampled from the simplex
+$$\mathcal{S}_i^p = \bigg\{ \boldsymbol{u}=(u_1,...,u_p)\in \mathds{R}^p\bigg\rvert\sum_{i=1}^p u_i = \kappa_i\bigg\}.$$
+The transposed compositional representation is to consider  genes counts across all samples and to represent the relative gene expression per site, namely for gene $j$ and sample $i$: $\frac{y_{ij}}{\sum_i y_{ij}}$. Inputs are then the expression profiles of each gene \citep{RMR18}, onto which transformations  can be applied. 
+There exists several transformations for compositional data to change the $\kappa_i$-sum constraint, the most popular being the centered log-ratio transformation  which writes:
+$$clr(\yb)=\left(\log \frac{y_1}{m(\yb)}, ..., \log \frac{y_p}{m(\yb)}\right), $$
+where $m(\cdot)$ is the geometric mean. A clr-transformed vector is constrained to a zero sum. In the framework of joint modeling, the clr function can be used as a link function to account for covariates and offsets. Recent works on network inference use the clr transformation  \citep{kurtz}, or the logistic normal distribution \citep{AS80} to model relative counts \citep{gcoda}.
 
-Recent works on network inference use the clr transformation to model raw data \citep{kurtz}, or the logistic normal distribution \citep{AS80} to model relative counts \citep{gcoda}.
+
 \subsubsection{Copulas}
-Copulas are  joint  distributions which map the marginal  cumulative distribution functions of a multivariate random vector.  They are used to describe the dependence between random variables, and in particular for Gaussian copulas the correlation matrix can be estimated. In their original form, they only apply to continuous marginals, and their extension to discrete data has been controversial \citep{F17}. However recent developments made the use of  Gaussian copula coupled with discrete marginal distributions possible \citep{PCJ12,PHW18}, opening the way to the application of copulas in the analysis of multivariate count data \citep{AVP19}. \citet{PWT19} proved that  Gaussian copulas are a relevant and promising approach to the problem of network inference from abundance data, even if the computation cost remains substantial as it requires  Monte Carlo expectation maximization algorithms.
+Copulas are  joint  distributions which map the marginal  cumulative distribution functions of a multivariate random vector.  They are used to describe the dependence between random variables, and in particular for Gaussian copulas the correlation matrix can be estimated. In their original form, they only apply to continuous marginals, and their extension to discrete data has been controversial \citep{F17}. However recent developments made the use of  Gaussian copula coupled with discrete marginal distributions possible \citep{PCJ12,PHW18}, opening the way to the application of copulas in the analysis of multivariate count data \citep{AVP19}. In this context, a first step estimates each $p$ marginal univariate discrete distributions parameters while accounting for covariates and possible offsets. Then the distribution of the response Gaussian copula is computed as a $p-$dimensional integrand (see \citet{PHW18}). \citet{PWT19} proved that  Gaussian copulas are a relevant and promising approach to the problem of network inference from abundance data, even if the computation cost remains substantial as it requires importance sampling as well as Monte Carlo expectation maximization algorithms.
 
 \subsubsection{Latent variables}
- Therefore a first layer models the observed counts, and a second one models the latent variables, thus making a JSDM a hierarchical model. Two specifications of these latent variables in JSDM stand out in community ecology \citep{WBO15}:  the Multivariate Generalized Linear Mixed Model (GLMM) \citep{OHS10, PTM14}, and the Latent Variable Model (LVM)  \citep{OAP16}. The difference between these models lies in the dimension of their respective random effects: there are as many latent variables as there are species in the GLLVM, whereas in the LVM their number is a parameter of the model. In more details, a GLLVM can be stated in  general terms as follows. A multivariate random effect $\zb_i$ is introduced to each data sample $\yb_i$.  For species $j$ and sample $i$, denoting $\xb_i$ the covariate vector, $\thetab_j$ the  regression coefficients, $o_{ij}$ a possible offset  and $g(\cdot)$ a link function, the mean abundance $m_{ij}$  is modeled as:
-$$g(m_{ij}) = o_{ij}+\xb_i^\intercal  \thetab_j + z_{ij}.$$
- 
- Latent variables and abundance are treated as random, and hierarchically modeled as:
- \begin{align*}
- y_{ij}\mid \zb_i &\sim F(m_{ij}, \phi_j)\\
- \zb_i &\sim \Ncal(0, \Sigmab),
- \end{align*} 
- where $F$ is a distribution with mean $m_{ij}$ and dispersion parameter $\phi_j$. The Poisson log-normal distribution (PLN, \citet{AiH89}), estimated in \citet{CMR18} and used in \citet{MRA20}, is a GLLVM where $F$ is Poisson and $g$ is the exponential function.  
- 
-In the case of the LVM, the random effect associated to $m_{ij}$ is a linear combination of a latent variables set, and is generally specified as follows:
+
+Latent variables enable the modeling of multivariate discrete data using a hierarchical setting where random discrete variables are modeled conditionally to random latent variables.  Two specifications of  latent variables stand out in community ecology \citep{WBO15}:  the Multivariate Generalized Linear Mixed Model (GLMM) \citep{OHS10, PTM14}, and the Latent Variable Model (LVM)  \citep{OAP16, OTN17}. The difference between these models lies in the dimension of their respective random effects: there are as many latent variables as there are species in the GLMM, whereas in the LVM their number is a parameter of the model. 
+
+In more details, in a LVM the random effect associated to the mean abundance $m_{ij}$ is a linear combination of a set of latent variables, and is generally specified as:
  $$g(m_{ij}) = o_{ij}+\xb_i^\intercal  \thetab_j +\sum_{k=1}^K z_{ik} \lambda_{kj},$$
  where $K$ is the number of latent factors included in the model, and the matrix $\Lambdab$ gathers the factors loadings $\lambdab_j$ in columns. Abundances are then assumed to follow
  \begin{align*}
  y_{ij}\mid \zb_i &\sim F(m_{ij}, \phi_j)\\
 \zb_i&\sim \Ncal(0, \boldsymbol{I}),
  \end{align*}
-and the covariance matrix of the latent layer of random effects can be computed from the factor loadings as $\Sigmab=\Lambdab^\intercal \Lambdab$. The obvious advantage of  LVM compared to GLLVM is  its computational efficiency thanks to its fewer covariance parameters. This makes LVM readily usable for experiments dealing with a large number of species (e.g. in the context of microarrays), and recent developments have made it possible to take advantage of the latent variable approach to model spatio-temporal data \citep{OTN17}.
+and the covariance matrix of the latent layer of random effects can be computed from the factor loadings as $\Sigmab=\Lambdab^\intercal \Lambdab$.
+
+In the case of a GLMM, $K=p$ and latent variables and abundances are  modeled as:
+ \begin{align*}
+ y_{ij}\mid \zb_i &\sim F(m_{ij}, \phi_j)\\
+ \zb_i &\sim \Ncal(0, \Sigmab),
+ \end{align*} 
+ where $F$ is a distribution with mean $m_{ij}$ and dispersion parameter $\phi_j$. The Poisson log-normal distribution (PLN, \citet{AiH89}), estimated in \citet{CMR18} and used in \citet{MRA20}, is a GLMM where $F$ is the Poisson distribution and $g$ the exponential function.  
  
  \subsection{Network inference}
  Network inference from count data generally moves the problem in the Gaussian framework  in order to  take advantage of all the aforementioned results on Gaussian graphical models. \\
@@ -382,7 +384,7 @@ and the covariance matrix of the latent layer of random effects can be computed 
 \begin{tabular}{l|ccc|cc|cc|}
 \cline{2-8}
  & \multicolumn{3}{c|}{ Gaussian shift} & \multicolumn{2}{c|}{Network inference} & \multicolumn{2}{c|}{Estimation} \\ \cline{2-8} 
- & transform & latent variables & copulas & glasso & trees & MCMC & EM \\ \hline
+ & Trans. & LV & Copulas & glasso & Trees & MCMC & EM \\ \hline
 \multicolumn{1}{|l|}{gCoda} & x &  &  & x &  &  &  \\ \hline
 \multicolumn{1}{|l|}{ecoCopula} &  &  & x & x &  & x &  \\ \hline
 \multicolumn{1}{|l|}{(V)EMtree} &  & x &  &  & x &  & x \\ \hline
