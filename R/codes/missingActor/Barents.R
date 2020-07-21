@@ -135,13 +135,22 @@ g0<-ggimage(resVEM0$Pg)
 grid.arrange(g0, g1, ncol=2)
 
 lab0=ifelse(1:30 %in% vois, 1:30, "")
-lab1=ifelse(1:31 %in% c(vois,31), 1:31, "")
-n0<-draw_network(resVEM0$Pg, curv=0,nb = 1,pal="gray30", layout="fr", nodes_label =lab0 ,groupes = 1*(1:30 %in% vois))
-n1<-draw_network(VEM_spca_200$Pg, curv=0,nb = 1, pal="gray30",layout="fr", nodes_label =lab1,groupes = c(1*(1:30 %in% vois),2))
-g=grid.arrange(n0$G, n1$G, ncol=2)
-ggsave(plot=g,filename = "Barents_net_comp.png", path =  "/Users/raphaellemomal/these/R/images",
-       width=7, height=5 )
+lab1=ifelse(1:31 %in% c(vois,31), c(1:30,"H"), "")
 
+
+n0=draw_network(resVEM0$Pg, curv=0,nb = 1,pal="#31374f", layout="fr",nodes_label =lab0 ,
+             groupes = 1*(1:30 %in% vois))
+n0
+n1lay=rbind(n0$finallayout[,1:2],c(-8.5,5))
+n1lay[30,]=c(-7,2)
+n1lay[13,]=c(-10,1)
+n1lay[15,]=c(-11.8,4)
+n1lay[27,]=c(-13,9)
+n1<-draw_network(VEM_spca_200$Pg, curv=0,nb = 1, pal="#31374f",layout=NULL,stored_layout = n1lay, nodes_label =lab1,groupes = c(1*(1:30 %in% vois),2))
+n1
+g=grid.arrange(n0$G, n1$G, ncol=2)
+ggsave(plot=g,filename = "Barents_net_comp3.png", path =  "/Users/raphaellemomal/these/R/images",
+       width=7, height=4 )
 
 g1<-ggimage(VEM_spca_200$Pg[c(setdiff(1:30,vois),vois,31),c(setdiff(1:30,vois),vois,31)])+
   labs(title="r = 1")

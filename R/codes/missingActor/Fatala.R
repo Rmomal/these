@@ -149,4 +149,10 @@ ListVEM_boot_200=readRDS("/Users/raphaellemomal/these/R/codes/missingActor/SimRe
 sum(do.call(rbind,lapply(ListVEM_boot_200, function(vem){
 vem$finalIter
 }))==100)
-
+lapply(ListVEM_boot_200, function(x){
+  q=ncol(x$Pg)
+ if(!is.null(q)) vois<-apply(x$Pg[,(q-1):q], 2, function(j){length(which(j>1e-1))})
+})
+vem=ListVEM_boot_200[[32]]
+ggimage(vem$Wg)
+hist(log(vem$Wg[,34]))

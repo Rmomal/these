@@ -29,14 +29,16 @@ vec_sdMH_J=do.call(rbind, lapply(ListVEM_boot_200, function(vem){
     entrUH=-0.5*sum(log(vem$S[,H]))
     Sbar1=mean(vem$S[,H[1]])
     Sbar2=mean(vem$S[,H[2]])
-    res=c(sdMH,J,entrUH,Sbar1,Sbar2)
+    vois1=length(which(vem$Pg[,H[1]]>0.01))
+    vois2=length(which(vem$Pg[,H[2]]>0.01))
+    res=c(sdMH,J,entrUH,Sbar1,Sbar2,vois1,vois2)
   }else{
-   J=NaN ;sdMH = c(NaN,NaN); entrUH=NaN; Sbar1=NaN; Sbar2=NaN
-     res=c(sdMH,J,entrUH,Sbar1,Sbar2)}
+   J=NaN ;sdMH = c(NaN,NaN); entrUH=NaN; Sbar1=NaN; Sbar2=NaN; vois1=NaN; vois2=NaN
+     res=c(sdMH,J,entrUH,Sbar1,Sbar2,vois1,vois2)}
 }))
 
 dataFatala=data.frame(vec_sdMH_J)
-colnames(dataFatala) = c("sd1","sd2","J","penUH","S1","S2")
+colnames(dataFatala) = c("sd1","sd2","J","penUH","S1","S2","vois1","vois2")
 dataFatala=dataFatala %>% as_tibble() %>% 
   mutate(num=1:nrow(dataFatala), TwoActors=ifelse(log(sd1)>-15 & log(sd2) >-15,"on", "off"))
 

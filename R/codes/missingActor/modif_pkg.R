@@ -43,10 +43,6 @@ generator_param<-function(G,signed=FALSE,v=0){
   sim=list(sigma=sigma,omega=omega,cste=lambda)
   return(sim)
 }
-
-library(huge)
-library(Matrix)
-#qu'il se taise
 generator_graph<-function(p = 20, graph = "tree", dens=0.3, r=2){# prob = 0.1,
   theta = matrix(0, p, p)
   if (graph == "cluster") {
@@ -64,6 +60,7 @@ generator_graph<-function(p = 20, graph = "tree", dens=0.3, r=2){# prob = 0.1,
   }
   return(theta = Matrix(theta, sparse = TRUE))
 }
+
 data_from_scratch<-function(type, p=20,n=50, ratio=10, covariates=NULL,
                             dens=5/p, signed=FALSE,v=0,draw=FALSE){
   graph<- generator_graph(graph=type,p=p,dens=dens,r=ratio)
@@ -147,8 +144,8 @@ SimCluster <- function(p, k, dens, r){
   return(res)
 }
 
-draw_network<-function(adj_matrix,title="", size=4, curv=0.2,width=1, alpha=FALSE, filter_deg=FALSE,nb=3,layout=NULL,nodes_label=NULL,pal=NULL,
-         seed=200, groupes=NULL){
+draw_network<-function(adj_matrix,title="", size=4, curv=0,width=1, alpha=FALSE, 
+                       filter_deg=FALSE,nb=3,layout=NULL,nodes_label=NULL,pal="gray30",stored_layout=NULL, groupes=NULL){
   p=nrow(adj_matrix)
   if(is.null(nb)) nb=round(p/8,0)
   binary=FALSE
@@ -177,10 +174,10 @@ draw_network<-function(adj_matrix,title="", size=4, curv=0.2,width=1, alpha=FALS
     filter(weight !=0) %>%
     mutate(neibs=edge_is_incident(which(.N()$bool_btw)), title=title)
   
-  
+ 
   pal_edges <-  ifelse(is.null(pal), viridisLite::viridis(5, option = "C")[c(3,2,4,1)], pal)
   if(!is.null(groupes)){
-    pal_nodes<-c("black","goldenrod1","brown1")
+    pal_nodes<-c("#31374f","#adc9e0","#e7bd42")
     res<-res %>%
       activate(nodes)  %>%
       mutate(finalcolor=groupes)
@@ -192,8 +189,14 @@ draw_network<-function(adj_matrix,title="", size=4, curv=0.2,width=1, alpha=FALS
   }
   set_graph_style(family="sans")
   layout = ifelse(is.null(layout), "circle", layout)
+ 
+ if(is.null(stored_layout)){
+   finallayout=create_layout(res,layout=layout)
+ }else{
+   finallayout=stored_layout
+ }
   g=res %>%
-    ggraph(layout = layout)
+    ggraph(layout = finallayout[,1:2])
   if(alpha){
     g<-g+
       geom_edge_arc(aes(edge_width=weight, alpha=neibs,color = title), strength = curv, show.legend = FALSE) +
@@ -217,6 +220,6 @@ draw_network<-function(adj_matrix,title="", size=4, curv=0.2,width=1, alpha=FALS
       scale_edge_width_continuous(range=c(0,width))
   }
   
-  return(list(G=g,graph_data=res))
+  return(list(G=g,graph_data=res,finallayout=finallayout))
   
 }

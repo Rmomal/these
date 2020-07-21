@@ -1,6 +1,6 @@
 
 
-This first chapter  details the technical background extracted from the literature which is used in the latter chapters. It begins by covering all the required notions of graphical models, with a technical focus on Gaussian graphical models and spanning tree structures. Then, a state of the art both of how to infer networks from abundance data both in genomics and in ecology is drawn. The last part details the Expectation-Maximization algorithm and in particular its variational interpretation. This chapter is meant to be independent from the rest of this work, and to this aim some properties are repeated later on.
+This first chapter  details the technical background extracted from the literature which is used in the next chapters. It begins by covering all the required notions of graphical models, with a  focus on the spanning tree structures specifics. Then we present Gaussian graphical models properties and explain why it is a golden framework for network inference. After a reminder on the Expectation-Maximization algorithm as well as its variational interpretation, the last part is a state of the art of network inference from abundance data and presents methods stemming from both genomics and ecology. This chapter is meant to be independent from the rest of this work, and therefore repetitions with published work is unavoidable.
 
 
  \section{Graphical Models}
@@ -198,15 +198,16 @@ As we will see later on, it is possible to carry out network inference using ave
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
  \section{Gaussian Graphical Models}
- Gaussian graphical models describe the conditional dependency structure of a  multivariate Gaussian distribution. An interesting property of the multivariate distribution is that it naturally factorizes on the non-null entries of its precision matrix: 
+ Gaussian graphical models (GGM) describe the conditional dependency structure of a  multivariate Gaussian distribution. The different properties of the multivariate Gaussian distribution allow some specific interpretation and estimation results of its related graphical model,  making the GGM a sound and very clever framework to work with.
  
  %%%%%%%%%%%%%%%%%%%%%%%%%%
  \subsection{Specific properties}
+The multivariate Gaussian distribution possesses various properties which facilitate computations as well as interpretations. Two in particular are of interest in the graphical models setting. The first one concerns the natural handy writing of its density.
  \begin{prop}\label{pp:ggm1}
  Let $X\sim \mathcal{N}(\mu, \Sigma)$ with precision matrix $\Omega=\Sigma^{-1}$ and $X_k$ denote the $k^{th}$ column of $X$. Then the associated density $f$ factorizes as:
  $$f(X) \propto \prod_{k,\ell, \omega_{kl}\neq 0} \exp(-X_{k}\omega_{k\ell}X_{\ell}/2)$$
  \end{prop}
- Therefore as stated by Theorem \ref{thm:ham}, $f$ is global Markov relative to an undirected graph $\G$, the edges of which are determined by the non-null entries of its precision matrix $\Omega$.  Another useful property of the multivariate Gaussian distribution is:
+ Therefore as the density naturally factorizes, Theorem \ref{thm:ham} states that $f$ is global Markov relative to an undirected graph $\G$, the edges of which are determined by the non-null entries of its precision matrix $\Omega$.  The multivariate Gaussian distribution also presents with a facilitating property about conditional independence, reminded below.
  
  \begin{prop}\label{pp:ggm2}If  $X\sim \mathcal{N}_V(\mu, \Omega^{-1})$, then it holds for any $k,\ell\in V$ with $k\neq \ell$ that
 $$X_k \independent X_\ell \mid X_{V\setminus\{k,\ell\}} \iff \omega_{k\ell}=0 $$
@@ -215,14 +216,23 @@ $$X_k \independent X_\ell \mid X_{V\setminus\{k,\ell\}} \iff \omega_{k\ell}=0 $$
 \omega_{kk} & -\omega_{kl}\\
 -\omega_{kl} & \omega_{ll}  
   \end{array}\right).$$
-Combining the above propositions \ref{pp:ggm1} and \ref{pp:ggm2}, we deduce that a conditional independence implies a null entry in $\Omega$, which in turn implies no edge between the corresponding nodes in $\G$. This proves the following result.
+Combining the above propositions \ref{pp:ggm1} and \ref{pp:ggm2}, it is easy to see that a conditional independence implies a null entry in $\Omega$, which in turn implies no edge between the corresponding nodes in $\G$. This proves the following result.
 
 \begin{prop}[Faithfulness property]\label{ggm:faith}
  Let $X\sim \mathcal{N}(\mu, \Omega^{-1})$ with associated density $f$, $\G$ the graph which edges represent the non-nul entries of $\Omega$. Then $f$ is faithful Markov relative to $\G$,  and it holds that:
  $$k\nsim \ell \iff  X_k \independent X_\ell \mid X_{V\setminus\{k,\ell\}} \iff \omega_{k\ell}=0.$$
 \end{prop} 
 
+Proposition \ref{ggm:faith} is key for estimation in the GGM framework, as it states that finding the null precision entries gives all the graph. 
 
+The Gaussian framework also offers a regression interpretation of $\Omega$ entries. Considering $X\sim \mathcal{N}(\mu, \Omega^{-1})$
+
+%Regression interpretation of entries of $\Omegab$
+\begin{itemize}
+\item regression of a variable against the rest
+\item link of regression coefficient and omega entries
+\item conclusion 
+\end{itemize}
  Now that the GGM framework is in place, we turn to its parameters estimation made possible by the faithfulness property.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -276,7 +286,10 @@ In the special framework of GGM, conditional dependence relations are perfectly 
  \subsubsection{Penalized estimation}
  In a standard linear regression model, penalized estimation is used to select predictors. The most popular penalized method is the Lasso \citep{lasso} which apply the $\ell_1$ penalty and estimates the $\beta$ coefficients as the solution of:
  $$\argmin_{\beta \in \mathds{R}^p} \big\{ ||\Yb - \Xb\beta ||^2_2 + \lambda ||\beta||_1\big\}, \qquad ||\beta||_=\sum_{i=1}^p |\beta_i|,$$
- where $\lambda$ is a penalty parameter. The form of the penalty forces some coefficients to be exactly zero. Penalized estimation in GGM is performed by the Graphical Lasso (glasso) \citep{glasso}, which introduces sparsity in the precision matrix by imposing Lasso penalties on its entries. The log-likelihood of a GGM writes:
+ where $\lambda$ is a penalty called the regularization parameter.  The form of the $\ell_1$ penalty forces some coefficients to exactly equal zero.
+ \textcolor{red}{use with the regression interpretation of networks}.
+ 
+ Penalized estimation in GGM is performed by the Graphical Lasso (glasso) \citep{glasso}, which introduces sparsity in the precision matrix by imposing Lasso penalties on its entries. The log-likelihood of a GGM writes:
  $$L_\lambda(\Omegab) = \log |\Omegab| +\tr{\Yb^\intercal \Yb \Omegab}+cst .$$
  The precision matrix is then estimated as the matrix which maximizes the penalized log-likelihood:
  $$\argmax_{\Omegab\geq 0} \big\{L_\lambda(\Omegab) - \lambda ||\Omegab||_1\big\}, \qquad ||\Omegab||_1 = \sum_{j\neq k} |\omega_{jk}|.$$
@@ -375,7 +388,7 @@ where $m(\cdot)$ is the geometric mean. A clr-transformed vector is constrained 
 
 
 \subsubsection{Copulas}
-Copulas are  joint  distributions which map the marginal  cumulative distribution functions of a multivariate random vector.  They are used to describe the dependence between random variables, and in particular for Gaussian copulas the correlation matrix can be estimated. In their original form, they only apply to continuous marginals, and their extension to discrete data has been controversial \citep{F17}. However recent developments made the use of  Gaussian copula coupled with discrete marginal distributions possible \citep{PCJ12,PHW18}, opening the way to the application of copulas in the analysis of multivariate count data \citep{AVP19}. In this context, a first step estimates each $p$ marginal univariate discrete distributions parameters while accounting for covariates and possible offsets. Then the distribution of the response Gaussian copula is computed as a $p-$dimensional integrand (see \citet{PHW18}). \citet{PWT19} proved that  Gaussian copulas are a relevant and promising approach to the problem of network inference from abundance data, even if the computation cost remains substantial as it requires importance sampling as well as Monte Carlo expectation maximization algorithms.
+Copulas are  joint  distributions which map the marginal  cumulative distribution functions of a multivariate random vector.  They are used to describe the dependence between random variables, and in particular for Gaussian copulas the correlation matrix can be estimated. In their original form, they only apply to continuous marginals, and their extension to discrete data has been controversial \citep{F17}. However recent developments made the use of  Gaussian copula coupled with discrete marginal distributions possible \citep{PCJ12,PHW18}, opening the way to the application of copulas in the analysis of multivariate count data \citep{AVP19}. In this context, a first step estimates each $p$ marginal univariate discrete distributions parameters while accounting for covariates and possible offsets. Then the distribution of the response Gaussian copula is computed as a $p-$dimensional integrand (see \citet{PHW18}). \citet{PWT19} proved that  Gaussian copulas are a relevant and promising approach to the problem of network inference from abundance data, even if the computation cost remains substantial as it requires importance sampling as well as Monte Carlo expectation maximization algorithms. One way of taking advantage of the copula theory without having to actually estimate the joint distribution is to use copulas as a data transformation.\cite{MRFcov} resort to the nonparanormal transformation of counts which is a semiparametric Gaussian copula \citep{LLW09}, in an attempt to estimate network parameters varying across a gradient of covariates. 
 
 \subsubsection{Latent variables}
 
@@ -405,13 +418,16 @@ In the case of a GLMM, $K=p$ and latent variables and abundances are  modeled as
 \begin{tabular}{l|ccc|cc|cc|}
 \cline{2-8}
  & \multicolumn{3}{c|}{ Gaussian shift} & \multicolumn{2}{c|}{Network inference} & \multicolumn{2}{c|}{Estimation} \\ \cline{2-8} 
- & Trans. & LV & Copulas & glasso & Trees & MCMC & EM \\ \hline
+ & Trans. & LV & Copulas & Penalized & Trees & MCMC & EM \\ \hline
 \multicolumn{1}{|l|}{gCoda} & x &  &  & x &  &  &  \\ \hline
 \multicolumn{1}{|l|}{ecoCopula} &  &  & x & x &  & x &  \\ \hline
 \multicolumn{1}{|l|}{(V)EMtree} &  & x &  &  & x &  & x \\ \hline
 \multicolumn{1}{|l|}{MInt} &  & x &  & x &  &  &  \\ \hline
-\multicolumn{1}{|l|}{MRFcov} &  &  &  & x &  &  &  \\ \hline
+\multicolumn{1}{|l|}{MRFcov} &  &  & x & x &  &  &  \\ \hline
 \multicolumn{1}{|l|}{SpiecEasi} & x &  &  & x &  &  &  \\ \hline
+\multicolumn{1}{|l|}{LITree} & \multicolumn{1}{l}{\cellcolor[HTML]{d8d8d8}} & \multicolumn{1}{l}{\cellcolor[HTML]{d8d8d8}} & \multicolumn{1}{l|}{\cellcolor[HTML]{d8d8d8}} & \multicolumn{1}{l}{} & \multicolumn{1}{c|}{x} & \multicolumn{1}{l}{} & \multicolumn{1}{c|}{x} \\ \hline
+\multicolumn{1}{|l|}{saturnin} & \multicolumn{1}{l}{\cellcolor[HTML]{d8d8d8}} & \multicolumn{1}{l}{\cellcolor[HTML]{d8d8d8}} & \multicolumn{1}{l|}{\cellcolor[HTML]{d8d8d8}} & \multicolumn{1}{l}{} & \multicolumn{1}{c|}{x} & \multicolumn{1}{c}{x} & \multicolumn{1}{l|}{} \\ \hline
+
 \end{tabular}
 \end{table}
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
