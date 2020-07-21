@@ -1,5 +1,5 @@
 
-
+\vspace{1cm}
 This first chapter  details the technical background extracted from the literature which is used in the next chapters. It begins by covering all the required notions of graphical models, with a  focus on the spanning tree structures specifics. Then we present Gaussian graphical models properties and explain why it is a golden framework for network inference. After a reminder on the Expectation-Maximization algorithm as well as its variational interpretation, the last part is a state of the art of network inference from abundance data and presents methods stemming from both genomics and ecology. This chapter is meant to be independent from the rest of this work, and therefore repetitions with published work is unavoidable.
 
 
@@ -178,7 +178,7 @@ The total number of spanning trees in any graph can thus be computed in polynomi
    
 \end{theorem}    
 
-Consequently, the operation of summing over all spanning trees can be carried out in a computationally efficient way.  Theorem \ref{thmm:MTT} actually gives the solution to the computation of the sum on trees of a product function on the edges of a spanning tree, which can be judiciously used. \cite{MeilaJaak} then build on this result to provide a close form expression for the derivative of the sum-product $W$ with respect to each entry of the input weight matrix $\Wbf$.   Without loss of generality, we choose $\Qbf^{11}$.
+Consequently, the operation of summing over all spanning trees can be carried out in a computationally efficient way. \cite{MeilaJaak}  build on this result to provide a close form expression for the derivative of the sum-product $W$ with respect to each entry of the input weight matrix $\Wbf$.   Without loss of generality, we choose $\Qbf^{11}$.
 
 \begin{lemma} [\cite{MeilaJaak}] \label{lemm:Meila}
     Define the entries of the symmetric matrix $\Mbf$ as
@@ -193,7 +193,7 @@ it then holds that
 $$\partial_{w_{jk}} W = [\Mbf]_{jk}  \times W.$$
 \end{lemma}
 
-As we will see later on, it is possible to carry out network inference using average on trees, in which case  Theorem \ref{thmm:MTT} and Lemma \ref{lemm:Meila} are particularly useful.
+Theorem \ref{thmm:MTT} actually gives the solution to the computation of the sum on trees of a product function on the edges of a spanning tree, which can be judiciously used combined with  Lemma \ref{lemm:Meila} to perform network inference using average on trees, as we will see later on. 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -204,78 +204,85 @@ As we will see later on, it is possible to carry out network inference using ave
  \subsection{Specific properties}
 The multivariate Gaussian distribution possesses various properties which facilitate computations as well as interpretations. Two in particular are of interest in the graphical models setting. The first one concerns the natural handy writing of its density.
  \begin{prop}\label{pp:ggm1}
- Let $X\sim \mathcal{N}(\mu, \Sigma)$ with precision matrix $\Omega=\Sigma^{-1}$ and $X_k$ denote the $k^{th}$ column of $X$. Then the associated density $f$ factorizes as:
+ Let $X\sim \mathcal{N}(\mu, \Sigmab)$ with precision matrix $\Omegab=\Sigmab^{-1}$ and $X_k$ denote the $k^{th}$ column of $X$. Then the associated density $f$ factorizes as:
  $$f(X) \propto \prod_{k,\ell, \omega_{kl}\neq 0} \exp(-X_{k}\omega_{k\ell}X_{\ell}/2)$$
  \end{prop}
- Therefore as the density naturally factorizes, Theorem \ref{thm:ham} states that $f$ is global Markov relative to an undirected graph $\G$, the edges of which are determined by the non-null entries of its precision matrix $\Omega$.  The multivariate Gaussian distribution also presents with a facilitating property about conditional independence, reminded below.
+ Therefore as the density naturally factorizes, Theorem \ref{thm:ham} states that $f$ is global Markov relative to an undirected graph $\G$, the edges of which are determined by the non-null entries of its precision matrix $\Omegab$.  The multivariate Gaussian distribution also presents with a facilitating property about conditional independence, reminded below.
  
- \begin{prop}\label{pp:ggm2}If  $X\sim \mathcal{N}_V(\mu, \Omega^{-1})$, then it holds for any $k,\ell\in V$ with $k\neq \ell$ that
+ \begin{prop}\label{pp:ggm2}If  $X\sim \mathcal{N}_V(\mu, \Omegab^{-1})$, then it holds for any $k,\ell\in V$ with $k\neq \ell$ that
 $$X_k \independent X_\ell \mid X_{V\setminus\{k,\ell\}} \iff \omega_{k\ell}=0 $$
  \end{prop}
-  Proposition \ref{pp:ggm2} is not a consequence of proposition \ref{pp:ggm1}, and comes directly from the fact that the $2\times 2$  covariance matrix of variables $k$ and $l$ conditional on all others expresses in terms of the precision matrix : $$\Sigma_{k,l\mid V\setminus\{k,l\}} = |\Omega_{\{k,l\}}|^{-1} \left(\begin{array}{cc}
+  Proposition \ref{pp:ggm2} is not a consequence of proposition \ref{pp:ggm1}, and comes directly from the fact that the $2\times 2$  covariance matrix of variables $k$ and $l$ conditional on all others expresses in terms of the precision matrix : $$\Sigmab_{k,l\mid V\setminus\{k,l\}} = |\Omegab_{\{k,l\}}|^{-1} \left(\begin{array}{cc}
 \omega_{kk} & -\omega_{kl}\\
 -\omega_{kl} & \omega_{ll}  
   \end{array}\right).$$
-Combining the above propositions \ref{pp:ggm1} and \ref{pp:ggm2}, it is easy to see that a conditional independence implies a null entry in $\Omega$, which in turn implies no edge between the corresponding nodes in $\G$. This proves the following result.
+Combining the above propositions \ref{pp:ggm1} and \ref{pp:ggm2}, it is easy to see that a conditional independence implies a null entry in $\Omegab$, which in turn implies no edge between the corresponding nodes in $\G$. This proves the following result.
 
 \begin{prop}[Faithfulness property]\label{ggm:faith}
- Let $X\sim \mathcal{N}(\mu, \Omega^{-1})$ with associated density $f$, $\G$ the graph which edges represent the non-nul entries of $\Omega$. Then $f$ is faithful Markov relative to $\G$,  and it holds that:
+ Let $X\sim \mathcal{N}(\mu, \Omegab^{-1})$ with associated density $f$, $\G$ the graph which edges represent the non-nul entries of $\Omega$. Then $f$ is faithful Markov relative to $\G$,  and it holds that:
  $$k\nsim \ell \iff  X_k \independent X_\ell \mid X_{V\setminus\{k,\ell\}} \iff \omega_{k\ell}=0.$$
 \end{prop} 
 
-Proposition \ref{ggm:faith} is key for estimation in the GGM framework, as it states that finding the null precision entries gives all the graph. 
+Proposition \ref{ggm:faith} is key for estimation in the GGM framework, as it states that finding the null precision entries gives all the graph. The Gaussian framework also offers specific conditioning results, and in particular the regression interpretation of $\Omegab$ entries.
 
-The Gaussian framework also offers a regression interpretation of $\Omega$ entries. Considering $X\sim \mathcal{N}(\mu, \Omega^{-1})$
+\begin{prop}[Regression interpretation]
+ Considering $X\sim \mathcal{N}(\mu, \Omegab^{-1})$, the linear regression of  $X_j$ on $X_{\setminus j}$ writes :
+$$X_j = \sum_{k\neq j} \beta_{jk} X_k + \varepsilon_j,\qquad \text{where}\qquad\varepsilon_j \sim \Ncal (0, \omega_{jj}^{-1}), \qquad \beta_{jk} = \frac{\omega_{jk}}{\omega_{jj}}.$$
 
-%Regression interpretation of entries of $\Omegab$
-\begin{itemize}
-\item regression of a variable against the rest
-\item link of regression coefficient and omega entries
-\item conclusion 
-\end{itemize}
- Now that the GGM framework is in place, we turn to its parameters estimation made possible by the faithfulness property.
+\end{prop}
+Hence $\omega_{jk}$ is, up to a scalar, the coefficient of $X_k$ in the multiple regression of $X_j$ on all other variables. This result is at the basis GGM inference methods relying on regression, which we will see later on. But first, let's turn to Lauritzen's  parameters estimation for GGM, made possible by the faithfulness property.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
- \subsection{Parameters estimation}
-First some notations: for any  squared  matrix $A$ of dimension $V$ and $B$ a subset of $V$, we let $A_B$ refer to the bloc $B$ of $A$: $A_{B}=(a_{ij})_{\{i,j\}\in B}$.   $[A_B]^V$ then denotes the matrix obtained by filling up with zero entries to obtain full dimension $V\times V$, so that:
-$$([A_B]^q )_{ij}=\left\{ \begin{array}{rl}
+ \subsection{Maximum likelihood estimation}
+In this section we adopt the following notations: for any  squared  matrix $\Abf$ of dimension $p$ and $B$ a subset of $V=\{1,...,p\}$, we let $\Abf_B$ refer to the bloc $B$ of $\Abf$: $\Abf_{B}=(a_{ij})_{\{i,j\}\in B}$.   $[\Abf_B]^p$ then denotes the matrix obtained by filling up with zero entries to obtain full dimension $p\times p$, so that:
+$$([\Abf_B]^p )_{ij}=\left\{ \begin{array}{rl}
 a_{ij} & \text{if } \{i,j\}\in B\\
 0 &  \text{if } \{i,j\}\in V_{\setminus B}
 \end{array}\right.$$
 
-  If $X$ is associated with a decomposable graph $\G$, the Markov property \ref{def:markov} decomposes accordingly and reflects in a multiplicative property for the density, and additive property for the concentration matrix. Considering a perfect sequence of the cliques of $\G$ as in Definition \ref{def:seq}, we have that
+Hereafter we consider  $X\sim\Ncal (\mu, \Omegab)$ with dimension $p$. If $X$ is associated with a decomposable graph $\G$, the Markov property \ref{def:markov} decomposes accordingly and reflects in a multiplicative property for the density, and additive property for the concentration matrix. More precisely, considering a perfect sequence of the cliques of $\G$ as in Definition \ref{def:seq}, we have that
  $$f(X)=\dfrac{\prod_{C\in \mathcal{C}} f(X_C)}{\prod_{S\in \mathcal{S}} f(X_S)^{\nu(S)}}.$$
-This general expression of the density across decomposition of the graph is very helpful in likelihood computations, especially when some hypotheses are made on the structure of $\G$. The following lemma gives the expressions for $\Omega$ and its determinant:
- \begin{lemma} In a decomposable Gaussian graphical model with precision matrix $\Omega = \Sigma^{-1}$ of dimension $V$, a perfect sequence of the cliques $\mathcal{C}$ of $\G$ gives:
+This general expression of the density across decomposition of the graph is very helpful in likelihood computations, especially when some hypotheses are made on the structure of $\G$. The following lemma gives the expressions for $\Omegab$ and its determinant:
+ \begin{lemma} In a decomposable Gaussian graphical model with precision matrix $\Omegab = \Sigmab^{-1}$ of dimension $p$:
  \begin{equation*}
  \left\{
  \begin{array}{rl}
- \Omega &= \sum_{C\in \mathcal{C}} \big[(\Sigma_C)^{-1}\big]^V - \sum_{S\in \mathcal{S}} \nu(S)  \big[(\Sigma_S)^{-1}\big]^V \\\\
- |\Omega| &=\dfrac{\prod_{C\in \mathcal{C}} |\Sigma_C|^{-1}}{\prod_{S\in \mathcal{S}} |\Sigma_S|^{-\nu(S)}}
+ \Omegab &= \sum_{C\in \mathcal{C}} \big[(\Sigmab_C)^{-1}\big]^p - \sum_{S\in \mathcal{S}} \nu(S)  \big[(\Sigmab_S)^{-1}\big]^p \\\\
+ |\Omegab| &=\dfrac{\prod_{C\in \mathcal{C}} |\Sigmab_C|^{-1}}{\prod_{S\in \mathcal{S}} |\Sigmab_S|^{-\nu(S)}}
  \end{array} \right.
 \end{equation*}  
+where $\mathcal{C}$ is the set of cliques of $\G$ and $\mathcal{S}$ the set of separators with multiplicities $\nu$ in any perfect sequence. 
 \end{lemma}
 
-The GGM framework allows exact results for the estimation of maximum likelihood estimators of the mean vector, the precision matrix, its determinant and the terms of the covariance matrix corresponding to edges in the graph. They all depend on the sum of squared deviations, defined as follows where $X^i$ denotes the $i^{th}$ sample of $X$:
+The GGM framework allows exact results for the estimation of maximum likelihood estimators (MLE) of the mean vector, the precision matrix, its determinant and the terms of the covariance matrix corresponding to edges in the graph. They all depend on the sufficient statistic that is the sum of squared deviations, defined as follows where $X^i$ denotes the $i^{th}$ sample of $X$:
 \begin{definition}
-The sum of squared deviations matrix of a multivariate Gaussian $X$, also known as total sum of squares,  is given by:
-$$SSD = \sum_{i=1}^n (X^i - \xbar{X})(X^i - \xbar{X})^\intercal = X^\intercal X - n  \xbar{X} \xbar{X}^\intercal$$
+Denoting $\xbar{X}$ the empirical mean of the multivariate Gaussian $X$, the sum of squared deviations matrix, also known as total sum of squares,  is given by:
+$$SSD = \sum_{i=1}^n (X^i - \xbar{X})(X^i - \xbar{X})^\intercal = X^\intercal X - n  \xbar{X} \,\xbar{X}^\intercal.$$
 \end{definition}
-Hereafter we let $ssd_{ij}$ denote then $ij$ entry of the $SSD$ matrix.
-\begin{theorem}[\citet{Lau96} Theorem 5.3]
-In the Gaussian graphical model,  the maximum likelihood estimates of the unknown mean and covariance matrix exist if the $SSD$ matrix is positive definite. If $n>|V|$ this happens with probability one. When they exist, the estimate of the mean is $\widehat{\mu} = \xbar{X}$, and the estimate of the unknown covariance matrix $\Sigma$ is determined as the unique solution of the system of equations
-$$n\widehat{\sigma}_{jj} = ssd_{jj}, n\widehat{\sigma}_{k\ell} = ssd_{k\ell}, j,k,\ell \in V, k\sim\ell,$$
+The following theorems \ref{mle:sig} and \ref{mle:ome} give the MLE estimators in the GGM framework using $SSD=(ssd_ij)_{ij}$.
+ 
+\begin{theorem}[\citet{Lau96} Theorem 5.3]\label{mle:sig}
+In the Gaussian graphical model,  the MLE of the unknown mean and covariance matrix exist with probability one if $n>p$. When they exist, the estimate of the mean is $\widehat{\mu} = \xbar{X}$, and the estimate of the unknown covariance matrix $\Sigmab$ is determined as the unique solution of the system of equations
+\begin{equation*}
+ \left\{
+ \begin{array}{rl}
+ n\widehat{\sigma}_{jj} = ssd_{jj}&, j\in V\\
+ n\widehat{\sigma}_{k\ell} = ssd_{k\ell}&, k\sim\ell, (k,\ell) \in V
+ \end{array} \right.
+\end{equation*}  
 which also satisfies the model restriction $\omega_{k\ell} =0 \iff k\nsim \ell $.
 \end{theorem}
 
-\begin{theorem}[\citet{Lau96} Proposition 5.9]
-In a Gaussian graphical model with graph $\G$, the maximum likelihood estimate of the precision matrix exists with probability one if $n>max_{C\in\mathcal{C}}|C|$. It is then given as
-$$\widehat{\Omega} = n \bigg\{\sum_{C\in\mathcal{C}} \big[(SSD_C)^{-1}\big]^V-\sum_{S\in\mathcal{S}} \nu(S) \big[(SSD_S)^{-1}\big]^V \bigg\},$$
+\begin{theorem}[\citet{Lau96} Proposition 5.9]\label{mle:ome}
+In a Gaussian graphical model with graph $\G$, the MLE of the precision matrix exists with probability one if $n>max_{C\in\mathcal{C}}|C|$. It is then given as
+$$\widehat{\Omegab} = n \bigg\{\sum_{C\in\mathcal{C}} \big[(SSD_C)^{-1}\big]^p-\sum_{S\in\mathcal{S}} \nu(S) \big[(SSD_S)^{-1}\big]^p\bigg\},$$
 where $\mathcal{C}$ is the set of cliques of $\G$ and $\mathcal{S}$ the set of separators with multiplicities $\nu$ in any perfect sequence. The determinant of the estimate can be calculated as
-$$|\widehat{\Omega}| = n^{|V|} \dfrac{\prod_{C\in\mathcal{C}}|(SSD_C)^{-1}|}{\prod_{S\in\mathcal{S}} (|(SSD_S)^{-1}|)^{\nu(S)}}$$
+$$|\widehat{\Omegab}| = n^p \dfrac{\prod_{C\in\mathcal{C}}|(SSD_C)^{-1}|}{\prod_{S\in\mathcal{S}} (|(SSD_S)^{-1}|)^{\nu(S)}}$$
 \end{theorem}
  
-The necessary condition $n>max_{C\in\mathcal{C}}|C|$  ensures the positive definiteness of all $SSD_C$ (otherwise some might not have full rank). All of the above maximum likelihood estimators require the precise knowledge of the graph structure and is therefore rarely available. However relying on spanning tree structures greatly simplifies the expressions and make their use possible.
+The condition $n>max_{C\in\mathcal{C}}|C|$ of Theorem \ref{mle:ome} is necessary as it ensures the positive definiteness of all $SSD_C$ (otherwise some might not have full rank). But the stronger condition $n>p$ of Theorem \ref{mle:sig} is sufficient for the existence of all the MLE. 
+
+ All of the above maximum likelihood estimators require the precise knowledge of the graph structure and is therefore rarely available. However relying on simple structures (e.g. spanning trees) greatly simplifies the expressions and make their use possible.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Network inference from Gaussian data}
