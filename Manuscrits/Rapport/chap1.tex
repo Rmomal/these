@@ -7,7 +7,7 @@ This first chapter  details the technical background extracted from the literatu
  A graphical model is classically described as a probabilistic model which conditional dependence structure is given by a graph. This first section gives the general framework of graphical models, definitions and properties are adapted from \citet{Lau96}.  Then the special case of  spanning tree graphs is presented.
  %%%%%%%%%%%%%%%%%%%%%%%%%%
  \subsection{General framework}
- A graph is defined as a pair $\G=(V,E)$ such that $V$ is a finite set of vertices, and the set of edges $E$ is a subset of $V\times V$ such that vertices are not linked to themselves and there are no multiple edges between two vertices. For any given pair of nodes $(k,\ell)$, we denote an edge by $k\sim\ell$ and an absence of edge by $k\nsim \ell$. In the literature, $V$ can be composed of both quantitative and qualitative variables. However here we  only use variables of one kind (quantitative) and so $V$ is called pure. The following definitions apply to the particular case of a pure vertex set $V$ and an undirected graph $\G$.
+ A graph is defined as a pair $\G=(V,E)$ such that $V$ is a finite set of vertices, and the set of edges $E$ is a subset of $V\times V$ such that vertices are not linked to themselves and there are no multiple edges between two vertices. For any given pair of nodes $(k,\ell)$, we denote an edge by $k\sim\ell$ and an absence of edge by $k\nsim \ell$. In the literature, $V$ can be composed of both quantitative and qualitative variables. However here we  only use variables of one kind (quantitative) and so $V$ is called pure. The following definitions apply to the particular case of a pure vertex set $V$ and an undirected graph $\G$.\\
 
 Let's first consider a subset $A$ of the vertex set $V$. $A$ is said to be \textit{complete} if all the nodes it contains are linked with each other. If $A$ is additionally of maximal size, it is then called a \textit{clique}. This definition makes the expression "maximal clique" a pleonasm. The \textit{subgraph} $\G_A$ defined by $A$  is obtained from $\G$ by keeping edges with both endpoints in $A$. Furthermore if $A$, $B$ and $S$ are disjoint subsets of $V$, $S$ is said to \textit{separate} $A$ from $B$ if any path from $\G_A$ to $\G_B$ intersects with $\G_S$. The following notions of decomposable graphs and perfect sequences are central in the definition of a graphical model.
  
@@ -20,16 +20,16 @@ Let's first consider a subset $A$ of the vertex set $V$. $A$ is said to be \text
  If $A$ and $B$ are both non-empty, the decomposition is proper.
  \end{definition}
  
- 
+ Therefore a decomposition is simply a separation of the set of nodes on complete subsets. This allows to recursively define a decomposable graph:
  \begin{definition}[Decomposable graph]
  An undirected graph is decomposable if it is complete, or if there exists a proper decomposition $(A, B, C)$ into decomposable subgraphs $\G_{A\cup B}$ and $\G_{B\cup C}$.
  \end{definition}
- This recursive definition proves to be very helpful in demonstrations of decomposable graphs properties, but not to prove that a graph is decomposable. The notion of triangulation will help.
+ This definition proves to be very useful in demonstrations of decomposable graphs properties, but not to prove that a graph is decomposable. The following notion of triangulation will help.
  
  \begin{definition}[Triangulated graph]
  An undirected graph $\G$ is said to be triangulated if loops in $\G$ connect three nodes at most.
  \end{definition} 
- In other words in a triangulated graph, the loop of maximal size will form a triangle.
+ In other words in a triangulated graph, the loop of maximal size will form a triangle. Then, a \textit{sequence} is a numbered list of subsets of the node set. A sequence is called \textit{perfect} under the following conditions on the subsets and the numbering order:
  \begin{definition}[Perfect sequence]\label{def:seq}
  Let $B_1,...,B_k$ be a sequence of subsets of the pure set of vertex $V$ of the undirected graph $\G$. Let $H_j=B_1\cup .. \cup B_j$, and $S_j = H_{j-1} \cap B_j$. The sequence is perfect if it satisfies the following conditions:
  \begin{enumerate}[label=(\roman*)]
@@ -42,7 +42,7 @@ Let's first consider a subset $A$ of the vertex set $V$. $A$ is said to be \text
 % A perfect numbering of the vertices $V$ of $\G$ is a numbering $\alpha_1,...,\alpha_k$ such that the sequence $B_1,...,B_k$ with 
 % $$B_j = cl(\alpha_j) \cap \{\alpha_1,...,\alpha_j\}, j\geq 1 $$ is a perfect sequence. This implies that each $B_j$ is a complete subset.
 % \end{definition}
-Note that the empty set can be included in the set of separators. An example where separators are complete but the sequence is not perfect is the following.
+ An example where separators are complete but the sequence is not perfect is the following.
 \begin{figure}[H]
  \begin{center}
 	\begin{tikzpicture}	
@@ -62,7 +62,9 @@ Note that the empty set can be included in the set of separators. An example whe
   \label{ex:graph1}
     \end{center}
 \end{figure}
-Consider the graph in Figure \ref{ex:graph1}. A sequence is $B=\big\{B_1=\{1,2\}, B_2=\{3,4\},B_3=\{2,3,5\}\big\}$, with the separators $S_2=\varnothing, S_3=\{2,3\}$. As $\{2,3\}$ is not a subset of any of the $B_i$ with $i$ less than 3, the running intersection property is violated and $B$ is not perfect.
+Consider the graph in Figure \ref{ex:graph1}. A sequence is $B=\big\{B_1=\{1,2\}, B_2=\{3,4\},B_3=\{2,3,5\}\big\}$, with the separators $S_2=\varnothing, S_3=\{2,3\}$. As $\{2,3\}$ is not a subset of any of the $B_i$ with $i$ less than 3, the running intersection property is violated and $B$ is not perfect. Inverting $B_2$ and $B_3$ however yields a perfect sequence. 
+%Note that in the definition the empty set can be included in the set of separators, but an easy way to find a perfect sequence is simply to avoid this situation. 
+The notion of perfect sequence allows to define the multiplicity of a separator:
  \begin{definition}[multiplicity of a separator]
  The multiplicity $\nu (S)$ of the separator $S$ is an index counting the number of times $S$ occurs in a perfect sequence.
  \end{definition}
@@ -91,7 +93,7 @@ Consider the graph in Figure \ref{ex:graph1}. A sequence is $B=\big\{B_1=\{1,2\}
         (A4) edge [] (A7)
         (A4) edge [] (A8);
 	\end{tikzpicture} 
- \caption{An undirected decomposable graph with 8 variables}
+ \caption{An undirected decomposable graph with 8 nodes.}
   \label{ex:graph}
     \end{center}
 \end{figure}
@@ -109,7 +111,7 @@ The following conditions are equivalent for an undirected graph $\G$:
 \end{enumerate}
 \end{prop}
 
- This property is the most useful, as it states that as soon as a graph does not present with cycles of size 4 or more, it is decomposable on its cliques. This decomposition is essential to the graphical model properties, as we shall see in Gaussian graphical models.
+ This property is the most useful in practice, as it states that as soon as a graph does not present with cycles of size 4 or more, it is decomposable on its cliques. This decomposition is essential to the graphical model properties, as we will see in Gaussian graphical models.
  
  %%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Characterization of conditional independence}
@@ -259,7 +261,7 @@ The GGM framework allows exact results for the estimation of maximum likelihood 
 Denoting $\xbar{X}$ the empirical mean of the multivariate Gaussian $X$, the sum of squared deviations matrix, also known as total sum of squares,  is given by:
 $$SSD = \sum_{i=1}^n (X^i - \xbar{X})(X^i - \xbar{X})^\intercal = X^\intercal X - n  \xbar{X} \,\xbar{X}^\intercal.$$
 \end{definition}
-The following theorems \ref{mle:sig} and \ref{mle:ome} give the MLE estimators in the GGM framework using $SSD=(ssd_ij)_{ij}$.
+The following theorems \ref{mle:sig} and \ref{mle:ome} give the MLE estimators in the GGM framework using $SSD=(ssd_{ij})_{ij}$.
  
 \begin{theorem}[\citet{Lau96} Theorem 5.3]\label{mle:sig}
 In the Gaussian graphical model,  the MLE of the unknown mean and covariance matrix exist with probability one if $n>p$. When they exist, the estimate of the mean is $\widehat{\mu} = \xbar{X}$, and the estimate of the unknown covariance matrix $\Sigmab$ is determined as the unique solution of the system of equations
@@ -356,11 +358,11 @@ In the E step, the search space for $q^{t+1}$ is the whole set of distributions 
  
 
 %%%%%%%%%%%%%%%%%%%%%%%%%% 
- \subsection{Variational version}
+ \subsection{Variational estimation}
  When $p_\thetab(\Zbf\mid\Ybf)$ cannot be computed, the variational version of the EM reduces the search space of the $q$ distribution to a set $Q$, which is chosen to ease the computations of the M step. Doing so results in a variational approximation of $p_\thetab(\Zbf\mid\Ybf)$. Therefore in a  Variation EM (VEM) algorithm, the E step is replaced by a VE step, which is  
  $$q^{t+1}=\argmax_{q\in Q} \{ \bound(\thetabf^t, q^t)\}.$$
  
- A widely used choice for $Q$ are product-form distributions, such that for $K$ hidden variables $Q=\{q(\Zbf)=\prod_{k=1}^K q_k(z_k)\}$. This set of distribution results in a so-called a mean-field approximation. 
+ A widely used choice for $Q$ are product-form distributions, such that for $K$ hidden variables $Q=\{q(\Zbf)=\prod_{k=1}^K q_k(z_k)\}$. This set of distribution results in a so-called a mean-field approximation. \\
  
 In the variational bayesian setting, \citet{beal} derive update equations  for the hidden variables as well as the parameters. Random parameters are a specificity of the bayesian framework, and in fact they can be viewed as other hidden variables. Hidden entities in proposition \ref{beal} below can thus be latent factors, unobserved variables, or bayesian parameters.
 
@@ -408,7 +410,7 @@ In more details, in a LVM the random effect associated to the mean abundance $m_
  y_{ij}\mid \zb_i &\sim F(m_{ij}, \phi_j)\\
 \zb_i&\sim \Ncal(0, \boldsymbol{I}),
  \end{align*}
-and the covariance matrix of the latent layer of random effects can be computed from the factor loadings as $\Sigmab=\Lambdab^\intercal \Lambdab$.
+and the covariance matrix of the latent layer of random effects can be computed from the factor loadings as $\Sigmab=\Lambdab^\intercal \Lambdab$.\\
 
 In the case of a GLMM, $K=p$ and latent variables and abundances are  modeled as:
  \begin{align*}
