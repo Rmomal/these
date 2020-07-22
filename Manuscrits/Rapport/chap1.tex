@@ -29,7 +29,7 @@ Let's first consider a subset $A$ of the vertex set $V$. $A$ is said to be \text
  \begin{definition}[Triangulated graph]
  An undirected graph $\G$ is said to be triangulated if loops in $\G$ connect three nodes at most.
  \end{definition} 
- In other words in a triangulated graph, the loop of maximal size will form a triangle. Then, a \textit{sequence} is a numbered list of subsets of the node set. A sequence is called \textit{perfect} under the following conditions on the subsets and the numbering order:
+ In other words in a triangulated graph, the loop of maximal size will form a triangle. Triangulated graphs are also called chordal graphs. Then, a \textit{sequence} is a numbered list of subsets of the node set. A sequence is called \textit{perfect} under the following conditions on the subsets and the numbering order:
  \begin{definition}[Perfect sequence]\label{def:seq}
  Let $B_1,...,B_k$ be a sequence of subsets of the pure set of vertex $V$ of the undirected graph $\G$. Let $H_j=B_1\cup .. \cup B_j$, and $S_j = H_{j-1} \cap B_j$. The sequence is perfect if it satisfies the following conditions:
  \begin{enumerate}[label=(\roman*)]
@@ -227,7 +227,7 @@ Combining the above propositions \ref{pp:ggm1} and \ref{pp:ggm2}, it is easy to 
 
 Proposition \ref{ggm:faith} is key for estimation in the GGM framework, as it states that finding the null precision entries gives all the graph. The Gaussian framework also offers specific conditioning results, and in particular the regression interpretation of $\Omegab$ entries.
 
-\begin{prop}[Regression interpretation]
+\begin{prop}[Regression interpretation]\label{ggm:reg}
  Considering $X\sim \mathcal{N}(\mu, \Omegab^{-1})$, the linear regression of  $X_j$ on $X_{\setminus j}$ writes :
 $$X_j = \sum_{k\neq j} \beta_{jk} X_k + \varepsilon_j,\qquad \text{where}\qquad\varepsilon_j \sim \Ncal (0, \omega_{jj}^{-1}), \qquad \beta_{jk} = \frac{\omega_{jk}}{\omega_{jj}}.$$
 
@@ -282,7 +282,7 @@ where $\mathcal{C}$ is the set of cliques of $\G$ and $\mathcal{S}$ the set of s
 $$|\widehat{\Omegab}| = n^p \dfrac{\prod_{C\in\mathcal{C}}|(SSD_C)^{-1}|}{\prod_{S\in\mathcal{S}} (|(SSD_S)^{-1}|)^{\nu(S)}}$$
 \end{theorem}
  
-The condition $n>max_{C\in\mathcal{C}}|C|$ of Theorem \ref{mle:ome} is necessary as it ensures the positive definiteness of all $SSD_C$ (otherwise some might not have full rank). But the stronger condition $n>p$ of Theorem \ref{mle:sig} is sufficient for the existence of all the MLE. 
+The stronger condition $n>p$ of Theorem \ref{mle:sig} is only sufficient, whereas the condition $n>max_{C\in\mathcal{C}}|C|$ of Theorem \ref{mle:ome} is necessary for the existence of all the MLE, as it ensures the positive definiteness of all $SSD_C$ (otherwise some might not have full rank).  
 
  All of the above maximum likelihood estimators require the precise knowledge of the graph structure and is therefore rarely available. However relying on simple structures (e.g. spanning trees) greatly simplifies the expressions and make their use possible.
 
@@ -420,6 +420,7 @@ In the case of a GLMM, $K=p$ and latent variables and abundances are  modeled as
  where $F$ is a distribution with mean $m_{ij}$ and dispersion parameter $\phi_j$. The Poisson log-normal distribution (PLN, \citet{AiH89}), estimated in \citet{CMR18} and used in \citet{MRA20}, is a GLMM where $F$ is the Poisson distribution and $g$ the exponential function.  
  
  \subsection{Network inference}
+ \textcolor{red}{!Not final !}\\
  Network inference from count data generally moves the problem in the Gaussian framework  in order to  take advantage of all the aforementioned results on Gaussian graphical models. \\
  
  
