@@ -290,19 +290,16 @@ The stronger condition $n>p$ of Theorem \ref{mle:sig} is only sufficient, wherea
 \subsection{Network inference from Gaussian data}
   Network inference here refers to the inference of the conditional dependence structure of multiple variables jointly observed in a series of sites. The interactions between the species are unknown, therefore this is not to be confused with the art of inferring a network parameters (e.g. sign and strength of the interactions) from observations of repeated interactions.
   
-In the special framework of GGM, conditional dependence relations are perfectly represented by the non-nul entries of the precision matrix $\Omegab$, as specified in Proposition \ref{ggm:faith}. The general approach to network inference in GGM is then to perform a sparse estimation of $\Omegab$.
+In the special framework of GGM, conditional dependence relations are perfectly represented by the non-nul entries of the precision matrix $\Omegab$, as specified in Proposition \ref{ggm:faith}. Therefore the general approach to network inference in GGM is then to perform a sparse estimation of $\Omegab$.
 
  \subsubsection{Penalized estimation}
  In a standard linear regression model, penalized estimation is used to select predictors. The most popular penalized method is the Lasso \citep{lasso} which apply the $\ell_1$ penalty and estimates the $\beta$ coefficients as the solution of:
  $$\argmin_{\beta \in \mathds{R}^p} \big\{ ||\Yb - \Xb\beta ||^2_2 + \lambda ||\beta||_1\big\}, \qquad ||\beta||_=\sum_{i=1}^p |\beta_i|,$$
- where $\lambda$ is a penalty called the regularization parameter.  The form of the $\ell_1$ penalty forces some coefficients to exactly equal zero.
- \textcolor{red}{use with the regression interpretation of networks}.
- 
- Penalized estimation in GGM is performed by the Graphical Lasso (glasso) \citep{glasso}, which introduces sparsity in the precision matrix by imposing Lasso penalties on its entries. The log-likelihood of a GGM writes:
+ where $\lambda$ is a penalty called the regularization parameter.  The form of the $\ell_1$ penalty forces some coefficients to exactly equal zero. Taking advantage of the regression interpretation in GGM reminded in Proposition \ref{ggm:reg}, a method for inferring non-nul elements of the precision matrix is to run separate penalized regressions of each node against all others and possible covariates, as in \citet{CWL18}. A joint estimation of these regression models is performed by the widely used Graphical Lasso (glasso) \citep{glasso}. The glasso introduces sparsity in the precision matrix by imposing Lasso penalties on its entries. It is an iterative procedures which aims a sparse MLE of the penalized precision matrix.  The log-likelihood of a GGM writes:
  $$L_\lambda(\Omegab) = \log |\Omegab| +\tr{\Yb^\intercal \Yb \Omegab}+cst .$$
  The precision matrix is then estimated as the matrix which maximizes the penalized log-likelihood:
  $$\argmax_{\Omegab\geq 0} \big\{L_\lambda(\Omegab) - \lambda ||\Omegab||_1\big\}, \qquad ||\Omegab||_1 = \sum_{j\neq k} |\omega_{jk}|.$$
-The glasso gives a sparse penalized maximum likelihood estimator of $\Omegab$, and select the network edges by forcing some of them to zero in the precision matrix. The greater the penalty $\lambda$, the less edges are included in the network and therefore choosing $\lambda$ is critical for the glasso. The selection of $\lambda$ can be performed using classical tools such as cross-validation, Akaike information criterion (AIC),  Bayesian information criterion (BIC) or its extended version.  Another popular approach is to perform a stability selection with StARS \citep{stars}, which aims the network robustness under random sampling.
+The glasso  selects the network edges by forcing some of them to zero in the precision matrix. The greater the penalty $\lambda$, the less edges are included in the network and therefore choosing $\lambda$ is critical for the glasso. The selection of $\lambda$ can be performed using classical tools such as cross-validation, Akaike information criterion (AIC),  Bayesian information criterion (BIC) or its extended version.  Another popular approach is to perform a stability selection with StARS \citep{stars}, which aims the network robustness under random sampling.
 
  %builds on the regression interpretation of the partial correlation
 
@@ -343,8 +340,8 @@ Incomplete data can refer either to unobserved variables due to experimental con
  \item [E step:] estimate $\Esp_{\thetab^t}[\log p_\thetab (\Ybf, \Zbf)\mid \Ybf]$
  \item [M step:] $\thetab^{t+1} = \argmax_\thetab \{ \Esp_{\thetab^t}[\log p_\thetab (\Ybf, \Zbf)\mid \Ybf]\}$
  \end{description} 
- The  log-likelihood $\log p_{thetab} (\Ybf)$ increases with the iterations of the EM algorithm \citep{DLR77}. \\
- 
+ The  log-likelihood $\log p_{\thetab} (\Ybf)$ increases with the iterations of the EM algorithm \citep{DLR77}. \\
+ \textcolor{red}{prop here}
  
  Another formulation of the EM assumes a distribution $q$ for the hidden variables \citep{NH98} and defines a  lower bound $\bound$ as:
  $$\bound(\thetabf, q) = \log p_\thetab (\Ybf) - KL(q(\Zbf) || p_\thetab(\Zbf\mid\Ybf)),$$
@@ -397,7 +394,7 @@ where $m(\cdot)$ is the geometric mean. A clr-transformed vector is constrained 
 
 
 \subsubsection{Copulas}
-Copulas are  joint  distributions which map the marginal  cumulative distribution functions of a multivariate random vector.  They are used to describe the dependence between random variables, and in particular for Gaussian copulas the correlation matrix can be estimated. In their original form, they only apply to continuous marginals, and their extension to discrete data has been controversial \citep{F17}. However recent developments made the use of  Gaussian copula coupled with discrete marginal distributions possible \citep{PCJ12,PHW18}, opening the way to the application of copulas in the analysis of multivariate count data \citep{AVP19}. In this context, a first step estimates each $p$ marginal univariate discrete distributions parameters while accounting for covariates and possible offsets. Then the distribution of the response Gaussian copula is computed as a $p-$dimensional integrand (see \citet{PHW18}). \citet{PWT19} proved that  Gaussian copulas are a relevant and promising approach to the problem of network inference from abundance data, even if the computation cost remains substantial as it requires importance sampling as well as Monte Carlo expectation maximization algorithms. One way of taking advantage of the copula theory without having to actually estimate the joint distribution is to use copulas as a data transformation.\cite{MRFcov} resort to the nonparanormal transformation of counts which is a semiparametric Gaussian copula \citep{LLW09}, in an attempt to estimate network parameters varying across a gradient of covariates. 
+Copulas are  joint  distributions which map the marginal  cumulative distribution functions of a multivariate random vector.  They are used to describe the dependence between random variables, and in particular for Gaussian copulas the correlation matrix can be estimated. In their original form, they only apply to continuous marginals, and their extension to discrete data has been controversial \citep{F17}. However recent developments made the use of  Gaussian copula coupled with discrete marginal distributions possible \citep{PCJ12,PHW18}, opening the way to the application of copulas in the analysis of multivariate count data \citep{AVP19}. In this context, a first step estimates each $p$ marginal univariate discrete distributions parameters while accounting for covariates and possible offsets. Then the distribution of the response Gaussian copula is computed as a $p-$dimensional integrand (see \citet{PHW18}). \citet{PWT19} proved that  Gaussian copulas are a relevant and promising approach to the problem of network inference from abundance data, even if the computation cost remains substantial as it requires importance sampling as well as Monte Carlo expectation maximization algorithms. One way of taking advantage of the copula theory without having to actually estimate the joint distribution is to use copulas as a data transformation. \cite{CWL18} resort to the nonparanormal transformation of counts which is a semiparametric Gaussian copula \citep{LLW09}, in an attempt to estimate network parameters varying across a gradient of covariates. 
 
 \subsubsection{Latent variables}
 
