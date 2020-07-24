@@ -101,6 +101,7 @@ ggimage(resVEM$Pg)
 r=2
 p=33
 H=(p+1):(p+r)
+VEM_fatala_200=vem
 sum(VEM_fatala_200$Pg[,H[1]])
 VEM_fatala_200$Pg[,H[2]]
 MH=VEM_fatala_200$M[,H]
@@ -151,8 +152,9 @@ vem$finalIter
 }))==100)
 lapply(ListVEM_boot_200, function(x){
   q=ncol(x$Pg)
- if(!is.null(q)) vois<-apply(x$Pg[,(q-1):q], 2, function(j){length(which(j>1e-1))})
+ if(!is.null(q)) vois<-apply(x$Pg[,(q-1):q], 2, function(j){length(which(j>0.01))})
 })
 vem=ListVEM_boot_200[[32]]
 ggimage(vem$Wg)
 hist(log(vem$Wg[,34]))
+which(vem$Pg[,34]>0.5)

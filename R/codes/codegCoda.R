@@ -59,7 +59,7 @@ gcoda <- function(x, counts = F, pseudo = 0.5, lambda.min.ratio = 1e-1,
     X = as.matrix(lm(formula, x=T)$x)
     model<-lm(x~X)
     U<-model$residuals
-   
+
     if(shuffleRes){ #browser()
     U<- shuffle(U,shufflevar)}
     S <- var(U)
@@ -149,10 +149,10 @@ gcoda_sub <- function(A, iSig = NULL, lambda = 0.1, tol_err = 3e-4,
   }
   nloglik <- fval_cur - lambda * sum(abs(iSig));
 
-  if(k >= k_max) {
-    cat("WARNING of gcoda_sub:\n", "\tMaximum Iteration:", k,
-        "&& Relative error:", err, "!\n");
-  }
+  # if(k >= k_max) {
+  #   cat("WARNING of gcoda_sub:\n", "\tMaximum Iteration:", k,
+  #       "&& Relative error:", err, "!\n");
+  # }
 
   return(list(iSig = iSig, nloglik = nloglik));
 }
@@ -178,7 +178,7 @@ huge_glasso_mod <- function(S, lambda) {
   q <- length(z);
   if (q > 0) {
     out.glasso= hugeglasso_sub(S = as.matrix((S[z, z])), W = as.matrix((S[z, z])), T = as.matrix(diag(as.double(q))),
-                               d= as.integer(q), ilambda = as.double(lambda), df = as.integer(0), 
+                               d= as.integer(q), ilambda = as.double(lambda), df = as.integer(0),
                                scr=TRUE)
     icov[z, z] = matrix(out.glasso, ncol = q);
   }

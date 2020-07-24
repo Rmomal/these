@@ -1,21 +1,24 @@
-\section{idées}
+\paragraph{ideas}
 \begin{itemize}
-\item spatial/temporel sophie lebre loic aussi sur les ruptures
-\item EM/VEMtree/PLN étude simul des modèles qui se basent sur PLN
-\item couche observée vraisemblance composite
-\item la sélection de modèles
-\item comparaison de réseau : des calculs qu'on sait faire entre des matrices de proba (proba qu'une arête soit commune à deux réseaux ) etc.
+\item model selection: not working and why
+\item offsets: very important and not so obvious in some cases
 \end{itemize} 
 
-\section{Network inference from PLN}
 
-\begin{figure}
-\centering
-\includegraphics[width=12cm]{figs/AUC_PLN_EM_VEM.png}
-\end{figure}
-\begin{figure}
-\centering
-\includegraphics[width=12cm]{figs/precrec_PLN_EM_VEM.png}
-\end{figure}
+\section{Network inference in the observed layer}
+\begin{itemize}
+\item par paires avec arbre maximal chow \& liu
+\item du coup vraisemblance composite
+\end{itemize}
 
-with $min.ratio=1\cdot 10^{-3}$ for PLNnetwork
+\section{Accounting for spatial effects}
+\begin{itemize}
+\item community random effect in the latent layer cf la rochelle
+\item as a missing actor
+\item directly with observed counts and gradient ascent
+\end{itemize}
+
+\section{Network comparison}
+\begin{itemize}
+\item probability for two networks to share an edge with tree averaging
+\end{itemize}
