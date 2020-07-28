@@ -6,9 +6,6 @@ auc<-function(pred,label){ #require(ROCR)
   return(ROC_auc)
 }
 accppvtpr<-function(probs,omega,h, seuil=0.5){
-  Acc=round(mean(1*(probs>seuil)==omega),2) #(TP+TN)/(TP+FP+TN+FN)
-  AccH=round(mean(1*(probs[h,]>seuil)==omega[h,]),2)
-  AccO=round(mean(1*(probs[-h,-h]>seuil)==omega[-h,-h]),2)
   PPV=round(sum((omega!=0)*(probs>seuil))/(sum((omega!=0)*(probs>seuil))+ sum((omega==0)*(probs>seuil))),2)#TP/(TP+FP)
   PPVH=round(sum((omega[h,]!=0)*(probs[h,]>seuil))/(sum((omega[h,]!=0)*(probs[h,]>seuil))+ sum((omega[h,]==0)*(probs[h,]>seuil))),2)
   PPVO=round(sum((omega[-h,-h]!=0)*(probs[-h,-h]>seuil))/(sum((omega[-h,-h]!=0)*(probs[-h,-h]>seuil))+  sum((omega[-h,-h]==0)*(probs[-h,-h]>seuil))),2)
@@ -21,7 +18,7 @@ accppvtpr<-function(probs,omega,h, seuil=0.5){
   TN=sum((probs[h,]<seuil)*(omega[h,]==0))
   FPRH=FP/(FP+TN)
   FNRH=1-TPRH
-  return(c(Acc,AccH,AccO,PPV,PPVH,PPVO,TPR,TPRH,TPRO,FPRH,FNRH))
+  return(c(PPV,PPVH,PPVO,TPR,TPRH,TPRO,FPRH,FNRH))
 }
 get_PPV_TPR<-function(probs, omega, seuil){
   PPV=round(sum((omega!=0)*(probs>seuil))/(sum((omega!=0)*(probs>seuil))+ sum((omega==0)*(probs>seuil))),2)#TP/(TP+FP)
@@ -76,14 +73,13 @@ plotVEM<-function(probs,omega,r,seuil){
   q=ncol(omega)
   h=(q-r):q
   performance=accppvtpr(probs,omega,h,seuil)
-  Acc=performance[1] ;AccH=performance[2] ;AccO=performance[3] 
-  PPV=performance[4] ;PPVH=performance[5] ; PPVO=performance[6]
-  TPR=performance[7] ;TPRH=performance[8] ;TPRO=performance[9] 
+  PPV=performance[1] ;PPVH=performance[2] ; PPVO=performance[3]
+  TPR=performance[4] ;TPRH=performance[5] ;TPRO=performance[6] 
   p1<-ggimage(probs)+labs(title=paste0("G hat"))
   p2<-ggimage(omega)+labs(title="True G")
   auc<-round(auc(pred = probs, label = omega),3)
-  grid.arrange(p1,p2,ncol=2, top=paste0("Tpr=",TPR," (TprO=",TPRO," , TprH=",TPRH,
-                                        ")\n Ppv=",PPV," (PpvO=",PPVO," , PpvH=",PPVH,")",
+  grid.arrange(p1,p2,ncol=2, top=paste0("Recall=",TPR," (Obs=",TPRO," , Hid=",TPRH,
+                                        ")\n Precision=",PPV," (Obs=",PPVO," , Hid=",PPVH,")",
                                         "\n AUC=",auc))
 }
 

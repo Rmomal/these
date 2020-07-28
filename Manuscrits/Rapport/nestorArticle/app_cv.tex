@@ -1,0 +1,133 @@
+\subsection{Model selection and cross-validation} \label{sec:modSel}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Sampling spanning trees} \label{eq:sampTree}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Sampling non-uniform spanning trees (i.e. sampling $T$ from $p_\betabf$) is a research topic by itself, especially for large networks \citep[see][for a review]{DKP17}. For moderate size networks, a rejection algorithm \citep{Dev86} can be defined in the following way:
+\begin{enumerate}
+\item Sample $T$ from a distribution $q$, such that there exist a constant $M$, that ensures that, for all $T$, $M q(T) > p_\betabf(T)$;
+\item Keep $T$ with probability $M^{-1} p_\betabf(T) / q(T)$ or try step 1 again.
+\end{enumerate}
+The efficiency of such an algorithm strongly relies on the choice of the proposal distribution. Here we adopt the following proposal:
+\begin{enumerate}[label=\roman*]
+\item Sample a connected graph $G$ with independent edges, each drawn with probability $Q_{jk} \propto P_{jk} = \Pr_\betabf\{ jk \in T\}$; 
+\item Sample $T$ uniformly among the spanning trees of $G$.
+\end{enumerate}
+%
+\paragraph{Evaluation of the proposal.}
+To evaluate the proposal distribution for each sampled tree, we may observe that, the probability for a graph drawn from the proposal to contain a given tree $T$ is approximately
+$$
+{\Pr}_q\{G \ni T\} \approx \prod_{jk \in T} Q_{jk},
+$$
+the approximation being due to the connectivity constraint. This constraint can be almost surely satisfied by taking $Q_{jk}$'s large enough. So, denoting $|\Tcal(G)|$ the number of spanning trees in $G$, we have that
+\begin{align*}
+q(T) 
+= \sum_{G \ni T} q(T \mid G) q(G)  = \sum_{G \ni T} \frac{q(G)}{|\Tcal(G)|} 
+= {\Pr}_q\{G \ni T\} \; \Esp\left(|\Tcal(G)|^{-1} \mid G \ni T \right).
+\end{align*}
+The last expectation can be evaluated via Monte-Carlo, by sampling a series of graphs $G$ according to the proposal $q$ but forcing all edges from $T$ to be part of $G$. 
+%
+\paragraph{Upper bounding constant $M$.}
+To evaluate the upper bounding constant $M$, we may observe that finding the tree $T^*$ such that
+$$
+m_\betabf 
+:= \frac{{\Pr}_q\{G \ni T^*\}}{p_\betabf(T^*)}
+= \min_{T \in \Tcal} \frac{{\Pr}_q\{G \ni T\}}{p_\betabf(T)} = \min_{T \in \Tcal} \prod_{jk \in T} \frac{Q_{jk}}{\beta_{jk}}
+$$
+is a minimum spanning tree problem. Then, obviously, for any tree $T$: ${\Pr}_q\{G \ni T\} \geq m_\betabf p_\betabf(T)$.
+Now, because the maximum number of spanning trees within a graph is $p^{p-2}$, we have
+$$
+M q(T)
+= M \sum_{G \ni T} \frac{q(G)}{|\Tcal(G)|} 
+\geq \frac{M}{p^{p-2}} \sum_{G \ni T} q(G)
+= \frac{M}{p^{p-2}} {\Pr}_q\{G \ni T\}
+\geq M \frac{m_\betabf}{p^{p-2}}  p_\betabf(T)
+$$
+So we may set $M = p^{p-2} / m_\betabf$. Still, in practice, this bounds turns out to be far too large and needs to be tuned down to preserve computational efficiency.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ 
+\subsubsection{Cross-validation for model selection} \label{eq:cvAlgo}
+\label{CV}
+
+The cross-validation procedure to estimate the pairwise composite likelihood is given in Algorithm \ref{algo:model-selection}. In practice $V=10$ and $B = 100$.
+
+
+\begin{algorithm}%[H]
+\caption{Cross-validation for model selection with $r$ missing actors}
+\label{algo:model-selection}
+%  \dontprintsemicolon
+  \CommentSty{// 0. INITIALIZATION}\; 
+  Divide the dataset $\Ybf$ into $V$ subset $\Ybf^1, \dots \Ybf^V$;
+  \BlankLine
+  \For{$v \in \{1,\cdots, V\}$}{
+    \BlankLine
+    \CommentSty{// 1.   Apply the VEM algorithm to the train dataset $\Ybf^{-v}$}\; 
+    $\Gammabf_r^{-v} \leftarrow (\thetabf_r^{-v}, \sigmabf_r^{-v}, \betabf^{-v}_r, \Omegabf_r^{-v})$
+    \CommentSty{// 2. MONTE CARLO APPROXIMATION OF COMPLETE LOG-LIKELIHOOD EXPECTATION}\;
+    \For{$b \in \{1,\cdots, B\}$}{
+    \CommentSty{// 2.1 Draw tree (see Section \ref{eq:sampTree})}\; 
+     $ T_{r, b}^{-v}  \sim p_{\betabf^{-v}_r}$ 
+    \BlankLine
+     \CommentSty{// 2.2. Build  the precision matrix having non-nul entries determined by $ T_{r, b}^{-v} $ and values stored in $\Omegabf_r^{-v}$, and its diagonal terms according to \eqref{omegaT}}\;
+     $\Omegabf_{T^b}\leftarrow f( T_{r, b}^{-v} , \Omegabf_r^{-v} )$
+     \BlankLine
+      \CommentSty{// 2.3. Compute the marginal variance matrix }\;
+      $\Sigmabf_{T^bO} \leftarrow  \Omegabf_{T^bOO} - \Omegabf_{T^bOH} \Omegabf_{T^bHH}^{-1} \Omegabf_{T^bHO}$;
+          \BlankLine 
+     \CommentSty{// 2.4. Compute the bivariate Poisson log-normal density in test sites}\;
+     \For{site $i \in v$}{
+        \For{pairs of species $(j,k)$}{
+        $p_{PLN}\left((Y^v_{ij}, Y^v_{ik}); \Gammabf_r^{-v}, T_{r, b}^{-v} \right)$ with means $\xbf_i^\intercal \thetabf_{r, j}^{-v}$ and $\xbf_i^\intercal \thetabf_{r, k}^{-v}$ and variance matrix $[\Sigmabf_{T^bO}]_{[jk, jk]}$
+%        $\log p_{PLN}[(Y_{ij}^v, Y_{ik}^v) | T^b; \widehat{\theta},\widehat{\Sigma}_{T^b jk}]$, 
+         }}
+       \CommentSty{// 2.5.  Compute the average}\;
+        $$
+        PCL_{rvb}(\Ybf^v, \Gammabf_r^{-v}, T^b) = \frac1{m_v} \sum_{i = 1}^{m_v} \sum_{j < k} \log p_{PLN}\left((Y^v_{ij}, Y^v_{ik}); \Gammabf_r^{-v}, T_{r, b}^{-v} \right)
+        $$
+%        $f_{PLN}(\Ybf; b,v)=\sum_{\substack{i \in v\\ j < k}} \log p_{PLN}[(Y_{ij}^v, Y_{ik}^v) | T^b; \widehat{\theta},\widehat{\Sigma}_{T^b jk}]$
+    }
+    \BlankLine        
+  }  
+   \CommentSty{// 3. AVERAGE OVER SUBSETS}\; 
+$$
+PCL_r(\Ybf) = \frac1V \sum_v PCL_{rv}(\Ybf^v, \Gammabf_r^{-v}) .
+$$
+  \BlankLine
+\end{algorithm}
+
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%The cross-validation procedure to estimate the pairwise composite likelihood is as follows:
+%\begin{enumerate}
+%\item Divide the dataset $\Ybf$ into $V$ subset $\Ybf^1, \dots \Ybf^V$;
+%\item For each subset $\Ybf^v$, do:
+%\begin{enumerate}
+%    \item Apply the VEM algorithm to the train dataset $\Ybf^{-v}$ to get the estimates $\Gammabf_r^{-v} = (\thetabf_r^{-v}, \sigmabf_r^{-v}, \betabf^{-v}_r, \Omegabf_r^{-v})$
+%    \item Repeat $B$ times:
+%        \begin{enumerate}
+%        \item Draw tree $T^b \sim p_{\betabf^{-v}_r}$ using the procedure described in Section \ref{eq:sampTree};
+%        \item Build $\Omegabf_{T^b}$ as the precision matrix having non-nul entries determined by $T^b$ and values stored in $\Omegabf_r^{-v}$, and its diagonal terms according to \eqref{omegaT};
+%        \item Compute the marginal variance matrix $\Sigmabf_{T^bO} =  \Omegabf_{T^bOO} - \Omegabf_{T^bOH} \Omegabf_{T^bHH}^{-1} \Omegabf_{T^bHO}$;
+%        \item For each site of test data $\Ybf^{v}$ and each pair of observed species, compute the bivariate Poisson log-normal density  
+%        $p_{PLN}\left((Y^v_{ij}, Y^v_{ik}); \Gammabf_r^{-v}, T_{r, b}^{-v} \right)$ with means $\xbf_i^\intercal \thetabf_{r, j}^{-v}$ and $\xbf_i^\intercal \thetabf_{r, k}^{-v}$ and variance matrix $[\Sigmabf_{T^bO}]_{[jk, jk]}$
+%        $\log p_{PLN}[(Y_{ij}^v, Y_{ik}^v) | T^b; \widehat{\theta},\widehat{\Sigma}_{T^b jk}]$, 
+%        and compute the mean
+%        $$
+%        PCL_{rvb}(\Ybf^v, \Gammabf_r^{-v}, T^b) = \frac1{m_v} \sum_{i = 1}^{m_v} \sum_{j < k} \log p_{PLN}\left((Y^v_{ij}, Y^v_{ik}); \Gammabf_r^{-v}, T_{r, b}^{-v} \right)
+%        $$
+%%        $f_{PLN}(\Ybf; b,v)=\sum_{\substack{i \in v\\ j < k}} \log p_{PLN}[(Y_{ij}^v, Y_{ik}^v) | T^b; \widehat{\theta},\widehat{\Sigma}_{T^b jk}]$
+%        \end{enumerate}
+%    \item Average over the trees
+%    $$
+%    PCL_{rv}(\Ybf^v, \Gammabf_r^{-v}) = \frac1B \sum_{b=1}^B PCL_{rvb}(\Ybf^v, \Gammabf_r^{-v}, T^b) 
+%    $$
+%    \end{enumerate} 
+%\item Average over the subsets
+%$$
+%PCL_r(\Ybf) = \frac1V \sum_v PCL_{rv}(\Ybf^v, \Gammabf_r^{-v}) .
+%$$
+%    \item Compute the average criteria defined as: $$\displaystyle PCL(\Ybf)=\frac1V\sum_{v=1}^{V}\frac1B \sum_{b=1}^Bf_{PLN}(\Ybf; b,v)$$
+%\end{enumerate}
+
+
+  

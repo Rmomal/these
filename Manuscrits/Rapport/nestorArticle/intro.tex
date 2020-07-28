@@ -1,0 +1,121 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction} \label{sec:Intro}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% \SR{}{Mentionner la parcimonie (et les arbres)}
+
+\paragraph{Network inference.}
+%\item inférence de réseau: éviter les fausses arêtes, donc prendre en compte les covariable et prévoir les acteurs manquant + focus sur les données d'abondance
+Network inference (or structure inference) has become a topical problem in various fields such as biology, ecology, neuro-sciences, social sciences, to name a few. The aim is to unravel the dependency structure that relates a series of variables that can be jointly observed. Graphical models \citep[see e.g.][]{Lau96} provide a natural framework to achieve this task as it allows to encode the dependency structure into a graph, the nodes of which are the variables. Two variables are connected if and only if they are dependant, conditionally on all others. \\
+Most methodologies build on the assumption that the network is sparse, meaning that only a small fraction of variable pairs are conditionally dependent. The case  of Gaussian graphical models (GGM) is especially appealing as the network corresponds to the support of the precision matrix of the joint Gaussian distribution. The use of a sparsity-inducing penalisation gives raise to the celebrated graphical lasso \citep{FHT08}. In a more general context, \cite{ChowLiu} consider a spanning tree structure to impose sparsity to the network, but this drastic form can be alleviated using mixtures of trees \citep{MeilaJaak,kirshner}. \\
+One important aspect of network inference is to distinguish between variables that are marginally dependent (possibly because of their respective dependency with some common other) from variables that are {\sl directly related}, that is conditionally dependant. This distinction requires to account for as many confounding effects as possible, which includes all the other variables but also available covariates. It also requires to consider the existence of some {\sl missing actors} (or missing nodes), that may induce an apparent direct dependency.
+
+\paragraph{Abundance data.}
+{Count data is found in a multitude of fields (sociology, biology, economy, ecology ...). It results from the counting of events in a given setting such as crime statistics in a state or the number of produced transcripts of a gene in an experiment. The statistical processing of count data cannot always rely on  classical methods developed for continuous Gaussian data and appeals for specific methods. It often exhibits specificities such as zero-inflation and a large dispersion. The present work is motivated by the analysis of so-called abundance data, a count data avatar,  arising from ecological studies where the number of individuals (the abundance) of a series of living species (plants or animals) is observed in a series of sites.} 
+%\item abondances = comptages : tout le monde passe par une couche latente (ex. PLN) gaussienne car GGM très confortables
+In this context, network inference aims at understanding which pairs of species are in direct interaction. The covariates are typically environmental descriptors (altitude, temperature, distance to the see, etc.) of each collection site, while the variables are the respective abundances of each species from the community under study. \\
+%\CA{One specificity of abundance data is that they consists of counts, for which no such nice and generic framework as GMM does exist \citep{inouye}.}
+No nice and generic framework as the GGM exists for count data. A few alternatives rely on copulas  \citep{inouye} or models the node-wise conditional distributions as arising from exponential families. But most joint species distribution models resort to a latent Gaussian layer, which encodes the dependency structure between the species \citep{WBO15,PHW18,PWT19}. The Poisson log-normal model \citep[PLN:][]{AiH89} enters this category: it assumes that a multivariate Gaussian random variable is associated to each species in each site and that the observed abundances are conditionally independent Poisson variables. The PLN model has already been applied to abundance data, both for dimension reduction \citep{CMR18} and network inference \citep{CMR19,MRA20}.
+
+\paragraph{Missing actors.}
+%\item GGM avec acteurs manquants = 2 options : a) manquant connecté à tout le monde ou a) manquant très peu connecté
+In many situations, it is likely that not all actors involved in the system have been observed. The term 'actors' refers to either species that were not observed but nonetheless influence the abundance of others, or environmental conditions that were not accounted for. 
+
+In the perspective of unravelling the conditional independence structure, this can typically lead to the inference of spurious edges, which are links between observed actors that are not in direct interaction. 
+In the graphical model framework, not accounting for one variable amounts to consider the marginal distribution of the rest of the system, as described in the left panel of Figure \ref{fig:MGmissing}.
+Missing actors may be quantitative or qualitative. In the latter case it defines a latent group structure \citep{ambroise2009inferring}.
+
+\begin{figure}[H]
+ \begin{center}
+\begin{tabular}{ccc}
+%($a$) && ($b$)\vspace{-0.5cm}\\
+    \begin{tikzpicture}
+  %  \node[variable] (0) at (-0.7*\edgeunit,  .7*\edgeunit) {$a)$};
+     \node[observed] (1) at (-0.5*\edgeunit,  .5*\edgeunit) {$1$};
+     \node[observed] (2) at (-0.5*\edgeunit, -.5*\edgeunit) {$2$};
+     \node[observed] (3) at ( 0.5*\edgeunit, -.5*\edgeunit) {$3$};
+     \node[observed] (4) at ( 0.5*\edgeunit,  .5*\edgeunit) {$4$};
+     \node[observed] (x) at (0.0*\edgeunit,  .0*\edgeunit) {$x$};
+     \draw[edge] (2) to (3); \draw[edge] (3) to (4); 
+     \draw[edge] (x) to (1); \draw[edge] (x) to (4);
+     \end{tikzpicture}
+    &\hspace{3cm} &
+    \begin{tikzpicture}
+  %  \node[variable] (0) at (-0.7*\edgeunit,  .7*\edgeunit) {$a)$};
+     \node[observed] (1) at (-0.5*\edgeunit,  .5*\edgeunit) {$1$};
+     \node[observed] (2) at (-0.5*\edgeunit, -.5*\edgeunit) {$2$};
+     \node[observed] (3) at ( 0.5*\edgeunit, -.5*\edgeunit) {$3$};
+      \node[observed] (4) at ( 0.5*\edgeunit,  .5*\edgeunit) {$4$};
+     \node[covmiss] (x) at (0.0*\edgeunit,  .0*\edgeunit) {$x$};
+       \draw[edge] (2) to (3); \draw[edge] (3) to (4); 
+    \draw[edgemiss] (x) to (1); \draw[edgemiss] (x) to (4);
+     \draw[edge] (1) to (4); 
+     \end{tikzpicture}
+    \end{tabular}
+ \caption{Example of the marginalization when covariate $x$ is unobserved. \textit{Left}: complete graphical model (including $x$). \textit{Right}: marginal graphical model of the observed variables (excluding $x$).}
+  \label{fig:MGmissing}
+    \end{center}
+\end{figure}
+
+%\CA{Several approaches have been proposed for network inference, accounting for the existence of a missing actor. Many of them rely on a low-rank regularization of covariance matrix \citep[see][]{RankSparse,LLVGGM,GirLatent,EMlvggm}, but tree-based approach has also been proposed by \cite{RAR19}.}
+Several approaches have been proposed for network inference accounting for quantitative missing actors in the context of GGM. 
+Many of them \citep{RankSparse,LLVGGM,GirLatent,EMlvggm} adapted the principle of Robust PCA \citep{candes2011robust} to the concentration matrix, assuming it is a sum of two matrices: one low-rank and one sparse. 
+In terms of missing actors in a network, the low-rank part corresponds to missing actors connected to all variables, whereas the sparse part refers to missing actors having a local effect.
+%This type of method originates from Robust PCA \citep{candes2011robust}.}
+%\CA{All these approaches have been proposed in the context of GGM, but, as far as we know, no model has been proposed to deal both with abundance data and missing actors.}
+Following \cite{RAR19} (also in the context of GGM), we focus on the later aspect, that is looking for missing actors not necessarily linked to all others.
+%All these approaches were developed in the context of GGM and rely on penalized likelihood methods, with the exception of  a tree-based approach proposed by \cite{RAR19}. 
+As far as we know, no model has been proposed for the inference of missing actors from abundance data.
+
+\paragraph{Variational inference.}
+%%\item inférence variationnelle
+The model we consider in this paper involves different types of variables, namely an unknown tree-shaped graphical model, a continuous latent layer (to induce dependence between the species) and unobserved actors. The most popular approach for the inference of such models is the EM algorithm \citep{DLR77}, which requires the evaluation of the conditional distribution of all unobserved variables given the data. In the problem we consider, some latent variables are (multivariate) continuous and others are discrete, and their joint conditional distribution turns out to be intractable. In this work we resort to a variational approximation \citep{WaJ08} of this conditional distribution and to a  variational EM  algorithm for its inference \citep[see e.g.][]{BKM17}.
+
+\paragraph{Our contribution.}
+%\item contribution
+In the context of the Poisson log-normal model, we propose  a tree-based approach to recover the structure of latent graphical model including actors. The model we consider involves several layers of unobserved variables with intractable conditional distributions, thus we resort to a variational EM algorithm \citep{BKM17} for its inference. We introduce the model in Section \ref{sec:Model} and describe its variational inference in Section \ref{sec:Inference}. The performance of the algorithm is assessed via simulations in Section \ref{sec:Simul}. The use of the proposed model is illustrated in Section \ref{sec:Appli}, where we demonstrate its ability to recover environmental drivers on two ecological datasets. The inference procedure is implemented in the R package nestor, available at \url{github.com/Rmomal/nestor}.
+
+
+% \subsection{Network Inference}
+% RM : inference de reseau et comptage \\
+%Network inference is used is several domains such as genomics or ecology to deduce the conditional Independence structure among covariates from gene expression  or species abundances measures for example. 
+%This inference relies on the modeling of the joint distribution of these measures, for which graphical models provides a natural and well studied framework. 
+%In particular, they allow to distinguish between direct associations - linking depending covariates conditionally on all others- and indirect associations - for example between covariates linked to a third one. 
+%Taking environmental and/or experimental covariates into account also prevents from inferring links between variables which jointly vary with these conditions.
+  
+%Gaussian Graphical Models (GGM) are particularly popular but not suited for count data. 
+%In this case, a classical approach consists in introducing a Gaussian latent layer in the model, conditionally on which observed data are distributed according to a relevant law for count data such as the Poisson law. 
+%The Poisson log-normal model \citep{AiH89} enters this category. 
+% Its inference,  made difficult due to  the distribution of the latent layer  conditional on observed data, has recently been carried out using variational approximations  \citep{BKM17}. 
+%The use of a Gaussian latent layer provides access to a range of available methods, like network inference using GGM \citep{CMR19}. 
+%Furthermore the use a mixture of spanning trees as dependency structure of the latent layer allows the computation of edge probabilities \citep{MRA20}.
+
+
+%\subsection{Graphical Model Inference with Latent Variables }
+%\SR{
+% Global context
+%Latent variables may correspond to unobserved existing variables, or to variables that have no reality but allow a conceptual simplification of various statistical problems.
+% Prototypical Examples
+%Principal component analysis and factor model are typical latent variable problems, where a small number of independent latent variables are assumed to summarize a great number of observed variables.  Latent variables may also help to capture uncontrolled heterogeneity and produce simpler problems \citep{leek2007capturing,friguet2009factor}. \\
+% Graphical model context (known structure)
+%In the context of graphical models with known structure hidden variables are used as early as the Bolztmann's machines invention \citep{ackley1985learning}. \\
+% Graphical model context (unknown structure)
+%When the structure of the graphical model is inferred, missing variables can be interpreted as actors that were not measured but nonetheless influence the measurements, or experimental conditions that were not taken into account. 
+%In the perspective of unravelling the conditional independence structure, this can lead to both inference issues and interpretation problems. \\
+% Models : Clustering versus missing node  
+%When Missing variables are qualitative, they can be interpreted as  latent group structure \citep{ambroise2009inferring}. 
+%But missing variables can also be taken into account by assuming that  there exists a 'full' graph describing the conditional independence structure of the joint distribution of observed and hidden variables. Observations are then samples of the marginal distribution of the observed variables only. 
+%From a graph-theoretical point of view, marginalizing hidden variables means removing them from the node set and marrying their children together, thus forming complete subgraphs, \textit{i.e.} cliques. 
+%Hence, the conditional independence structure among observed variables is described by a marginal graph containing locally dense structures. 
+%This violates the sparsity assumption on which the majority of graph inference methods are based. \\
+% Models : Most popular model for missing node
+%In addressing this problem, a natural idea consists in a sparse-plus-low-rank approach \citep{LLVGGM} assuming that the concentration matrix decomposes in a low-rank matrix and a sparse matrix. 
+%This type of approach is also used in Robust PCA and has many applications \citep{candes2011robust}. \\
+% Algorithmic point of view
+%From an algorithmic point of view, inference of graphical model with latent variables can be performed in many ways:  Relying on the Expectation-Maximization (EM) algorithm \citep{DLR77}, its variational approximation described in \cite{VBEM}, or the Bayesian structural EM algorithm \citep{BStructEM}. \\
+% A lot of attention has also been brought to a regularized approach described in \cite{LatentCWP}, based on convex optimization. 
+%Alternatives based on this method were also proposed by \cite{LLVGGM}, \cite{EMlvggm} and \cite{GirLatent}. 
+%Notice that specific models and algorithms have also been proposed for time varying data \citep{tomasi2018latent, elsegai2015network}.
+%}{}
+

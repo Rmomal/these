@@ -1,0 +1,99 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Model} \label{sec:Model}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Poisson log-normal and tree-shaped graphical models}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection*{Poisson log-normal model.} 
+We start with a reminder on the multivariate Poisson log-normal model, with the example of abundance data. The abundances of $p$ species observed on $n$ sites are gathered in the $n \times p$ matrix $\Ybf$ where $Y_ {ij}$ is the count of species $j$ in site $i$, and the row $i$ of $\Ybf$, denoted $\Ybf_i$, is the abundance vector collected on site $i$. A covariate vector $\xbf_i $ with dimension $d$ is also measured on each site $i$ and all covariates are gathered in the $n \times d$ matrix  $\boldsymbol X$. The PLN model states that a (latent) Gaussian vector $\Ubf_i$ of size $p$ with variance matrix $\Rbf = (\rho_{kl})_{kl}$ is associated to each site:
+\begin{equation} \label{eq:PLN-Z}
+\{\Ubf_i\}_{1 \leq i \leq n} \text{ iid}, \qquad 
+\Ubf_1 \sim \Ncal_p(\zerobf, \Rbf),
+\end{equation}
+the sites being assumed to be independent. To ensure identifiability, we let the diagonal of $\Rbf$ be made of 1's, so $\Rbf$ is actually a correlation matrix.
+All latent vectors $\Ubf_i$ are gathered in the $n \times p$ matrix $\Ubf$. The PLN model further assumes that species abundances in all sites are conditionally independent, and that their respective distribution only depends on the environment and the associated latent variable:
+\begin{equation} \label{eq:PLN-Y.Z}
+\{Y_{ij}\}_{1 \leq i \leq n, 1 \leq j \leq p} \mid \Ubf \text{ independent}, \quad 
+Y_{ij} \mid U_{ij} \sim \Pcal\left(\exp(o_{ij} + \xbf_i^\intercal \thetabf_j + \sigma_j U_{ij})\right),
+\end{equation}
+where $o_{ij}$ is a known offset term which typically accounts for the sampling effort, and $\sigma_j$ is the latent standard deviation associated with species $j$. The vector $d \times 1$ of regression coefficients $\thetabf_j$ describes the environmental effects on species $j$. An important feature of the PLN model is that the sign of the correlation between the observed counts is the same as this of correlation between the latent variables \citep{AiH89}: $\text{sign}(\text{Cor}(Y_{ij}, Y_{ik})) = \text{sign}(\text{Cor}(U_{ij}, U_{ik}))$. 
+% The dependence between the species abundances is entirely controlled by the latent dependency structure encoded in the precision matrix $\Omegabf:=\Rbf^{-1}$.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection*{Tree-shaped graphical models.} 
+Network inference relies on the assumption that few species are directly dependent on one another, meaning that the underlying graphical model is sparse. In the framework of the PLN model, the graphical model of interest rules the distribution of the latent vectors $\Ubf_i$ and is  encoded in the precision matrix $\Omegabf:=\Rbf^{-1}$. A way to foster sparsity is to impose $\Omegabf$ to be faithful to a spanning tree $T$, that is: $\Ubf_1 \sim \Ncal_p(\zerobf, \Omegabf_T^{-1})$ where the non-zero terms of $\Omegabf_T$ correspond to the edges of the tree $T$ . However this hypothesis is very restrictive  as it allows only $p-1$ links among $p$ species \citep{ChowLiu}. A more flexible approach consists in assuming that the latent vectors are drawn from a mixture of Gaussian distributions, each faithful to a tree $T$ \citep{MixtTrees,MeilaJaak,kirshner,SRS19}:
+\begin{equation} \label{eq:mixt-Z}
+\Ubf_1 \sim \sum_{T \in \Tcal_p} p(T) \Ncal_p(\zerobf, \Omegabf_T^{-1}),
+\end{equation}
+where $\Tcal_p$ is the set of spanning trees with $p$ nodes.
+We further assume that the tree distribution $\{p(T)\}_{T \in \Tcal_p}$ can be written as a product over the edges:
+\begin{equation} \label{eq:prob-T}
+p(T) = B^{-1} \prod_{(j, k) \in T} \beta_{jk}, \qquad
+\text{with} \quad B = \sum_{T \in \Tcal_p} \prod_{(j, k) \in T} \beta_{jk}.
+\end{equation}
+The weights $\beta_{jk}$ are gathered in the $p \times p$ symmetric matrix $\betabf$ with diagonal zero. Observe that these weights are defined up to a multiplicative constant, so that only $p(p-1)/2 - 1$ of them may vary independently. This PLN model with latent tree-shaped dependency structure is similar to that considered by \cite{MRA20}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Introducing the missing actor} \label{sec:missActor}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection*{PLN model with missing actors.} 
+We now introduce the concept of missing actors, which corresponds to variables that are involved in the graphical model but are not associated to observed variables. To involve such actors in the model, we assume that a complete latent vector $\Ubf_i$ with dimension $p+r$ is associated to site $i$, where $r$ is the number of missing actors. This complete vector can be decomposed as $\Ubf_i^\intercal = [\Ubf_{Oi}^\intercal \; \Ubf_{Hi}^\intercal]$ where $\Ubf_{Oi}$ (with dimension $p$) corresponds to observed species and $\Ubf_{Hi}$ (with dimension $r$) corresponds to the missing actors.
+The complete $n \times (p+r)$ latent matrix $\Ubf$ can be decomposed in the same way as $\Ubf = [\Ubf_O \; \Ubf_H]$, $\Ubf_O$ and $\Ubf_H$ having dimension $n \times p$ and $n \times r$, respectively. \\ 
+The model we consider states that
+\begin{enumerate}[label=\roman*]
+\item the complete latent vectors $\Ubf_i$ are all iid and distributed according to a mixture similar to \eqref{eq:mixt-Z} and \eqref{eq:prob-T} but with Gaussian distributions (and matrices $\Omegabf_T$ and $\betabf$) of dimension $(p+r)$, and trees drawn from $\Tcal_{p+r}$;
+\item  the abundances $Y_{ij}$ of the  $p$ observed species are distributed according to \eqref{eq:PLN-Y.Z}, replacing $\Ubf$ with $\Ubf_O$,
+\end{enumerate}
+
+\begin{figure}[H]
+ \begin{center}
+	\begin{tikzpicture}	
+      \tikzstyle{every edge}=[-,>=stealth',auto,thin,draw]
+		\node (A1) at (0.625*\length, 2*\length) {$T$};
+		\node (A2) at (0*\length, 1*\length) {$\Ubf_O$};
+		\node (A3) at (1.25*\length, 1*\length) {$\Ubf_H   $};
+		\node (A4) at (0*\length, 0*\length) {$\Ybf$};
+		\draw (A1) edge (A2);
+        \draw (A1) edge  (A3);
+        \draw (A2) edge  (A3);
+        \draw (A2) edge  (A4);
+	\end{tikzpicture} 
+ \caption{Graphical model linking the count data $\Ybf$, the latent layer of Gaussian parameters $\Ubf=(\Ubf_O,\Ubf_H)$, and the latent tree $T$.}
+  \label{fig:MGmodel}
+    \end{center}
+\end{figure}
+
+In the sequel, we shall refer to the elements of $\Ubf_O$ and $\Ubf_H$ respectively as 'observed' and 'hidden' (or 'missing') latent variables, whereas obviously none of them are actually observed. Figure \ref{fig:MGmodel} displays the graphical model of the quadruplet $(T, \Ubf_O, \Ubf_H, \Ybf)$. The observed data $\Ybf$ still arise from an PLN model, but the graphical model of the observed latent $\Ubf_O$ may not be sparse due to the marginalization over the hidden latent $\Ubf_H$. Our main goal is to infer the dependency structure of the complete latent vectors, that is to estimate the elements of the matrices $\Omegabf_T$ and the edges weights $\betabf$. The latent dependency structure is similar to this considered by \cite{RAR19}, but the inference strategy much differs, because of the additional hidden layer.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection*{Identifiability restriction.} 
+The proposed model only makes sense because the graphical model of the complete latent vectors $\Ubf_i^\intercal = [\Ubf_{Oi}^\intercal \; \Ubf_{Hi}^\intercal]$ is supposed to be sparse. Missing actors could obviously not be identified from a regular PLN model, without restriction on the precision matrix $\Omegabf$, as only the marginal precision matrix of the $\Ubf_{Oi}$ could be recovered. Still, to ensure identifiability we impose the same restriction as \cite{RAR19} that  missing latent variables are not connected with each other (the block corresponding to $\Ubf_H \times \Ubf_H$ is diagonal in each $\Omegabf_{T}$).
+%\CA{However \SR{here}{} we do not need the additional assumption that all precision matrices $\Omegabf_T$ borrow their non-null elements from a same matrix.}{} \SR{}{[{\sl Faut-il mettre cette dernière phrase alors que rien ne le suggère ? Ou alors préciser, 'as opposed to \cite{RAR19}'}]}
+%\begin{description}
+%\item[(A)] All the precision matrices $\Omegabf_T$ (for $T \in \Tcal_{p+r}$) borrow their elements from a same matrix $\Omegabf$. Namely:
+%$$\forall T \in \Tcal_{p+r}, \qquad [\Omegabf_T]_{j,k} = 
+%\left\{ \begin{array}{ll}
+%    [\Omegabf]_{j, k} & \text{if } (j, k) \in T \\
+%    0 & \text{otherwise}.
+%\end{array}\right.$$
+%and their conditional variance is set to one. Namely, 
+%$$\forall p+1 \leq h, \ell \leq p+r, \qquad [\Omegabf]_{h, \ell} = 
+%\left\{ \begin{array}{ll}
+%    1 & \text{if } h = \ell \\
+%    0 & \text{otherwise}.
+%\end{array}\right.$$
+ 
+%\end{description}
+%Assumption ({\bf A}) obviously avoids to infer $|\Tcal_{p+r}| = (p+r)^{p+r-2}$ independent (sparse) precision matrices. Assumption ({\bf B}) ensures identifiability, especially regarding the scaling of the missing latent variables.
+
+%To summarize, the model defined in Section \ref{sec:missActor} involves $p d$ regressions coefficients (gathered in $\thetabf$), $
+%(p+r)(p+r+1)/2 - r(r+1)/2 = 
+%p(p+1)/2 + r p$ conditional covariances (gathered in $\Omegabf$), and $(p+r)(p+r-1)/2 - 1$ independent edge weights (gathered in $\betabf$).
+
+%Finally, the original PLN model only concerns covariates $\Ybf$ and $\Ubf_O$. The use of a dependency structure with mixture of trees allows a sparse and efficient inference, and missing actors are accounted for in covariate $\Ubf_H$.

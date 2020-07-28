@@ -1,0 +1,40 @@
+ \subsection{Algebraic Tools} \label{app:tools}
+ We here present some algebraic results about spanning tree structures which are used during the computations. Theorem \ref{thm:MTT}, Lemma \ref{lem:Meila} as well as Lemma \ref{lem:Kirshner} use the notion of Laplacian matrix  $\Qbf$ of a symmetric matrix $\Wbf=[w_{jk} ]_{1\leq j,k\leq p}$, which is defined as follows :
+ 
+\[
+ [\Qbf]_{jk}  =\begin{cases}
+    -w_{jk}  & 1\leq j<k \leq p\\
+    \sum_{u=1}^p w_{ju} & 1\leq j=k \leq p.
+    \end{cases}
+\]
+ 
+We further denote $\Wbf^{uv}$ the matrix $\Wbf$ deprived from its $u$th row and $v$th column and we remind that the $(u, v)$-minor of $\Wbf$ is the determinant of this deprived matrix, that is $|\Wbf^{uv}|$.
+The following Theorem \ref{thm:MTT} is the extension of Kirchhoff's Theorem to the case of weighted graphs \citep{matrixtree,MeilaJaak}.\\
+\begin{theorem}[Matrix Tree Theorem] \label{thm:MTT}
+    For any symmetric weight matrix W with all positive entries, the sum over all spanning trees of the product of the weights of their edges is equal to any minor of its Laplacian. That is, for any $1 \leq u, v \leq p$,
+   \[
+    W := \sum_{T\in\mathcal{T}} \prod_{(j, k)\in T} w_{jk} = |\Qbf^{uv}|.
+    \]\\
+\end{theorem}    
+
+In the following, without loss of generality, we will choose $\Qbf^{11}$. As an extension of this result, \cite{MeilaJaak} provide a close form expression for the derivative of $W$ with respect to each entry of $\Wbf$. 
+
+\begin{lemma} [\cite{MeilaJaak}] \label{lem:Meila}
+    Define the entries of the symmetric matrix $\Mbf$ as
+ \[    
+ [\Mbf]_{jk} =\begin{cases}
+    \left[(\Qbf^{11})^{-1}\right]_{jj} + \left[(\Qbf^{11})^{-1}\right]_{kk} -2\left[(\Qbf^{11})^{-1}\right]_{jk} & 1< j<k \leq p\\
+    \left[(\Qbf^{11})^{-1}\right]_{jj} & k=1, 1< j \leq p  \\
+    0 &  j=k .
+    \end{cases}
+\]
+it then holds that $$\partial_{w_{jk}} W = [\Mbf]_{jk}  \times W.$$\\
+\end{lemma}
+
+\cite{kirshner} build on Lemma \ref{lem:Meila} to provide an efficient computation of all edges probabilities.
+\begin{lemma} [\cite{kirshner}] \label{lem:Kirshner}
+    Let $p_W$ be a distribution on the space of spanning trees, such that $p_W(T)=\prod_{kl\in T} w_{kl} / W$, where $W$ is defined as in Theorem \ref{thm:MTT}. Taking the symmetric matrix $\Mbf$ as defined in Lemma  \ref{lem:Meila}, the probability for an edge $kl$ to be in the tree $T^*$ writes:
+ 
+$$\mathds{P}\{kl\in T^*\} = \sum_{T\in \mathcal{T}} p_W(T)= w_{kl}\: \Mbf_{kl}$$
+\end{lemma}
+

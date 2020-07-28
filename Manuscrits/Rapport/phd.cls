@@ -35,7 +35,7 @@
 \RequirePackage{fancybox}
 \RequirePackage{blindtext}
 %\RequirePackage[]{algorithm2e}
-\RequirePackage[]{algorithm}
+%\RequirePackage[]{algorithm}
 \RequirePackage{rotating}
 \RequirePackage{dsfont}
 \RequirePackage{frcursive}
@@ -538,7 +538,7 @@ contents={
 	\fancyfoot[C]{\thepage}	% marque la page au centre
 }
 
-%%%%%%%%%%%%% Appendices après chaque chapitre %%%%%%%%%%%%%%%%
+%%%%%%%%%%%%% APPENDICES après chaque chapitre %%%%%%%%%%%%%%%%
 % Start of subappendices environment
 \AtBeginEnvironment{subappendices}{%
   \clearpage

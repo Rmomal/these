@@ -430,21 +430,18 @@ ggsave("Threshold_effect.png",plot=p,  width=14, height=8)
 
 build_TFPN_plots<-function(type,difficulty,method,factors=methods,resultspath, resultsname,
                            colors,FDR=FALSE, TPFN=FALSE,FOR=FALSE, senspe=FALSE){
-
   cols<-c("TN","FP" ,"FN"  ,"TP","method" ,"times","unit","type", "difficulty" ,"graph",  "sum","FDR")
   res<-do.call(rbind, lapply(method, function(meth){
-    if(meth%in%c("EMtree","MRFcov","ecoCo.AIC") || type=="scale-free"){
-      resultsname="Updated_"
+    if(meth!="MInt" ){
+      resultsname="BadSF_"
     }else{resultsname=""}
-
    # obj <-readRDS(paste0(path,"TPFN/Results/",meth,"_",type,"_TFPN_", difficulty,".rds")) %>% dplyr::select(cols)
    obj <-readRDS(paste0(resultspath, resultsname,meth,"_",type,"_TFPN_", difficulty,".rds")) %>% dplyr::select(cols)
     # obj <-readRDS(paste0("/Users/raphaellemomal/Clark/Results/",meth,"_",type,"_TFPN_",difficulty,".rds")) %>% dplyr::select(cols)
     obj$method=meth
-
     return(obj)
   }))
-  res<-res %>% mutate(method = fct_recode(method, "ecoCo.AIC" = "ecoCopula")) %>%
+  res<-res %>% mutate(method = fct_recode(method,  "ecoCopula"="ecoCo.AIC" )) %>%
     mutate(method=fct_relevel(method,factors),
                      FDR=FP/(TP+FP),  densPred=(TP+FP)/(TP+FN), FOR=FN/(FN+TN),
                      sens=TP/(TP+FN), spe=TN/(TN+FP))
@@ -452,7 +449,7 @@ build_TFPN_plots<-function(type,difficulty,method,factors=methods,resultspath, r
     scale_color_manual(values=colors)+labs(x="")+
     guides(color=FALSE)+ theme_minimal()+ theme(axis.text.x = element_text(angle = 25, hjust = 1))
   if (FDR) {
-    p=p+geom_quasirandom(aes(y=FDR))+
+    p=p+geom_quasirandom(aes(y=FDR))+coord_cartesian(ylim=c(0,1))+
       stat_summary(aes(y=FDR),fun.ymin = function(z) { quantile(z,0.25) },
                    fun.ymax = function(z) { quantile(z,0.75) },
                    fun.y = median,
@@ -474,31 +471,22 @@ build_TFPN_plots<-function(type,difficulty,method,factors=methods,resultspath, r
 }
 
 gridLine<-function(type,method,factors,resultspath, resultsname,colors,top=TRUE){
-  label<-switch(type,"erdos"="Erdös \n \n","cluster"="Cluster \n \n",
-                "scale-free"="Scale-free \n \n")
+  label<-switch(type,"erdos"="Erdös \n \n","cluster"="Cluster \n \n","scale-free"="Scale-free \n \n")
   if(top){
     top1="Easy (n=100, p=20)\n"; top2="Hard (n=50, p=30)\n"
   }else{
     top1="";top2=""
   }
-
   p1<-build_TFPN_plots(type = type,difficulty ="easy",method=method,factors=factors,
-                       resultspath, resultsname,colors=colors,
-                       FDR = TRUE)
-
+                       resultspath, resultsname,colors=colors, FDR = TRUE)
   p2<-build_TFPN_plots(type = type,difficulty ="easy",method=method,factors=factors,
-                       resultspath, resultsname,colors=colors,
-                       FDR = FALSE)
-
+                       resultspath, resultsname,colors=colors, FDR = FALSE)
   g1<-grid.arrange(p1,p2, ncol=2, nrow=1,top=top1,right="\n")
   p1<-build_TFPN_plots(type = type,difficulty ="hard",method=method,factors=factors,
-                       resultspath, resultsname,colors=colors,
-                       FDR = TRUE)
+                       resultspath, resultsname,colors=colors, FDR = TRUE)
   p2<-build_TFPN_plots(type = type,difficulty ="hard",method=method,factors=factors,
-                       resultspath, resultsname,colors=colors,
-                       FDR = FALSE)
+                       resultspath, resultsname,colors=colors,  FDR = FALSE)
   g2<-grid.arrange(p1,p2, ncol=2, nrow=1,top=top2, right=label)
-
   grid.arrange(g1,g2,nrow=1,ncol=2)
 }
 

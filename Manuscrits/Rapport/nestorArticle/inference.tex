@@ -1,0 +1,221 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Inference} \label{sec:Inference}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+As said in the introduction, we  resort to a variational EM algorithm to perform the inference due to the complex latent structure.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Variational inference}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+The log-likelihood of the so-called {\sl complete} data, that is $(\Ybf, \Ubf, T)$, writes
+\begin{align*}
+\log p_{\thetabf, \betabf, \Omega}(\Ybf, \Ubf, T) 
+& = \log p_\betabf(T) + \log p_{\Omegabf}(\Ubf \mid T) + \log p_\thetabf(\Ybf \mid \Ubf)
+\end{align*}
+where $\Omegabf$ stands for the set of all tree-specific precision matrices: $\Omegabf = \{\Omegabf_T, T \in \Tcal_{p+r}\}$.
+The conditional distributions of the latent variables $\Ubf$ and of the tree $T$ given the data $\Ybf$ are both intractable. Variational inference then aims at maximizing a lower bound of the log-likelihood of the observed data, which writes in our context as
+\begin{align} \label{eq:lower-bound}
+\Jcal(\thetabf, \betabf, \Omega; q)
+& = \log p_{\thetabf, \betabf, \Omega}(\Ybf) 
+- KL\left(q(\Ubf, T) \| p_{\thetabf, \betabf, \Omega}(\Ubf, T \mid \Ybf) \right) \\
+& = \Esp_q \log p_{\thetabf, \betabf, \Omega}(\Ybf,\Ubf, T) + \Hcal(q(\Ubf, T)), \nonumber
+\end{align}
+where $q(\Ubf,T)$ stands for the approximate joint conditional distribution of the latent layer and of the tree: $q(\Ubf, T) \simeq p(\Ubf, T \mid \Ybf)$. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection*{Approximate distribution.}
+The efficiency of variational inference mostly depends on the choice of $q(\Ubf, T)$, which is a balance between computational ease and adequation to the target distribution $p(\Ubf, T \mid \Ybf)$. We adopt here a classical product form for the approximate distribution: we impose to the latent variables $\Ubf$ and to the tree $T$ to be independent according to $q$ (whereas actually they are not conditional on the data), with respective marginals $h$ and $g$:
+$$
+q(\Ubf, T) =  h(\Ubf)g(T).
+$$
+Because the sites are independent, and without further assumption, the distribution $h$ is a product over all sites. Following \cite{CMR18} we approximate the conditional distribution of each latent vector $\Ubf_i$ with a Gaussian distribution, that is:
+$$
+h(\Ubf) = \prod_i \Ncal_{p+r}(\Ubf_i; \mbf_i, \Sbf_i)
+$$
+with all $\Sbf_i$ diagonal. We gather all the mean vectors $\mbf_i$ in the $n \times (p+r)$ matrix $\Mbf$ and pile up the diagonals of all the variance matrices $\Sbf_i$ in the $n \times (p+r)$ matrix denoted $\Sbf$.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection*{Variational EM.}
+The variational EM algorithm then consists in maximizing the lower bound $\Jcal$ defined in \eqref{eq:lower-bound} with respect to the parameters (M step), and to the approximate distributions (VE step), alternatively. 
+\begin{description}
+\item[M step:] At iteration $t+1$, given the current approximate distribution $q^t(\Ubf, T) = g^t(T) h^t(\Ubf)$, the M step consists in the update of the model parameters, solving 
+\begin{align} \label{eq:Mstep}
+\thetabf^{t+1} & = \arg\max_\thetabf \; \Esp_{h^t} \left[ \log p_\thetabf(\Ybf \mid \Ubf) \right], 
+& \Omegabf^{t+1} & = \arg\max_\Omegabf \; \Esp_{q^t} \left[ \log p_{\Omegabf}(\Ubf \mid T) \right], \nonumber \\
+\betabf^{t+1} & = \arg\max_\betabf \; \Esp_{g^t} \left[ \log p_\betabf(T) \right].
+\end{align}
+Observe that the matrix of edge weights $\betabf$ is considered here as a parameter to be estimated, as opposed to \cite{RAR19}, where is was kept fixed and supposed to be given.
+%
+\item[VE step:] Maximising $\Jcal$ with respect to (wrt) $q$ is equivalent to minimizing the K\"ullback-Leibler divergence between $q(\Ubf, T)$ and $p_{\thetabf, \betabf, \Omega}(\Ubf, T \mid \Ybf)$ that appears in \eqref{eq:lower-bound}. Because we adopted a product form for $q$, the solution of the VE step for both $g$ and $h$ is known to be a mean-field approximation \citep{WaJ08}. More specifically, maximising $\Jcal$ gives
+\begin{align} \label{eq:VEstep-g}
+g^{t+1}(T) 
+& \propto \exp \left\{ \Esp_{h^t} \left[ \log p_{\thetabf^{t+1}, \betabf^{t+1}, \Omega^{t+1}}(\Ybf, \Ubf, T) \right] \right\} \nonumber \\
+& \propto \exp \left\{ \log p_{\betabf^{t+1}}(T) + \Esp_{h^t} \left[ \log p_{\Omegabf^{t+1}}(\Ubf \mid T) \right] \right\},
+\end{align}
+and
+\begin{align} \label{eq:VEstep-hH}
+h^{t+1}(\Ubf) 
+& \propto \exp \left\{ \Esp_{g^{t+1}} \left[ \log p_{\thetabf^{t+1}, \betabf^{t+1}, \Omega^{t+1}}(\Ybf, \Ubf, T) \right] \right\} \nonumber \\
+& \propto \exp \left\{ \Esp_{g^{t+1}} \left[ \log p_{\Omegabf^{t+1}}(\Ubf \mid T) \right] + \log p_{\thetabf^{t+1}}(\Ybf \mid \Ubf) \right\}. 
+\end{align}
+\end{description}
+
+Observing that $\log p_\betabf(T) + \log p_{\Omegabf}(\Ubf \mid T)$ can be written as a sum over all the edges present in $T$, we see that $g^{t+1}(T)$ has a product form. So, without any further assumption, we may parametrize $g(T)$ in the same way as $p_\betabf(T)$:
+\begin{equation} \label{eq:g}
+g(T) = \prod_{jk \in T} \betat_{jk} / \Bt
+\qquad \text{where} \quad
+\Bt = \sum_{T \in \Tcal_{p+r}} \prod_{jk \in T} \betat_{jk}.
+\end{equation}
+We gather the $\betat_{jk}$'s in the $(p+r) \times (p+r)$ matrix $\betabft$. The parameters $\betabft$, $\Mbf$ and $\Sbf$ are called the variational parameters, in the sense that it is equivalent to optimize $\Jcal$ wrt $(g, h)$ or wrt $(\betabft, \Mbf, \Sbf)$.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Proposed algorithm}
+\label{algo}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+The model we consider is an extension of the PLN model, for which an efficient inference algorithm have been implemented in the \url{PLNmodels}, an R package available on CRAN \citep{CMR18,CMR19}. 
+
+\subsubsection*{Prior estimates of $\thetabf$, $\Mbf_O$ and $\Sbf_O$.}
+To alleviate the computational burden of the inference, we take advantage of this available tool to get an estimate of the regression coefficient matrix $\widehat{\thetabf}$ and an approximation of the parameters  of the observed latent variable conditional distribution $h_O(\Ubf_O) \simeq p(\Ubf_O \mid \Ybf)$. These latter parameters are $\Mbf_O$ and $\Sbf_O$ (first $p$  columns of $\Mbf$ and $\Sbf$ respectively) and we denote $\Mbft_O$ and $\Sbft_O$ their approximation. The quantities $\widehat{\thetabf}$, $\Mbft_O$ and $\Sbft_O$ are kept fixed in the rest of the algorithm, so the VEM algorithm only deals with the remaining unknown quantities: the model parameters $\betabf$, $\Omegabf$, and the variational parameters $\betabft$, $\Mbf_H$, $\Sbf_H$. 
+% \textcolor{red}{[on ne dit plus que c'est sous-optimal ? "optimal value for MO and SO" est un peu fort ?]}
+As a consequence, the final estimates we get yield a lower value of the objective function $\Jcal$ as compared to  an optimisation wrt to all model and variational parameters.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection*{M step.} This steps deals with the update of the  model parameters $\betabf$ and $\Omegabf_T$. Some of the calculations are tedious and postponed to Appendix \ref{app:comput}.
+
+\paragraph{Edges weights $\betabf$:} 
+As shown in Equation \eqref{eq:Mstep}, the maximization of $\mathcal{J}$ requires the computation of the derivative of $\Esp_{g^t} [\log p_{\betabf}(T)]$ wrt $\betabf$, which includes the derivative of the normalizing constant $B$. The latter can be computed via an extension of the Matrix Tree theorem \citep[see][Lemma \ref{lem:Meila} reminded in Appendix \ref{app:tools}]{MeilaJaak}. Setting the derivative of the expectation to 0 yields the following update (same as in \citet{MRA20} and detailed in appendix \ref{up:beta}):
+$$
+\beta^{t+1}_{kl} 
+= \frac{P^t_{kl}}{ M(\betabf^t)_{kl}},
+$$
+where $M(\betabf)$ is defined in Lemma \ref{lem:Meila} and $P^t_{kl}$ is the probability that the edge $(k, l)$ belongs to the tree $T$ according to $g^t$:
+$$
+P^t_{kl} = \mathds{P}_{g^t}\{kl \in T\} 
+= \sum_{\substack{T  \in \mathcal{T}: \\ T \ni kl}} g^t(T) 
+= \frac{1}{\Bt^t} \sum_{\substack{T  \in \mathcal{T}: \\ T \ni kl}} \prod_{uv \in T} \betat^t_{uv}.
+$$
+$P^t_{kl}$ is computed using a result from \citet{kirshner} (reminded as Lemma \ref{lem:Kirshner} in appendix A). We now define the binary variable $I_{Tkl}$ which indicates the presence of the edge $kl$ in tree $T$, so $P_{kl}^t = \Esp_{g^t} [I_{Tkl}]$ and $I_T = [I_{Tkl}]_{1 \leq k, l \leq (p+r)}$ is the adjacency matrix of tree $T$.
+
+\paragraph{Precision matrices $\Omegabf_T$:}
+For a given dependency structure in the Gaussian Graphical model framework, \cite{Lau96} gives maximum likelihood estimates for the precision matrix. 
+These estimators are given as functions of sufficient statistics of the multivariate Gaussian distribution. Indeed in the exponential family framework, the M step of any EM algorithm requires the computation of the expectation of a sufficient statistic, under the current fit of the variational laws (see \citet{mclachlan}). Here as $\Ubf \mid T$ is centered, a sufficient statistic is $\Ubf^\intercal \Ubf$. We now let $SSD$ denote the matrix defined as 
+$$
+SSD^t = \Esp_{h^t} (\Ubf^\intercal \Ubf) = (\Mbf^t)^\intercal \Mbf^t + \Sbf^t_+
+$$
+where $\Sbf^t_+ = \sum_i \Sbf^t_i$. Applying Lauritzen's formulas, we get:
+%As $g^t$ is a discrete law on the space of spanning trees, maximizing each component of an expectation wrt $g$ amounts to  maximizing the whole expectation, meaning that maximizing for each tree $T$ will maximize $\mathcal{J}(\Ybf ; g,h)$.
+%The off-diagonal and diagonal terms of $\hat{\Omega}_T$ write as follows with normalized data:
+\begin{align} \label{omegaT}
+\omega^{t+1}_{Tkl} & = \left\{
+\begin{array}{ll}
+\dfrac{ -ssd_{kl}^{\,t}/n}{1-(ssd_{kl}^{\,t}/n)^2} & \text{if } kl \in T \\
+0 & \text{otherwise}
+\end{array} 
+\right., \\
+\omega^{t+1}_{Tkk} & = 1 + \sum_l I_{Tkl} \dfrac{(ssd_{kl}^{\,t}/n)^2}{1-(ssd_{kl}^{\,t}/n)^2},
+\nonumber
+\end{align}
+where $ssd^t_{kl}$ stands for the entry $kl$ of the matrix $SSD^t$.
+The calculations are postponed to Appendix \ref{up:omega}. Observe that estimates of the off-diagonal entries $\omega^{t+1}_{Tkl}$ do not depend on $T$ provided that the edge $(k, l)$ belongs to $T$.  Thus the estimates of the off-diagonal terms of the precision matrices $\Omegabf_T$ are common to all trees sharing a given edge. This does not result from any assumption on the shape of  $\Omegabf_T$, but from the properties of the maximum likelihood estimate of Gaussian variance matrix. In the sequel we will simply denote off-diagonal terms by $\omega_{kl}$ (as opposed to $\omega_{Tkk}$ which still depends on $T$).\\
+
+Other quantities are needed for later computations. Lauritzen  gives the maximum likelihood estimator of every entry of the correlation matrix $\Rbf_T$ corresponding to an edge $kl$ being part of $T$, which is
+$ \Rbf_{Tkl}^{t+1} = ssd_{kl}^{\,t}/n. $
+Hereafter for any matrix $A$, $A_{[kl]}$ refers to the bloc $kl$ of $A$: $A_{[kl]}=(a_{ij})_{\{i,j\}\in\{k,l\}}$. The determinant of $\Omegabf^{t+1}_T$ factorizes on the edges of $T$ and writes as a function of blocs of the correlation matrix  as follows:  
+
+\begin{align}
+    |\Omegabf^{t+1}_{T}| = \Big(\prod_{kl \in T} |\Rbf_{T[kl]}^{t+1}|\Big)^{-1}
+\quad 
+\text{and for any $kl \in T$, } 
+|\Rbf_{T[kl]}^{t+1}|= 1-(ssd_{kl}^{\,t}/n)^2. \label{RT}
+\end{align}
+
+ 
+Finally we define the matrix  $\xbar{\Omegabf}^{\,t+1} = \Esp_{g^t}[\Omegabf^{t+1}_T]$. 
+%\CA{By definition of the $I_T$ matrix,  off-diagonal and diagonal terms of $\xbar{\Omegabf}$ make edges probabilities appear as follows}
+Noticing that, for $k \neq l$, $\Esp_{g^t}[\Omegabf^{t+1}_T]_{kl} = \Esp_{g^t}[\Omegabf^{t+1} \odot I_T]_{kl}$, edges probabilities appear as follows:
+$$
+\xbar{\omega}_{kl}^{\,t+1} 
+= - P_{kl}^t\dfrac{ ssd_{kl}^{\,t}/n}{1-(ssd\,^t_{kl}/n)^2}, 
+\qquad 
+\xbar{\omega}_{kk}^{\,t+1}= 1+\sum_l P_{kl}^t \dfrac{(ssd_{kl}^{\,t}/n)^2}{1-(ssd_{kl}^{\,t}/n)^2}.
+$$
+
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection*{VE step.} 
+This step deals with the update of the approximate conditional distributions $g$ and $h_H$, namely the update of the corresponding variational parameters $\betabft$, $\Mbf_H$ and $\Sbf_H$.
+
+\paragraph{Approximate conditional tree distribution $g(T)$:}
+Computing the expression \eqref{eq:VEstep-g} yields the following, where the constant term 'cst' does not depend on a specific edge:
+\begin{align*}
+ \log g^{t+1}(T) &= \log p_{\betabf^{t+1}}(T) + \Esp_{h^t} \left[ \log p_{\Omegabf^{t+1}}(\Ubf \mid T) \right]  + \text{cst}  \\
+&=  \sum_{kl \in T} \log \beta^{t+1}_{kl} 
+- \frac{n}2 \log |\Rbf_{[kl]}^{t+1} | 
+-  \omega^{t+1}_{kl} \left[(\Mbf^t)^\intercal \Mbf^t\right]_{kl} + \text{cst}
+\end{align*}
+  Then remembering the product form of  $g^{t+1}$ given in \eqref{eq:g}, we obtain the expression for each edge variational weight:
+  \begin{equation}
+      \betat^{t+1}_{kl} = \beta^{t+1}_{kl} \left|\Rbf_{[kl]}^{t+1}\right|^{-n/2} \exp\left(-\omega^{t+1}_{kl} \left[(\Mbf^t)^\intercal \Mbf^t\right]_{kl}\right).
+  \end{equation}
+ 
+
+\paragraph{Approximate Gaussian distribution $h$:} 
+According to \eqref{eq:VEstep-hH}, we have that
+$$
+\log h^{t+1}(\Ubf) 
+= \Esp_{g^{t+1}} \log p(\Ybf \mid \Ubf_O) - \frac{1}{2} \tr{\left( \xbar{\Omegabf}^{t+1}_T ( \Ubf^\intercal \Ubf) \right)} + \text{cst}.
+$$
+Using the properties of the conditional Gaussian distribution we have that
+$$
+h^{t+1}(\Ubf_H \mid \Ubf_O) = \Ncal\left(\Ubf_H; 
+-\Ubf_O \xbar{\Omegabf}^{t+1}_{OH} \left(\xbar{\Omegabf}^{t+1}_{H}\right)^{-1}, \left(\xbar{\Omegabf}^{t+1}_{H}\right)^{-1}\right).
+$$
+Now, to get $h_H^{t+1}(\Ubf_H)$, it suffices to integrate $h^{t+1}(\Ubf_H \mid \Ubf_O)$ wrt $h_O$ (the parameter of which are kept fixed along iterations) to get
+$$
+\Mbf^{t+1}_H = -\widetilde{\Mbf}_O \xbar{\Omegabf}^{t+1}_{OH} \left(\xbar{\Omegabf}^{t+1}_{H}\right)^{-1}, 
+\qquad
+\Sbf^{t+1}_H = \left(\xbar{\Omegabf}^{t+1}_{H}\right)^{-1}.
+$$
+
+%\textcolor{red}{Pas besoin d'invoquer le champ moyen pour calculer la marginale approchee.}
+
+\subsection{Algorithm peculiarities} \label{sec:algoSpec}
+\subsubsection*{Initialization.}
+\label{init}
+As for any EM algorithm, the choice of the starting point is paramount. The initialization we use here takes the primary estimate $\widetilde{M}_O$ as an input.
+\begin{description}
+\item [Initial clique:]
+As a starting point, we look for a clique of species as potential neighbors of the missing actor $h$. There are many different ways to do so, and if any prior knowledge exists on that matter it should be used. Otherwise, such a clique can be found using sparse principal component analysis \citep[sPCA;][]{spca}, where principal components are formed using only a few of the original variables, which is consistent with the assumption that each missing actor is connected only to some actors in the network. 
+
+% \SR{The sPCA algorithm (R package \texttt{sparsepca}) is applied to $\widetilde{M}_O$ which can be seen here as a Gaussian proxy of observed data. The non-nul optimal loading of each principal components give a set of nodes that form an initial clique of neighbors of the missing actor.}
+%{
+When applying sPCA to $\widetilde{M}_O$, the set of non-zero loadings of each principal components provides us with an initial clique of neighbors of each missing actor
+%\begin{description}
+%\item[Simulated datasets:] Simulated datasets involve a unique missing actor. A quick exploration of the space of likely cliques consists in keeping the two first principal components of sPCA, and their complements. This way, we obtain a set of 4 $C_h$ candidates, which size we impose to be between 2 and $(p-1)$ (the missing actor should have at least two neighbors, but not all the network).
+%\item[Empirical datasets:] A wider exploration of likely cliques is conducted thanks to a bootstrap approach with $200$ sub-samples. Each of the latter consists of 80\% of the data; sPCA is run on each of them and only the identified clique of the $r$ first principal components are stored, when the studied model involves $r$ missing actors. When $r>1$, the restriction on the clique sizes is lifted. The bootstrap thus yield 200 lists of $r$ initial cliques, from which only unique ones are kept. This approach is more time-consuming, and therefore only used on empirical datasets.
+%\end{description}
+
+\item[Parameters initialization:]
+% \SR{Providing with a clique $C_h$, the additional dimension $h$ of $\widetilde{\Rbf}$ is computed as the first eigen vector of the PCA of $\widetilde{\Rbf}_{C_h}$. The inverse of the resulting $(p+r)\times (p+r)$ correlation matrix is computed to get a matrix which gathers initial non-null values common to all $\widehat{\Omegabf}_T$ matrices. Then the vector of unobserved means $M_h$ is initialized as the mean value of $\widetilde{M}_{O}$ columns referring to nodes in $C_h$. Parameters $\betabf$ and $\widetilde{\betabf}$ are initialized uniformly.}{
+The eigenvectors resulting from the sPCA also provide us with a starting value $\Mbf^0_H$, as well as a first estimate of the latent correlation matrix $\Rbf^0$. The parameter $\betabf$ is uniformly initialized.
+%}
+\end{description}
+ 
+\subsubsection*{Numerical issues.}
+
+Because the Matrix Tree Theorem and Kirshner's formula respectively resort to the calculation of a determinant and a matrix inversion, the proposed algorithm is exposed to numerical instabilities. To circumvent these issues, we rely on both multiple-precision arithmetic and likelihood tempering \citep[via a parameter $\alpha$, similarly to][]{ScR17}. More details are given in Appendix \ref{app:numIssues}.
+%\begin{description}
+%\item[Exact computations:]Our algorithm requires the computation of determinants (from the Matrix Tree Theorem) and inverses (in Kirshner's formula) of Laplacian of weight matrices. As we deal with highly variable weights, numerical issues arise: infinite determinants or matrix numerically non-invertible due to either the maximal machine precision (about $1.7\cdot 10^{308}$), or with machine zero (about $2.2 \cdot 10^{-16}$). \RM{}{To enhance the precision of such computations, we rely on multiple-precision arithmetic which allows the digit of precision of numbers to be  limited only by the available memory instead of 64 bits.}
+
+%\item[Shrinking parameter $\alpha$:] Moreover, weights $\widetilde{\beta}$ are mechanically linked to the quantity of data available $n$. To avoid reaching maximal precision when computing the determinant, a shrinking parameter $\alpha$ is applied to every quantity proportional to $n$, so that the actual update performed is $$\log \widetilde{\beta}_{kl} = \log \beta_{kl} - \alpha(\frac{n}{2}\log|\widehat{\Rbf}_{Tkl}| + \widehat{\omega}_{Tkl} [M^\intercal M]_{kl}).$$ A heuristic for an upper bound of $\alpha$ is given in appendix \ref{alpha}.
+%\end{description}
+ 
+% \subsubsection{Stopping conditions}
+% The algorithm can stop for three reasons: it converged, reached the maximal number of iterations or failed to carry computations. 
+% The convergence of parameters $\widehat{\betabf}$ and $\widehat{\Omega}_T$ is monitored by the same precision parameter $\varepsilon$, set to $10^{-3}$ by default.
+% \SR{
+% If the value chosen for $\alpha$ is too high, or if the initial clique $C_h$ is too far from the truth, the algorithm may not correctly perform the calculations for numerical reasons. Such degenerate behaviour causes the algorithm to terminate.
+% }{}
+

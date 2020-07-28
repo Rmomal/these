@@ -1,24 +1,41 @@
 \paragraph{ideas}
+
+ 
+\section{Unresolved details of the presented approach}
 \begin{itemize}
-\item model selection: not working and why
-\item offsets: very important and not so obvious in some cases
+\item model selection: not working and why (pb théorique stat selection dans modele inference variationnel)
+\item offsets: very important and not so obvious in some cases (pb modélisation, pas forcément facile à avoir)
+\item un mot sur la clique, pb algo
 \end{itemize} 
 
+\section{natural extensions}
+state the model clearly, as it holds for the whole section
+\subsection{Other free results}
+estimation de la vraie matrice omega à partir de sigma et de la structure inférée, transformée en graph chordal si besoin (sinon pas décomposable et pas lauritzen)
+contribution d'une arête
+\subsection{Network comparison}
+comparing networks = comparing laws on trees, avec divergence KL symmétrisée par ex
+(si temps pour exemple, MDS 2 premiers axes)
+
+\subsection{Emission law}
+ loi d'émission différente : données mixtes (popovic), données multidimensionnelles sur les noeuds (au lieu d'univarié) article martina, extension pour les comptages multiatribute gaussian gm
+ 
+la mécanique d'inférence de réseau reste la même, parce qu'on conserve la couche Gaussienne. En revanche boulot pour estimation des paramètres de cette loi d'émission.
+
+\subsection{Spatial dependence}
+how to not model the spatial dependency:
+\begin{itemize}
+\item covariates. Because close sites are similar (environmental similarity)
+\item missing actor
+\end{itemize}
+if it's an absolute necessity, modèle kronecker en regardant les sites 2 à 2 pour chaque espèces et les espèces 2 à 2 pour chaque site. Vraisemblance composite.
+ovaskainen hmsc fait le job, à vérifier
 
 \section{Network inference in the observed layer}
+Sortie en sentiers non-gaussiens
 \begin{itemize}
+\item comment simuler des comptages avec structure de dépendance
 \item par paires avec arbre maximal chow \& liu
-\item du coup vraisemblance composite
-\end{itemize}
-
-\section{Accounting for spatial effects}
-\begin{itemize}
-\item community random effect in the latent layer cf la rochelle
-\item as a missing actor
-\item directly with observed counts and gradient ascent
-\end{itemize}
-
-\section{Network comparison}
-\begin{itemize}
-\item probability for two networks to share an edge with tree averaging
+\item factorization par paire avec n'importe quelle loi de comptage bivariée. 
+\item Moyenne d'arbre possible et vraisemblance composite pour évaluer les modèles
 \end{itemize}

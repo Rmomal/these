@@ -1,0 +1,465 @@
+\documentclass{article}                     % onecolumn (standard format)
+\usepackage[a4paper]{geometry}
+
+% Line numbers
+% \usepackage[left,modulo]{lineno}
+% \linenumbers
+% \modulolinenumbers[5]
+\usepackage[ruled,vlined]{algorithm2e}
+\usepackage[utf8]{inputenc}
+%\usepackage{amsmath,amssymb,amsthm,mathrsfs,amsfonts,dsfont,bm}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{dsfont}%\documentclass[a4paper,11pt]{article}
+\usepackage[dvipsnames]{color,xcolor}
+\usepackage{graphicx}
+\usepackage{float, wrapfig}
+\usepackage{empheq}
+\usepackage{appendix}
+\usepackage{enumerate}
+\usepackage{mathtools}  
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{natbib}
+\usepackage{setspace}
+\usepackage[affil-it]{authblk} 
+\usepackage{hyperref}
+\usepackage{ulem}
+\usetikzlibrary{shapes,backgrounds,arrows,automata,decorations,shadows,positioning, mindmap}
+\newcommand*\xbar[1]{%
+   \hbox{%
+     \vbox{%
+       \hrule height 0.5pt % The actual bar
+       \kern0.5ex%         % Distance between bar and symbol
+       \hbox{%
+         \kern-0.1em%      % Shortening on the left side
+         \ensuremath{#1}%
+         \kern-0.1em%      % Shortening on the right side
+       }%
+     }%
+   }%
+} 
+\newcommand{\edgeunit}{1.5}
+\newcommand{\nodesize}{1em}
+%\newcommand{\edgeunit}{4*\nodesize}
+\newcommand{\length}{1}
+\tikzstyle{covariate}=[draw, rectangle, minimum width=\nodesize, minimum height=\nodesize, inner sep=0, color=black]
+\tikzstyle{covmiss}=[draw, minimum width=\nodesize, minimum height=\nodesize, inner sep=0, color=gray, text=gray]
+\tikzstyle{observed}=[draw, circle, minimum width=\nodesize, inner sep=0, color=black]
+\tikzstyle{basic}=[draw, circle, minimum width=0.4*\nodesize, inner sep=0, color=black, fill=black]
+\tikzstyle{clique}=[draw, rectangle, minimum width=2*\nodesize, minimum height=2*\nodesize, inner sep=0, color=black]
+\tikzstyle{edge}=[-, line width=1pt, color=black]
+\tikzstyle{edgemiss}=[-, line width=1pt, dashed, color=gray]
+\tikzstyle{variable}=[scale=0.9,rectangle,draw=white,transform shape,fill=white,font=\Large]
+    
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\input{commands}
+\newcommand{\argmin}{\arg\!\min}
+\newcommand{\argmax}{\arg\!\max}
+\newcommand{\tr}{\text{tr}}
+\newcommand*\widefbox[1]{\fbox{\hspace{3em}#1\hspace{3em}}}
+\newcommand*\lesswidefbox[1]{\fbox{\hspace{2em}#1\hspace{2em}}}
+\newcommand{\entr}{\mathcal{H}}
+\newcommand{\betat}{{\widetilde{\beta}}}
+\newcommand{\Bt}{{\widetilde{B}}}
+\newcommand{\Pt}{{\widetilde{P}}}
+\newcommand\Ibb{\mathbb{I}}
+\newcommand{\betabf}{{\boldsymbol{\beta}}}
+\newcommand{\thetabf}{{\boldsymbol{\theta}}}
+\newcommand{\sigmabf}{{\boldsymbol{\sigma}}}
+%\newcommand{\mubf}{\boldsymbol{\mu}}
+\newcommand{\Omegabf}{{\boldsymbol{\Omega}}}
+\newcommand{\Sigmabf}{{\boldsymbol{\Sigma}}}
+\newcommand{\Gammabf}{{\boldsymbol{\Gamma}}}
+\newcommand{\zerobf}{{\boldsymbol{0}}}
+\newcommand{\Xbf}{{\boldsymbol{X}}}
+\newcommand{\xbf}{{\boldsymbol{x}}}
+\newcommand{\Ybf}{{\boldsymbol{Y}}}
+\newcommand{\Zbf}{{\boldsymbol{Z}}}
+\newcommand{\Wbf}{{\boldsymbol{W}}}
+\newcommand{\Ubf}{{\boldsymbol{U}}}
+\newcommand{\Mbf}{{\boldsymbol{M}}}
+\newcommand{\Qbf}{{\boldsymbol{Q}}}
+\newcommand{\Rbf}{{\boldsymbol{R}}}
+\newcommand{\Sbf}{{\boldsymbol{S}}}
+\newcommand{\mbf}{{\boldsymbol{m}}}
+\newcommand\Ccal{{\mathcal{C}}}
+\newcommand\Hcal{{\mathcal{H}}}
+\newcommand\Jcal{{\mathcal{J}}}
+\newcommand\Ncal{{\mathcal{N}}}
+\newcommand\Pcal{{\mathcal{P}}}
+\newcommand\Tcal{{\mathcal{T}} }
+\newcommand{\Cor}{{\mathds{C}\text{or}}}
+\newcommand{\Esp}{{\mathds{E}}}
+\newcommand{\Var}{{\mathds{V}}}
+\newcommand{\bound}{{\mathcal{J}}}
+% \newcommand{\corTemp}{{\Cor_{\text{temp}}}}
+\newcommand{\corHTemp}{{\rho(H, \text{temp})}}
+\newcommand{\corKTemp}{{\rho(k, \text{temp})}}
+
+\newcommand{\betabft}{{\widetilde{\betabf}}}
+\newcommand{\Mbft}{{\widetilde{\Mbf}}}
+\newcommand{\Sbft}{{\widetilde{\Sbf}}}
+
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+
+\definecolor{azure}{rgb}{0.0, 0.5, 1.0}
+\definecolor{blue2}{rgb}{0.16, 0.32, 0.75} 
+\newcommand{\RM}[2]{\textcolor{gray}{#1}\textcolor{blue2}{#2}}
+\newcommand{\CA}[2]{\textcolor{gray}{\sout{#1}}\textcolor{Peach}{#2}}
+\newcommand{\SR}[2]{\textcolor{black}{\sout{#1}}\textcolor{blue}{#2}}
+
+%JRSSC authors guidlines:
+%- not more than 24 journal pages
+%- computations in appendices
+%- matrices in italic and vectors in bold
+%- short summary (100 words), with 5 to 6 keywords
+%- no pb with arXiv
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\title{\textbf{Accounting for missing actors in interaction network inference from abundance data}}
+
+\author{Raphaëlle Momal$^1$%
+  \thanks{Electronic address: \texttt{raphaelle.momal@agroparistech.fr}; Corresponding author}, \hspace{0.3cm} Stéphane Robin$^2$, \hspace{0.3cm} Christophe Ambroise$^3$}
+\affil{1: UMR MIA-Paris, AgroParisTech, INRAE, Université Paris-Saclay, Paris, France.\\
+2: CESCO, Muséum National d'Histoire Naturelle, CNRS, Sorbonne Université, Paris, France.\\
+3: Université Paris-Saclay, CNRS, Univ. Évry, Laboratoire de Mathématiques et Modélisation d’Évry 91037, \'Evry, France.}
+
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\begin{abstract}
+%\SR{Network inference is used in many areas such as genomics or ecology to infer the structure of conditional independence between covariates, based on the measures of gene expression or species abundance for example. In many experiments, it is likely that not all covariates involved in the network were actually observed. Then observed samples are drawn from a distribution where some unobserved covariates were marginalized.
+%
+%We introduce a generic statistical model for network inference from abundance data with missing actor. The model includes fixed effects to take account of environmental covariates  and sampling efforts, as well as correlated random effects to encode species interactions. The correlation structure is that of a Gaussian graphical model marginalized on one ore more covariates, corresponding to the missing actors. The inferred network is obtained by averaging on all spanning trees, in a computationally efficient way.}{}
+% \SR{
+% % 25 mots 
+% Network inference aims at  unraveling  the dependency structure  relating  jointly observed  variables. Graphical models provides a flexible framework for identifying variables that are {\sl directly related}.
+% %  10 mots 
+% Unobserved variables  ({\sl missing actors}) may induce an apparent 
+% direct dependency.
+% % 28 mots
+% In the context of abundance data, we introduce a model based on the Poisson log-normal distribution, and  a tree-based approach,  to recover the dependency structure  including missing actors.
+% % 27 mots
+% The  performances of the proposed variational EM estimation algorithm 
+% are assessed via synthetic data. Using  ecological datasets, we  demonstrate the  ability of our approach to recover environmental drivers.
+% % 8 mots
+% The corresponding R package is available
+% from \url{https://github.com/Rmomal/VEMtree}. 
+% }{
+Network inference aims at unraveling the dependency structure relating jointly observed variables. Graphical models provide a general framework to distinguish between marginal and conditional dependency.
+Unobserved variables ({\sl missing actors}) may induce apparent conditional dependencies.
+In the context of count data, we introduce a mixture of Poisson log-normal distributions with tree-shaped graphical models, to recover the dependency structure, including missing actors. 
+We design a variational EM algorithm and assess its performance on synthetic data. We demonstrate the ability of our approach to recover environmental drivers on two ecological datasets.
+The corresponding R package is available from \url{github.com/Rmomal/nestor}.\\
+%}
+%%%%% \CA{}{98 mots}
+
+%\RM{}{D'après les guidelines: 100 mots max pour le résumé.}\\
+%\RM{}{La package est disponible à \url{https://github.com/Rmomal/VEMtree}.}
+\paragraph{Keywords:}graphical models, network inference, missing actor, abundance data, Variational EM algorithm, matrix tree theorem, Poisson log-Normal model
+\end{abstract}
+
+% \SR{}{
+% \begin{itemize}
+% \item Parler de l'identifiabilité
+% % \item revoir l'argumentaire arbre / Chow-Liu
+% \end{itemize}}
+ \newpage
+\input{intro.tex}
+\input{model.tex}
+\input{inference.tex}
+\input{simuls.tex}
+\input{applis.tex}
+
+%\input{normalizedModel}
+%\input{intro_old.tex}
+%\input{model_old.tex}
+%\input{inference_old.tex}
+
+
+\paragraph{Acknowledgements.} 
+This work was partly supported by the French ANR-18-CE02-0010 Ecological Networks (EcoNet) project and by the French ANR-11-LABX-0056-LMH LabEx Laboratoire de Mathématique Hadamard.
+\begin{thebibliography}{}
+
+\bibitem[\protect\citeauthoryear{Aitchison and Ho}{Aitchison and
+  Ho}{1989}]{AiH89}
+Aitchison, J. and C.~Ho (1989).
+\newblock The multivariate {P}oisson-log normal distribution.
+\newblock {\em Biometrika\/}~{\em 76\/}(4), 643--653.
+
+\bibitem[\protect\citeauthoryear{Ambroise, Chiquet, and Matias}{Ambroise
+  et~al.}{2009}]{ambroise2009inferring}
+Ambroise, C., J.~Chiquet, and C.~Matias (2009).
+\newblock Inferring sparse gaussian graphical models with latent structure.
+\newblock {\em Electronic Journal of Statistics\/}~{\em 3}, 205--238.
+
+\bibitem[\protect\citeauthoryear{Arlot and Celisse}{Arlot and
+  Celisse}{2010}]{arlot2010survey}
+Arlot, S. and A.~Celisse (2010).
+\newblock A survey of cross-validation procedures for model selection.
+\newblock {\em Statistics surveys\/}~{\em 4}, 40--79.
+
+\bibitem[\protect\citeauthoryear{Baran}{Baran}{1995}]{baran1995dynamique}
+Baran, E. (1995).
+\newblock {\em Dynamique spatio-temporelle des peuplements de Poissons
+  estuariens en Guin{\'e}e (Afrique de l'Ouest)}.
+\newblock Ph.\ D. thesis, Th{\`e}se de Doctorat, Universit{\'e} de Bretagne
+  Occidentale.
+
+\bibitem[\protect\citeauthoryear{{Blei}, {Kucukelbir}, and {McAuliffe}}{{Blei}
+  et~al.}{2017}]{BKM17}
+{Blei}, D.~M., A.~{Kucukelbir}, and J.~D. {McAuliffe} (2017).
+\newblock Variational inference: A review for statisticians.
+\newblock {\em Journal of the American Statistical Association\/}~{\em
+  112\/}(518), 859--877.
+
+\bibitem[\protect\citeauthoryear{Cand{\`e}s, Li, Ma, and Wright}{Cand{\`e}s
+  et~al.}{2011}]{candes2011robust}
+Cand{\`e}s, E., X.~Li, Y.~Ma, and J.~Wright (2011).
+\newblock Robust principal component analysis?
+\newblock {\em Journal of the ACM (JACM)\/}~{\em 58\/}(3), 1--37.
+
+\bibitem[\protect\citeauthoryear{Chaiken and Kleitman}{Chaiken and
+  Kleitman}{1978}]{matrixtree}
+Chaiken, S. and D.~J. Kleitman (1978).
+\newblock Matrix tree theorems.
+\newblock {\em Journal of combinatorial theory, Series A\/}~{\em 24\/}(3),
+  377--381.
+
+\bibitem[\protect\citeauthoryear{Chandrasekaran, Sanghavi, Parrilo, and
+  Willsky}{Chandrasekaran et~al.}{2011}]{RankSparse}
+Chandrasekaran, V., S.~Sanghavi, P.~A. Parrilo, and A.~S. Willsky (2011).
+\newblock Rank-sparsity incoherence for matrix decomposition.
+\newblock {\em SIAM J. Optim\/}~{\em 21}, 572--596.
+
+\bibitem[\protect\citeauthoryear{Chiquet, Mariadassou, and Robin}{Chiquet
+  et~al.}{2018}]{CMR18}
+Chiquet, J., M.~Mariadassou, and S.~Robin (2018).
+\newblock Variational inference for probabilistic poisson pca.
+\newblock {\em The Annals of Applied Statistics\/}~{\em 12\/}(4), 2674--2698.
+
+\bibitem[\protect\citeauthoryear{Chiquet, Mariadassou, and Robin}{Chiquet
+  et~al.}{2019}]{CMR19}
+Chiquet, J., M.~Mariadassou, and S.~Robin (2019).
+\newblock Variational inference for sparse network reconstruction from count
+  data.
+\newblock In {\em International Conference on Machine Learning}.
+
+\bibitem[\protect\citeauthoryear{Chow and Liu}{Chow and Liu}{1968}]{ChowLiu}
+Chow, C. and C.~Liu (1968, May).
+\newblock Approximating discrete probability distributions with dependence
+  trees.
+\newblock {\em IEEE Transactions on Information Theory\/}~{\em 14\/}(3),
+  462--467.
+
+\bibitem[\protect\citeauthoryear{Dempster, Laird, and Rubin}{Dempster
+  et~al.}{1977}]{DLR77}
+Dempster, A.~P., N.~M. Laird, and D.~B. Rubin (1977).
+\newblock Maximum likelihood from incomplete data via the {EM} algorithm.
+\newblock {\em J. Royal Statist. Soc., series B\/}~{\em 39}, 1--38.
+
+\bibitem[\protect\citeauthoryear{Devroye}{Devroye}{1986}]{Dev86}
+Devroye, L. (1986).
+\newblock {\em Non-uniform random variate generation}.
+\newblock Springer.
+
+\bibitem[\protect\citeauthoryear{Dray, Dufour, et~al.}{Dray
+  et~al.}{2007}]{dray2007ade4}
+Dray, S., A.-B. Dufour, et~al. (2007).
+\newblock The ade4 package: implementing the duality diagram for ecologists.
+\newblock {\em Journal of statistical software\/}~{\em 22\/}(4), 1--20.
+
+\bibitem[\protect\citeauthoryear{Durfee, Kyng, Peebles, Rao, and
+  Sachdeva}{Durfee et~al.}{2017}]{DKP17}
+Durfee, D., R.~Kyng, J.~Peebles, A.~B. Rao, and S.~Sachdeva (2017).
+\newblock Sampling random spanning trees faster than matrix multiplication.
+\newblock In {\em Proceedings of the 49th Annual ACM SIGACT Symposium on Theory
+  of Computing}, pp.\  730--742.
+
+\bibitem[\protect\citeauthoryear{Erichson, Zheng, Manohar, Brunton, Kutz, and
+  Aravkin}{Erichson et~al.}{2020}]{spca}
+Erichson, N.~B., P.~Zheng, K.~Manohar, S.~L. Brunton, J.~N. Kutz, and A.~Y.
+  Aravkin (2020).
+\newblock Sparse principal component analysis via variable projection.
+\newblock {\em SIAM Journal on Applied Mathematics\/}~{\em 80\/}(2), 977--1002.
+
+\bibitem[\protect\citeauthoryear{Fossheim, Nilssen, and Aschan}{Fossheim
+  et~al.}{2006}]{FNA06}
+Fossheim, M., E.~M. Nilssen, and M.~Aschan (2006).
+\newblock Fish assemblages in the {B}arents {S}ea.
+\newblock {\em Marine Biology Research\/}~{\em 2\/}(4), 260--269.
+
+\bibitem[\protect\citeauthoryear{Friedman, Hastie, and Tibshirani}{Friedman
+  et~al.}{2001}]{friedman2001elements}
+Friedman, J., T.~Hastie, and R.~Tibshirani (2001).
+\newblock {\em The elements of statistical learning}, Volume~1.
+\newblock Springer series in statistics New York.
+
+\bibitem[\protect\citeauthoryear{Friedman, Hastie, and Tibshirani}{Friedman
+  et~al.}{2008}]{FHT08}
+Friedman, J., T.~Hastie, and R.~Tibshirani (2008).
+\newblock Sparse inverse covariance estimation with the graphical lasso.
+\newblock {\em Biostatistics\/}~{\em 9\/}(3), 432--441.
+
+\bibitem[\protect\citeauthoryear{Giraud and Tsybakov}{Giraud and
+  Tsybakov}{2012}]{GirLatent}
+Giraud, C. and A.~Tsybakov (2012).
+\newblock Discussion of "latent variable graphical model selection via convex
+  optimization".
+\newblock {\em Annals of Statistics\/}~{\em 40\/}(4), 1984--1988.
+
+\bibitem[\protect\citeauthoryear{Inouye, Yang, Allen, and Ravikumar}{Inouye
+  et~al.}{2017}]{inouye}
+Inouye, D.~I., E.~Yang, G.~I. Allen, and P.~Ravikumar (2017).
+\newblock A review of multivariate distributions for count data derived from
+  the poisson distribution.
+\newblock {\em Wiley Interdisciplinary Reviews: Computational
+  Statistics\/}~{\em 9\/}(3), e1398.
+
+\bibitem[\protect\citeauthoryear{Kirshner}{Kirshner}{2008}]{kirshner}
+Kirshner, S. (2008).
+\newblock Learning with tree-averaged densities and distributions.
+\newblock In {\em Advances in Neural Information Processing Systems}, pp.\
+  761--768.
+
+\bibitem[\protect\citeauthoryear{Lauritzen and Meinshausen}{Lauritzen and
+  Meinshausen}{2012}]{EMlvggm}
+Lauritzen, S. and N.~Meinshausen (2012).
+\newblock Discussion: Latent variable graphical model selection via convex
+  optimization.
+\newblock {\em The Annals of Statistics\/}~{\em 40\/}(4), 1973--1977.
+
+\bibitem[\protect\citeauthoryear{Lauritzen}{Lauritzen}{1996}]{Lau96}
+Lauritzen, S.~L. (1996).
+\newblock {\em Graphical Models}.
+\newblock Oxford Statistical Science Series. Clarendon Press.
+
+\bibitem[\protect\citeauthoryear{Lindsay}{Lindsay}{1988}]{lindsay}
+Lindsay, B.~G. (1988).
+\newblock Composite likelihood methods.
+\newblock {\em Contemporary mathematics\/}~{\em 80\/}(1), 221--239.
+
+\bibitem[\protect\citeauthoryear{Lucas, Scholz, Boehme, Jasson, and
+  Maechler}{Lucas et~al.}{2020}]{lucas2020package}
+Lucas, A., I.~Scholz, R.~Boehme, S.~Jasson, and M.~Maechler (2020).
+\newblock gmp: Multiple precision arithmetic.
+\newblock R package version 0.5-13.6.
+
+\bibitem[\protect\citeauthoryear{McLachlan and Krishnan}{McLachlan and
+  Krishnan}{2007}]{mclachlan}
+McLachlan, G. and T.~Krishnan (2007).
+\newblock {\em The EM algorithm and extensions}, Volume 382.
+\newblock John Wiley \& Sons.
+
+\bibitem[\protect\citeauthoryear{Meil{\u{a}} and Jaakkola}{Meil{\u{a}} and
+  Jaakkola}{2006}]{MeilaJaak}
+Meil{\u{a}}, M. and T.~Jaakkola (2006).
+\newblock Tractable bayesian learning of tree belief networks.
+\newblock {\em Statistics and Computing\/}~{\em 16\/}(1), 77--92.
+
+\bibitem[\protect\citeauthoryear{Meil{\u{a}} and Jordan}{Meil{\u{a}} and
+  Jordan}{2000}]{MixtTrees}
+Meil{\u{a}}, M. and M.~I. Jordan (2000).
+\newblock Learning with mixtures of trees.
+\newblock {\em Journal of Machine Learning Research\/}~{\em 1}, 1--48.
+
+\bibitem[\protect\citeauthoryear{Meng, Eriksson, and III}{Meng
+  et~al.}{2014}]{LLVGGM}
+Meng, Z., B.~Eriksson, and A.~O.~H. III (2014).
+\newblock Learning latent variable gaussian graphical models.
+\newblock {\em Proceedings of the 31 International Conference on Machine
+  Learning\/}~{\em 32}, 1269--1277.
+
+\bibitem[\protect\citeauthoryear{Momal, Robin, and Ambroise}{Momal
+  et~al.}{2020}]{MRA20}
+Momal, R., S.~Robin, and C.~Ambroise (2020).
+\newblock Tree-based inference of species interaction networks from abundance
+  data.
+\newblock {\em Methods in Ecology and Evolution\/}~{\em 11}, 621--632.
+
+\bibitem[\protect\citeauthoryear{Popovic, Hui, and Warton}{Popovic
+  et~al.}{2018}]{PHW18}
+Popovic, G.~C., F.~K. Hui, and D.~I. Warton (2018).
+\newblock A general algorithm for covariance modeling of discrete data.
+\newblock {\em Journal of Multivariate Analysis\/}~{\em 165}, 86--100.
+
+\bibitem[\protect\citeauthoryear{Popovic, Warton, Thomson, Hui, and
+  Moles}{Popovic et~al.}{2019}]{PWT19}
+Popovic, G.~C., D.~I. Warton, F.~J. Thomson, F.~K.~C. Hui, and A.~T. Moles
+  (2019).
+\newblock Untangling direct species associations from indirect mediator species
+  effects with graphical models.
+\newblock {\em Methods in Ecology and Evolution\/}~{\em 10\/}(9), 1571--1583.
+
+\bibitem[\protect\citeauthoryear{Robin, Ambroise, and Robin}{Robin
+  et~al.}{2019}]{RAR19}
+Robin, G., C.~Ambroise, and S.~Robin (2019).
+\newblock Incomplete graphical model inference via latent tree aggregation.
+\newblock {\em Statistical Modelling\/}~{\em 19\/}(5), 545--568.
+
+\bibitem[\protect\citeauthoryear{Schwaller and Robin}{Schwaller and
+  Robin}{2017}]{ScR17}
+Schwaller, L. and S.~Robin (2017).
+\newblock Exact bayesian inference for off-line change-point detection in
+  tree-structured graphical models.
+\newblock {\em Statistics and Computing\/}~{\em 27\/}(5), 1331--1345.
+
+\bibitem[\protect\citeauthoryear{{Schwaller}, {Robin}, and
+  {Stumpf}}{{Schwaller} et~al.}{2019}]{SRS19}
+{Schwaller}, L., S.~{Robin}, and M.~{Stumpf} (2019).
+\newblock {Bayesian Inference of Graphical Model Structures Using Trees}.
+\newblock {\em J. Soc. Franc. Stat.\/}~{\em 160\/}(2), 1--23.
+
+\bibitem[\protect\citeauthoryear{Shao}{Shao}{1993}]{shao1993linear}
+Shao, J. (1993).
+\newblock Linear model selection by cross-validation.
+\newblock {\em Journal of the American statistical Association\/}~{\em
+  88\/}(422), 486--494.
+
+\bibitem[\protect\citeauthoryear{Vidar and Steinar}{Vidar and
+  Steinar}{2008}]{ViS08}
+Vidar, G. and E.~Steinar (2008).
+\newblock poilog: {P}oisson lognormal and bivariate {P}oisson lognormal
+  distribution.
+\newblock R package version 0.4.
+
+\bibitem[\protect\citeauthoryear{Wainwright and Jordan}{Wainwright and
+  Jordan}{2008}]{WaJ08}
+Wainwright, M.~J. and M.~I. Jordan (2008).
+\newblock Graphical models, exponential families, and variational inference.
+\newblock {\em Found. Trends Mach. Learn.\/}~{\em 1\/}(1--2), 1--305.
+
+\bibitem[\protect\citeauthoryear{Warton, Blanchet, O'Hara, Ovaskainen,
+  Taskinen, Walker, and Hui}{Warton et~al.}{2015}]{WBO15}
+Warton, D.~I., F.~G. Blanchet, R.~B. O'Hara, O.~Ovaskainen, S.~Taskinen, S.~C.
+  Walker, and F.~K. Hui (2015).
+\newblock So many variables: joint modeling in community ecology.
+\newblock {\em Trends in Ecology \& Evolution\/}~{\em 30\/}(12), 766--779.
+
+\bibitem[\protect\citeauthoryear{Zhao, Liu, Roeder, Lafferty, and
+  Wasserman}{Zhao et~al.}{2012}]{zhao2012huge}
+Zhao, T., H.~Liu, K.~Roeder, J.~Lafferty, and L.~Wasserman (2012).
+\newblock The huge package for high-dimensional undirected graph estimation in
+  r.
+\newblock {\em The Journal of Machine Learning Research\/}~{\em 13\/}(1),
+  1059--1062.
+
+\end{thebibliography}
+
+
+\begin{appendix}
+\input{app_tools.tex}
+ \newpage
+\input{app_calculs.tex}
+ \newpage
+\input{app_cv.tex}
+\end{appendix}
+
+
+\end{document}

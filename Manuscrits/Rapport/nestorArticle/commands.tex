@@ -1,0 +1,75 @@
+% Environment
+\renewcommand{\appendixname}{Annex}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{remark}{Remark}
+\renewcommand{\abstractname}{Summary} 
+\definecolor{red1}{RGB}{228,26,28}
+\definecolor{red2}{RGB}{251,180,174}
+\definecolor{blue1}{RGB}{55,126,184}
+\definecolor{blue2}{RGB}{179,205,227}
+\definecolor{aqua2}{RGB}{0,161,108}
+\definecolor{aqua1}{RGB}{151,217,195}
+
+ 
+\newcommand{\RM}[2]{\textcolor{aqua1}{\sout{#1}}\textcolor{aqua2}{#2}} % Raph
+\newcommand{\SR}[2]{\textcolor{gray}{#1}\textcolor{blue}{#2}} % SR
+
+\newcommand\independent{\protect\mathpalette{\protect\independenT}{\perp}}
+\newcommand{\STAB}[1]{\begin{tabular}{@{}c@{}}#1\end{tabular}}
+
+% Functions
+\def\independenT#1#2{\mathrel{\rlap{$#1#2$}\mkern2mu{#1#2}}}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\Esp}{\mathbb{E}}
+\DeclareMathOperator*{\Var}{\mathbb{V}}
+\DeclareMathOperator*{\Cov}{\mathbb{C}\text{ov}}
+\DeclareMathOperator*{\prob}{\mathds{P}}
+\DeclareMathOperator*{\probt}{\widetilde{\mathds{P}}}
+
+% Notations pairs
+\newcommand\jk{{jk}}
+
+% Notations cal
+\newcommand\Ccal{\mathcal{C}}
+\newcommand\Ncal{\mathcal{N}}
+\newcommand\Pcal{\mathcal{P}}
+\newcommand\Tcal{\mathcal{T}}
+\newcommand\mt{\widetilde{m}}
+\newcommand\St{\widetilde{S}}
+\newcommand\mbt{\widetilde{\bf m}}
+\newcommand\Sbt{\widetilde{\bf S}}
+
+% Notations bf
+\newcommand\gammab{{\boldsymbol{\gamma}}}
+\newcommand\betab{{\boldsymbol{\beta}}}
+\newcommand\thetab{{\boldsymbol{\theta}}}
+\newcommand\Sigmab{{\boldsymbol{\Sigma}}}
+\newcommand\cst{\text{cst}}
+\newcommand\Ob{{\bf O}}
+\newcommand\Hb{{\bf H}}
+\newcommand\Mb{{\bf M}}
+\newcommand\Qb{{\bf Q}}
+\newcommand\Wb{{\bf W}}
+\newcommand\Xb{{\bf X}}
+\newcommand\xb{{\bf x}}
+\newcommand\Yb{{\bf Y}}
+\newcommand\Zb{{\bf Z}}
+\newcommand\zb{{\bf z}}
+
+
+
+% Notations tilde
+\newcommand\Pt{\widetilde{P}}
+\newcommand\pt{\widetilde{p}}
+\newcommand\et{\widetilde{\mathds{E}}}
+\newcommand\e{{\mathds{E}}}
+% TikZ
+\newcommand{\nodesize}{1em}
+\newcommand{\edgeunit}{4*\nodesize}
+\tikzstyle{covariate}=[draw, rectangle, minimum width=\nodesize, minimum height=\nodesize, inner sep=0, color=black]
+\tikzstyle{covmiss}=[draw, minimum width=\nodesize, minimum height=\nodesize, inner sep=0, color=gray, text=gray]
+\tikzstyle{observed}=[draw, circle, minimum width=\nodesize, inner sep=0, color=black]
+\tikzstyle{edge}=[-, line width=1pt, color=black]
+\tikzstyle{edgemiss}=[-, line width=1pt, dashed, color=gray]

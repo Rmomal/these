@@ -1,0 +1,92 @@
+
+\subsection{Computations} \label{app:comput}
+\subsubsection[Update of tree parameter vector]{Update of $\betabf$.} \label{up:beta}
+As in \citet{MRA20}, the update of $\betabf$ is such that:
+$$\betabf^{t+1}  = \arg\max_\betabf \; \Esp_{g^t} \left[ \log p_\betabf(T) \right].
+$$
+By definition of $p_\betabf(T)$:
+$$\Esp_{g^t} \left[ \log p_\betabf(T) \right] = \sum_{kl} P^t_{kl} \log \beta_{kl} - \log B\;,
+\qquad
+B=\sum_{T\in \mathcal{T}}\prod_{kl\in T} \beta_{kl}.$$
+Computing the derivative with respect to the edge weight $\beta_{kl}$ gives:
+\begin{align*}
+\partial_{\beta_{kl}}\Esp_{g^t} \left[ \log p_\betabf(T) \right] &=\frac{P_{kl}^t}{\beta_{kl}} - \frac{\partial_{\beta_{kl}} B^t }{B^t} 
+\end{align*}
+According to Lemma \ref{lem:Meila}: $\partial_{\beta_{kl}} B^t  = [\boldsymbol{M}]_{kl} \times B$. Finally setting the derivative to 0 yields the update formula $
+\beta^{t+1}_{kl} 
+= \frac{P^t_{kl}}{ M(\betabf^t)_{kl}}$.
+
+\subsubsection[Update of Gaussian tree precision matrix]{Update of $\Omega_T$} \label{up:omega}
+The update of $\Omegabf_T$ respects
+$$\Omegabf^{t+1}  = \arg\max_\Omegabf \; \Esp_{q^t} \left[ \log p_{\Omegabf}(\Ubf \mid T) \right].$$
+This is a problem of parameter optimisation in the context of Gaussian Graphical Models (GGM).
+In what follows, for any $q\times q$  matrix $A$, $A_{[kl]}$ will refer to the bloc $kl$ of $A$: $A_{[kl]}=(a_{ij})_{\{i,j\}\in\{k,l\}}$.   $[A_{[kl]}]^q$ will then denote the matrix obtained by filling up with zero entries to obtain full dimension $q\times q$, so that:
+$$([A_{[kl]}]^q )_{ij}=\left\{ \begin{array}{rl}
+a_{ij} & \text{if } \{i,j\}\in\{k,l\}\\
+0 &  \text{if } \{i,j\}\in\{1,..., q\}_{\setminus kl}
+\end{array}\right.$$
+In its proposition 5.9, \citet{Lau96} states that in a  GGM with $p$ variables and associated with the decomposable graph $\mathcal{G}$, the maximum likelihood of the precision matrix exists if and only if $n > \max_{C\in \mathcal{C}} |C|$. It is then given as 
+$$\widehat{\Omega}=n\left(\sum_{C\in \mathcal{C}} [SSD_{[C]}\,^{-1}]^p - \sum_{S\in \mathcal{S}} \nu(S)\,[SSD_{[S]}\,^{-1}]^p \right)$$
+where $\mathcal{C}$ is the set of cliques and $\mathcal{S}$ the set of separators of $\mathcal{G}$, with associated multiplicities $\nu(S)$.\\
+
+
+In our context, $\mathcal{G}$ is a spanning tree and so all cliques are edges and separators are nodes. The multiplicity of a given node $k$ as a separator in the graph is  $\nu(k) = d(k)-1$, where $d(k)$ is its degree. Therefore the estimator  $\widehat{\Omega}_T$  writes as the following 
+\begin{align*}
+\widehat{\Omega}_T &= n  \sum_{kl\in T}   [(SSD_{[kl]})^{-1}]^{p+r} - n\sum_k (d(k)-1)[(SSD_{kk})^{-1}]^{p+r}\\
+&=n \sum_{kl\in T}  [(SSD_{[kl]})^{-1} - (SSD_{kk})^{-1} -  (SSD_{ll})^{-1} ]^{p+r} + n\sum_k[(SSD_{kk})^{-1}]^{p+r}
+\end{align*}
+As $SSD$ has diagonal $n$, the expression simplifies. Denoting $I_d$ the identity matrix of dimension $d$ we obtain:
+$$\widehat{\Omega}_T =n\sum_{kl\in T} [(SSD_{[kl]})^{-1} -\frac{1}{n} I_2]^{p+r}+ I_{p+r}.$$
+
+Detailing each bloc matrices as follows gives the update formulas in (\ref{omegaT}):
+\[
+n\times [(SSD_{[kl]})^{-1} - \frac{1}{n}I_2] = \frac{1}{1-(ssd_{kl}/n)^2}
+\left(\begin{array}{cc}
+		(ssd_{kl}/n)^2   & -ssd_{kl}/n\\
+		-ssd_{kl}/n& (ssd_{kl}/n)^2 
+		\end{array}\right)
+\]
+
+
+\subsubsection[for the toc]{Determinant of $\Omegabf_T$.}
+The determinant of a precision matrix of a GGM with a decomposable graph is expressed as follows \citep{Lau96}:
+$$ |\Omega| =\dfrac{\prod_{C\in \mathcal{C}} |\Sigma_C|^{-1}}{\prod_{S\in \mathcal{S}} |\Sigma_S|^{-\nu(S)}},$$
+where $\Sigma = \Omega^{-1}$. As $\Omegabf_T$ is tree-structured, its determinant factorizes on the edges of $T$. It is expressed with the correlation matrix $\Rbf_T$ as follows, denoting $d(k)$ the degree of node $k$:
+\begin{align*}
+|{\Omegabf}_T| &=\frac{\prod_{kl \in T} |{\Rbf}_{Tkl}|^{-1}}{\prod_k |{\Rbf}_{Tkk}|^{1-d(k)}} 
+ \end{align*}
+Using that $\Rbf_T$ has diagonal 1, we obtain for step $t+1$ of the algorithm:
+$$|\Omegabf^{t+1}_{T}| = \Big(\prod_{kl \in T} |\Rbf_{T[kl]}^{t+1}|\Big)^{-1}.$$
+
+
+\subsubsection{Numerical issues.} \label{app:numIssues}
+
+\paragraph{Exact computations} Our algorithm requires the computation of determinants (from the Matrix Tree Theorem) and inverses (in Kirshner's formula) of Laplacian of weight matrices. As we deal with highly variable weights, numerical issues arise: infinite determinants or matrix numerically non-invertible due to either the maximal machine precision (about $1.7\cdot 10^{308}$), or with machine zero (about $2.2 \cdot 10^{-16}$). To enhance the precision of such computations, we rely on multiple-precision arithmetic which allows the digit of precision of numbers to be  limited only by the available memory instead of 64 bits. We implemented matrix inversion and log-determinant computation using both, symbolic computation and multiple precision arithmetic, relying on the \texttt{gmp} R package available on CRAN, which uses \citep{lucas2020package}, the C library GMP (GNU Multiple Precision Arithmetic). 
+
+\paragraph{Tempering parameter $\alpha$} \label{alpha}
+\begin{description}
+\item[definition]Weights $\widetilde{\beta}$ are mechanically linked to the quantity of data available $n$. To avoid reaching maximal precision when computing the determinant, a tempering parameter $\alpha$ is applied to every quantity proportional to $n$, so that the actual update performed is $$\log \widetilde{\beta}_{kl} = \log \beta_{kl} - \alpha(\frac{n}{2}\log|\widehat{\Rbf}_{Tkl}| + \widehat{\omega}_{Tkl} [M^\intercal M]_{kl}).$$
+\item[Heuristic for an upper bound] The proposed algorithm requires the computation of the normalizing constant $\widetilde{B}$, which is the determinant of any minor of the Laplacian  of the $q\times q$ variational weights matrix $\betabft$. As these weights  mechanically increase with the quantity of available data $n$, this step is numerically very sensitive.  Hereafter we denote $|\Qbf^{uv}|$ this determinant and $\Delta$ the maximal machine precision. In order to ease the computations, we define the tempering parameter $\alpha$ as $$\log \widetilde{\beta}_{kl} = \log \beta_{kl} - \alpha(\frac{n}{2}\log|\widehat{\Rbf}_{Tkl}| + \widehat{\omega}_{Tkl} [M^\intercal M]_{kl})\;,\qquad \text{under constraint}\;\;\; |\Qbf^{uv}| \leq \Delta.$$
+
+Let's first detail the expression for $\widetilde{\beta}_{kl}$. Following the definition of the $SSD$ matrix, and update formulas \eqref{omegaT} and \eqref{RT}, we obtain:
+\begin{align*}
+    \log \widetilde{\beta}_{kl} &=\log \beta_{kl} +\alpha \,n\left\{\frac{(ssd_{kl}/n)^2}{1-(ssd_{kl}/n)^2} -\frac12\log\big[1-(ssd_{kl}/n)^2\big]\right\}
+\end{align*}
+For large $n$, we thus have $$\widetilde{\beta}_{kl}\approx \exp \big[\alpha n \cdot C(ssd_{kl}/n)\big], \qquad \text{with }\; C(x)=x/(1-x) -\log(\sqrt{1-x}),\; x\in [0,1[.$$ 
+We then define $C_{sup}$ such that $C_{sup} = C(ssd_{max})$, with $ ssd_{max}=\max\{ssd_{kl}, k\neq l\}$.
+By definition, $\Qbf^{uv}$ is positive-definite, so its determinant is upper bounded by the product of its diagonal terms (Hadamard's inequality). Namely:
+\begin{align*}
+    |\Qbf^{uv}|&\leq \prod_{i=1}^{q-1} \Qbf^{uv}_{ii} \leq \prod_{i=1}^{q-1}\sum_{i=1}^{q-1} \exp (\alpha C_{sup} n)\\
+    &\leq \left[(q-1)\exp(\alpha C_{sup} n)\right]^{q-1}
+\end{align*}
+Then applying the constraint yields:
+\begin{align*}
+    |\Qbf^{uv}| \leq \Delta \iff  \alpha \leq \frac{1}{C_{sup} n} \left[ \frac{1}{q-1}\log \Delta - \log(q-1)\right] 
+\end{align*}
+
+For $C_{sup}=0.8$, $n=200$ and $q=15$, we get $\alpha \leq 1.05\cdot 10^{-1}$.
+\end{description}
+
+%A heuristic for an upper bound of $\alpha$ is given in appendix \ref{alpha}.
+%We provide a heuristic to set the parameter $\alpha$.
+

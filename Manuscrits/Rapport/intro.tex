@@ -45,13 +45,37 @@ The central model we adopt involves a Gaussian layer of parameters which is a mi
 
 \section*{Outline} 
   \subsection*{Chapter 1}
-The first chapter details the mathematical tools and technical results of the statistical modeling and the network inference used in Chapter 2 and Chapter 3.
+The first chapter details the mathematical tools and technical results for the statistical modeling and the network inference used in Chapters 2 and 3.
 
    \subsection*{Chapter 2}
    This chapter details a method to infer undirected networks representing conditional statistical dependencies between the species from their joint abundance measures.  The proposed methodology, implemented in the R package \texttt{EMtree},  is compared to state of the art approaches and applied to two empirical datasets from ecology and metagenomics. This chapter has been published as an article in the journal \textit{Methods in Ecology and Evolution} \citep{MRA20}.
    
     \subsection*{Chapter 3}
-This chapter details a variational approach to the inference of a missing actor in the network. The reconstruction of missing actor(s) is illustrated on two  empirical datasets from ecology. This chapter has been submitted for publication in the \textit{Journal of the Royal Statistical Society: series C (applied statistics)}.
+This chapter details a variational approach to the inference of a missing actor in the network. The reconstruction of missing actor(s) is implemented in the R package \texttt{nestor} and illustrated on two  empirical datasets from ecology. This chapter has been submitted for publication in the \textit{Journal of the Royal Statistical Society: series C (applied statistics)}.
  
- 
+  \subsection*{Chapter 4}
+This final chapter introduces some natural perspectives of this work. After concluding on the specifics of the developed methodology, natural extension are presented, including network comparison. The inclusion of spatialized data is discussed, as well as the possibility of network inference directly from the observed counts.
  \section*{Notations}
+ 
+ \begin{description}
+ \item[Operations:]  \begin{itemize}
+     \item[]
+ \item[] $|\cdot|$ : matrix determinant
+ \item[] $\odot$ : Hadamard product
+ \end{itemize}
+ \item[Variables:] \begin{itemize}
+     \item[]
+ \item[] $\Ybf$ :  matrix  of observed counts
+ \item[] $\Zbf$ : matrix of latent Gaussian parameters 
+ \item[] $\Ubf$ : matrix of latent normalized Gaussian parameters 
+ \item[] $\Xbf$ : matrix of covariates 
+ \item[] $O$ : matrix of measured offsets
+ \end{itemize}
+ \item[Dimensions:]\begin{itemize}
+     \item[]
+ \item[] n : number of samples
+ \item[] p: number of observed species
+ \item[] r: number of unobserved species
+ \item[] d: number of covariates
+ \end{itemize}
+ \end{description} 

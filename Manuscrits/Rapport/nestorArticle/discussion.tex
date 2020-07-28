@@ -1,0 +1,67 @@
+\section{Discussion}
+Espérance du complément de Schur $\widehat{\Omega}_{Tm} = \widehat{\Omega}_{TOO} - \widehat{\Omega}_{TOH}\widehat{\Omega}_{TH}^{-1}\widehat{\Omega}_{THO}$:
+\begin{align*}
+    \widehat{\Omega}_{Tkl} &= -I_{Tkl} \frac{\rho_{kl}}{1-\rho_{kl}^2}\\
+    \widehat{\Omega}_{Thh} &= 1+\sum_k I_{Tkh} \frac{\rho_{kh}^2}{1-\rho_{kh}^2}
+\end{align*}
+Donc:
+\begin{align*}
+    [\widehat{\Omega}_{TOH}\widehat{\Omega}_{TH}^{-1}\widehat{\Omega}_{THO}]_{kl} &= \sum_{h\in H} I_{Tkh} \frac{\rho_{kh}}{1-\rho_{kh}^2} I_{Thl} \frac{\rho_{hl}}{1-\rho_{hl}^2} \times \frac{1}{1+\sum_j I_{Tjh} \frac{\rho_{jh}^2}{1-\rho_{jh}^2}}
+\end{align*}
+
+\paragraph{Vraisemblance CV par Monte-Carlo (V1).}
+\begin{enumerate}
+\item On ajuste le modèle sur une proportion $1 - 1/V$ des données : $Y_{train_v}$
+\item On obtient $\widehat{\beta}$, $\widehat{\omega}_{kl}$, , $\widehat{\theta}$
+\item On fait $B = 10^3$ tirages comme suit
+\begin{itemize}
+\item on tire $T^b \sim p_{\widehat{\beta}}(T)$ (\textcolor{red}{comment ?})
+\item on extrait $\widehat\Omega_{T^b}$ et on calcule $\widehat\Sigma_{T^bm}$ 
+\item on tire $U^b_O \sim \Ncal(0, \widehat\Sigma_{T^bm})$
+\item on calcule $p(Y_{test_v} | U^b_O; \widehat{\theta})$
+\end{itemize}
+\item on calcule le critère moyenné $Crit = V^{-1} Crit_v$ avec
+\begin{align*}
+Crit_v 
+& = \frac1B \sum_b p(Y_{test_v} | U^b_O, T^b; \widehat{\theta}) \\
+& \approx \widehat{\Esp}_{T, U_0; \widehat{\beta}, \widehat{\omega}} p(Y_{test_v} | U^b_O, T^b; \widehat{\theta}) = \widehat{p}(Y_{test_v}; \widehat{\beta}, \widehat{\omega}, \widehat{\theta})
+\end{align*}
+\end{enumerate}
+
+\paragraph{Vraisemblance CV par Monte-Carlo (V2).}
+On veut éviter l'intégration sur les cachées
+\begin{enumerate}
+\item On ajuste le modèle sur une proportion $1 - 1/V$ des données : $Y^v_{train}$
+\item On obtient $\widehat{\beta}$, $\widehat{\omega}_{kl}$, , $\widehat{\theta}$
+\item On fait $B$ tirages comme suit
+\begin{itemize}
+\item on tire $T^b \sim p_{\widehat{\beta}}(T)$
+\item on extrait $\widehat\Omega_{T^b}$ et on calcule $\widehat\Sigma_{T^bm}$ 
+\item pour chaque site test $i$ et chaque paire d'espèces $(j, k)$, on calcule la densité Poisson log-normale $p_{PLN}((Y_{ij}, Y_{ik}) | T^b; \widehat{\theta})$
+\end{itemize}
+\item on calcule le critère moyenné $Crit = V^{-1} Crit_v$ avec
+\begin{align*}
+Crit_v 
+& = \frac1B \sum_b \sum_{i \in test_v} \sum_{j < k} \log p_{PLN}((Y_{ij}, Y_{ik}) | T^b; \widehat{\theta})
+\end{align*}
+\end{enumerate}
+
+
+%library(tidyverse)
+%library(tidymodels)
+
+
+% folds<-vfold_cv(tab, v = 10) 
+% performance<-map_dfr(folds$splits,
+%         function(x) {
+%           x.train<-as_tibble(x,data = "analysis")
+%           x.test <-as_tibble(x,data = "assessment")
+%           res=glm(chd~.,family=binomial,data=x.train);
+%           yprob <-predict(res,newdata=x.test,type="response");
+%           perf<- mean( (yprob>0.5) == x.test$chd )
+%           confusion.matrix=table(yprob>0.5,x.test$chd);
+%           errors<-1-diag(confusion.matrix)/colSums(confusion.matrix)
+%           tibble(perf=perf,FN=errors[1],FP=errors[2])
+%         })
+% performance<-gather(performance,key="Criterion",value="Value")
+% ggplot(data=performance,aes(x=Criterion,y=Value,col=Criterion)) + geom_boxplot()
