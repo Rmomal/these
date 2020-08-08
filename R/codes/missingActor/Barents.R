@@ -146,7 +146,8 @@ n1lay[30,]=c(-7,2)
 n1lay[13,]=c(-10,1)
 n1lay[15,]=c(-11.8,4)
 n1lay[27,]=c(-13,9)
-n1<-draw_network(VEM_spca_200$Pg, curv=0,nb = 1, pal="#31374f",layout=NULL,stored_layout = n1lay, nodes_label =lab1,groupes = c(1*(1:30 %in% vois),2))
+n1<-draw_network(VEM_spca_200$Pg, curv=0,nb = 1, pal="#31374f",layout=NULL,stored_layout = n1lay, nodes_label =lab1,
+                 groupes = c(1*(1:30 %in% vois),2))
 n1
 g=grid.arrange(n0$G, n1$G, ncol=2)
 ggsave(plot=g,filename = "Barents_net_comp3.png", path =  "/Users/raphaellemomal/these/R/images",

@@ -139,7 +139,7 @@ get.ListVEM<-function(seed, eps=1e-3){
   return(res)
 }
 get_data<-function(ListVEM,seed, r=1){
-  set.seed(seed)
+  set.seed(seed) ; n=200
   p=14
   missing_data<-missing_from_scratch(n=n,p=p,r=r,type="scale-free",plot=FALSE)
   G=missing_data$G; q=ncol(G)
@@ -184,10 +184,10 @@ data19=get_data(ListVEM19, 19)
 data1=get_data(ListVEM1,10)
 data7=get_data(ListVEM7,7)
 data7=data7 %>% mutate(Jcor2=J-penT*n)
-data7%>%  mutate(maxJcor=Jcor==max(Jcor, na.rm=TRUE)) %>% 
-  gather(key, value, -diff,-Jcor,-J,-maxJcor,-num,-detEg,-Jcor2,-penUH,-penT,-delta) %>% 
+data7%>%  mutate(maxJ=J==max(J, na.rm=TRUE)) %>% 
+  gather(key, value, -Jcor_diff,-J,-maxJ,-num,-penUH,-penT) %>% 
   ggplot(aes(value,J))+geom_vline(xintercept=0.5, color="gray", linetype="dashed")+
-  geom_point(aes(size=ifelse(maxJcor,2.5,2), shape=ifelse(maxJcor,15,20)))+
+  geom_point(aes(size=ifelse(maxJ,2.5,2), shape=ifelse(maxJ,15,20)))+
   scale_shape_identity() +scale_size_identity() + facet_wrap(~key)+mytheme.dark("")
 
 data1%>% 
@@ -195,4 +195,35 @@ data1%>%
   geom_point()+
   scale_shape_identity() +scale_size_identity() +mytheme.dark("")
 
+#####
+# example to compare with nestor outputs
+set.seed(7) ; n= 200 ; p=15
+data=missing_from_scratch(n=n,p=p,r=1,type="scale-free", plot=TRUE)
+counts=data$Y
+sigmaO= data$Sigma
+upsilon=data$Upsilon
+trueClique=data$TC
+hidden=data$H
+PLNfit<-PLN(counts~1)
+MO<-PLNfit$var_par$M  
+SO<-PLNfit$var_par$S  
+sigma_obs=PLNfit$model_par$Sigma
+plot(sigmaO ,sigma_obs)
+abline(0,1)
+G=(data$G)
+ggimage(G)
+#-- normalize the PLN outputs
+D=diag(sigma_obs)
+matsig=(matrix(rep(1/sqrt(D),n),n,p, byrow = TRUE))
+MO=MO*matsig
+SO=SO*matsig^2
 
+#-- find initial clique
+findclique= boot_FitSparsePCA(scale(MO),B=100,r=1, cores=3)
+initClique=findclique$cliqueList
+
+fitList=List.VEM(cliquesObj=findclique, counts, sigma_obs, MO,SO, r=1,alpha=0.1, cores=1,maxIter=30,
+                 eps=1e-4, nobeta=FALSE,  trackJ=FALSE,save=FALSE)
+do.call(rbind,lapply(fitList, function(vem){
+ c(auc=auc(vem$Pg, data$G), J=tail(vem$lowbound$J,1))
+})) %>% as_tibble() %>% ggplot(aes(J,auc))+geom_point()+theme_light()

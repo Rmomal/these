@@ -432,16 +432,17 @@ build_TFPN_plots<-function(type,difficulty,method,factors=methods,resultspath, r
                            colors,FDR=FALSE, TPFN=FALSE,FOR=FALSE, senspe=FALSE){
   cols<-c("TN","FP" ,"FN"  ,"TP","method" ,"times","unit","type", "difficulty" ,"graph",  "sum","FDR")
   res<-do.call(rbind, lapply(method, function(meth){
-    if(meth!="MInt" ){
-      resultsname="BadSF_"
-    }else{resultsname=""}
+    if(meth%in%c("SpiecEasi","gCoda","MInt") && type=="erdos")resultsname=""
+    #   resultsname="Updated_"
+    # }else{resultsname=""}
    # obj <-readRDS(paste0(path,"TPFN/Results/",meth,"_",type,"_TFPN_", difficulty,".rds")) %>% dplyr::select(cols)
    obj <-readRDS(paste0(resultspath, resultsname,meth,"_",type,"_TFPN_", difficulty,".rds")) %>% dplyr::select(cols)
     # obj <-readRDS(paste0("/Users/raphaellemomal/Clark/Results/",meth,"_",type,"_TFPN_",difficulty,".rds")) %>% dplyr::select(cols)
     obj$method=meth
     return(obj)
   }))
-  res<-res %>% mutate(method = fct_recode(method,  "ecoCopula"="ecoCo.AIC" )) %>%
+  res<-res %>% mutate(method = fct_recode(method,  "ecoCopula"="ecoCo.AIC" ,
+                                          "MRFcov"="MRFcov1" )) %>%
     mutate(method=fct_relevel(method,factors),
                      FDR=FP/(TP+FP),  densPred=(TP+FP)/(TP+FN), FOR=FN/(FN+TN),
                      sens=TP/(TP+FN), spe=TN/(TN+FP))
@@ -473,7 +474,8 @@ build_TFPN_plots<-function(type,difficulty,method,factors=methods,resultspath, r
 gridLine<-function(type,method,factors,resultspath, resultsname,colors,top=TRUE){
   label<-switch(type,"erdos"="Erdös \n \n","cluster"="Cluster \n \n","scale-free"="Scale-free \n \n")
   if(top){
-    top1="Easy (n=100, p=20)\n"; top2="Hard (n=50, p=30)\n"
+    # top1="Easy (n=100, p=20)\n"; top2="Hard (n=50, p=30)\n"
+    top1="(n=100, p=50)\n"; top2="(n=50, p=50)\n"
   }else{
     top1="";top2=""
   }

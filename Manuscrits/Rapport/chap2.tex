@@ -1,4 +1,9 @@
-%chap 2
+
+\vspace{1cm}
+This Chapter is based on the article \textit{Tree-based Inference of Species Interaction Networks from Abundance data} published in Methods in Ecology and Evolution \citep{MRA20}. It details an original network inference method from species observed abundance data using the Poisson log-normal model and tree averaging. The developed methodology is compared to existing alternative methods for network inference, from ecology and genomics. After an enriching discussion with Nicolas Clark (MRFcov R package), covariates adjustment has been corrected, as well as simulation parameters of the Scale-free structures. Consequently Fig.~\ref{TPFN} has been updated and Fig.~\ref{SF50}  added. The appendix has been updated accordingly. This chapter completes the published material, and adds a vignette giving usage examples of the R package implementing the developed method.
+
+
+%nouveaux suppléments vignette
 \section{Introduction}
 \input{EMtree/introduction}
 %\input{framework}
@@ -14,11 +19,12 @@
 
 \section{Discussion} \input{EMtree/discussion}
 \begin{subappendices}
-\section{Published supplements}
+\section{Completed supplements}
 \subsection{Variational EM in the observed layer} \label{app:VEM} \input{EMtree/app-VEM}
 \subsection{EM in the latent layer} \label{app:EM} \input{EMtree/app-EM}
 \subsection{Matrix tree theorem}\label{app:MTT} \input{EMtree/app-MTT}
 \subsection{Results}\label{app:results} \input{EMtree/app-results}
-\section{Vignette for EMtree}
+\newpage
+\section{Vignette for EMtree}\input{EMtree/vignetteEMtree}
 \end{subappendices}
 

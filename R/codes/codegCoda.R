@@ -171,6 +171,7 @@ obj_gcoda <- function(iSig, A, lambda) {
 # Modified huge::huge.glasso for quick preparation
 # Input S must be covariance matrix
 require(huge);
+library(Rcpp)
 sourceCpp("/Users/raphaellemomal/these/R/codes/hugeglasso.cpp")
 huge_glasso_mod <- function(S, lambda) {
   icov <- diag(1/(diag(S) + lambda));

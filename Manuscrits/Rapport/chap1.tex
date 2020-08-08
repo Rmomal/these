@@ -11,7 +11,7 @@ This first chapter  details the technical background extracted from the literatu
 
 Let's first consider a subset $A$ of the vertex set $V$. $A$ is said to be \textit{complete} if all the nodes it contains are linked with each other. If $A$ is additionally of maximal size, it is then called a \textit{clique}. This definition makes the expression "maximal clique" a pleonasm. The \textit{subgraph} $\G_A$ defined by $A$  is obtained from $\G$ by keeping edges with both endpoints in $A$. Furthermore if $A$, $B$ and $S$ are disjoint subsets of $V$, $S$ is said to \textit{separate} $A$ from $B$ if any path from $\G_A$ to $\G_B$ intersects with $\G_S$. The following notions of decomposable graphs and perfect sequences are central in the definition of a graphical model.
  
- \begin{definition}[Proper decomposition]
+ \begin{definition}[Proper decomposition]\label{decomp}
  A triple $(A, B, C)$ of disjoint subsets of the pure vertex set $V$ of an undirected graph $\G$ form a decomposition of $\G$ if $V=A\cup B \cup C$, and if $C$ satisfies:
  \begin{enumerate}[label=(\roman*)]
  \item $C$ is a complete subset of  $V$,
@@ -39,16 +39,16 @@ Let's first consider a subset $A$ of the vertex set $V$. $A$ is said to be \text
   \label{ex:graph0}
     \end{center}
 \end{figure}
-The graph in Figure \ref{ex:graph0} gives an example. Let's define the sets of nodes $A=\{1,2\}$, $B=\{5,6\}$ and $C=\{3,4\}$. As nodes $3$ and $4$ are linked, $C$ is a complete set. Moreover $C$ separates $A$ from $B$, and $A$ and $B$ are both non-empty, hence $(A, B, C)$  forms a proper decomposition. A decomposition is thus simply a separation of the set of nodes on complete subsets. This allows to recursively define a decomposable graph:
+The graph in Figure \ref{ex:graph0} gives an example. Let's define the sets of nodes $A=\{1,2\}$, $B=\{5,6\}$ and $C=\{3,4\}$. As nodes $3$ and $4$ are linked, $C$ is a complete set. Moreover $C$ separates $A$ from $B$, and $A$ and $B$ are both non-empty, hence $(A, B, C)$  forms a proper decomposition. A decomposition is thus simply a separation of the set of nodes with complete subsets. A decomposable graph is then define using Definition \ref{decomp} in a recursive manner:
  \begin{definition}[Decomposable graph]
  An undirected graph is decomposable if it is complete, or if there exists a proper decomposition $(A, B, C)$ into decomposable subgraphs $\G_{A\cup B}$ and $\G_{B\cup C}$.
  \end{definition}
- This definition proves to be very useful in demonstrations of decomposable graphs properties, but not to prove that a graph is decomposable. The following notion of triangulation will help.
+ This definition proves to be very useful in demonstrations of decomposable graphs properties, but not to identify decomposable graphs in practice. The following notion of triangulation will help.
  
  \begin{definition}[Triangulated graph]
  An undirected graph $\G$ is said to be triangulated if loops in $\G$ connect three nodes at most.
  \end{definition} 
- In other words in a triangulated graph, the loop of maximal size will form a triangle. Triangulated graphs are also called chordal graphs, as it suffices to draw chords in loops to triangulate a graph. Then, a \textit{sequence} is a numbered list of subsets of the node set. A sequence is called \textit{perfect} under the following conditions on the subsets and the numbering order:
+ In other words in a triangulated graph, the loop of maximal size will form a triangle. Triangulated graphs are also called chordal graphs, as it suffices to draw chords in all loops to triangulate a graph. Then, a \textit{sequence} is a numbered list of subsets of the node set. A sequence is called \textit{perfect} under the following conditions on the subsets and the numbering order:
  \begin{definition}[Perfect sequence]\label{def:seq}
  Let $B_1,...,B_k$ be a sequence of subsets of the pure set of vertex $V$ of the undirected graph $\G$. Let $H_j=B_1\cup .. \cup B_j$, and $S_j = H_{j-1} \cap B_j$. The sequence is perfect if it satisfies the following conditions:
  \begin{enumerate}[label=(\roman*)]
@@ -61,7 +61,8 @@ The graph in Figure \ref{ex:graph0} gives an example. Let's define the sets of n
 % A perfect numbering of the vertices $V$ of $\G$ is a numbering $\alpha_1,...,\alpha_k$ such that the sequence $B_1,...,B_k$ with 
 % $$B_j = cl(\alpha_j) \cap \{\alpha_1,...,\alpha_j\}, j\geq 1 $$ is a perfect sequence. This implies that each $B_j$ is a complete subset.
 % \end{definition}
- An example where separators are complete but the sequence is not perfect is the following.
+ An example where separators are complete but the sequence is not perfect is given in Figure \ref{ex:graph1}. A sequence is $B=\big\{B_1=\{1,2\}, B_2=\{3,4\},B_3=\{2,3,5\}\big\}$, with the separators $S_2=\varnothing, S_3=\{2,3\}$. As $\{2,3\}$ is not a subset of any of the $B_i$ with $i$ less than 3, the running intersection property is violated and $B$ is not perfect. Inverting $B_2$ and $B_3$ however yields a perfect sequence, which also shows that a simple way of designing a perfect sequence is to ensure that each new set $B_j$ includes its separator with the previous set $B_{j-1}$. 
+%Note that in the definition the empty set can be included in the set of separators, but an easy way to find a perfect sequence is simply to avoid this situation. 
 \begin{figure}[H]
  \begin{center}
 	\begin{tikzpicture}	
@@ -81,9 +82,6 @@ The graph in Figure \ref{ex:graph0} gives an example. Let's define the sets of n
   \label{ex:graph1}
     \end{center}
 \end{figure}
-Consider the graph in Figure \ref{ex:graph1}. A sequence is $B=\big\{B_1=\{1,2\}, B_2=\{3,4\},B_3=\{2,3,5\}\big\}$, with the separators $S_2=\varnothing, S_3=\{2,3\}$. As $\{2,3\}$ is not a subset of any of the $B_i$ with $i$ less than 3, the running intersection property is violated and $B$ is not perfect. Inverting $B_2$ and $B_3$ however yields a perfect sequence, which also shows that a simple way of designing a perfect sequence is to ensure that each new set $B_j$ includes its separator with the previous set $B_{j-1}$. 
-%Note that in the definition the empty set can be included in the set of separators, but an easy way to find a perfect sequence is simply to avoid this situation. 
-
 The notion of perfect sequence then allows to define the multiplicity of a separator:
  \begin{definition}[multiplicity of a separator]
  The multiplicity $\nu (S)$ of the separator $S$ is an index counting the number of times $S$ occurs in a perfect sequence.
@@ -91,7 +89,7 @@ The notion of perfect sequence then allows to define the multiplicity of a separ
  
 
 The graph of Figure \ref{ex:graph2} gives an example. There a perfect sequence of its cliques is 
-$C_1=\{1,2,4\}$, $C_2=\{2,3,4\}$, $C_3=\{4,5,6\}$, $C_4=\{4,6,7\}$, $C_5=\{4,8\}$. The corresponding separators are $S_2=\{2,4\}$, $S_3=S_5=\{4\}$, $S_4=\{4,6\},$ which gives the following multiplicities: $\nu(\{2,4\})=1$,  $\nu(\{4,6\})=1$, $\nu(\{4\})=2$.  
+$C_1=\{1,2,4\}$, $C_2=\{2,3,4\}$, $C_3=\{4,5,6\}$, $C_4=\{4,6,7\}$, $C_5=\{4,8\}$. The corresponding separators are $S_2=\{2,4\}$, $S_3=S_5=\{4\}$, $S_4=\{4,6\},$ which gives the following multiplicities: $\nu(S_2)=1$,  $\nu(S_4)=1$, $\nu(S_3)=\nu(S_5)=2$.  
 
 \begin{figure}[H]
  \begin{center}
@@ -161,7 +159,7 @@ $$P\text{ factorizes according to } \G \iff P\text{ is global Markov relative to
 This equivalence means in practice that writing a density in a product form on some combinations of its variable helps identify conditional independence relations.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
- \subsection{Spanning trees}
+ \subsection{Spanning trees}\label{trees}
 Trees are graphs with no cycles, meaning that all cliques are edges only. When a tree connects all the nodes, it is called a spanning tree. This particular type of graph is both the sparsest connected graph, and the most connected graph without loops. This feature makes it a decomposable graph by definition, following condition $(iii)$ of Proposition \ref{decomp}.  The following result is obtained directly.
 
 \begin{prop}
@@ -186,17 +184,17 @@ When $\Wbf$ is a graph adjacency matrix, $\Qbf$ is called the graph Laplacian ma
  Hereafter we denote $\Abf^{uv}$ the squared matrix $\Abf$ deprived from its $u$th row and $v$th column, and remind that the $(u, v)$-minor of $\Abf$ is the determinant of this deprived matrix, namely $|\Abf^{uv}|$.
  
  \begin{theorem}[Kirchhoff's theorem]\label{th:kir}
- For any graph $\G$, let  $\Qb_\G$ denote its graph Laplacian matrix. Then for any  pair of nodes $\{u,v\}$, the total number of spanning trees in $\G$ is equal to  $|\Qb_\G^{uv}|$.
+ For any graph $\G$, let  $\Qb$ denote its graph Laplacian matrix. Then for any  pair of nodes $\{u,v\}$, the total number of spanning trees in $\G$ is equal to  $|\Qb^{uv}|$.
 \end{theorem}  
 
  
-The total number of spanning trees in any graph can thus be computed in polynomial time. Theorem \ref{th:kir} was extended for weighted graphs in the late 20th century as follows, where $\mathcal{T}$ denotes the spanning tree space on $V=\{1,...,p\}$:
+The total number of spanning trees in any graph can thus be computed in polynomial time ($\mathcal{O}(p^3)$). For the sake of clarity, we introduce the notation $jk\in T$ which means that nodes $j$ and $k$ are linked in tree $T$. Theorem \ref{th:kir} was extended for weighted graphs in the late 20th century as follows, where $\mathcal{T}$ denotes the spanning tree space on $V=\{1,...,p\}$:
 
 \begin{theorem}[Matrix Tree Theorem  \cite{matrixtree,MeilaJaak}] \label{thmm:MTT}
     For any symmetric weight matrix $\Wbf$ with all entries in $\mathds{R}^+$, the sum over all spanning trees of the product of the weights of their edges is equal to any minor of its Laplacian $\Qbf$. That is, for any $1 \leq u, v \leq p$,
  
    \[
-    W := \sum_{T\in\mathcal{T}} \prod_{(j, k)\in T} w_{jk} = |\Qbf^{uv}|.
+    W := \sum_{T\in\mathcal{T}} \prod_{jk\in T} w_{jk} = |\Qbf^{uv}|.
     \]
    
 \end{theorem}    
@@ -216,37 +214,54 @@ it then holds that
 $$\partial_{w_{jk}} W = [\Mbf]_{jk}  \times W.$$
 \end{lemma}
 
-Theorem \ref{thmm:MTT} actually gives the solution to the computation of the sum on trees of a product function on the edges of a spanning tree, which can be judiciously used combined with  Lemma \ref{lemm:Meila} to perform network inference using average on trees, as we will see later on. 
+Theorem \ref{thmm:MTT} actually gives the solution to the computation of the sum on trees of a product function on the edges of a spanning tree, which can be used combined with  Lemma \ref{lemm:Meila} to perform network inference using average on trees, as we will see later on. 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
  \section{Gaussian Graphical Models}
- Gaussian graphical models (GGM) describe the conditional dependency structure of a  multivariate Gaussian distribution. The different properties of the multivariate Gaussian distribution allow some specific interpretation and estimation results of its related graphical model,  making the GGM a sound and very clever framework to work with.
+ Gaussian graphical models (GGM) describe the conditional dependency structure of a  multivariate Gaussian distribution. The different properties of the multivariate Gaussian distribution allow some specific interpretation and estimation results of its related graphical model,  making the GGM a sound and very convenient  framework to work with.
  
  %%%%%%%%%%%%%%%%%%%%%%%%%%
  \subsection{Specific properties} \label{ggm:prop}
-The multivariate Gaussian distribution possesses various properties which facilitate computations as well as interpretations. Two in particular are of interest in the graphical models setting. The first one concerns the natural handy writing of its density.
+The multivariate Gaussian distribution possesses various properties which facilitate computations as well as interpretations. Two in particular are of interest in the graphical models setting. The first one concerns the natural writing of its density.
  \begin{prop}\label{pp:ggm1}
  Let $X\sim \mathcal{N}(\mu, \Sigmab)$ with precision matrix $\Omegab=\Sigmab^{-1}$ and $X_k$ denotes the $k^{th}$ column of $X$. Then the associated density $f$ factorizes as:
  $$f(X) \propto \prod_{k,\ell, \omega_{kl}\neq 0} \exp(-X_{k}\omega_{k\ell}X_{\ell}/2)$$
  \end{prop}
- Therefore as the density naturally factorizes, Theorem \ref{thm:ham} states that $f$ is global Markov relative to an undirected graph $\G$, the edges of which are determined by the non-null entries of its precision matrix $\Omegab$.  The multivariate Gaussian distribution also presents with a facilitating property about conditional independence, reminded below.
+ 
+ \begin{prop}\label{pp:glob}
+The density $f$ of a multivariate Gaussian distribution $\Ncal(\mu, \Omegab^{-1})$ is global Markov relative to an undirected graph $\G$, the edges of which are determined by the non-null entries of the precision matrix $\Omegab$.
+ \end{prop}
+ \begin{proof}
+ This is a direct application of Theorem \ref{thm:ham} to the factorized multivariate Gaussian density.
+\end{proof} 
+
+As $f$ is global Markov, any two non-neighbors in $\G$ are conditionally independent in $f$.  The multivariate Gaussian distribution also presents with a facilitating property about conditional independence, reminded below.
  
  \begin{prop}\label{pp:ggm2}If  $X\sim \mathcal{N}_V(\mu, \Omegab^{-1})$, then it holds for any $k,\ell\in V$ with $k\neq \ell$ that
 $$X_k \independent X_\ell \mid X_{V\setminus\{k,\ell\}} \iff \omega_{k\ell}=0 $$
  \end{prop}
-  Proposition \ref{pp:ggm2} is not a consequence of proposition \ref{pp:ggm1}, and comes directly from the fact that the $2\times 2$  covariance matrix of variables $k$ and $l$ conditional on all others expresses in terms of the precision matrix : $$\Sigmab_{k,l\mid V\setminus\{k,l\}} = |\Omegab_{\{k,l\}}|^{-1} \left(\begin{array}{cc}
+  \begin{proof}
+  This comes directly from the fact that the $2\times 2$  covariance matrix of variables $k$ and $l$ conditional on all others expresses in terms of the precision matrix : $$\Sigmab_{k,l\mid V\setminus\{k,l\}} = |\Omegab_{\{k,l\}}|^{-1} \left(\begin{array}{cc}
 \omega_{kk} & -\omega_{kl}\\
 -\omega_{kl} & \omega_{ll}  
   \end{array}\right).$$
-Combining the above propositions \ref{pp:ggm1} and \ref{pp:ggm2}, it is easy to see that a conditional independence implies a null entry in $\Omegab$, which in turn implies no edge between the corresponding nodes in $\G$. This proves the following result.
-
+  As conditional independence between Gaussian variables is equivalent to 0 terms in the conditional covariance matrix, the above expression shows that it is also equivalent with null precision terms.
+  \end{proof}
+  Note that Proposition \ref{pp:ggm2} is not a consequence of proposition \ref{pp:ggm1}.
 \begin{prop}[Faithfulness property]\label{ggm:faith}
- Let $X\sim \mathcal{N}(\mu, \Omegab^{-1})$ with associated density $f$, $\G$ the graph which edges represent the non-nul entries of $\Omega$. Then $f$ is faithful Markov relative to $\G$,  and it holds that:
- $$k\nsim \ell \iff  X_k \independent X_\ell \mid X_{V\setminus\{k,\ell\}} \iff \omega_{k\ell}=0.$$
+ Let $X\sim \mathcal{N}(\mu, \Omegab^{-1})$ with associated density $f$, $\G$ the graph which edges represent the non-nul entries of $\Omega$. Then  it holds that:
+ $$k\nsim \ell \iff  X_k \independent X_\ell \mid X_{V\setminus\{k,\ell\}} $$
+ and $f$ is faithful Markov relative to $\G$.
 \end{prop} 
+\begin{proof}
+The right implication is the global Markov property of the multivariate Gaussian distribution reminded in Proposition \ref{pp:glob}.
 
-Proposition \ref{ggm:faith} is key for estimation in the GGM framework, as it states that finding the null precision entries gives all the graph. The Gaussian framework also offers specific conditioning results, and in particular the regression interpretation of $\Omegab$ entries.
+The left implication comes for the combination of Propositions \ref{pp:ggm1} and \ref{pp:ggm2}. From Proposition \ref{pp:ggm2}:
+$$X_k \independent X_\ell \mid X_{V\setminus\{k,\ell\}} \Rightarrow \omega_{k\ell}=0,$$
+and a null precision term implies no edge between the corresponding nodes in $\G$ according to  Proposition \ref{pp:ggm1}.
+\end{proof}
+Proposition \ref{ggm:faith} is key for estimation in the GGM framework, as it states that finding the null precision entries gives all the graph of conditional dependencies. The Gaussian framework also offers specific conditioning results, and in particular the regression interpretation of $\Omegab$ entries.
 
 \begin{prop}[Regression interpretation]\label{ggm:reg}
  Considering $X\sim \mathcal{N}(\mu, \Omegab^{-1})$, the linear regression of  $X_j$ on $X_{\setminus j}$ writes :
@@ -259,11 +274,11 @@ Hence $\omega_{jk}$ is, up to a scalar, the coefficient of $X_k$ in the multiple
  \subsection{Maximum likelihood estimation}\label{ggm:mle}
 In this section we adopt the following notations: for any  squared  matrix $\Abf$ of dimension $p$ and $B$ a subset of $V=\{1,...,p\}$, we let $\Abf_B$ refer to the bloc $B$ of $\Abf$: $\Abf_{B}=(a_{ij})_{\{i,j\}\in B}$.   $[\Abf_B]^p$ then denotes the matrix obtained by filling up with zero entries to obtain full dimension $p\times p$, so that:
 $$([\Abf_B]^p )_{ij}=\left\{ \begin{array}{rl}
-a_{ij} & \text{if } \{i,j\}\in B\\
-0 &  \text{if } \{i,j\}\in V_{\setminus B}
+a_{ij} & \text{if } \{i,j\}\in B,\\
+0 &  \text{if } \{i,j\}\in V_{\setminus B}.
 \end{array}\right.$$
 
-Hereafter we consider  $X\sim\Ncal (\mu, \Omegab)$ with dimension $p$. If $X$ is associated with a decomposable graph $\G$, the Markov property \ref{def:markov} decomposes accordingly and reflects in a multiplicative property for the density, and additive property for the concentration matrix. More precisely, considering a perfect sequence of the cliques of $\G$ as in Definition \ref{def:seq}, we have that
+Hereafter we consider  $X\sim\Ncal (\mu, \Omegab)$ with dimension $p$. If $X$ is associated with a decomposable graph $\G$, the Markov property \ref{def:markov} applies across the decomposition and reflects in a multiplicative property for the density, and additive property for the concentration matrix. More precisely, considering a perfect sequence of the cliques of $\G$ as in Definition \ref{def:seq}, we have that
  $$f(X)=\dfrac{\prod_{C\in \mathcal{C}} f(X_C)}{\prod_{S\in \mathcal{S}} f(X_S)^{\nu(S)}}.$$
 This general expression of the density across decomposition of the graph is very helpful in likelihood computations, especially when some hypotheses are made on the structure of $\G$. The following lemma gives the expressions for $\Omegab$ and its determinant:
  \begin{lemma} In a decomposable Gaussian graphical model with precision matrix $\Omegab = \Sigmab^{-1}$ of dimension $p$:
@@ -277,14 +292,14 @@ This general expression of the density across decomposition of the graph is very
 where $\mathcal{C}$ is the set of cliques of $\G$ and $\mathcal{S}$ the set of separators with multiplicities $\nu$ in any perfect sequence. 
 \end{lemma}
 
-The GGM framework allows exact results for the estimation of maximum likelihood estimators (MLE) of the mean vector, the precision matrix, its determinant and the terms of the covariance matrix corresponding to edges in the graph. They all depend on the sufficient statistic that is the sum of squared deviations, defined as follows where $X^i$ denotes the $i^{th}$ sample of $X$:
+The GGM framework provides exact results about maximum likelihood estimators (MLE) of the mean vector, the precision matrix, its determinant and the terms of the covariance matrix corresponding to edges in the graph. They all depend on the sufficient statistic that is the sum of squared deviations, defined as follows where $X^i$ denotes the $i^{th}$ sample of $X$:
 \begin{definition}
 Denoting $\xbar{X}$ the empirical mean of the multivariate Gaussian $X$, the sum of squared deviations matrix, also known as total sum of squares,  is given by:
 $$SSD = \sum_{i=1}^n (X^i - \xbar{X})(X^i - \xbar{X})^\intercal = X^\intercal X - n  \xbar{X} \,\xbar{X}^\intercal.$$
 \end{definition}
 The following theorems \ref{mle:sig} and \ref{mle:ome} give the MLE estimators in the GGM framework using $SSD=(ssd_{ij})_{ij}$.
  
-\begin{theorem}[\citet{Lau96} Theorem 5.3]\label{mle:sig}
+\begin{theorem}\label{mle:sig}
 In the Gaussian graphical model,  the MLE of the unknown mean and covariance matrix exist with probability one if $n>p$. When they exist, the estimate of the mean is $\widehat{\mu} = \xbar{X}$, and the estimate of the unknown covariance matrix $\Sigmab$ is determined as the unique solution of the system of equations
 \begin{equation*}
  \left\{
@@ -296,7 +311,7 @@ In the Gaussian graphical model,  the MLE of the unknown mean and covariance mat
 which also satisfies the model restriction $\omega_{k\ell} =0 \iff k\nsim \ell $.
 \end{theorem}
 
-\begin{theorem}[\citet{Lau96} Proposition 5.9]\label{mle:ome}
+\begin{theorem}\label{mle:ome}
 In a Gaussian graphical model with graph $\G$, the MLE of the precision matrix exists with probability one if $n>max_{C\in\mathcal{C}}|C|$. It is then given as
 $$\widehat{\Omegab} = n \bigg\{\sum_{C\in\mathcal{C}} \big[(SSD_C)^{-1}\big]^p-\sum_{S\in\mathcal{S}} \nu(S) \big[(SSD_S)^{-1}\big]^p\bigg\},$$
 where $\mathcal{C}$ is the set of cliques of $\G$ and $\mathcal{S}$ the set of separators with multiplicities $\nu$ in any perfect sequence. The determinant of the estimate can be calculated as
@@ -315,58 +330,69 @@ The stronger condition $n>p$ of Theorem \ref{mle:sig} is only sufficient, wherea
 In the special framework of GGM, conditional dependence relations are perfectly represented by the non-nul entries of the precision matrix $\Omegab$, as specified in Proposition \ref{ggm:faith}. Therefore the general approach to network inference in GGM is then to perform a sparse estimation of $\Omegab$.
 
  \subsubsection{Penalized estimation}
- In a standard linear regression model with data matrix $\Yb$ and covariates matrix $\Xb$, penalized estimation is used to select predictors. The most popular penalized method is the Lasso \citep{lasso} which apply the $\ell_1$ penalty and estimates the $\beta$ coefficients as the solution of:
- $$\argmin_{\beta \in \mathds{R}^p} \big\{ ||\Yb - \Xb\beta ||^2_2 + \lambda ||\beta||_1\big\}, \qquad ||\beta||_=\sum_{i=1}^p |\beta_i|,$$
- where $\lambda$ is a penalty called the regularization parameter.  The form of the $\ell_1$ penalty forces some coefficients to exactly equal zero. Taking advantage of the regression interpretation in GGM reminded in Proposition \ref{ggm:reg}, a method for inferring non-nul elements of the precision matrix is to run separate penalized regressions of each node against all others and possible covariates, as in \citet{CWL18}. \\
+ In a standard linear regression model with data matrix $\Yb$ and covariates matrix $\Xb$, penalized estimation can be used to select predictors. The most popular penalized method is the Lasso \citep{lasso} which applies the $\ell_1$ penalty and estimates the $\beta$ coefficients as the solution of:
+ $$\argmin_{\beta \in \mathds{R}^p} \big\{ ||\Yb - \Xb\beta ||^2_2 + \lambda ||\beta||_1\big\}, \qquad ||\beta||_1=\sum_{i=1}^p |\beta_i|,$$
+ where $\lambda$ is a penalty called the regularization parameter.  The form of the $\ell_1$ penalty forces some coefficients to exactly equal zero. Taking advantage of the regression interpretation in GGM reminded in Proposition \ref{ggm:reg}, a method for inferring non-nul elements of the precision matrix is to run separate penalized regressions of each node against all others and possible covariates, as in \citet{MeB06}. \\
  
  A joint estimation of these regression models is performed by the widely used Graphical Lasso (glasso) \citep{glasso}. The glasso introduces sparsity in the precision matrix by imposing Lasso penalties on its entries. It is an iterative procedures which aims a sparse MLE of the penalized precision matrix $\Omegab$.  The log-likelihood of a GGM writes:
  $$L_\lambda(\Omegab) = \log |\Omegab| +\tr{\Yb^\intercal \Yb \Omegab}+cst .$$
  The precision matrix is then estimated as the matrix which maximizes the penalized log-likelihood:
  $$\argmax_{\Omegab\geq 0} \big\{L_\lambda(\Omegab) - \lambda ||\Omegab||_1\big\}, \qquad ||\Omegab||_1 = \sum_{j\neq k} |\omega_{jk}|.$$
-The glasso  selects the network edges by forcing some of them to zero in the precision matrix. The greater the penalty $\lambda$, the less edges are included in the network and therefore choosing $\lambda$ is critical for the glasso. The selection of $\lambda$ can be performed using classical tools such as cross-validation, Akaike information criterion (AIC),  Bayesian information criterion (BIC) or its extended version.  Another popular approach is to perform a stability selection with StARS \citep{stars}, which aims the network robustness under random sampling.
+The glasso  selects the network edges by forcing some of them to zero in the precision matrix. The greater the penalty $\lambda$, the less edges are included in the network and therefore choosing $\lambda$ is critical for the glasso. The selection of $\lambda$ can be performed using classical tools such as cross-validation, Akaike information criterion (AIC),  Bayesian information criterion (BIC) or its extended version.  Another popular approach is to perform a stability selection with StARS \citep{stars}, which aims the network robustness under random sampling of the input data.
 
  %builds on the regression interpretation of the partial correlation
 
  
  \subsubsection{Averaging on trees}\label{tree:aver}
+
+%chow-liu dans le cas gaussien
+  Another way to foster sparsity in the graph is to assume a sparse structure. The sparsest connected graphs are spanning trees. If a multivariate Gaussian variable $\Ybf_i$ of dimension $p$  is faithful to a spanning tree $T ^*$, its likelihood writes as a factorization on the nodes and the edges of $T^*$:
+  $$L(\Ybf_i) = \prod_{j=1}^p p(Y_{ij}) \prod_{jk\in T} \frac{p(Y_{ij},Y_{ik})}{p(Y_{ij})p(Y_{ik})}$$
+
+The quotient in the product on the edges is close to the mutual information between two variables, which is the Küllback-Leibler divergence between the bivariate density and the product of their marginal densities. It can be seen as a measure of the independence between a pair of variables.   The Chow-Liu algorithm \citep{ChowLiu} finds the tree structure which maximizes the above likelihood from observations. The maximal spanning tree is thus the tree with the maximal bivariate dependencies on its edges. Note that the Chow-Liu algorithm is not restricted to the Gaussian case, even if it is the most general one.\\
+   %To do so it maximizes the above distribution by defining the edges weights as the mutual information between the variables, which is the Küllback-Leibler divergence between the bivariate density and the product of the two marginal densities. 
  
-  Another way to foster sparsity in the graph is to assume a sparse structure. The sparsest connected graphs are spanning trees. Assuming the graph is a tree and each edge is assigned a weight, it is possible to define a distribution which is decomposable on the edges \citep{MixtTrees,MeilaJaak}.
-\begin{definition}[decomposable tree distribution] 
+  %mélange d'arbres : distribution d'arbre et proba d'arêtes
+  %The graphical model is assumed to be a tree $T^*$ and itself treated as a latent parameter of the model.
+
+However the data conditional dependency structure is unlikely to be a tree in general. A way to explore the spanning tree space is to consider a mixture model on spanning trees, which amounts to assume the dependency tree $T^*$ to be random. This requires the definition of a distribution on the space of trees. Assigning a weight to each edge, it is possible to define a decomposable distribution \citep{MixtTrees,MeilaJaak}.
+\begin{definition}[Decomposable tree distribution] 
 For any symmetric weight matrix $\Wbf$ with all positive entries, we denote $W$ the sum-product form defined in Theorem \ref{thmm:MTT} A decomposable  distribution for the tree $T$ is then defined as follows:
 $$p_{\Wbf}(T) = \prod_{k,\ell \in T} w_{k\ell} / W ,$$
 so that the probability of a tree is proportional to the product of its edges weights.
 \end{definition}
 
-An interesting property of a decomposable tree distribution is that it is stable under a multiplicative transformation applied to its weight matrix, which is particularly useful during the implementation.\\
+A decomposable tree distribution is stable under a multiplicative transformation applied to its weight matrix, which is particularly useful during the implementation. The Chow-Liu algorithm actually maximizes the decomposable distribution with the mutual information as the edges weights.\\
 
-The Chow-Liu algorithm \citep{ChowLiu} finds the maximal spanning tree, that is the tree structure which maximizes the likelihood from observations. To do so it maximizes the above distribution by defining the edges weights as the mutual information between the variables, which is the Küllback-Leibler divergence between the bivariate density and the product of the two marginal densities. The mutual information can be seen as a measure of the independence between a pair of variables, and hence the Chow-Liu tree gives the tree which presents with the maximal bivariate dependence on its edges. However the data conditional dependency structure is unlikely to be a tree in general. \\
 
-Tree averages (also called tree aggregations or mixture of trees) take advantage of all the spanning trees properties while being flexible on the data structure. While performing network inference using tree averaging,  the underlying graphical model is assumed to be random as opposed to the penalized framework previously presented.  The graphical model is assumed to be a tree $T^*$ and itself treated as a latent parameter of the model.
+%modèle de mélange d'arbres puis de GGM fidèles à des arbres mixture model of GGM faithful to trees
+We now define a tree averaging (also called tree aggregation or mixture of trees), which is a sum on a set of trees weighted by their respective probability to be the random tree $T^*$. This is classically  formulated with a choice variable as follows:
+% take advantage of all the spanning tree properties of section \ref{trees}. While performing network inference using tree averaging,  the underlying graphical model $T^*$ is treated as a latent parameter of the model.
+%is assumed to be random as opposed to the Chow-Liu and penalized framework previously presented.  
  
  \begin{definition}[Tree averaging \citep{MixtTrees}]
- Considering a collection of $m$ spanning trees $T_k$, $k\in\{1,...,m\}$ and a choice variable $\zb$ taking values in $\{1,...,m\}$, the distribution of an observed variable $\xbf$ following a  mixture of trees  is defined as:
-$$ p(\xbf) = \sum_{k=1}^m p(\zb=k) p(T_k)$$
+ Considering a collection of $m$ spanning trees $T_k$, $k\in\{1,...,m\}$ and a choice variable $\zb$ taking values in $\{1,...,m\}$, the distribution of an observed variable $\Ybf$ following a  mixture of trees  is defined as:
+$$ p(\Ybf) = \sum_{k=1}^m p(\zb=k) p(T_k)$$
 Conditionally on $\zb$, the distribution of $\xbf$ is a tree.
  \end{definition}
 
-
-The use of tree averages for network inference in the context of GGM relies on a Gaussian tree mixture. The latent Gaussian parameters $\Zbf$ follow a Gaussian mixture on the space of spanning trees $\mathcal{T}$, where each Gaussian component is faithful to a spanning tree.
+In tree averaging, the tree $T^*$ is treated as a latent parameter of the model. The use of tree averages for network inference in the context of GGM relies on a Gaussian tree mixture, which is a mixture model of GGM faithful to trees.
+% The latent Gaussian parameters $\Zbf$ follow a Gaussian mixture on the space of spanning trees $\mathcal{T}$, where each Gaussian component is faithful to a spanning tree.
 \begin{definition}[Gaussian tree mixture]\label{treemixt}
-A variable $\Zbf$ is a Gaussian tree mixture on the space of $m$ spanning trees if its density writes as follows:
-$$\Zbf \sim \sum_{k=1}^m  p(T_k) p(\Zbf\mid T_k),\qquad  p(\Zbf\mid T_k)\sim\Ncal (0, \Omegab_{T_k}), \;\; \forall k\in\{1,...,m\}.$$
-Conditional on $T_k$, $\Zbf$ is faithful relative to this tree and follows a multivariate Gaussian with the corresponding precision matrix $\Omega_{T_k}$.
+The distribution of a variable $\Ybf$ is a Gaussian tree mixture on the space of $m$ spanning trees if it writes as follows:
+$$p(\Ybf) = \sum_{k=1}^m  p(T_k) p(\Ybf\mid T_k),\qquad  \Ybf\mid T_k\sim\Ncal (0, \Omegab_{T_k}), \;\; \forall k\in\{1,...,m\}.$$
+Conditional on $T_k$, $\Ybf$ is faithful relative to this tree and follows a multivariate Gaussian with the corresponding precision matrix $\Omega_{T_k}$.
 \end{definition}
  
-Considering an average on the space of all possible spanning trees $\mathcal{T}$ then takes advantage of Theorem \ref{thmm:MTT} and Lemma \ref{lemm:Meila} for computation. Besides, the probability for an edge to be in the underlying tree $T^*$ can be defined as the sum of the probabilities of all trees containing this edge:
+Instead of a subset $m$, considering an average on the space of all possible spanning trees $\mathcal{T}$ allows for an exhaustive exploration of the space of spanning trees, and takes advantage of Theorem \ref{thmm:MTT} and Lemma \ref{lemm:Meila} for computation. 
+Another interesting advantage of considering all spanning trees at the same time is the possibility to define edges probabilities. Indeed the probability for an edge to be in the tree $T^*$ can be defined as the sum of the probabilities of all trees containing this edge:
 $$\mathds{P}\{kl\in T^*\} = \sum_{\substack{T\in \mathcal{T}\\ T \ni kl}} p_{\Wbf}(T).$$
 The following algebraic result from \cite{kirshner} then  states that it is possible to compute all edges probabilities at the same time, and this at the cost of the inversion of the  Laplacian matrix of the edges weights.
 
 \begin{lemma} [\cite{kirshner}] \label{lem:Kirshner}
     Let $p_{\Wbf}$ be a decomposable tree distribution with symmetric and positive weight matrix $\Wbf$. Taking the symmetric matrix $\Mbf$ as defined in Lemma  \ref{lemm:Meila}, the probability for an edge $kl$ to be in the tree $T$ writes:
 $$\mathds{P}\{kl\in T^*\} =  w_{kl}\: \Mbf_{kl}.$$
-\end{lemma}
-
-The final output of a strategy using an average on trees for network inference is not the latent tree presenting with the highest probability, but the matrix filled with the edges probabilities obtained by summing on all trees. Therefore the output is a weighted network which has no reasons to be shaped as a tree itself. Instead of searching for zeros in the precision matrix and assuming a fixed graph as in the penalized approach, tree-averaging methods offer an efficient exploration of the graph space by restricting it to the space of spanning trees. Tree averaging has recently been used in the context of GGM inference in the bayesian setting \citep{SR15} and for the inference of unobserved data \citep{RAR19}.
+\end{lemma}The final output of a strategy using an average on trees for network inference is not the latent tree presenting with the highest probability, but the matrix filled with the edges probabilities obtained by summing on all trees. Therefore the output is a weighted network which has no reasons to be shaped as a tree itself. Instead of searching for zeros in the precision matrix and assuming a fixed graph as in the penalized approach, tree-averaging methods offer an efficient exploration of the graph space by restricting it to the space of spanning trees. Tree averaging has recently been used in the context of GGM inference in the Bayesian setting \citep{SR15} and for the inference of unobserved data \citep{RAR19}.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -376,42 +402,48 @@ Incomplete data can refer either to unobserved variables due to experimental con
  
 %%%%%%%%%%%%%%%%%%%%%%%%%%
  \subsection{Expectation-Maximization algorithm}
- The EM algorithm is an iterative procedure which maximizes the expected value on  the complete log-likelihood $\log p_\thetab (\Ybf, \Zbf)$ conditional on the observed data $Y$. It is based on a decomposition of the incomplete data likelihood:
+ The EM algorithm is an iterative procedure which aims at maximizing the log-likelihood $\log p_\theta(\Ybf)$ of the observed data $Y$. It is based on a decomposition of the incomplete data likelihood:
  $$\log p_{\thetab} (\Ybf) = \Esp_\thetab [\log p_{\thetab} (\Ybf,\Zbf)\mid\Ybf] - \Esp_\thetab [\log p_{\thetab} (\Zbf\mid\Ybf) \mid \Ybf]. $$
 This relation links the observed likelihood and the complete likelihood $\log p_{\thetab} (\Ybf,\Zbf)$. The second term is actually the entropy of the latent variables $\Zbf$ given the observed data.
 The iteration $t+1$ of the EM algorithm then consists of the two following steps:
  \begin{description}
- \item [E step:] Given the current estimate $\thetab^t$, compute $\Esp_{\thetab^t}[\log p_\thetab (\Ybf, \Zbf)\mid \Ybf]$,
+ \item [E step:] Given $\thetab^t$, compute $\Esp_{\thetab^t}[\log p_\thetab (\Ybf, \Zbf)\mid \Ybf]$ as a function of $\theta$,
  \item [M step:] Update $\thetab$ as $\thetab^{t+1} = \argmax_\thetab \{ \Esp_{\thetab^t}[\log p_\thetab (\Ybf, \Zbf)\mid \Ybf]\}$.
  \end{description} 
-There is no guarantee as for the convergence of the estimate of $\thetab$ towards the MLE. However an important property of the EM, obtained as a consequence of the Jensen's inequality,  is that the log-likelihood of the observed data $\log p_{\thetab} (\Ybf)$ increases with the iterations of the EM algorithm \citep{DLR77}: $\log p_{\thetab^{t+1}} (\Ybf)\geq \log p_{\thetab^t} (\Ybf)$.
+There is no guarantee as for the convergence of the estimate of $\thetab$ towards a global maximum of $\log p_\theta(\Ybf)$. However an important property of the EM, obtained as a consequence of the Jensen's inequality,  is that the log-likelihood of the observed data $\log p_{\thetab} (\Ybf)$ increases with the iterations of the EM algorithm \citep{DLR77}: $\log p_{\thetab^{t+1}} (\Ybf) > \log p_{\thetab^t} (\Ybf)$.
  
  Another formulation of the EM assumes a distribution $q$ for the hidden variables \citep{NH98} and defines a  lower bound $\bound$ as:
- $$\bound(\thetabf, q) = \log p_\thetab (\Ybf) - KL(q(\Zbf) || p_\thetab(\Zbf\mid\Ybf)),$$
+\begin{align*}
+\bound(\thetabf, q) &= \log p_\thetab (\Ybf) - KL(q(\Zbf) || p_\thetab(\Zbf\mid\Ybf))\\
+&=\Esp_q [\log p_\theta (\Ybf,\Zbf)] - \Esp_q[\log q(\Zbf)]
+\end{align*}
  where $KL(p(\Zbf)||q(\Zbf)) = -\Esp_q[\log q(\Zbf) - \log p(\Zbf)]$ is the Küllback-Leibler divergence. In this formulation, the link between the maximization of $\bound$ and that of the likelihood is made clear. Iteration $t+1$ of the EM can then be written as a double maximization :
   \begin{description}
- \item [E step:]  $q^{t+1}=\argmax_q \{ \bound(\thetabf^t, q^t)\}$
- \item [M step:] $\thetab^{t+1} = \argmax_\thetab \{ \bound(\thetabf^t, q^{t+1})\}$
+ \item [E step:]  $q^{t+1}=\argmax_q \{ \bound(\thetabf^t, q^t)\} = \argmin_q \{ KL(q(\Zbf) || p_\thetab(\Zbf\mid\Ybf))\}$
+ \item [M step:] $\thetab^{t+1} = \argmax_\thetab \{ \bound(\thetabf^t, q^{t+1})\} = \argmax_\theta \{ \Esp_q [\log p_\theta (\Ybf,\Zbf)]\}$
  \end{description} 
- 
-In the E step, the search space for $q^{t+1}$ is the whole set of distributions on the definition space of the hidden variables. The solution is the distribution which cancels the Küllback-Leibler divergence, and that is $p_\thetab(\Zbf\mid\Ybf)$. The EM algorithm has become a classic approach to perform inference of models involving hidden or latent variables. In particular it is widely used to infer mixture models, for example mixture of trees \cite{MixtTrees}. Unfortunately the conditional density $p_\thetab(\Zbf\mid\Ybf)$ is not always available, in which case one might resort to a variational computation.
+
+The EM algorithm has become a classic approach to perform inference of models involving hidden or latent variables. In particular it is widely used to infer mixture models, for example mixture of trees \cite{MixtTrees}. It corresponds to the case where no constraint is imposed to the $q$ distribution: the solution of the E step is thus $q(\Zbf)=p(\Zbf\mid\Ybf)$, and the Küllback-Leibler divergence is canceled.  Unfortunately the conditional density $p_\thetab(\Zbf\mid\Ybf)$ is not always available, in which case one might resort to a variational computation.
  
 
 %%%%%%%%%%%%%%%%%%%%%%%%%% 
  \subsection{Variational estimation}
- The variational inference is a method for approximating densities\citep{JGZ99,WaJ08,BKM17}, and is widely used  in Bayesian settings to approximate posterior densities as an alternative for Monte-Carlo Markov Chain( MCMC) sampling. When the conditional density of latent variables given the observed data cannot be computed, the variational version of the EM reduces the search space of the $q$ distribution to a set $Q$. Doing so results in a variational approximation of $p_\thetab(\Zbf\mid\Ybf)$. Therefore in a  Variation EM (VEM) algorithm, the E step is replaced by a variational-E (VE) step, which computes an approximate conditional distribution as the solution of the following optimization problem:
- $$q^{t+1}=\argmax_{q\in Q} \{ \bound(\thetabf^t, q^t)\}.$$
+ The variational inference is a method for approximating conditional distributions \citep{JGZ99,WaJ08,BKM17}. It is widely used in Bayesian settings to approximate posterior densities  ($q(\theta)\approx p(\theta\mid \Ybf)$) as an alternative for Monte-Carlo Markov Chain (MCMC) sampling. Another use of the variational inference is to approximate the conditional distribution of a latent variable ($q(\Zbf) \approx p(\Zbf\mid \Ybf)$). These are two examples of the same general approximation problem.
  
- In other words the idea behind variational estimation is to first choose a family of densities, and then find the member of this family which is the closest to the target distribution $p_\thetab(\Zbf\mid\Ybf)$. The complexity of the optimization is determined by the choice of the variational family. A widely used and flexible choice for $Q$ is the set of product-form distributions, where the latent variables are mutually independent: for $K$ hidden variables $Q=\{q(\Zbf)=\prod_{k=1}^K q_k(z_k)\}$. This set of distributions is the so-called mean-field variational family. \\ 
+  When the conditional density of latent variables given the observed data cannot be computed, the variational version of the EM reduces the search space of the approximate distribution $q$  to a set $Q$, and chooses a divergence $D$ to define the lower bound. Doing so results in a variational approximation of $p_\thetab(\Zbf\mid\Ybf)$. Therefore, in a  Variation EM (VEM) algorithm, the E step is replaced by a variational-E (VE) step, which computes an approximate conditional distribution as the solution of the following optimization problem:
+ $$q^{t+1}=\argmin_{q\in Q} \big\{ D\big(q^t(\cdot) \mid\mid p_{\theta^t}(\cdot\mid\Ybf)\big)\big\}.$$
  
-The optimization problem of the VE step is most commonly solved using coordinate ascent. Under the  mean-field approximation, coordinate ascent consists in iteratively optimize each hidden factor of the mean-field while keeping the other fixed. A well-known result from \citet{beal} directly gives the optimal solution for each variable and is given in Proposition \ref{beal} below. It was originally formulated in the bayesian setting, and as such this result applies to hidden variables as well as bayesian random parameters. The latter can be treated as other latent variables, and  hidden variables in proposition \ref{beal} can refer to either latent factors, unobserved variables, or bayesian parameters.
+ In other words the idea behind variational estimation is to choose a divergence and a family of densities, and then find the member of this family which is the closest to the target distribution $p_\thetab(\Zbf\mid\Ybf)$ as measured by the divergence. Their exists a variety of divergence measures (see \citet{M05} for an overview), and the Küllback-Leibler divergence as presented in the previous section is generally preferred for maximum-likelihood estimations. The complexity of the optimization is determined by the choice of the variational family. The set $Q$ can be chosen as a parametric family, for example the set of Gaussian distributions: $Q=\{q(\Zbf)=\Ncal(m,S)\}$. Another widely used choice for $Q$ is the set of product-form or factorized distributions, where the latent variables are mutually independent: for $K$ hidden variables $Q=\{q(\Zbf)=\prod_{k=1}^K q_k(Z_k)\}$.  These two sets can be combined into the set of factorized Gaussian distributions. \\ 
+ 
+The optimization problem of the VE step is most commonly solved using coordinate ascent. Choosing a factorized approximate distribution $q(\Zbf)$, coordinate ascent consists in iteratively optimize each hidden factor $q_k(Z_k)$ of the product while keeping the other fixed. A well-known result from \citet{beal} directly gives the optimal solution for each variable and is given in Proposition \ref{beal} below. It was originally formulated in the Bayesian setting, and as such this result applies to hidden variables as well as Bayesian random parameters. Hidden variables in proposition \ref{beal} can refer to either latent factors, unobserved variables, or Bayesian parameters.
 
  \begin{prop}[\citet{beal}]\label{beal}
-In a  mean-field variational EM with observed data $\Ybf$ and $K$ hidden variables $\Zbf=\{z_1,...,z_K\}$, the solution of the VE step optimization problem is the following. At step $t+1$ and for any $k$ in $\{1,...,p\}$ the optimal variational marginal distribution $q_k$ is proportional to the exponential of the expected log of the complete joint density:
-$$ q_k^{(t+1)}(z_k)  \propto \exp \left\{ \Esp_{q_{\setminus k}^t} \left[ \log p_{\thetabf^{t+1}}(\Ybf, \Zbf) \right] \right\}.$$
+In a variational EM using a factorized approximate distribution with observed data $\Ybf$ and $K$ hidden variables $\Zbf=\{z_1,...,z_K\}$, the solution of the VE step optimization problem is the following. At step $t+1$ and for any $k$ in $\{1,...,p\}$ the optimal variational marginal distribution $q_k$ is proportional to the exponential of the expected log of the complete joint density:
+$$ q_k^{(t+1)}(z_k)  \propto \exp \left\{ \Esp_{q_{\setminus k}^t} \left[ \log p_{\thetabf^{t+1}}(\Ybf, \Zbf) \right] \right\},$$
+which is a mean-field.
 \end{prop}
 
-Proposition \ref{beal} allows a clearer presentation and an easier use of variational inference algorithms with mean-field approximation. Vairational inference has been widely used in very diverse fields, among which computational biology and genetics \citep{CS12,RSP14}. It's study in network stochastic block model analysis yielded some specific theoretical results \citep{CDP12,BCC13}, however establishment of general theoretical guarantees of variational inference is an active research area, as underlined in \citet{BKM17}. 
+Proposition \ref{beal} shows that choosing $Q$ as the set of factorized distributions leads to a mean-field approximation, allowing a clearer presentation and easier use of variational inference algorithms with factorized approximations. Variational inference has been widely used in very diverse fields, among which computational biology and genetics \citep{CS12,RSP14}. Its study in network stochastic block model analysis yielded some specific theoretical results \citep{CDP12,BCC13}, however establishment of general theoretical guarantees of variational inference is an active research area, as underlined in \citet{BKM17}. 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

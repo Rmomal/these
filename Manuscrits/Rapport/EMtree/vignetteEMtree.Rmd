@@ -1,0 +1,154 @@
+---
+title: "EmtreeThese"
+output: html_document
+---
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE,  out.width = "80%",fig.align="center")
+library(parallel)
+library(ggraph)
+library(tidygraph)
+library(viridis)
+library(tidyr)
+library(EMtree)
+library(PLNmodels)
+library(gridExtra)
+set.seed(21)
+# rmarkdown::render("/Users/raphaellemomal/these/Manuscrits/Rapport/EMtree/vignetteEMtree.Rmd",output_format = latex_document())
+```
+
+#Data simulation with `EMtree`
+
+The `EMtree` package provides with simulation functions for graphs as well as for count data under the Poisson log-Normal model. Four types of graphs are available in the `generator_graph()` function: erdos (Erdös-Reyni), cluster, scale-free (from the `huge` package) and spanning tree (from the `vegan` package).
+```{r}
+p=20
+cluster=generator_graph(p, graph="cluster",dens=0.4, r=10)
+erdos=generator_graph(p, graph="erdos",dens=0.3)
+scaleF=generator_graph(p, graph="scale-free")
+tree=generator_graph(p, graph="tree")
+```
+
+The output of `generator_graph()` is an adjacency matrix, which can be given as an input to `generator_param()` to compute a positive-definite precision matrix `omega` with signed entries, and its corresponding variance-covariance matrix `sigma`.
+```{r, message=FALSE,results='hide'}
+cluster_param=generator_param(cluster, signed = TRUE)
+```
+
+Then it is possible to simulate `n` samples of multivariate counts under the PLN model with `generator_PLN()`.
+```{r}
+Y = generator_PLN(cluster_param$sigma, n = 100)
+```
+
+```{r, echo=FALSE}
+Y %>%as_tibble() %>%  gather(key, value) %>% ggplot(aes(value))+
+  geom_histogram(aes(y=..density..),bins = 20, alpha=0.8, color="steelblue4", fill="steelblue")+theme_light()+
+  labs( y="",x="Y data")
+```
+
+
+# Inference of the Fatala fishes network
+This is a basic example detailing how to infer a network, using fishes counts from the Fatala River (Barans95 data from the `ade4` package).
+
+## Fatala fishes dataset
+
+The data is composed of 33 species abundances measures in 95 samples. The available covariates are the site and date of the samples.  
+
+```{r fish_data , message=FALSE}
+library(ade4)
+library(tibble)
+data(baran95)
+Y = as.matrix(baran95$fau)
+X = as_tibble(baran95$plan)
+n = nrow(Y)
+p = ncol(Y)
+ 
+```
+
+
+## Network inference
+
+`EMtree` infers a network from either a correlation matrix of a multivariate Gaussian, or an object created by PLNmodels from count data. Therefore here we first create a  `PLNmodels` object with the `PLN()` function:
+```{r}
+library(PLNmodels)
+PLNfit<-PLN(Y ~ X$site)
+```
+
+And then run `EMtree()`:
+
+```{r output}
+library(EMtree)
+EMtreeFit<-EMtree(PLNfit,  maxIter = 20, plot=TRUE, verbatim=FALSE)
+str(EMtreeFit)
+```
+
+To get a network from a fit of `EMtree()`, the probabilities stored in `edges_prob` can be thresholded. We propose the $2/p$ threshold as follows:
+```{r}
+probs<- EMtreeFit$edges_prob
+net<-1*(probs>2/p)
+```
+
+To improve the robstness, the function `ResampleEMtree()` implements a statibility selection of EMtree on S sub-samples. This function uses parallel computations with `mclapply()`.  The output `Pmat` gathers all the infered edges probabilities for each sub-sample.
+```{r, cache=TRUE}
+ResampEmtreeFit<-ResampleEMtree(counts=Y, covar_matrix = X$site , S=10, maxIter=10,cond.tol=1e-8, cores=1)
+str(ResampEmtreeFit$Pmat)
+```
+Edges selection frequencies can be derived from the `Pmat` output with the function `freq_selec()`. A final network can then be obtained by thresholding the frequencies, to keep for example edges that are selected in more than $80\%$ of sub-samples:
+```{r}
+freqs<-freq_selec(ResampEmtreeFit$Pmat,Pt=2/p)
+resampNet<-1*(freqs>0.8)
+table(net, resampNet)
+```
+
+## Infer networks under several models:
+
+The aim of function `ComparEMtree()` is to run network inference with different covariates specifications. It uses `ResampleEMtree()` and adjust the different models specified in `model_names` as follows: 
+```{r, cache=FALSE}
+tested_models=list(1,2,c(1,2))
+models_names=c("date","site","date + site")
+compare_models<-ComparEMtree(Y, X, models=tested_models, m_names=models_names, Pt=2/p,  S=3, maxIter=5,cond.tol=1e-8,cores=1)
+```
+
+The output of `ComparEMtree()` is a tibble in long format, which gathers information of all interactions in all tested models.
+```{r}
+head(compare_models,4)
+```
+
+# Visuals
+
+Package `EMtree` provides with plotting functions for network visualizations. They build from the `ggraph` and `tidygraph` packages.
+
+### Simple networks
+The function `draw_network()` takes a weighted matrix an input, and represent a network with edges widths proportional to the input weights. Several layouts are available (see the `ggraph` documentation). Nodes possessing among the highest betweenness centrality measure can be highlighted with the parameter `btw_rank`.
+
+ 
+ `draw_network()` can represent networks from adjacency matrices:
+```{r, fig.height=3.5,fig.width=9, echo=FALSE}
+d1<-draw_network(as.matrix(tree),  pal_nodes= c("#31374f","#e7bd42"), pal_edges = "#31374f", layout="kk",btw_rank=3)$G
+d2<-draw_network(as.matrix(scaleF),  pal_nodes= c("#31374f","#e7bd42"), pal_edges = "#31374f", layout="kk",btw_rank=3)$G
+d3<-draw_network(as.matrix(erdos),  pal_nodes= c("#31374f","#e7bd42"), pal_edges = "#31374f", layout="nicely",btw_rank=3)$G
+d4<-draw_network(as.matrix(cluster),  pal_nodes= c("#31374f","#e7bd42"), pal_edges = "#31374f", layout="kk",btw_rank=3)$G
+grid.arrange(d1, d2, d3, d4, ncol=4)
+```
+
+Weighted matrices can be for example edge probability matrices. For example, the Fatala fishes weighted network adjusted on the covariate *Site* is:
+```{r,  message=FALSE}
+probs[probs<2/p]=0 # threshold needed for representation clarity
+draw_network(probs,title="Site", pal_edges="dodgerblue3", layout="nicely",btw_rank=3)$G
+```
+
+ 
+
+### Facets of several networks
+
+The function`compare_graphs()` draws a facet plot of the output networks from `ComparEMtree()`.  Comparing network by eye is difficult, on particular choosing the right layout to do so is often troublesome. Here by default, the circle layout is used so that differences in density and sensitive nodes are easily seen.
+
+```{r,  fig.height=3.5, fig.width=8}
+compare_graphs(compare_models,shade=TRUE)$G
+```
+
+However, if another layout is preferred the nodes position is preserved along the facet and defined by choosing the `base_model`.
+
+```{r,  fig.height=3.5,fig.width=8}
+compare_graphs(compare_models,shade=FALSE, layout="nicely", curv=0.1, base_model="site")$G
+```
+
+

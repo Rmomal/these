@@ -12,15 +12,25 @@ library(reshape2)
 library(PLNmodels)
 library(gridExtra)
 library(parallel)
+library(ROCR)
 ##############
 # RUN
-pal<-c("#008080","#FA7E1E","#D62976","#358CC3")
+pal<-c("#008080","black","#FA7E1E","black","#358CC3","black","#D62976")
 mytheme.dark <-function(legend){list= list(theme_light(), 
                                            theme(strip.background=element_rect(fill="gray50",colour ="gray50"),
                                                  plot.title = element_text(hjust = 0.5)),
                                            scale_color_manual(legend, values=pal),
                                            scale_fill_manual(legend, values=pal),
                                            scale_shape(legend))}
+EMtree_optimal<-function(Y,m,cores,difficulty){
+  cond.tol<-switch(as.character(difficulty),"1"=1e-12,"2"=1e-6)
+  resample<-ResampleEMtree(counts=Y, covar_matrix=m, S=20, maxIter=50,
+                           cond.tol=cond.tol,cores=cores)
+  pmat<-resample$Pmat # rect. matrix gathering edges probabilities obtained for all sub-samples
+  Freqs=freq_selec(pmat, Pt=2/ncol(Y))
+  inf<-1*( Freqs>= 0.8) # optimal final network after thresholding to 80%
+  return(list(freq=Freq, net=inf))
+}
 ##############
 sapply(c("erdos","cluster"), function(type){
   type=type
@@ -29,46 +39,53 @@ sapply(c("erdos","cluster"), function(type){
     t1<-Sys.time()
     lapply(1:100, function(seed){
       file=paste0("/Users/raphaellemomal/simulations/compar_PLNnet_EM_VEM/simu_seed",seed,"_",type,"_dens",numdens,".rds")
-      if(!file.exists(file)){
+     # if(!file.exists(file)){
         set.seed(seed) ; n=200 ; p=15  ;O=1:p
         dens=c(3/p,5/p)[numdens]
         missing_data<-missing_from_scratch(n,p,r=0,type,plot=FALSE, dens)
         counts=missing_data$Y
-        sigmaO= missing_data$Sigma
-        upsilon=missing_data$Upsilon
-        PLNfit<-PLN(counts~1, control = list(trace=0))
-        MO<-PLNfit$var_par$M  
-        SO<-PLNfit$var_par$S  
-        sigma_obs=PLNfit$model_par$Sigma
-        G=(missing_data$G); 
-        
-        #-- normalize the PLN outputs
-        D=diag(sigma_obs)
-        matsig=(matrix(rep(1/sqrt(D),n),n,p, byrow = TRUE))
-        MO=MO*matsig
-        SO=SO*matsig^2
+        # sigmaO= missing_data$Sigma
+        # upsilon=missing_data$Upsilon
+        # PLNfit<-PLN(counts~1, control = list(trace=0))
+        # MO<-PLNfit$var_par$M
+        # SO<-PLNfit$var_par$S
+        # sigma_obs=PLNfit$model_par$Sigma
+        # G=(missing_data$G);
+        # 
+        # #-- normalize the PLN outputs
+        # D=diag(sigma_obs)
+        # matsig=(matrix(rep(1/sqrt(D),n),n,p, byrow = TRUE))
+        # MO=MO*matsig
+        # SO=SO*matsig^2
         #RUN VEMtree
-        init=initVEM(counts = counts,initviasigma=NULL, cov2cor(sigma_obs),MO,r = 0) 
-        Wginit= init$Wginit; Winit= init$Winit; upsinit=init$upsinit ; MHinit=init$MHinit
-        VEMfit<- tryCatch({VEMtree(counts,MO,SO,MH=MHinit,upsinit,Winit,Wginit, eps=1e-3, alpha=0.1,
-                                   maxIter=100, plot=FALSE,print.hist=FALSE, verbatim = FALSE,trackJ=FALSE)},
-                          error=function(e){e}, finally={})
-        
+        # init=initVEM(counts = counts,initviasigma=NULL, cov2cor(sigma_obs),MO,r = 0)
+        # Wginit= init$Wginit; Winit= init$Winit; upsinit=init$upsinit ; MHinit=init$MHinit
+        # VEMfit<- tryCatch({VEMtree(counts,MO,SO,MH=MHinit,upsinit,Winit,Wginit, eps=1e-3, alpha=0.1,
+        #                            maxIter=100, plot=FALSE,print.hist=FALSE, verbatim = FALSE,trackJ=FALSE)},
+        #                   error=function(e){e}, finally={})
+
         # RUN PLNnetwork
         network_models<-PLNnetwork(counts~1, control_init = list(min.ratio=1e-3), control_main =list(trace=0, cores=2))
-        PLNnet.path=lapply(network_models$penalties, function(pen){
-          model_pen <- getModel(network_models, pen) 
-          pen*(model_pen$latent_network(type="precision")!=0)  
-        })
-        K.score <- Reduce("+",PLNnet.path)
-        diag(K.score)=0
-        PLNscores<- as.matrix(K.score / max(K.score))
-        plot(network_models)
-        # RUN EMtree
-        EMfit=EMtree(PLNfit,verbatim = FALSE)
-        saveRDS(list(G=G, PLN=PLNscores,EM= EMfit, VEM=VEMfit),
-                file = paste0("/Users/raphaellemomal/simulations/compar_PLNnet_EM_VEM/simu_seed",seed,"_",type,"_dens",numdens,".rds"))
-      } 
+        # PLNnet.path=lapply(network_models$penalties, function(pen){
+        #   model_pen <- getModel(network_models, pen)
+        #   pen*(model_pen$latent_network(type="precision")!=0)
+        # })
+        # K.score <- Reduce("+",PLNnet.path)
+        # diag(K.score)=0
+        # PLNscores<- as.matrix(K.score / max(K.score))
+        model_StARS <-1*(getBestModel(network_models, "StARS")$latent_network(type="precision")!=0)
+        
+       # plot(network_models)
+        #RUN EMtree
+      #  EMfit=EMtree(PLNfit,verbatim = FALSE)
+        # saveRDS(list(G=G, PLN=PLNscores,EM= EMfit, VEM=VEMfit),
+        #         file = paste0("/Users/raphaellemomal/simulations/compar_PLNnet_EM_VEM/simu_seed",seed,"_",type,"_dens",numdens,".rds"))
+      #ResamEMfit=EMtree_optimal(Y=counts,m=NULL,cores =3,difficulty = numdens )
+      saveRDS(list(PLNstars=model_StARS),
+                      file = paste0("/Users/raphaellemomal/simulations/compar_PLNnet_EM_VEM/PLNstars_simu_seed",
+                                    seed,"_",type,"_dens",numdens,".rds"))
+
+        #} 
     })
     t2<-Sys.time()
     time=difftime(t2, t1)
@@ -113,6 +130,7 @@ pooled=do.call(rbind,lapply(c("erdos","cluster"), function(type){
   do.call(rbind,lapply(1:2, function(numdens){
     do.call(rbind, lapply(1:100, function(seed){
       listFit=readRDS(paste0("/Users/raphaellemomal/simulations/compar_PLNnet_EM_VEM/simu_seed",seed,"_",type,"_dens",numdens,".rds"))
+      ResampEMFreq=readRDS(paste0("/Users/raphaellemomal/simulations/compar_PLNnet_EM_VEM/ResampEM_simu_seed",seed,"_",type,"_dens",numdens,".rds"))$ResampEM
       PLNscores=listFit$PLN
       if(sum(!is.na(PLNscores))==0) PLNscores = matrix(0, 15, 15)
       EMprob=listFit$EM$edges_prob
@@ -121,10 +139,12 @@ pooled=do.call(rbind,lapply(c("erdos","cluster"), function(type){
         G=listFit$G
         AUC=data.frame(AUC=c(auc(pred =PLNscores,label = G ),
                              auc(pred =EMprob,label = G ),
-                             auc(pred =VEMprob,label = G )),method=c("PLNnetwork","EMtree","VEMtree"))
+                             auc(pred =ResampEMFreq,label = G ),
+                             auc(pred =VEMprob,label = G )),method=c("PLNnetwork","EMtree","ResampEM","VEMtree"))
         
         values=rbind(seq_PPV_TPR(probs = PLNscores, omega=G) %>% mutate(method="PLNnetwork"),
                      seq_PPV_TPR(probs = EMprob, omega=G) %>% mutate(method="EMtree"),
+                     seq_PPV_TPR(probs = ResampEMFreq, omega=G) %>% mutate(method="ResampEM"),
                      seq_PPV_TPR(probs = VEMprob, omega=G) %>% mutate(method="VEMtree"))
         seuils= values %>% group_by(method) %>%filter(PPV>=0.5, TPR>=0.5) %>% 
           summarize(minseuil=min(seuil), maxseuil=max(seuil)) %>% as_tibble() 
@@ -142,7 +162,7 @@ pooled=do.call(rbind,lapply(c("erdos","cluster"), function(type){
         
       }
       else{
-        values= data.frame(AUC=NA,  method=c("PLNnetwork","EMtree","VEMtree"),glob.maxPPV=NA, glob.maxTPR=NA,
+        values= data.frame(AUC=NA,  method=c("PLNnetwork","EMtree","ResampEM","VEMtree"),glob.maxPPV=NA, glob.maxTPR=NA,
                            maxPPV=NA, maxTPR=NA, minseuil=NA, maxseuil=NA, seed=seed, numdens=numdens, type=type)
       }
       
@@ -150,7 +170,8 @@ pooled=do.call(rbind,lapply(c("erdos","cluster"), function(type){
     }))
   }))
 }))
-length(unique(pooled$seed[which(is.na(pooled$AUC))])) # 29 crashed for VEMtree
+test=pooled %>% filter(is.na(AUC), method=="VEMtree") %>% dplyr::select(numdens, type)
+length(unique(pooled[which(is.na(pooled$AUC)),])) # 29 crashed for VEMtree
 pooled %>% as_tibble() %>%
   mutate(method=factor(method, levels=c("PLNnetwork","EMtree","VEMtree"))) %>% 
   gather(key, value, -seed, -numdens, -type,-method,-minseuil,-maxseuil) %>% 
@@ -165,7 +186,8 @@ pooled %>% as_tibble() %>% mutate(dens=ifelse(numdens==1,"3/p","5/p")) %>%
   theme(axis.text.x = element_text(angle = 45, hjust=1))
 
 g=pooled %>% as_tibble() %>% mutate(dens=ifelse(numdens==1,"3/p","5/p")) %>%
-  mutate(method=factor(method, levels=c("PLNnetwork","EMtree","VEMtree"))) %>% 
+  mutate(method=factor(method, levels=c("PLNnetwork","EMtree","ResampEM","VEMtree"))) %>% 
+  mutate(method=fct_recode(method, `PLN-network`="PLNnetwork",nestor="VEMtree")) %>% 
   ggplot(aes(as.factor(dens),AUC,color=as.factor(method), fill=as.factor(method)))+
   geom_boxplot(width=0.4, notch = TRUE, alpha=0.6)+
   facet_grid(~type)+mytheme.dark("")+labs(x="")
@@ -200,12 +222,15 @@ All=do.call(rbind, lapply(c("erdos","cluster"), function(type){
   do.call(rbind, lapply(1:2, function(numdens){
     data=do.call(rbind, lapply(1:100, function(seed){
       listFit=readRDS(paste0("/Users/raphaellemomal/simulations/compar_PLNnet_EM_VEM/simu_seed",seed,"_",type,"_dens",numdens,".rds"))
+      ResampEMFreq=readRDS(paste0("/Users/raphaellemomal/simulations/compar_PLNnet_EM_VEM/ResampEM_simu_seed",seed,"_",type,"_dens",numdens,".rds"))$ResampEM
+      PLNstars=readRDS(paste0("/Users/raphaellemomal/simulations/compar_PLNnet_EM_VEM/PLNstars_simu_seed",seed,"_",type,"_dens",numdens,".rds"))$PLNstars
       PLNscores=listFit$PLN
       if(sum(!is.na(PLNscores))==0) PLNscores = matrix(0, 15, 15)
       PLNscores=F_Sym2Vec(PLNscores)
       EMprob=F_Sym2Vec(listFit$EM$edges_prob)
+      ResampEM=F_Sym2Vec(ResampEMFreq)
       G=F_Sym2Vec(listFit$G)
-      return(data.frame(PLNscores=PLNscores, EMprob=EMprob,G=G))
+      return(data.frame(PLNscores=PLNscores, EMprob=EMprob,ResampEM=ResampEM,PLNstars=F_Sym2Vec(PLNstars),G=G))
     }))
     data_VEM=do.call(rbind, lapply(1:100, function(seed){
       listFit=readRDS(paste0("/Users/raphaellemomal/simulations/compar_PLNnet_EM_VEM/simu_seed",seed,"_",type,"_dens",numdens,".rds"))
@@ -217,21 +242,33 @@ All=do.call(rbind, lapply(c("erdos","cluster"), function(type){
     all_PLN=data.frame(seq_PPV_TPR(probs =data$PLNscores, omega = data$G,
                                    seq_seuil = seq(0,max(data$PLNscores),max(data$PLNscores)/200)),
                        type=type, numdens=numdens, method="PLNnetwork")
+    all_PLNstars=data.frame(seq_PPV_TPR(probs =data$PLNstars, omega = data$G,
+                                   seq_seuil = seq(0,max(data$PLNscores),max(data$PLNscores)/200)),
+                       type=type, numdens=numdens, method="PLNstars")
     all_EM=data.frame(seq_PPV_TPR(probs =data$EMprob, omega = data$G,
                                   seq_seuil = seq(0,max(data$EMprob),max(data$EMprob)/200)),
                       type=type, numdens=numdens, method="EMtree")
+    all_REM=data.frame(seq_PPV_TPR(probs =data$ResampEM, omega = data$G,
+                                  seq_seuil = seq(0,max(data$ResampEM),max(data$ResampEM)/200)),
+                      type=type, numdens=numdens, method="ResampEM")
     all_VEM=data.frame(seq_PPV_TPR(probs =data_VEM$VEMprob, omega = data_VEM$G,
                                    seq_seuil = seq(0,max(data_VEM$VEMprob),max(data_VEM$VEMprob)/200)),
                        type=type, numdens=numdens, method="VEMtree")
-    return(rbind(all_PLN, all_EM,all_VEM))
+    all_netVEM=data.frame(seq_PPV_TPR(probs=1*(data_VEM$VEMprob>=0.5), omega = data_VEM$G,
+                                   seq_seuil = seq(0,1,1/200)),
+                       type=type, numdens=numdens, method="netNestor")
+    return(rbind(all_PLN,all_PLNstars, all_EM,all_REM,all_VEM,all_netVEM))
   }))
 })) %>% as_tibble()
 
-g=All %>% as_tibble()  %>% mutate(dens=ifelse(numdens==1,"3/p","5/p")) %>%  group_by(type, numdens) %>% arrange(seuil, by_group=TRUE) %>% 
+g2=All %>% as_tibble()  %>%  
+  mutate(method=fct_recode(method, `PLN-network`="PLNnetwork",nestor="VEMtree")) %>%
+  mutate(dens=ifelse(numdens==1,"3/p","5/p")) %>%  group_by(type, numdens) %>% arrange(seuil, by_group=TRUE) %>% 
   ggplot(aes(TPR, PPV, color=method, shape=method))+geom_hline(yintercept=0.5, linetype="dashed", color="gray")+geom_vline(xintercept=0.5, linetype="dashed", color="gray")+
-  geom_point(alpha=0.4)+geom_line(alpha=0.4)+facet_grid(dens~type)+mytheme.dark("")+
+  geom_point(alpha=0.6)+geom_line(alpha=0.4)+facet_grid(dens~type)+mytheme.dark("")+
+  scale_shape_manual(values=c(1,1,1,2,3,4))+
   labs(x="Recall", y="Precision")
-ggsave(plot=g,filename = "precrec_PLN_EM_VEM.png", path =  "/Users/raphaellemomal/these/R/images",
+ggsave(plot=g2,filename = "precrec_PLN_EM_REM_VEM.png", path =  "/Users/raphaellemomal/these/R/images",
        width=7, height=5 )
 g1<-prec_rec %>% as_tibble() %>% filter(method=="PLNnetwork") %>% group_by(type, numdens) %>% arrange(seuil, by_group=TRUE) %>% 
   ggplot(aes(TPR, PPV))+geom_hline(yintercept=0.5, linetype="dashed", color="gray")+geom_vline(xintercept=0.5, linetype="dashed", color="gray")+

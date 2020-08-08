@@ -15,22 +15,46 @@
 \input{nestorArticle/applis.tex}
 
 \begin{subappendices}
+%\addtocontents{toc}{\setcounter{tocdepth{-1}}
 \section{Published supplements}
-\input{nestorArticle/app_tools.tex}
+ \input{nestorArticle/app_tools.tex}
 \input{nestorArticle/app_calculs.tex}
 \input{nestorArticle/app_cv.tex}
 \section{Clique initialization}
-\section{Network inference from the PLN model}
+\section{Comparison with PLN-network and EMtree}
+This section compares the network inference methods from count data which build on the estimation of the PLN model as described in \citet{CMR18}: PLN-network \citep{CMR19}, EMtree and nestor. The R package PLN-network performs a sparse estimation of the precision matrix using the glasso. Details about EMtree and nestor are available respectively in Chapter 2 and Chapter 3 of this work.
+\tocless\subsection{EMtree and nestor}
+\subsubsection*{Different models}
 
+The aim of EMtree is the network inference, and as such it focuses on the update of the tree distribution parameters (the edges weights $\betab$). It thus performs network inference without ever considering the precision matrix, which is the main difference with nestor.  Indeed, the inference of missing actors requires the estimation of their means $M_H$, which directly depends on terms of the proxy for the precision matrix ($\xbar{\Omegabf}$). $M_H$ is actually the parameter through which passes the information from the data to the network parameters $\betabft$, therefore the computation of the edges probabilities is also different. 
+
+EMtree approximates the edges probabilities conditional on  $\Ybf$ by applying the Matrix Tree theorem on the matrix $\betabf \,\odot \,\boldsymbol{\psi}$, where $\boldsymbol{\psi}=\left((1-\rho_{kl}^2)^{-n/2}\right)_{kl}$ with $\rho_{kl}$ the correlation between variables $k$ and $l$. Transposed in the variational inference framework, edges probabilities conditional on $\Ybf$ are approximated by the edges probabilities computed from the distribution $g(T)$, which approximates $p(T\mid\Ybf)$. The distribution $g(T)$ is parametrized with the  variational edges weights $\betabft$, which update formula for the edges $kl$ at step $t+1$ is given in equation \eqref{update:beta}: $$ \betat^{t+1}_{kl} = \beta^{t+1}_{kl} \left|\Rbf_{[kl]}^{t+1}\right|^{-n/2} \exp\left(-\omega^{t+1}_{kl} \left[(\Mbf^t)^\intercal \Mbf^t\right]_{kl}\right).$$
+Now noticing that $ \left|\Rbf_{[kl]}\right|^{-n/2} =\psi_{kl}$,  we can link this formula to that of the quantity used by EMtree to compute probabilities. We see that the difference between the two strategies is the term $\exp\left(-\omega^{t+1}_{kl} \left[(\Mbf^t)^\intercal \Mbf^t\right]_{kl}\right)$, which stems from the modeling difference of EMtree and nestor.
+
+\subsubsection*{Different behaviors}
+\begin{itemize}
+\item nestor is more complete in its estimation, probabilities are discriminant. But numerically sensitive
+\item EMtree is more robust
+\end{itemize}
+
+\tocless\subsection{Performance comparison}
+\subsubsection*{Experiment}
+We compared the three methods ability to infer networks based on AUC,  precision and recall criteria. We simulated 100 datasets with $n=200$ samples  and $p=15$ species for erdos and cluster structures, and tested two density levels ($3/p$ and $5/p$). With density $3/p$, nestor degenerated for 25 clusters and 5 erdos, and for only 2 clusters with density $5/p$.  Those datasets were filtered from the following results.
+
+\subsubsection*{Results}
 \begin{figure}
 \centering
 \includegraphics[width=12cm]{figs/AUC_PLN_EM_VEM.png}
+\caption{Comparison of PLN-network, EMtree and nestor ability to infer networks with the AUC criteria. 100 datasets were simulated for each parameter settings.}
+\label{compar:auc}
 \end{figure}
 \begin{figure}
 \centering
 \includegraphics[width=12cm]{figs/precrec_PLN_EM_VEM.png}
+\caption{Mean Precision-Recall curves for PLN-network, EMtree and nestor }
+\label{compar:precrec}
 \end{figure}
 
 with $min.ratio=1\cdot 10^{-3}$ for PLNnetwork
-\section{Vignette for nestor}
+\section{Vignette for nestor}\input{nestorArticle/vignetteNestor}
 \end{subappendices}

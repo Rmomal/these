@@ -94,7 +94,7 @@ contents={
 \else
 \begin{tikzpicture}[remember picture,overlay]
 \node[rotate=90,minimum width=\paperheight,minimum height=0.5cm,fill=gray!40,font=\large\bfseries,text=white,anchor=south west] at ([xshift=-\paperwidth+0.5cm]$(current page.south east)$) {};
-\node[rotate=90,minimum width=1/\ChapNum*\paperheight,minimum height=0.5cm,fill=\BoxColor,font=\large\bfseries,text=white,anchor=south west] at ([yshift=\ChapNum-(\thechapter))/\ChapNum*\paperheight,xshift=-\paperwidth+0.5cm]$(current page.south east)$) {\ifthenelse{\equal{\thechapter}{4}}{Conclusion}{Chapter \thechapter}};%{\ifthenelse{\equal{\thechapter}{1}}{Introduction}{\ifthenelse{\equal{\thechapter}{4}}{Conclusion}{Chapter \thechapter}}};
+\node[rotate=90,minimum width=1/\ChapNum*\paperheight,minimum height=0.5cm,fill=\BoxColor,font=\large\bfseries,text=white,anchor=south west] at ([yshift=\ChapNum-(\thechapter))/\ChapNum*\paperheight,xshift=-\paperwidth+0.5cm]$(current page.south east)$) {\ifthenelse{\equal{\thechapter}{4}}{Perspectives}{Chapter \thechapter}};%{\ifthenelse{\equal{\thechapter}{1}}{Introduction}{\ifthenelse{\equal{\thechapter}{4}}{Conclusion}{Chapter \thechapter}}};
 \end{tikzpicture}
 \fi
 \fi
@@ -543,7 +543,7 @@ contents={
 \AtBeginEnvironment{subappendices}{%
   \clearpage
   \section*{Appendices}
-  \addcontentsline{toc}{section}{Appendices}
+  \addcontentsline{toc}{section}{Appendices} 
   \counterwithin{figure}{section}
   \counterwithin{table}{section}
 }

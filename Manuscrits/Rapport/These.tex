@@ -4,7 +4,8 @@
  
 
 \backgroundsetup{contents={}}
-
+\newcommand{\nocontentsline}[3]{}
+\newcommand{\tocless}[2]{\bgroup\let\addcontentsline=\nocontentsline#1{#2}\egroup}
 \setcounter{chapter}{-1}
 \begin{document}
 \frontmatter
@@ -25,10 +26,10 @@
 \chapter{Mathematical Framework}
  \input{chap1}
  
-\chapter{Tree-based Inference of Species Interaction Networks from Abundance Data}
+\chapter{Network Inference from Abundance Data}
 \input{chap2}
  
-\chapter{Detection and inference of a missing actor}
+\chapter{Inference with Missing Actor}
 
 \input{chap3}
 
