@@ -1,18 +1,18 @@
 
 \vspace{1cm}
-This first chapter  details the technical background extracted from the literature which is used in the next chapters. It is designed to be read independently  of the rest of this work, and therefore repetitions with elements from the next chapters is unavoidable.  The chapter begins by covering all the required notions from the graph theory, with a  focus on the tree-shaped graphs. A second section  presents Gaussian graphical models properties and explains why it is a golden framework for network inference. After a reminder on the Expectation-Maximization algorithm as well as its variational interpretation, the last part is a state of the art of network inference from abundance data and presents methods stemming from both genomics and ecology. 
+This first chapter  details the technical background extracted from the literature which is used in the next chapters. It is designed to be read independently  of the rest of this work, and therefore repetitions with elements from the next chapters are unavoidable.  The chapter begins by covering all the required notions from graph theory, with a  focus on tree-shaped graphs. A second section  presents Gaussian graphical models properties and explains why it is a golden framework for network inference. After a reminder on the Expectation-Maximization algorithm as well as its variational interpretation, the last part is a state of the art of network inference from abundance data and presents methods stemming from both genomics and ecology. 
 
 
  \section{Graphical Models}
- A graphical model is classically described as a probabilistic model which conditional dependence structure is given by a graph. This first section gives the general framework of graphical models, and adapts definitions and properties from \citet{Lau96} to  undirected graphs involving only quantitative variables.  Then the specific algebraic properties  spanning tree graphs are presented.
+ A graphical model is classically described as a probabilistic model which conditional dependence structure is given by a graph. This first section gives the general framework of graphical models, and adapts definitions and properties from \citet{Lau96} to  undirected graphs involving only quantitative variables.  Then, the specific algebraic properties of  spanning tree graphs are presented.
  %%%%%%%%%%%%%%%%%%%%%%%%%%
  \subsection{General framework}
- A graph is defined as a pair $\G=(V,E)$ such that $V$ is a finite set of vertices, and the set of edges $E$ is a subset of $V\times V$. Here we consider $E$ such that vertices are not linked to themselves and there are no multiple edges between two vertices. For any given pair of nodes $(k,\ell)$, we denote an edge by $k\sim\ell$ and an absence of edge by $k\nsim \ell$. In the literature, $V$ can be composed of both quantitative and qualitative variables. However here we  only use variables of one kind (quantitative) and so $V$ is called pure. The following definitions apply to the particular case of a pure vertex set $V$ and an undirected graph $\G$.\\
+ A graph is defined as a pair $\G=(V,E)$ such that $V$ is a finite set of vertices, and the set of edges $E$ is a subset of $V\times V$. Here we consider $E$ such that vertices are not linked to themselves and there are no multiple edges between two vertices. For any given pair of nodes $(k,\ell)$, we denote by $k\sim\ell$ an edge and by $k\nsim \ell$ an absence of edge. In the literature, $V$ can be composed of both quantitative and qualitative variables. However here we  only use variables of one kind (quantitative) and so $V$ is called pure. The following definitions apply to the particular case of a pure vertex set $V$ and an undirected graph $\G$.\\
 
 Let's first consider a subset $A$ of the vertex set $V$. $A$ is said to be \textit{complete} if all the nodes it contains are linked with each other. If $A$ is additionally of maximal size, it is then called a \textit{clique}. This definition makes the expression "maximal clique" a pleonasm. The \textit{subgraph} $\G_A$ defined by $A$  is obtained from $\G$ by keeping edges with both endpoints in $A$. Furthermore if $A$, $B$ and $S$ are disjoint subsets of $V$, $S$ is said to \textit{separate} $A$ from $B$ if any path from $\G_A$ to $\G_B$ intersects with $\G_S$. The following notions of decomposable graphs and perfect sequences are central in the definition of a graphical model.
  
  \begin{definition}[Proper decomposition]\label{decomp}
- A triple $(A, B, C)$ of disjoint subsets of the pure vertex set $V$ of an undirected graph $\G$ form a decomposition of $\G$ if $V=A\cup B \cup C$, and if $C$ satisfies:
+ A triple $(A, B, C)$ of disjoint subsets of the pure vertex set $V$ of an undirected graph $\G$ forms a decomposition of $\G$ if $V=A\cup B \cup C$, and if $C$ satisfies:
  \begin{enumerate}[label=(\roman*)]
  \item $C$ is a complete subset of  $V$,
  \item $C$ separates $A$ from $B$.
@@ -39,7 +39,7 @@ Let's first consider a subset $A$ of the vertex set $V$. $A$ is said to be \text
   \label{ex:graph0}
     \end{center}
 \end{figure}
-The graph in Figure \ref{ex:graph0} gives an example. Let's define the sets of nodes $A=\{1,2\}$, $B=\{5,6\}$ and $C=\{3,4\}$. As nodes $3$ and $4$ are linked, $C$ is a complete set. Moreover $C$ separates $A$ from $B$, and $A$ and $B$ are both non-empty, hence $(A, B, C)$  forms a proper decomposition. A decomposition is thus simply a separation of the set of nodes with complete subsets. A decomposable graph is then define using Definition \ref{decomp} in a recursive manner:
+The graph in Figure \ref{ex:graph0} gives an example. Let's define the sets of nodes $A=\{1,2\}$, $B=\{5,6\}$ and $C=\{3,4\}$. As nodes $3$ and $4$ are linked, $C$ is a complete set. Moreover $C$ separates $A$ from $B$, and $A$ and $B$ are both non-empty, hence $(A, B, C)$  forms a proper decomposition. A decomposition is thus simply a separation of the set of nodes with complete subsets. A decomposable graph is then defined using Definition \ref{decomp} in a recursive manner:
  \begin{definition}[Decomposable graph]
  An undirected graph is decomposable if it is complete, or if there exists a proper decomposition $(A, B, C)$ into decomposable subgraphs $\G_{A\cup B}$ and $\G_{B\cup C}$.
  \end{definition}
@@ -139,8 +139,8 @@ $$X \independent Y \mid Z \iff f(x,y,z) = f(x,z) \, f(y,z)/f(z). $$
 Conditional independence can be understood in terms of information. That is, "$X$ is independent of $Y$, given $Z$" means that knowing $Z$, $Y$ will not bring any new information on $X$, and conversely. The Markov property below is the link between conditional independence of variables and its representation in an undirected graph. Let's consider a collection of random variables $(X_v)_{v\in V}$ taking values in probability spaces $(\mathcal{X}_v)_{v\in V}$, and $\mathcal{X}=\otimes_{v\in V} \mathcal{X}_v$. We further denote for any subset $A$ of $V$, $X_A=(X_v)_{v\in A}$, and $\G$ a graph with vertex set $V$. 
 
 \begin{definition}[Global Markov property]\label{def:markov}
-A probability measure P on $\mathcal{X}$ is \textit{global} Markov relative to the undirected graph $\G$ if for any triple $(A, B, S)$ of disjoint subset of $V$ such that:
- $$ \text{S separates A from B } \Rightarrow X_A\independent X_B \mid X_S$$
+A probability measure P on $\mathcal{X}$ is \textit{global} Markov relative to the undirected graph $\G$ if for any triple $(A, B, S)$ of disjoint subsets of $V$, it holds that:
+ $$ \text{S separates A from B } \Rightarrow X_A\independent X_B \mid X_S.$$
  If additionally $X_A\independent X_B \mid X_S \Rightarrow \text{S separates A from B}  $, then P is \textit{faithful} Markov and $\G$ perfectly describes the conditional dependence structure of P.
 \end{definition}
 Therefore if a distribution is only global Markov, its related graph is possibly too dense: it can contain edges between variables which are actually conditionally independent from one another. 
@@ -153,17 +153,17 @@ The following theorem links definitions \ref{def:markov} and \ref{def:fact} for 
 
 \begin{theorem}[Hammersley and Clifford] \label{thm:ham}
 For any undirected graph $\G$ and probability distribution P with strictly positive and continuous density $f$ with respect to a product measure $\mu$, it holds that:
-$$P\text{ factorizes according to } \G \iff P\text{ is global Markov relative to }\G $$
+$$P\text{ factorizes according to } \G \iff P\text{ is global Markov relative to }\G. $$
 \end{theorem}
 
-This equivalence means in practice that writing a density in a product form on some combinations of its variable helps identify conditional independence relations.
+This equivalence means in practice that writing a density in a product form on some combination of its variables helps to identify conditional independence relations.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
  \subsection{Spanning trees}\label{trees}
 Trees are graphs with no cycles, meaning that all cliques are edges only. When a tree connects all the nodes, it is called a spanning tree. This particular type of graph is both the sparsest connected graph, and the most connected graph without loops. This feature makes it a decomposable graph by definition, following condition $(iii)$ of Proposition \ref{decomp}.  The following result is obtained directly.
 
 \begin{prop}
-If $T$ is a spanning tree, all of its separators are nodes. For any node $k$ of $T$ we denote $d(k)$ its degree. Then its multiplicity in any perfect sequence is $\nu(k) = d(k)-1$.
+If $T$ is a spanning tree, all of its separators are nodes. For any node $k$ of $T$, $d(k)$ denotes its degree. Then its multiplicity in any perfect sequence is $\nu(k) = d(k)-1$.
 \end{prop}
  
  
@@ -181,7 +181,7 @@ If $T$ is a spanning tree, all of its separators are nodes. For any node $k$ of 
 When $\Wbf$ is a graph adjacency matrix, $\Qbf$ is called the graph Laplacian matrix and its diagonal is composed of the degrees of each node.
  \end{definition}
  
- Hereafter we denote $\Abf^{uv}$ the squared matrix $\Abf$ deprived from its $u$th row and $v$th column, and remind that the $(u, v)$-minor of $\Abf$ is the determinant of this deprived matrix, namely $|\Abf^{uv}|$.
+ Hereafter $\Abf^{uv}$ denotes the squared matrix $\Abf$ deprived from its $u$th row and $v$th column, and remind that the $(u, v)$-minor of $\Abf$ is the determinant of this deprived matrix, namely $|\Abf^{uv}|$.
  
  \begin{theorem}[Kirchhoff's theorem]\label{th:kir}
  For any graph $\G$, let  $\Qb$ denote its graph Laplacian matrix. Then for any  pair of nodes $\{u,v\}$, the total number of spanning trees in $\G$ is equal to  $|\Qb^{uv}|$.
@@ -199,7 +199,7 @@ The total number of spanning trees in any graph can thus be computed in polynomi
    
 \end{theorem}    
 
-Consequently, the operation of summing over all spanning trees can be carried out in a computationally efficient way. \cite{MeilaJaak}  build on this result to provide a close form expression for the derivative of the sum-product $W$ with respect to each entry of the input weight matrix $\Wbf$.   Without loss of generality, we choose $\Qbf^{11}$.
+Consequently, the operation of summing over all spanning trees can be carried out in a computationally efficient way. \cite{MeilaJaak}  built on this result to provide a close form expression for the derivative of the sum-product $W$ with respect to each entry of the input weight matrix $\Wbf$.   Without loss of generality, we choose $\Qbf^{11}$.
 
 \begin{lemma} [\cite{MeilaJaak}] \label{lemm:Meila}
     Define the entries of the symmetric matrix $\Mbf$ as
@@ -219,27 +219,27 @@ Theorem \ref{thmm:MTT} actually gives the solution to the computation of the sum
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
  \section{Gaussian Graphical Models}
- Gaussian graphical models (GGM) describe the conditional dependency structure of a  multivariate Gaussian distribution. The different properties of the multivariate Gaussian distribution allow some specific interpretation and estimation results of its related graphical model,  making the GGM a sound and very convenient  framework to work with.
+ Gaussian graphical models (GGM) describe the conditional dependency structure of a  multivariate Gaussian distribution. The different properties of the multivariate Gaussian distribution allow some specific interpretations and estimation results of its related graphical model,  making the GGM a sound and very convenient  framework to work with.
  
  %%%%%%%%%%%%%%%%%%%%%%%%%%
  \subsection{Specific properties} \label{ggm:prop}
 The multivariate Gaussian distribution possesses various properties which facilitate computations as well as interpretations. Two in particular are of interest in the graphical models setting. The first one concerns the natural writing of its density.
  \begin{prop}\label{pp:ggm1}
  Let $X\sim \mathcal{N}(\mu, \Sigmab)$ with precision matrix $\Omegab=\Sigmab^{-1}$ and $X_k$ denotes the $k^{th}$ column of $X$. Then the associated density $f$ factorizes as:
- $$f(X) \propto \prod_{k,\ell, \omega_{kl}\neq 0} \exp(-X_{k}\omega_{k\ell}X_{\ell}/2)$$
+ $$f(X) \propto \prod_{k,\ell, \omega_{kl}\neq 0} \exp(-X_{k}\omega_{k\ell}X_{\ell}/2).$$
  \end{prop}
  
  \begin{prop}\label{pp:glob}
 The density $f$ of a multivariate Gaussian distribution $\Ncal(\mu, \Omegab^{-1})$ is global Markov relative to an undirected graph $\G$, the edges of which are determined by the non-null entries of the precision matrix $\Omegab$.
  \end{prop}
  \begin{proof}
- This is a direct application of Theorem \ref{thm:ham} to the factorized multivariate Gaussian density.
+ This is a direct application of Theorem \ref{thm:ham} to the factorized multivariate Gaussian density reminded in Proposition \ref{pp:ggm1}.
 \end{proof} 
 
 As $f$ is global Markov, any two non-neighbors in $\G$ are conditionally independent in $f$.  The multivariate Gaussian distribution also presents with a facilitating property about conditional independence, reminded below.
  
  \begin{prop}\label{pp:ggm2}If  $X\sim \mathcal{N}_V(\mu, \Omegab^{-1})$, then it holds for any $k,\ell\in V$ with $k\neq \ell$ that
-$$X_k \independent X_\ell \mid X_{V\setminus\{k,\ell\}} \iff \omega_{k\ell}=0 $$
+$$X_k \independent X_\ell \mid X_{V\setminus\{k,\ell\}} \iff \omega_{k\ell}=0. $$
  \end{prop}
   \begin{proof}
   This comes directly from the fact that the $2\times 2$  covariance matrix of variables $k$ and $l$ conditional on all others expresses in terms of the precision matrix : $$\Sigmab_{k,l\mid V\setminus\{k,l\}} = |\Omegab_{\{k,l\}}|^{-1} \left(\begin{array}{cc}
@@ -251,7 +251,7 @@ $$X_k \independent X_\ell \mid X_{V\setminus\{k,\ell\}} \iff \omega_{k\ell}=0 $$
   Note that Proposition \ref{pp:ggm2} is not a consequence of proposition \ref{pp:ggm1}.
 \begin{prop}[Faithfulness property]\label{ggm:faith}
  Let $X\sim \mathcal{N}(\mu, \Omegab^{-1})$ with associated density $f$, $\G$ the graph which edges represent the non-nul entries of $\Omega$. Then  it holds that:
- $$k\nsim \ell \iff  X_k \independent X_\ell \mid X_{V\setminus\{k,\ell\}} $$
+ $$k\nsim \ell \iff  X_k \independent X_\ell \mid X_{V\setminus\{k,\ell\}}. $$
  and $f$ is faithful Markov relative to $\G$.
 \end{prop} 
 \begin{proof}
@@ -268,11 +268,11 @@ Proposition \ref{ggm:faith} is key for estimation in the GGM framework, as it st
 $$X_j = \sum_{k\neq j} \beta_{jk} X_k + \varepsilon_j,\qquad \text{where}\qquad\varepsilon_j \sim \Ncal (0, \omega_{jj}^{-1}), \qquad \beta_{jk} = -\frac{\omega_{jk}}{\omega_{jj}}.$$
 
 \end{prop}
-Hence $\omega_{jk}$ is, up to a scalar, the coefficient of $X_k$ in the multiple regression of $X_j$ on all other variables. This result is at the basis GGM inference methods relying on regression, which we will see later on. But first, let's turn to Lauritzen's  parameters estimation for GGM, made possible by the faithfulness property.
+Hence $\omega_{jk}$ is, up to a scalar, the coefficient of $X_k$ in the multiple regression of $X_j$ on all other variables. This result is at the basis of GGM inference methods relying on regression \citep{MeB06}, which we will see later on. But first, let's turn to Lauritzen's  parameters estimation for GGM, made possible by the faithfulness property.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
  \subsection{Maximum likelihood estimation}\label{ggm:mle}
-In this section we adopt the following notations: for any  squared  matrix $\Abf$ of dimension $p$ and $B$ a subset of $V=\{1,...,p\}$, we let $\Abf_B$ refer to the bloc $B$ of $\Abf$: $\Abf_{B}=(a_{ij})_{\{i,j\}\in B}$.   $[\Abf_B]^p$ then denotes the matrix obtained by filling up with zero entries to obtain full dimension $p\times p$, so that:
+In this section we adopt the following notations: for any  squared  matrix $\Abf$ of dimension $p$ and $B$ a subset of $V=\{1,...,p\}$, we let $\Abf_B$ refer to the block $B$ of $\Abf$: $\Abf_{B}=(a_{ij})_{\{i,j\}\in B}$.   $[\Abf_B]^p$ then denotes the matrix obtained by filling up with zero entries to obtain full dimension $p\times p$, so that:
 $$([\Abf_B]^p )_{ij}=\left\{ \begin{array}{rl}
 a_{ij} & \text{if } \{i,j\}\in B,\\
 0 &  \text{if } \{i,j\}\in V_{\setminus B}.
@@ -315,7 +315,7 @@ which also satisfies the model restriction $\omega_{k\ell} =0 \iff k\nsim \ell $
 In a Gaussian graphical model with graph $\G$, the MLE of the precision matrix exists with probability one if $n>max_{C\in\mathcal{C}}|C|$. It is then given as
 $$\widehat{\Omegab} = n \bigg\{\sum_{C\in\mathcal{C}} \big[(SSD_C)^{-1}\big]^p-\sum_{S\in\mathcal{S}} \nu(S) \big[(SSD_S)^{-1}\big]^p\bigg\},$$
 where $\mathcal{C}$ is the set of cliques of $\G$ and $\mathcal{S}$ the set of separators with multiplicities $\nu$ in any perfect sequence. The determinant of the estimate can be calculated as
-$$|\widehat{\Omegab}| = n^p \dfrac{\prod_{C\in\mathcal{C}}|(SSD_C)^{-1}|}{\prod_{S\in\mathcal{S}} (|(SSD_S)^{-1}|)^{\nu(S)}}$$
+$$|\widehat{\Omegab}| = n^p \dfrac{\prod_{C\in\mathcal{C}}|(SSD_C)^{-1}|}{\prod_{S\in\mathcal{S}} (|(SSD_S)^{-1}|)^{\nu(S)}}.$$
 \end{theorem}
  
 The stronger condition $n>p$ of Theorem \ref{mle:sig} is only sufficient, whereas the condition $n>max_{C\in\mathcal{C}}|C|$ of Theorem \ref{mle:ome} is necessary for the existence of all estimators, as it ensures the positive definiteness of all $SSD_C$ (otherwise some might not have full rank).  
@@ -334,11 +334,11 @@ In the special framework of GGM, conditional dependence relations are perfectly 
  $$\argmin_{\beta \in \mathds{R}^p} \big\{ ||\Yb - \Xb\beta ||^2_2 + \lambda ||\beta||_1\big\}, \qquad ||\beta||_1=\sum_{i=1}^p |\beta_i|,$$
  where $\lambda$ is a penalty called the regularization parameter.  The form of the $\ell_1$ penalty forces some coefficients to exactly equal zero. Taking advantage of the regression interpretation in GGM reminded in Proposition \ref{ggm:reg}, a method for inferring non-nul elements of the precision matrix is to run separate penalized regressions of each node against all others and possible covariates, as in \citet{MeB06}. \\
  
- A joint estimation of these regression models is performed by the widely used Graphical Lasso (glasso) \citep{glasso}. The glasso introduces sparsity in the precision matrix by imposing Lasso penalties on its entries. It is an iterative procedures which aims a sparse MLE of the penalized precision matrix $\Omegab$.  The log-likelihood of a GGM writes:
+ A joint estimation of these regression models is performed by the widely used Graphical Lasso (glasso) \citep{FHT08}. The glasso introduces sparsity in the precision matrix by imposing Lasso penalties on its entries. It is an iterative procedure which aims a sparse MLE of the penalized precision matrix $\Omegab$.  The log-likelihood of a GGM writes:
  $$L_\lambda(\Omegab) = \log |\Omegab| +\tr{\Yb^\intercal \Yb \Omegab}+cst .$$
  The precision matrix is then estimated as the matrix which maximizes the penalized log-likelihood:
  $$\argmax_{\Omegab\geq 0} \big\{L_\lambda(\Omegab) - \lambda ||\Omegab||_1\big\}, \qquad ||\Omegab||_1 = \sum_{j\neq k} |\omega_{jk}|.$$
-The glasso  selects the network edges by forcing some of them to zero in the precision matrix. The greater the penalty $\lambda$, the less edges are included in the network and therefore choosing $\lambda$ is critical for the glasso. The selection of $\lambda$ can be performed using classical tools such as cross-validation, Akaike information criterion (AIC),  Bayesian information criterion (BIC) or its extended version.  Another popular approach is to perform a stability selection with StARS \citep{stars}, which aims the network robustness under random sampling of the input data.
+The glasso  selects the network edges by forcing some of them to zero in the precision matrix. The greater the penalty $\lambda$, the less edges are included in the network and therefore choosing $\lambda$ is critical for the glasso. The selection of $\lambda$ can be performed using classical tools such as cross-validation, Akaike information criterion (AIC),  Bayesian information criterion (BIC) or its extended version.  Another popular approach is to perform a stability selection with StARS \citep{stars}, which fosters the network robustness under random sampling of the input data.
 
  %builds on the regression interpretation of the partial correlation
 
@@ -346,8 +346,8 @@ The glasso  selects the network edges by forcing some of them to zero in the pre
  \subsubsection{Averaging on trees}\label{tree:aver}
 
 %chow-liu dans le cas gaussien
-  Another way to foster sparsity in the graph is to assume a sparse structure. The sparsest connected graphs are spanning trees. If a multivariate Gaussian variable $\Ybf_i$ of dimension $p$  is faithful to a spanning tree $T ^*$, its likelihood writes as a factorization on the nodes and the edges of $T^*$:
-  $$L(\Ybf_i) = \prod_{j=1}^p p(Y_{ij}) \prod_{jk\in T} \frac{p(Y_{ij},Y_{ik})}{p(Y_{ij})p(Y_{ik})}$$
+  Another inference strategy is to assume a sparse structure. The sparsest connected graphs are spanning trees. If a multivariate variable $\Ybf_i$ of dimension $p$  is faithful to a spanning tree $T $, its likelihood writes as a factorization on the nodes and the edges of $T$:
+  $$p_T(\Ybf_i) = \prod_{j=1}^p p(Y_{ij}) \prod_{jk\in T} \frac{p(Y_{ij},Y_{ik})}{p(Y_{ij})p(Y_{ik})}.$$
 
 The quotient in the product on the edges is close to the mutual information between two variables, which is the Küllback-Leibler divergence between the bivariate density and the product of their marginal densities. It can be seen as a measure of the independence between a pair of variables.   The Chow-Liu algorithm \citep{ChowLiu} finds the tree structure which maximizes the above likelihood from observations. The maximal spanning tree is thus the tree with the maximal bivariate dependencies on its edges. Note that the Chow-Liu algorithm is not restricted to the Gaussian case, even if it is the most general one.\\
    %To do so it maximizes the above distribution by defining the edges weights as the mutual information between the variables, which is the Küllback-Leibler divergence between the bivariate density and the product of the two marginal densities. 
@@ -355,44 +355,51 @@ The quotient in the product on the edges is close to the mutual information betw
   %mélange d'arbres : distribution d'arbre et proba d'arêtes
   %The graphical model is assumed to be a tree $T^*$ and itself treated as a latent parameter of the model.
 
-However the data conditional dependency structure is unlikely to be a tree in general. A way to explore the spanning tree space is to consider a mixture model on spanning trees, which amounts to assume the dependency tree $T^*$ to be random. This requires the definition of a distribution on the space of trees. Assigning a weight to each edge, it is possible to define a decomposable distribution \citep{MixtTrees,MeilaJaak}.
-\begin{definition}[Decomposable tree distribution] 
-For any symmetric weight matrix $\Wbf$ with all positive entries, we denote $W$ the sum-product form defined in Theorem \ref{thmm:MTT} A decomposable  distribution for the tree $T$ is then defined as follows:
-$$p_{\Wbf}(T) = \prod_{k,\ell \in T} w_{k\ell} / W ,$$
-so that the probability of a tree is proportional to the product of its edges weights.
-\end{definition}
+However the data conditional dependency structure is unlikely to be a tree in general. Assuming the dependency tree $T$ to be random provides with a more flexible approach.  Considering any distribution on the space of spanning trees, we now define the tree averaging model (also called tree aggregation or mixture of trees) which is a sum on a set of trees weighted by their respective probability to be the random tree $T$. This is classically  formulated as follows:
 
-A decomposable tree distribution is stable under a multiplicative transformation applied to its weight matrix, which is particularly useful during the implementation. The Chow-Liu algorithm actually maximizes the decomposable distribution with the mutual information as the edges weights.\\
+%A way to explore the spanning tree space is to consider a mixture model on spanning trees, which amounts to assume the dependency tree $T$ to be random. 
 
-
-%modèle de mélange d'arbres puis de GGM fidèles à des arbres mixture model of GGM faithful to trees
-We now define a tree averaging (also called tree aggregation or mixture of trees), which is a sum on a set of trees weighted by their respective probability to be the random tree $T^*$. This is classically  formulated with a choice variable as follows:
 % take advantage of all the spanning tree properties of section \ref{trees}. While performing network inference using tree averaging,  the underlying graphical model $T^*$ is treated as a latent parameter of the model.
 %is assumed to be random as opposed to the Chow-Liu and penalized framework previously presented.  
  
  \begin{definition}[Tree averaging \citep{MixtTrees}]
  Considering a collection of $m$ spanning trees $T_k$, $k\in\{1,...,m\}$ and a choice variable $\zb$ taking values in $\{1,...,m\}$, the distribution of an observed variable $\Ybf$ following a  mixture of trees  is defined as:
-$$ p(\Ybf) = \sum_{k=1}^m p(\zb=k) p(T_k)$$
-Conditionally on $\zb$, the distribution of $\xbf$ is a tree.
+$$ p(\Ybf) = \sum_{k=1}^m p(\zb=k) p(T_k).$$
+Conditionally on $\zb$, the distribution of $\Ybf$ is a tree.
  \end{definition}
 
-In tree averaging, the tree $T^*$ is treated as a latent parameter of the model. The use of tree averages for network inference in the context of GGM relies on a Gaussian tree mixture, which is a mixture model of GGM faithful to trees.
+Averaging on trees then means to treat the underlying tree $T$ as a latent parameter of the model. In the context of GGM  the use of tree averages for network inference relies on a Gaussian tree mixture, which is a mixture model of GGM that are faithful to trees.
 % The latent Gaussian parameters $\Zbf$ follow a Gaussian mixture on the space of spanning trees $\mathcal{T}$, where each Gaussian component is faithful to a spanning tree.
 \begin{definition}[Gaussian tree mixture]\label{treemixt}
 The distribution of a variable $\Ybf$ is a Gaussian tree mixture on the space of $m$ spanning trees if it writes as follows:
-$$p(\Ybf) = \sum_{k=1}^m  p(T_k) p(\Ybf\mid T_k),\qquad  \Ybf\mid T_k\sim\Ncal (0, \Omegab_{T_k}), \;\; \forall k\in\{1,...,m\}.$$
+$$p(\Ybf) = \sum_{k=1}^m  p(T_k) p(\Ybf\mid T_k),\qquad  \Ybf\mid T_k\sim\Ncal (0, \Omegab_{T_k}^{-1}), \;\; \forall k\in\{1,...,m\}.$$
 Conditional on $T_k$, $\Ybf$ is faithful relative to this tree and follows a multivariate Gaussian with the corresponding precision matrix $\Omega_{T_k}$.
 \end{definition}
  
-Instead of a subset $m$, considering an average on the space of all possible spanning trees $\mathcal{T}$ allows for an exhaustive exploration of the space of spanning trees, and takes advantage of Theorem \ref{thmm:MTT} and Lemma \ref{lemm:Meila} for computation. 
-Another interesting advantage of considering all spanning trees at the same time is the possibility to define edges probabilities. Indeed the probability for an edge to be in the tree $T^*$ can be defined as the sum of the probabilities of all trees containing this edge:
-$$\mathds{P}\{kl\in T^*\} = \sum_{\substack{T\in \mathcal{T}\\ T \ni kl}} p_{\Wbf}(T).$$
-The following algebraic result from \cite{kirshner} then  states that it is possible to compute all edges probabilities at the same time, and this at the cost of the inversion of the  Laplacian matrix of the edges weights.
+Instead of a subset $m$, considering an average on all possible spanning trees %allows for an exhaustive exploration of the space of spanning trees  $\mathcal{T}$. An interesting 
+%considering all spanning trees at the same time is the possibility to
+presents with the advantage of  resorting to edges probabilities. Indeed the probability for an edge to be in the tree $T$ can be defined as the sum of the probabilities of all trees containing this edge:
+$$\mathds{P}\{kl\in T\} = \sum_{\substack{T\in \mathcal{T}\\ T \ni kl}} p_{\Wbf}(T).$$
+The final output of a strategy using an average on trees for network inference is not the latent tree presenting with the highest probability, but the matrix filled with the edges probabilities obtained by summing on all trees. Therefore the output is a weighted network which has no reasons to be shaped as a tree itself.\\
+
+%with decomposable distribution 
+We now detail a useful distribution on the space of trees: the decomposable distribution, which assigns a strictly positive weight to each edge  \citep{MixtTrees,MeilaJaak}.
+\begin{definition}[Decomposable tree distribution] \label{decompdistrib}
+For any symmetric weight matrix $\Wbf$ with all positive entries, a decomposable  distribution for the tree $T$ is defined as follows:
+$$p_{\Wbf}(T) = \prod_{kl \in T} w_{kl} / W ,$$
+where  $W$ is a normalizing constant with sum-product form as in Theorem \ref{thmm:MTT}.
+\end{definition}
+Therefore  under the decomposable distribution, the probability of a tree is proportional to the product of its edges weights. Such distribution is stable under a multiplicative transformation applied to its weight matrix, which is particularly useful during the implementation. The Chow-Liu algorithm actually maximizes the decomposable distribution with the mutual information as the edges weights.\\
+
+%algebraic advantage
+Defining a tree averaging  with the decomposable tree distributions $p_{\Wbf}(T)$ presents several advantages. First, it introduces the quantity $\sum_{T\in\mathcal{T}}\prod_{k\ell\in T} w_{kl}$, which is a sum-product form easily handled thanks to Theorem \ref{thmm:MTT} and Lemma \ref{lemm:Meila}. Then, the following algebraic result from \cite{kirshner} states that under a decomposable distribution it is possible to compute all edges probabilities at the same time, and this at the cost of the inversion of the  Laplacian matrix of the edges weights.
 
 \begin{lemma} [\cite{kirshner}] \label{lem:Kirshner}
     Let $p_{\Wbf}$ be a decomposable tree distribution with symmetric and positive weight matrix $\Wbf$. Taking the symmetric matrix $\Mbf$ as defined in Lemma  \ref{lemm:Meila}, the probability for an edge $kl$ to be in the tree $T$ writes:
-$$\mathds{P}\{kl\in T^*\} =  w_{kl}\: \Mbf_{kl}.$$
-\end{lemma}The final output of a strategy using an average on trees for network inference is not the latent tree presenting with the highest probability, but the matrix filled with the edges probabilities obtained by summing on all trees. Therefore the output is a weighted network which has no reasons to be shaped as a tree itself. Instead of searching for zeros in the precision matrix and assuming a fixed graph as in the penalized approach, tree-averaging methods offer an efficient exploration of the graph space by restricting it to the space of spanning trees. Tree averaging has recently been used in the context of GGM inference in the Bayesian setting \citep{SR15} and for the inference of unobserved data \citep{RAR19}.
+$$\mathds{P}\{kl\in T\} =  w_{kl}\: \Mbf_{kl}.$$
+\end{lemma}
+
+Unlike the previous penalized approach which assumes a fixed graph, tree-averaging methods consider the graph as a latent and random tree. Coupled with decomposable tree distributions, they offer an efficient and exhaustive exploration of the space of spanning tree graphs. Tree averaging has recently been used in the context of GGM inference in the Bayesian setting \citep{SRS19} and for the inference of unobserved data \citep{RAR19}.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -410,17 +417,17 @@ The iteration $t+1$ of the EM algorithm then consists of the two following steps
  \item [E step:] Given $\thetab^t$, compute $\Esp_{\thetab^t}[\log p_\thetab (\Ybf, \Zbf)\mid \Ybf]$ as a function of $\theta$,
  \item [M step:] Update $\thetab$ as $\thetab^{t+1} = \argmax_\thetab \{ \Esp_{\thetab^t}[\log p_\thetab (\Ybf, \Zbf)\mid \Ybf]\}$.
  \end{description} 
-There is no guarantee as for the convergence of the estimate of $\thetab$ towards a global maximum of $\log p_\theta(\Ybf)$. However an important property of the EM, obtained as a consequence of the Jensen's inequality,  is that the log-likelihood of the observed data $\log p_{\thetab} (\Ybf)$ increases with the iterations of the EM algorithm \citep{DLR77}: $\log p_{\thetab^{t+1}} (\Ybf) > \log p_{\thetab^t} (\Ybf)$.
+There is no guarantee as for the convergence of the estimate of $\thetab$ towards a global maximum of $\log p_\theta(\Ybf)$. However an important property of the EM, obtained as a consequence of the Jensen's inequality,  is that the log-likelihood of the observed data $\log p_{\thetab} (\Ybf)$ increases with the iterations of the EM algorithm \citep{DLR77}: $\log p_{\thetab^{t+1}} (\Ybf) > \log p_{\thetab^t} (\Ybf)$.\\
  
  Another formulation of the EM assumes a distribution $q$ for the hidden variables \citep{NH98} and defines a  lower bound $\bound$ as:
 \begin{align*}
 \bound(\thetabf, q) &= \log p_\thetab (\Ybf) - KL(q(\Zbf) || p_\thetab(\Zbf\mid\Ybf))\\
-&=\Esp_q [\log p_\theta (\Ybf,\Zbf)] - \Esp_q[\log q(\Zbf)]
+&=\Esp_q [\log p_\theta (\Ybf,\Zbf)] - \Esp_q[\log q(\Zbf)].
 \end{align*}
- where $KL(p(\Zbf)||q(\Zbf)) = -\Esp_q[\log q(\Zbf) - \log p(\Zbf)]$ is the Küllback-Leibler divergence. In this formulation, the link between the maximization of $\bound$ and that of the likelihood is made clear. Iteration $t+1$ of the EM can then be written as a double maximization :
+ where $KL(q(\Zbf)||p(\Zbf)) = \Esp_q[\log q(\Zbf) - \log p(\Zbf)]$ is the Küllback-Leibler divergence. In this formulation, the link between the maximization of $\bound$ and that of the likelihood is made clear. Iteration $t+1$ of the EM can then be written as a double maximization:
   \begin{description}
- \item [E step:]  $q^{t+1}=\argmax_q \{ \bound(\thetabf^t, q^t)\} = \argmin_q \{ KL(q(\Zbf) || p_\thetab(\Zbf\mid\Ybf))\}$
- \item [M step:] $\thetab^{t+1} = \argmax_\thetab \{ \bound(\thetabf^t, q^{t+1})\} = \argmax_\theta \{ \Esp_q [\log p_\theta (\Ybf,\Zbf)]\}$
+ \item [E step:]  $q^{t+1}=\argmax_q \{ \bound(\thetabf^t, q^t)\} = \argmin_q \{ KL(q(\Zbf) || p_\thetab(\Zbf\mid\Ybf))\},$
+ \item [M step:] $\thetab^{t+1} = \argmax_\thetab \{ \bound(\thetabf^t, q^{t+1})\} = \argmax_\theta \{ \Esp_q [\log p_\theta (\Ybf,\Zbf)]\}.$
  \end{description} 
 
 The EM algorithm has become a classic approach to perform inference of models involving hidden or latent variables. In particular it is widely used to infer mixture models, for example mixture of trees \cite{MixtTrees}. It corresponds to the case where no constraint is imposed to the $q$ distribution: the solution of the E step is thus $q(\Zbf)=p(\Zbf\mid\Ybf)$, and the Küllback-Leibler divergence is canceled.  Unfortunately the conditional density $p_\thetab(\Zbf\mid\Ybf)$ is not always available, in which case one might resort to a variational computation.
@@ -428,85 +435,86 @@ The EM algorithm has become a classic approach to perform inference of models in
 
 %%%%%%%%%%%%%%%%%%%%%%%%%% 
  \subsection{Variational estimation}
- The variational inference is a method for approximating conditional distributions \citep{JGZ99,WaJ08,BKM17}. It is widely used in Bayesian settings to approximate posterior densities  ($q(\theta)\approx p(\theta\mid \Ybf)$) as an alternative for Monte-Carlo Markov Chain (MCMC) sampling. Another use of the variational inference is to approximate the conditional distribution of a latent variable ($q(\Zbf) \approx p(\Zbf\mid \Ybf)$). These are two examples of the same general approximation problem.
+ Variational inference is a method for approximating conditional distributions \citep{JGZ99,WaJ08,BKM17}. It is widely used in Bayesian settings to approximate posterior densities, that is looking for $q(\theta)\approx p(\theta\mid \Ybf)$, as an alternative for Monte-Carlo Markov Chain (MCMC) sampling. Another use of the variational inference is to approximate the conditional distribution of a latent variable, thus looking for $q(\Zbf) \approx p(\Zbf\mid \Ybf)$. These are two examples of the same general approximation problem.
  
-  When the conditional density of latent variables given the observed data cannot be computed, the variational version of the EM reduces the search space of the approximate distribution $q$  to a set $Q$, and chooses a divergence $D$ to define the lower bound. Doing so results in a variational approximation of $p_\thetab(\Zbf\mid\Ybf)$. Therefore, in a  Variation EM (VEM) algorithm, the E step is replaced by a variational-E (VE) step, which computes an approximate conditional distribution as the solution of the following optimization problem:
+  When the conditional density of latent variables given the observed data cannot be computed, the variational version of the EM reduces the search space of the approximate distribution $q$  to a set $Q$ in the E step, and chooses a divergence $D$ to define the lower bound. Doing so results in a variational approximation of $p_\thetab(\Zbf\mid\Ybf)$. Therefore, in a  Variation EM (VEM) algorithm, the E step is replaced by a variational-E (VE) step, which computes an approximate conditional distribution as the solution of the following optimization problem:
  $$q^{t+1}=\argmin_{q\in Q} \big\{ D\big(q^t(\cdot) \mid\mid p_{\theta^t}(\cdot\mid\Ybf)\big)\big\}.$$
  
- In other words the idea behind variational estimation is to choose a divergence and a family of densities, and then find the member of this family which is the closest to the target distribution $p_\thetab(\Zbf\mid\Ybf)$ as measured by the divergence. Their exists a variety of divergence measures (see \citet{M05} for an overview), and the Küllback-Leibler divergence as presented in the previous section is generally preferred for maximum-likelihood estimations. The complexity of the optimization is determined by the choice of the variational family. The set $Q$ can be chosen as a parametric family, for example the set of Gaussian distributions: $Q=\{q(\Zbf)=\Ncal(m,S)\}$. Another widely used choice for $Q$ is the set of product-form or factorized distributions, where the latent variables are mutually independent: for $K$ hidden variables $Q=\{q(\Zbf)=\prod_{k=1}^K q_k(Z_k)\}$.  These two sets can be combined into the set of factorized Gaussian distributions. \\ 
+ In other words the idea behind variational estimation is to choose a divergence $D$ and a family of densities $Q$, and then find the member of this family which is the closest to the target distribution $p_\thetab(\Zbf\mid\Ybf)$ as measured by the divergence. Their exists a variety of divergence measures (see \citet{M05} for an overview), and the Küllback-Leibler divergence as presented in the previous section is generally preferred for maximum-likelihood estimations. The complexity of the optimization is determined by the choice of the variational family. The set $Q$ can be chosen as a parametric family, for example the set of Gaussian distributions: $Q=\{q(\Zbf)=\Ncal(\Zbf; m,S)\}$. Another widely used choice for $Q$ is the set of product-form or factorized distributions, where the latent variables are mutually independent: for $K$ hidden variables $Q=\{q(\Zbf)=\prod_{k=1}^K q_k(Z_k)\}$.  These two sets can be combined into the set of factorized Gaussian distributions. \\ 
  
-The optimization problem of the VE step is most commonly solved using coordinate ascent. Choosing a factorized approximate distribution $q(\Zbf)$, coordinate ascent consists in iteratively optimize each hidden factor $q_k(Z_k)$ of the product while keeping the other fixed. A well-known result from \citet{beal} directly gives the optimal solution for each variable and is given in Proposition \ref{beal} below. It was originally formulated in the Bayesian setting, and as such this result applies to hidden variables as well as Bayesian random parameters. Hidden variables in proposition \ref{beal} can refer to either latent factors, unobserved variables, or Bayesian parameters.
+The optimization problem of the VE step is most commonly solved using coordinate ascent. With a factorized approximate distribution $q(\Zbf)$, coordinate ascent consists in iteratively optimize each hidden factor $q_k(Z_k)$ of the product while keeping the other fixed. A result from \citet{beal} directly gives the optimal solution for each variable of a factorized distribution and is given in Proposition \ref{beal} below. It was originally formulated in the Bayesian setting, and as such this result applies to hidden variables as well as Bayesian random parameters. Hidden variables in proposition \ref{beal} can refer to either latent factors, unobserved variables, or Bayesian parameters.
 
  \begin{prop}[\citet{beal}]\label{beal}
-In a variational EM using a factorized approximate distribution with observed data $\Ybf$ and $K$ hidden variables $\Zbf=\{z_1,...,z_K\}$, the solution of the VE step optimization problem is the following. At step $t+1$ and for any $k$ in $\{1,...,p\}$ the optimal variational marginal distribution $q_k$ is proportional to the exponential of the expected log of the complete joint density:
-$$ q_k^{(t+1)}(z_k)  \propto \exp \left\{ \Esp_{q_{\setminus k}^t} \left[ \log p_{\thetabf^{t+1}}(\Ybf, \Zbf) \right] \right\},$$
-which is a mean-field.
+In a variational EM using a factorized approximate distribution and the Küllback-Leibler divergence with observed data $\Ybf$ and $K$ hidden variables $\Zbf=\{z_1,...,z_K\}$, the solution of the VE step optimization problem is the following. At step $t+1$ and for any $k$ in $\{1,...,p\}$ the optimal variational marginal distribution $q_k$ is proportional to the exponential of the expected log of the complete joint density:
+$$ q_k^{(t+1)}(z_k)  \propto \exp \left\{ \Esp_{q_{\setminus k}^t} \left[ \log p_{\thetabf^{t+1}}(\Ybf, \Zbf) \right] \right\}.$$
+
 \end{prop}
 
-Proposition \ref{beal} shows that choosing $Q$ as the set of factorized distributions leads to a mean-field approximation, allowing a clearer presentation and easier use of variational inference algorithms with factorized approximations. Variational inference has been widely used in very diverse fields, among which computational biology and genetics \citep{CS12,RSP14}. Its study in network stochastic block model analysis yielded some specific theoretical results \citep{CDP12,BCC13}, however establishment of general theoretical guarantees of variational inference is an active research area, as underlined in \citet{BKM17}. 
+Proposition \ref{beal} shows that choosing $Q$ as the set of factorized distributions leads to a so-called "mean-field" approximation, allowing a clearer presentation and easier use of variational inference algorithms with factorized approximations. Variational inference has been widely used in very diverse fields, among which computational biology and genetics \citep{CS12,RSP14}. Its study in network stochastic block model analysis yielded some specific theoretical results \citep{CDP12,BCC13}, however establishment of general theoretical guarantees of variational inference is an active research area, as underlined in \citet{BKM17}. 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Network inference from count data}
- Inferring a network  from multivariate counts requires to model joint discrete dependencies. Discrete distributions are not particularly practical to work with and their exist few options of multivariate formulations.  Most approaches then find a way to rely on the multivariate Gaussian distribution, and resort to the GGM framework for network inference. The last part of this section summarizes the strategy we adopted to this aim, as well as that of alternative methodologies.
+ Inferring a network  from multivariate counts requires to model the joint distribution of discrete variables. Discrete distributions are not particularly practical to work with and their exist few options of multivariate formulations. A solution is then to use Gaussian random latent parameters and rely on a mixed generalized multivariate model, known as Joint Species distribution Model in ecology \citep{WBO15}. This model then allows to resort to the GGM framework for network inference. The last part of this section summarizes several modeling strategies for network inference, as well as the one we adopted.
 %  As greatly summarized in the review by   \citet{inouye}, there exist three main model classes to do so, which each use either marginal Poisson, mixture of Poisson or conditional Poisson distributions. This section gathers the two first model classes in the framework of joint modeling. While focusing on abundance data, most of what follows could be easily transcribed for presence/absence data.
   
  
-  \subsection{Modeling multivariate abundance data}
-  A convenient distribution for modeling discrete data is the Poisson, which possesses some interesting features as it is part of the exponential family. As well explained in \citet{inouye}, the first idea for extending the Poisson distribution to the multidimensional framework is it to build a multidimensional Poisson from univariate Poisson distributions. The multivariate Poisson of dimension $p$ is formulated as a collection of variables that are the sums of $p$ univariate Poisson distributions. This construction  takes advantage of the subsequent summation of the Poisson distribution parameters \citep{T54}. It writes easily and presents the advantage of preserving the marginal Poisson distributions, but the set of possible correlations between variables is restricted. The extension of this formulation to allow  for a full covariance structure modeling can be inferred using a variational approach (e.g. \citet{K03}). However in higher dimensions the computational cost dramatically increases, and the writing becomes intractable. More importantly, a significant modeling restriction is that only positive dependencies can be modeled, which is generally too strong an assumption. \\
+  \subsection{Modeling multivariate count data}
+  A convenient distribution for modeling discrete data is the Poisson, which possesses some interesting features as it is part of the exponential family. As explained in \citet{inouye}, the first idea for extending the Poisson distribution to the multidimensional framework is it to build a multidimensional Poisson from univariate Poisson distributions. The multivariate Poisson of dimension $p$ is formulated as a collection of variables that are the sums of $p$ univariate Poisson distributions. This construction  takes advantage of the subsequent summation of the Poisson distribution parameters \citep{T54}. It writes easily and presents the advantage of preserving the marginal Poisson distributions, but the set of possible correlations between variables is restricted. The extension of this formulation allows  for a full covariance structure modeling, and can be inferred using an EM algorithm (see \citet{K03}). However  a significant modeling restriction is that only positive dependencies can be modeled, which is generally too strong an assumption. Moreover in higher dimensions the computational cost dramatically increases, and the writing becomes intractable.  \\
 
-Fortunately, there exist other more general ways of jointly modeling discrete data,  the majority of which transposes the problem in the Gaussian framework, where they can take advantage of the easy handling of the multivariate Gaussian distribution and its practical properties. These methodologies can be gathered in the framework of Joint Species Distribution Models (JSDM), a general class of statistical parametric models for multiple presence/absence or abundances of multiple species. More specifically JSDMs are an extension of the generalized linear model and thus readily handle covariates and offsets. Additionally they capture the correlation between the variables, and resort to Gaussian random effects and a link function to do so. Hereafter we consider the input abundance data matrix $\Yb$, and denote by the index $i$ the rows (samples) and the index $j$ the columns (species) of $\Yb$. A multivariate random effect $\Zbf_i$ is introduced to each data sample $\Yb_i$.  Denoting $\xb_i$ the vector of covariates with regression coefficients $\thetab_j$, $o_{ij}$ a possible offset  and $g(\cdot)$ a link function, the mean abundance $m_{ij}$  in a JSDM can be specified in a general manner as follows:
+Fortunately, there exist other more general ways of jointly modeling discrete data,  the majority of which transposes the problem in the Gaussian framework, where they can take advantage of the easy handling of the multivariate Gaussian distribution and its practical properties. These methodologies can be gathered in the framework of multivariate mixed models, which are a general class of statistical parametric models for counts of multiple variables. More specifically, they are an extension of the generalized linear model and thus readily handle covariates and offsets. Additionally multivariate mixed models capture the correlation between the variables, and resort to Gaussian random effects and a link function to do so. Hereafter we consider the input abundance data matrix $\Yb$, and denote by the index $i$ the rows (samples) and the index $j$ the columns (species) of $\Yb$. A multivariate random effect $\Zbf_i$ is associated with each data sample $\Yb_i$.  Denoting $\xb_i$ the vector of covariates with regression coefficients $\thetab_j$, $o_{ij}$ a possible offset  and $g(\cdot)$ a link function, the mean abundance $m_{ij}$ can be specified in a general manner as follows:
 $$g(m_{ij}) = o_{ij}+\xb_i^\intercal  \thetab_j + Z_{ij}, \qquad \Zb_i \sim \Ncal(0, \Sigmab).$$
 
-The art of JSDMs then resides in the specification of $g$ and the random effects. The following section presents some of the most used settings and strategies in ecology and genomics.
+The art of multivariate mixed modeling then resides in the specification of $g$ and the random effects. We here focus on counts, but binary data (e.g. presence/absence) could also be handle through mixed modeling. This model is known as a Joint Species Distribution Model in ecology,  where the data at hand represents the sampled measures on a set of species at different sites.  The following section presents some of the most used settings  for multivariate mixed modeling of counts in ecology and microbiology. 
 
 \subsection{Shift to Gaussian universe} 
 \subsubsection{Transformations}
-The first idea when it comes to transposing counts into the Gaussian framework is to transform them. Doing so allows to analyze the data without resorting to discrete modeling. A common transformation of counts is to apply the log function, with a  small constant $c$ added to counts to avoid zeros (pseudo-counts). In this case the mean abundance is simply modeled as $\log(m_{ij}+c)$ and assumed to follow a multivariate Gaussian distribution. 
+The first idea when it comes to transposing counts into the Gaussian framework is to transform them. Doing so allows to analyze the data without resorting to discrete modeling. A common transformation of counts is to apply the log function, with a  small constant $c$ added to counts to avoid zeros (pseudo-counts). In this case the mean of $\log(Y_{ij}+c)$ is then assumed to follow a multivariate Gaussian distribution. 
 
-In genomics, high throughput sequencing yields  samples $\Yb_i$  of observed counts of $p$ species or taxa that are constrained by the library size $\kappa_i$, a technical parameter of the experiment, such that $\sum_j Y_{ij}=\kappa_i$ \citep{GMP17}. Thus the available observations are not absolute counts but relative counts, and each sample can be viewed as a compositional vector \citep{A82} sampled from the simplex
+In genomics, high throughput sequencing yields  samples $\Yb_i$  of observed counts of $p$ species or taxa that are constrained by the library size $\kappa_i$ such that $\sum_j Y_{ij}=\kappa_i$ \citep{GMP17}. Thus the available observations are not absolute counts but relative counts, and each sample can be viewed as a compositional vector \citep{A82} sampled from the simplex
 $$\mathcal{S}_i^p = \bigg\{ \boldsymbol{u}=(u_1,...,u_p)\in \mathds{R}^p\bigg\rvert\sum_{i=1}^p u_i = \kappa_i\bigg\}.$$
-The transposed compositional representation is to consider  genes counts across all samples and to represent the relative gene expression per site, namely for gene $j$ and sample $i$: $\frac{Y_{ij}}{\sum_i Y_{ij}}$. Inputs are then the expression profiles of each gene \citep{RMR18}, onto which transformations  can be applied. 
-There exists several transformations for compositional data to change the $\kappa_i$-sum constraint, the most popular being the centered log-ratio transformation  which writes:
+There exist several transformations for compositional data to change the $\kappa_i$-sum constraint, the most popular being the centered log-ratio transformation  which writes:
 $$clr(\Yb)=\left(\log \frac{Y_1}{m(\Yb)}, ..., \log \frac{Y_p}{m(\Yb)}\right), $$
-where $m(\cdot)$ is the geometric mean. A clr-transformed vector is constrained to a zero sum. In the framework of joint modeling, the clr function can be used as a link function to account for covariates and offsets. Recent works on network inference use the clr transformation  \citep{kurtz}, or the logistic normal distribution \citep{AS80} to model relative counts \citep{gcoda}.
+where $m(\Ybf) = \left(\prod_{j=1}^p Y_j \right)^{1/p}$ is the geometric mean. A clr-transformed vector is thus constrained to a zero sum.  In the framework of joint modeling, the clr function can be used as a link function to account for covariates and offsets. Recent works on network inference use the clr transformation  \citep{kurtz}, or the logistic normal distribution \citep{AS80} to model relative counts \citep{gcoda}.
 
+%The transposed compositional representation is to consider  genes counts across all samples and to represent the relative gene expression per site, namely for gene $j$ and sample $i$: $\frac{Y_{ij}}{\sum_i Y_{ij}}$. Inputs are then the expression profiles of each gene \citep{RMR18}, onto which transformations  can be applied. 
 
 \subsubsection{Copulas}
   
-Copulas are  joint  distributions which map the marginal  cumulative distribution functions of a multivariate random vector. Their use with continuous distributions originates from the famous Sklar's theorem which states that a joint continuous distribution can be decomposed into a copula and marginal distributions. Conversely the pairing of a copula and some marginal distributions yields a valid joint distribution. As copulas fully describe the dependence structure, these models allow to fully separate the modeling of marginal distributions from the modeling of dependencies. In their original form, they only apply to continuous marginals, and their extension to discrete data has been controversial and computationally challenging \citep{F17}. However recent developments made the use of  Gaussian copula coupled with discrete marginal distributions possible \citep{PCJ12,PHW18}, opening the way to the application of copulas in the analysis of multivariate count data \citep{AVP19}. 
+Copulas are  joint  distributions which map the marginal  cumulative distribution functions of a multivariate random vector. Their use with continuous distributions originates from the Sklar's theorem which states that a joint continuous distribution can be decomposed into a copula and marginal distributions. Conversely the pairing of a copula and some marginal distributions yields a valid joint distribution. As copulas fully describe the dependence structure, these models allow to fully separate the modeling of marginal distributions from the modeling of dependencies. In their original form, they only apply to continuous marginals, and their extension to discrete data has been controversial in particular about identifiability, and computationally challenging \citep{F17}. However recent developments made the use of  Gaussian copula coupled with discrete marginal distributions possible \citep{PCJ12,PHW18}, opening the way to the application of copulas in the analysis of multivariate count data \citep{AVP19}. 
 
-In this context, a first step estimates each $p$ marginal univariate discrete distributions parameters while accounting for covariates and possible offsets. Then the distribution of the response Gaussian copula is computed as a $p-$dimensional integrand (see \citet{PHW18}). \citet{PWT19} proved that  Gaussian copulas are a relevant and promising approach to the problem of network inference from abundance data, even if the computation cost remains substantial as it requires importance sampling as well as Monte Carlo expectation maximization algorithms. One way of taking advantage of the copula theory without having to actually estimate the joint distribution is to use copulas as a data transformation. The nonparanormal transformation of counts is a semiparametric Gaussian copula \citep{LLW09}, which is estimated in a computational efficient manner by marginally transforming the variables using ranks and univariate Gaussian quantiles. \cite{CWL18} resorts to the nonparanormal approach in an attempt to estimate network parameters varying across a gradient of covariates. 
+In this context, a first step estimates each $p$ marginal univariate discrete distributions parameters while accounting for covariates and possible offsets. Then the distribution of the response Gaussian copula is computed as a $p-$dimensional integrand (see \citet{PHW18}). \citet{PWT19} showed that  Gaussian copulas are a relevant and promising approach to the problem of network inference from abundance data, even if the computation cost remains substantial as it requires importance sampling as well as Monte Carlo Expectation Maximization algorithms. One way of taking advantage of the copula theory without having to actually estimate the joint distribution is to use copulas as a data transformation. The nonparanormal transformation of counts is a semiparametric Gaussian copula \citep{LLW09}. It is estimated in a computational efficient manner by marginally transforming the variables using ranks and univariate Gaussian quantiles. This transformation however is sensitive to ex-aequo and 0 counts. \cite{CWL18} resorts to the nonparanormal approach in an attempt to estimate network parameters varying across a gradient of covariates. 
 
 \subsubsection{Latent variables}
 
 Latent variables enable the modeling of multivariate discrete data using a hierarchical setting where random discrete variables are modeled conditionally to random latent variables.  Two specifications of  latent variables stand out in community ecology \citep{WBO15}:  the Multivariate Generalized Linear Mixed Model (GLMM) \citep{OHS10, PTM14}, and the Latent Variable Model (LVM)  \citep{OAP16, OTN17}. The difference between these models lies in the dimension of their respective random effects: there are as many latent variables as there are species in the GLMM, whereas in the LVM their number is a parameter of the model. 
 
-In more details, in a LVM the random effect associated to the mean abundance $m_{ij}$ is a linear combination of a set of latent variables, and is generally specified as:
- $$g(m_{ij}) = o_{ij}+\xb_i^\intercal  \thetab_j +\sum_{k=1}^K Z_{ik} \lambda_{kj},$$
- where $K$ is the number of latent factors included in the model, and the matrix $\Lambdab$ gathers the factors loadings $\lambdab_j$ in columns. Abundances are then assumed to follow
- \begin{align*}
- Y_{ij}\mid \Zb_i &\sim F(m_{ij}, \phi_j)\\
-\Zb_i&\sim \Ncal(0, \boldsymbol{I}),
- \end{align*}
-and the covariance matrix of the latent layer of random effects can be computed from the factor loadings as $\Sigmab=\Lambdab^\intercal \Lambdab$.\\
 
-In the case of a GLMM, $K=p$ and latent variables and abundances are  modeled as:
+In more details, a GLMM models the latent variables and abundances as follows:
  \begin{align*}
  Y_{ij}\mid \Zb_i &\sim F(m_{ij}, \phi_j)\\
  \Zb_i &\sim \Ncal(0, \Sigmab),
  \end{align*} 
- where $F$ is a distribution with mean $m_{ij}$ and dispersion parameter $\phi_j$. The Poisson log-normal distribution (PLN, \citet{AiH89}) is a GLMM where $F$ is the Poisson distribution and $g$ the exponential function.  This model can also be seen as an infinite Poisson mixture as presented in \citet{inouye}, with a log-normal distribution for the parameters. The PLN model presents the key advantage of having  closed form moments:
+ where $F$ is a distribution with mean $m_{ij}$ and dispersion parameter $\phi_j$. There are as many latent variables as observed ones. In the case of LVM the random effect associated with the mean abundance $m_{ij}$ is a linear combination of a set of $K<p$  latent variables, and is generally specified as:
+ $$g(m_{ij}) = o_{ij}+\xb_i^\intercal  \thetab_j +\sum_{k=1}^K Z_{ik} \lambda_{kj},$$
+ where the matrix $\Lambdab$ gathers the factors loadings $\lambdab_j$ in columns. Abundances are then assumed to follow
+ \begin{align*}
+ Y_{ij}\mid \Zb_i &\sim F(m_{ij}, \phi_j)\\
+\Zb_i&\sim \Ncal(0, \boldsymbol{I}).
+ \end{align*}
+The covariance matrix of the latent layer of random effects  is then of rank $K$ and can be computed from the factor loadings as $\Sigmab=\Lambdab^\intercal \Lambdab$. The LVM is appreciated for its small number of parameters to estimate \citep{OTN17}.\\
+
+The Poisson log-normal distribution (PLN, \citet{AiH89}) is a GLMM where $F$ is the Poisson distribution and $g$ the log function.  This model can also be seen as an infinite Poisson mixture as presented in \citet{inouye}, with a log-normal distribution for the parameters. The PLN model presents the advantage of having  closed form moments:
  \begin{align*}
  \Esp[\Yb_i] &= e^{\mu_i + \frac{1}{2} \sigma_{ii}} = \alpha_i\\
  \Var(\Yb_i) &=  \alpha_i+ \alpha_i^2(e^{\sigma_{ii}} -1)\\
  \Cov (\Yb_i, \yb_j) &=  \alpha_i\, \alpha_j (e^{\sigma_{ij}} -1).
  \end{align*}
- It also presents the interesting property of conserving the correlation signs between the observed and latent layers: $\text{sign}(\text{Cor}(Y_{ij}, Y_{ik})) = \text{sign}(\text{Cor}(Z_{ij}, Z_{ik}))$. This model is  estimated using variational inference in \citet{CMR18} and used in \citet{MInt} and \citet{PLNnetwork} in the context of network inference.
+An interesting property of the multivariate Poisson log-normal law is the conservation of the correlation signs between the observed and latent layers: $\text{sign}(\text{Cor}(Y_{ij}, Y_{ik})) = \text{sign}(\text{Cor}(Z_{ij}, Z_{ik}))$, including the null correlation. Moreover if $\sigma_{jk}$ is null, then it can be shown that the bivariate distribution $p(Y_{ij},Y_{ik})$ factorizes under the product of its marginals, yielding the marginal independence of the two variables \citep{AiH89}. This model can be  estimated using variational inference in \citet{CMR18}. \citet{MInt} and \citet{CMR19} use the PLN distribution in the context of network inference.
  
  \subsection{Network inference}
  
-As stated in the previous section, most methodologies to infer networks from count data first model count data in a way to transpose the problem in the Gaussian setting. There they take advantage of the GGM framework detailed in section \ref{ggm:prop} to perform network inference. The majority of them then use the penalized estimation using either the LASSO or the glasso as detailed in section \ref{infGGM}. Table \ref{tab:infmeth} below summarizes the modeling of counts and inference strategy adopted by the methods of interest in this work, which have all been previously mentioned. Note that we focused on methods using the framework of Graphical Models, and included LITree and saturnin even if they do not model count data for they have been a great source of inspiration.\\
+As stated in the previous section, most methodologies to infer networks from count data first model count data in a way to transpose the problem in the Gaussian setting. There they take advantage of the GGM framework detailed in section \ref{ggm:prop} to perform network inference. The majority of them then use the penalized estimation using either the LASSO or the glasso as detailed in section \ref{infGGM}. Table \ref{tab:infmeth} below summarizes the modeling of counts and inference strategy adopted by the methods of interest in this work, which have all been previously mentioned. Note that we focused on methods using the framework of Graphical Models, and included LITree and saturnin even if they do not model count data for they have been a source of inspiration for this work.\\
 
 \begin{table}[H]
 \begin{tabular}{l|l|ccc|cc|}
@@ -518,32 +526,31 @@ As stated in the previous section, most methodologies to infer networks from cou
 \multicolumn{1}{|l|}{gCoda} & \citet{gcoda}& x &  &  & x &   \\ \hline
 \multicolumn{1}{|l|}{MRFcov} &\citet{CWL18}&  &  x&  & x &   \\ \hline
 \multicolumn{1}{|l|}{ecoCopula} &\citet{PWT19}&  &  x&  & x &    \\ \hline
-\multicolumn{1}{|l|}{PLNnetwork} &\citet{PLNnetwork}&  &  &x  & x &    \\ \hline
-\multicolumn{1}{|l|}{saturnin} &\citet{SRS15}& \multicolumn{1}{l}{\cellcolor[HTML]{d8d8d8}} & \multicolumn{1}{l}{\cellcolor[HTML]{d8d8d8}} & \multicolumn{1}{l|}{\cellcolor[HTML]{d8d8d8}} & \multicolumn{1}{l}{} & \multicolumn{1}{c|}{x}  \\ \hline
+\multicolumn{1}{|l|}{PLNnetwork} &\citet{CMR19}&  &  &x  & x &    \\ \hline
+\multicolumn{1}{|l|}{saturnin} &\citet{SRS19}& \multicolumn{1}{l}{\cellcolor[HTML]{d8d8d8}} & \multicolumn{1}{l}{\cellcolor[HTML]{d8d8d8}} & \multicolumn{1}{l|}{\cellcolor[HTML]{d8d8d8}} & \multicolumn{1}{l}{} & \multicolumn{1}{c|}{x}  \\ \hline
 \multicolumn{1}{|l|}{LITree} &\citet{RAR19}& \multicolumn{1}{l}{\cellcolor[HTML]{d8d8d8}} & \multicolumn{1}{l}{\cellcolor[HTML]{d8d8d8}} & \multicolumn{1}{l|}{\cellcolor[HTML]{d8d8d8}} & \multicolumn{1}{l}{} & \multicolumn{1}{c|}{x}  \\ \hline
 \end{tabular}
-\caption{Network inference methods of interests, with their strategy to model counts (transformation, copulas or latent variables), and choice for network inference (penalized estimation or tree average).}
+\caption{Network inference methods of interest: their strategy to model counts (transformation, copulas or latent variables), and choice for network inference (penalized estimation or tree average).}
 \label{tab:infmeth}
 \end{table} 
 
- Another mathematical framework for graphs with discrete data are the Poisson Graphical Models. These models use properties of the exponential family to derive graphical models with node-conditional Poisson distributions. However this particular class of graphical models entails a major drawback: only negative dependencies relationships can be modeled. As this is a too unrealistic assumption when it comes to species interactions we did not discuss this solution here, although see \citet{YRA13} and \citet{IRD16} for valuable extensions of this model. \\
+\subsubsection*{Inference in the observed layer $\Ybf$}
+We presented methods relying on a Gaussian layer for the network inference.  Another mathematical framework for graphs with discrete data are the Poisson Graphical Models, which are  graphical models of the observed layer $\Ybf$ directly, and not the $\Zbf$. These models use properties of the exponential family to derive graphical models with node-conditional Poisson distributions. However this particular class of graphical models entails a major drawback: only negative dependencies relationships can be modeled. As this is a too unrealistic assumption when it comes to species interactions we did not discuss this solution here, although see \citet{YRA13} and \citet{IRD16} for valuable extensions of this model. In Chapter 4 we propose a model for network inference in the layer of  $\Ybf$, using tree averaging.
  
- The network inference method which is developed in the following chapters of this work models count data $\Ybf$ using the aforementioned PLN distribution. Then it assumes the  graph underlying the latent layer of Gaussian parameters $\Zbf$ is a random tree following a  decomposable distribution  and the approach relies on tree averaging as detailed in section \ref{tree:aver}. The latent Gaussian parameters $\Zbf$  follow a Gaussian tree mixture on the whole space of spanning trees $\mathcal{T}$, where each Gaussian component is faithful to a spanning tree as is specified in Definition \ref{treemixt}, and writes $\Zbf \sim \sum_{T\in \mathcal{T}} p(T) \Ncal (0, \Omegab_T)$, where $p$ denotes a decomposable distribution on space of spanning trees. This  model for network inference can be summarized as follows:\\
- \begin{equation*}
- \left\{ \begin{array}{l}
- \begin{array}{ll}
- T\sim \prod_{kl\in T} \beta_{kl} / B, &B= \sum_{T\in\mathcal{T}} \prod_{kl \in T} \beta_{kl},\\\\
- \Zbf_i\mid T  \sim \Ncal (0, \Omegab_T), &\{\Zbf_i\}_i \text{ iid, }\\
- \end{array} \\\\
- Y_{ij}\mid \Zbf_i\sim \Pcal (\exp (o_{ij}+\xb_i^\intercal \thetab_j + Z_{ij})), \; (Y_{ij} \independent) \mid \Zbf_i 
- \end{array} \right.
- \end{equation*}
+  \subsection{Proposed methodology}
+ The network inference method which is developed in the following chapters of this work models count data $\Ybf$ using the aforementioned PLN distribution, including offsets and covariates:
+ $$ Y_{ij}\mid \Zbf_i\sim \Pcal (\exp (o_{ij}+\xb_i^\intercal \thetab_j + Z_{ij})), \;\;\; (Y_{ij} \independent) \mid \Zbf_i .$$
  
-\vspace{0.5cm}
+The  graph underlying the latent layer of Gaussian parameters $\Zbf$ is assumed to be a random tree, so that the conditional distribution is faithful to $T$: 
+ $$\Zbf_i\mid T  \sim \Ncal (0, \Omegab_T), \;\;\;  \{\Zbf_i\}_i \text{ iid}.$$
+The tree $T$ is assumed to be distributed following a  decomposable distribution  as defined in Definition \ref{decompdistrib}:
+ $$ T\sim \prod_{kl\in T} \beta_{kl} / B, \;\;\;  B= \sum_{T\in\mathcal{T}} \prod_{kl \in T} \beta_{kl}.$$
+ 
 
-Chapter 2 presents the model in more details and displays some application examples in ecology and genomics. The model inference updates the tree distribution using an EM algorithm, which had not been done before (R package available at \url{github.com/Rmomal/EMtree}). Then, this model allows to easily introduce  unobserved variables by assuming additional dimensions in $\Zbf$ as details in Chapter 3.  There we developed a VEM algorithm for the estimation of parameters, which takes advantage of the average on trees to use the adaptation to the context of spanning trees of the maximum likelihood estimators presented in section \ref{ggm:mle} (R package available at \url{github.com/Rmomal/nestor}).
+The approach then relies on tree averaging for the network inference as detailed in section \ref{tree:aver}. Namely, the latent Gaussian parameters $\Zbf$  follow a Gaussian tree mixture on the whole space of spanning trees $\mathcal{T}$, where each Gaussian component is faithful to a spanning tree as is specified in Definition \ref{treemixt}. This writes $$\Zb_i \sim \sum_{T\in \mathcal{T}} p(T) \Ncal (\Zbf_i\mid T; 0, \Omegab_T).$$
 
-
+Chapter 2 details the inference of this model. Chapter 3 considers  the case of additional dimensions in the latent layer $\Zbf$, that is when $\Zbf_i$ is actually of dimension $p+r$, where $r>0$ is a number of unobserved actors.
+ 
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

@@ -1,25 +1,10 @@
-
-
-%%%% Use protect on footnotes to avoid problems with footnotes in titles
-%\let\rmarkdownfootnote\footnote%
-%\def\footnote{\protect\rmarkdownfootnote}
-%
-%%%% Change title format to be more compact
-%\usepackage{titling}
-%
-%% Create subtitle command for use in maketitle
-%\providecommand{\subtitle}[1]{
-%  \posttitle{
-%    \begin{center}\large#1\end{center}
-%    }
-%}
-%
+EMtree implements an EM algorithm for the inference of interaction networks from abundance data. It uses averages over spanning trees within a Poisson log-normal model. In addition to functions performing the network inference, this package includes functions for count data simulation under the Poisson log-normal model which Gaussian layer of parameters is faithful to a desired graph structure. EMtree also provides with network visualization functions.
 
 
 \subsection{\texorpdfstring{Data simulation with
-\texttt{EMtree}}{Data simulation with EMtree}}\label{data-simulation-with-emtree}
+EMtree}{Data simulation with EMtree}}\label{data-simulation-with-emtree}
 
-The \texttt{EMtree} package provides with simulation functions for
+The EMtree package provides with simulation functions for
 graphs as well as for count data under the Poisson log-Normal model.
 Four types of graphs are available in the \texttt{generator\_graph()}
 function: erdos (Erdös-Reyni), cluster, scale-free (from the
@@ -37,7 +22,7 @@ package).
 \end{Shaded}
 
 The output of \texttt{generator\_graph()} is an adjacency matrix, which
-can be given as an input to \texttt{generator\_param()} to compute a
+can be given as an input to \texttt{generator\_param()} to define a
 positive-definite precision matrix \texttt{omega} with signed entries,
 and its corresponding variance-covariance matrix \texttt{sigma}.
 
@@ -48,21 +33,23 @@ and its corresponding variance-covariance matrix \texttt{sigma}.
 \end{Shaded}
 
 Then it is possible to simulate \texttt{n} samples of multivariate
-counts under the PLN model with \texttt{generator\_PLN()}.
+counts under the PLN model with \texttt{generator\_PLN()}. Here we simulate $Y$ with the covariate matrix $X$ which includes an intercept and $x_1 \sim \Ncal(0,0.5)$ .
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{Y =}\StringTok{ }\KeywordTok{generator_PLN}\NormalTok{(cluster_param}\OperatorTok{\$}\NormalTok{sigma, }\DataTypeTok{n =} \DecValTok{100}\NormalTok{)}
+\NormalTok{n =}\StringTok{ }\DecValTok{100}
+\NormalTok{X =}\StringTok{ }\KeywordTok{data.frame}\NormalTok{(}\DataTypeTok{int=}\DecValTok{1}\NormalTok{,}\DataTypeTok{x1=}\KeywordTok{rnorm}\NormalTok{(n, }\DecValTok{0}\NormalTok{,}\FloatTok{0.5}\NormalTok{))}
+\NormalTok{Y =}\StringTok{ }\KeywordTok{generator_PLN}\NormalTok{(cluster_param}\OperatorTok{\$}\NormalTok{sigma,}\DataTypeTok{covariates =}\StringTok{ }\NormalTok{X, }\DataTypeTok{n =} \NormalTok{n}\NormalTok{)}
 \end{Highlighting}
 \end{Shaded}
 
-\begin{center}\includegraphics[width=0.5\linewidth]{EMtree/vignetteEMtree_files/figure-latex/unnamed-chunk-5-1} \end{center}
+\begin{center}\includegraphics[width=0.5\linewidth]{EMtree/vignetteEMtree_files/figure-latex/unnamed-chunk-58-1} \end{center}
 
 \subsection{Inference of the Fatala fishes
 network}\label{inference-of-the-fatala-fishes-network}
 
 This is a basic example detailing how to infer a network, using fishes
-counts from the Fatala River (Barans95 data from the \texttt{ade4}
+counts from the Fatala River available in the Barans95 dataset (\texttt{ade4}
 package).
 
 \subsubsection{Fatala fishes dataset}\label{fatala-fishes-dataset}
@@ -84,9 +71,9 @@ The available covariates are the site and date of the samples.
 
 \subsubsection{Network inference}\label{network-inference}
 
-\texttt{EMtree} infers a network from either a correlation matrix of a
+EMtree infers a network from either a correlation matrix of a
 multivariate Gaussian, or an object created by PLNmodels from count
-data. Therefore here we first create a \texttt{PLNmodels} object with
+data. Here we first create a \texttt{PLNmodels} object with
 the \texttt{PLN()} function:
 
 \begin{Shaded}
@@ -134,7 +121,7 @@ And then run \texttt{EMtree()}:
 
 To get a network from a fit of \texttt{EMtree()}, the probabilities
 stored in \texttt{edges\_prob} can be thresholded. We suggest the
-$2/p$ threshold:
+$2/p$ threshold, which is the probability of an edge in a tree with uniform weights:
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -152,7 +139,7 @@ sub-sample.
 \begin{Shaded}
 \begin{Highlighting}[]
 \NormalTok{ResampEmtreeFit<-}\KeywordTok{ResampleEMtree}\NormalTok{(}\DataTypeTok{counts=}\NormalTok{Y, }\DataTypeTok{covar_matrix =}\NormalTok{ X}\OperatorTok{\$}\NormalTok{site , }
-\DataTypeTok{S=}\DecValTok{2}\NormalTok{, }\DataTypeTok{maxIter=}\DecValTok{10}\NormalTok{,}\DataTypeTok{cond.tol=}\FloatTok{1e-8}\NormalTok{, }\DataTypeTok{cores=}\DecValTok{1}\NormalTok{)}
+\DataTypeTok{S=}\DecValTok{10}\NormalTok{, }\DataTypeTok{maxIter=}\DecValTok{20}\NormalTok{,}\DataTypeTok{cond.tol=}\FloatTok{1e-8}\NormalTok{, }\DataTypeTok{cores=}\DecValTok{1}\NormalTok{)}
 \end{Highlighting}
 \end{Shaded}
 
@@ -177,8 +164,15 @@ are selected in more than $80\%$ of sub-samples:
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{freqs<-}\KeywordTok{freq_selec}\NormalTok{(ResampEmtreeFit}\OperatorTok{\$}\NormalTok{Pmat,}\DataTypeTok{Pt=}\DecValTok{2}\OperatorTok{/}\NormalTok{p)}
-\NormalTok{resampNet<-}\DecValTok{1}\OperatorTok{*}\NormalTok{(freqs}\OperatorTok{>}\FloatTok{0.8}\NormalTok{)}
+\NormalTok{freqs<-}\KeywordTok{freq_selec}\NormalTok{(ResampEmtreeFit}\OperatorTok{\$}\NormalTok{Pmat,}\DataTypeTok{Pt=}\DecValTok{2}\OperatorTok{/}\NormalTok{p)} \CommentTok{# thresh. probabilities}
+\NormalTok{resampNet<-}\DecValTok{1}\OperatorTok{*}\NormalTok{(freqs}\OperatorTok{>}\FloatTok{0.8}\NormalTok{)}\CommentTok{# thresh. frequencies}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{center}\includegraphics[width=0.5\linewidth]{EMtree/vignetteEMtree_files/figure-latex/unnamed-chunk-9-1} \end{center}
+
+\begin{Shaded}
+\begin{Highlighting}[]
 \KeywordTok{table}\NormalTok{(net, resampNet)}
 \end{Highlighting}
 \end{Shaded}
@@ -235,16 +229,16 @@ gathers information of all interactions in all tested models.
 ## 4 1     4     date       0
 \end{verbatim}
 
-\subsection{Visuals}\label{visuals}
+\subsection{Visualizations}\label{visuals}
 
-The \texttt{EMtree} package provides with easy plotting functions for network
+The EMtree package provides with easy plotting functions for network
 visualizations. They build from the \texttt{ggraph} and
 \texttt{tidygraph} packages.
 
 \subsubsection{Simple networks}\label{simple-networks}
 
-The function \texttt{draw\_network()} takes a weighted matrix an input,
-and represent a network with edges widths proportional to the input
+The function \texttt{draw\_network()} takes a weighted matrix as input,
+and represents a network with edges widths proportional to the input
 weights. Several layouts are available (see the \texttt{ggraph}
 documentation). Nodes possessing among the highest betweenness
 centrality measure can be highlighted with the parameter
@@ -267,10 +261,10 @@ Weighted matrices can be edge probability matrices. For example, the Fatala fish
 
 \begin{center}\includegraphics[width=0.5\linewidth]{EMtree/vignetteEMtree_files/figure-latex/unnamed-chunk-13-1} \end{center}
 
-\subsubsection{Facets of several
+\subsubsection{Several
 networks}\label{facets-of-several-networks}
 
-The function\texttt{compare\_graphs()} draws a facet plot of the output
+The function \texttt{compare\_graphs()} draws a facet plot of the output
 networks from \texttt{ComparEMtree()}. Comparing network by eye is
 difficult, in particular choosing the right layout to do so is often
 troublesome. Here by default, the circle layout is used so that

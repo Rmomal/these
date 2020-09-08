@@ -209,20 +209,73 @@ init.mclust<-function(S,nb.missing=1, n.noise=50,plot=TRUE, title="",trueClique=
   
   return(list(init=res, data=data))
 }
+
+init.mclust<-function(Sigma,r, n.noise=NULL){
+  p=ncol(Sigma) ; ok=FALSE
+  if(is.null(n.noise)) n.noise=3*p
+  # extract PCA axes
+  Scomp=stats::princomp(covmat=(Sigma))
+  data_comp=data.frame(Scomp$loadings[,1:2]%*%diag(Scomp$sdev[1:2]))
+  data=data.frame(t(apply(Sigma, 2, function(col){
+    x=cor(col,data_comp[,1])
+    y=cor(col,data_comp[,2])
+    return(c(x,y))
+  })))
+  # transform to polar coordinates in half polar circle
+  datapolar=useful::cart2pol(x=data[,1],y=data[,2])[,1:2]
+  datapolar_half=datapolar %>% dplyr::mutate(theta2=ifelse(theta>pi,theta-pi,theta)) %>%
+    dplyr::select(r,theta2)
+  colnames(datapolar_half)[1]="radius"
+  while(!ok){
+    # add noise in polar coords
+    radius <- sqrt(stats::runif(n.noise))
+    theta2 <- stats::runif(n.noise, 0, pi)
+    datapolarall=rbind(datapolar_half,cbind(radius,theta2))
+    # back transform to cartesian coordinates
+    newdata=useful::pol2cart(datapolarall$radius,datapolarall$theta2)[,1:2]
+    noiseInit<-sample(c(T,F), size=ncol(Sigma), replace=T, prob=c(3, 1))
+    # run mclust to find r groups among noise
+    clust= tryCatch({
+      mclust::Mclust(data=newdata, initialization = list(noise=noiseInit),  G=r, verbose = FALSE)
+    }, error = function(e) {#if mclust fails, draw new noise data
+      message("new noise")
+      radius <- sqrt(stats::runif(n.noise))
+      theta2 <- stats::runif(n.noise, 0, pi)
+      datapolarall=rbind(datapolar_half,cbind(radius,theta2))
+      newdata=useful::pol2cart(datapolarall$radius,datapolarall$theta2)[,1:2]
+      mclust::Mclust(data=newdata, initialization = list(noise=noiseInit),  G=r, verbose = FALSE)
+    }, finally = { })
+    # extract probable memberships and build final list of cliques
+    groups<-mclust::map(clust$z)[1:p]
+    cliques<-lapply(1:r, function(c){
+      indices= which(groups==c)
+      if(length(indices)>2) ok<<-TRUE
+      return(indices)
+    })
+  }
+  return(list(init=cliques, data=data))
+}
 plotInitMclust<-function(res, title){
-  tmp=sapply(res$init, function(c){
-    res=1*(1:p) %in% c
-  })
-  tmp=tmp %>% as_tibble() %>% mutate(null=ifelse(rowSums(tmp)==0,1,0))
-  colors= as.matrix((tmp))%*%matrix(1:ncol(tmp), ncol(tmp), 1)
-  g= ggplot(res$data,aes(X1,X2, label=1:p,color=as.factor(colors)))+geom_point(size=0.1)+
+  p=nrow(res$data)
+  # tmp=sapply(res$init, function(c){
+  #   res=1*(1:p) %in% c
+  # })
+  # tmp=tmp %>% as_tibble() %>% mutate(null=ifelse(rowSums(tmp)==0,1,0))
+  #colors= as.matrix((tmp))%*%matrix(1:ncol(tmp), ncol(tmp), 1)
+  groups=as.factor(1*((1:p)%in%res$init[[1]]))
+ 
+  g= ggplot(res$data,aes(X1,X2, label=1:p,color=groups,r=1, x0=0, y0=0))+
+  #  geom_circle( data=NULL,color="gray50", linetype="dashed")+
+    geom_point(size=0.1)+
     theme_light()+geom_text()+labs(x="eig vect 1",y="eig vect 2", title=title)+
-    guides(color=FALSE)+scale_color_brewer(palette="Dark2")+
+    guides(color=FALSE)+scale_color_brewer(palette="Dark2")+coord_cartesian(xlim=c(-1,1),
+                                                                            ylim=c(-1,1))+
     geom_hline(yintercept=0, color="gray50")+geom_vline(xintercept=0, color="gray50")
   print(g)
   
 }
-
+plotInitMclust(clique_mclust, title="")
+ggplot()+geom_circle(aes(r=1, x0=0, y0=0), data=NULL,color="gray50", linetype="dashed")+theme_light()
 # Variable clustering from hierachical PCA
 
 ###############################################################################
@@ -371,4 +424,33 @@ F_Vec2Sym <- function(A.vec){
 F_Sym2Vec <- function(A.mat){
   # Makes a vector from the lower triangular par of a symmetric matrix
   return(A.mat[lower.tri(A.mat)])
+}
+
+extractParamBM <- function(BMobject,k){
+  model <- BMobject$model_name
+  membership_name <-  BMobject$membership_name
+  res <- list()
+  if (model == 'bernoulli') { res$alpha <- BMobject$model_parameters[k][[1]]$pi}
+  if (model == 'bernoulli_multiplex') { res$alpha <- BMobject$model_parameters[k][[1]]$pi}
+  if ((membership_name == 'SBM') |  (membership_name == 'SBM_sym')) {
+    res$tau <-  BMobject$memberships[[k]]$Z
+    res$Z <- apply(res$tau, 1, which.max)
+    n <- nrow(BMobject$memberships[[k]]$Z)
+    res$pi <-  colSums(BMobject$memberships[[k]]$Z)/n
+    res$k <- length(res$pi)
+  }
+  ########## ordering
+  if ((membership_name == 'SBM') |  (membership_name == 'SBM_sym')) {
+    o <- switch(model,
+                poisson = order(res$lambda %*% matrix(res$pi,ncol = 1),decreasing = TRUE),
+                bernoulli  =  order(res$alpha %*% matrix(res$pi,ncol = 1),decreasing = TRUE),
+                1:res$k
+    )
+    res$pi <- res$pi[o]
+    res$alpha <- res$alpha[o,o]
+    res$tau <- res$tau[,o]
+    res$Z <- apply(res$tau, 1, which.max)
+    if (model == 'poisson') {res$lambda <- res$lambda[o,o]}
+  }
+  return(res)
 }

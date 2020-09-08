@@ -1,0 +1,228 @@
+\textit{This chapter is a summary of the present work, written in French.}\\
+
+Les réseaux sont des objets qui permettent de graphiquement représenter des liens entre des entités.  Ces outils sont utilisés dans des domaines très variés, allant de l'informatique aux neurosciences, aux sciences sociales et à la biologie. Ce travail s'intéresse aux réseaux d'espèces en écologie et microbiologie (ou méta-génomique), et plus particulièrement à l'inférence des réseaux de dépendances conditionnelles entre espèces d'une même communauté partageant le même environnement. Les réseaux représentent alors les espèces par des noeuds, et leurs liens de dépendances par des arêtes.
+
+ L'inférence de réseau considérée ici a pour point de départ des mesures répétées de comptages des espèces d'intérêt, soit un tableau de données de $n$ mesures discrètes de $p$ espèces. Il est important de distinguer ce cas de figure où le réseau n'est pas connu ni observé, de celui où il est possible d'observer les liens du réseau directement, et donc de reconstruire ce dernier via des comptages d'interactions observées, comme c'est classiquement le cas en écologie par exemple. Considérer les relations de dépendances conditionnelles permet à la fois d'obtenir des réseaux parcimonieux et interprétables en ne représentant que des liens directs entre espèces, et d'inférer des liens qui ne sont pas directement observables comme par exemple les dépendances entre des (pseudo-)espèces microscopiques (bactéries, champignons, protéines, virus, gènes, etc.) ou des liens dont la nature les rend difficilement identifiables (par exemple les relations de coopération ou de communication). \\
+
+Les modèles graphiques sont le cadre mathématique des réseaux de dépendances conditionnelles.  Notamment, les modèles graphique gaussiens possèdent des propriétés particulières facilitant leur inférence. Ce cas particulier est un cadre très utilisé pour l'inférence de réseaux en biologie, cependant il n'est pas directement applicable à des données discrètes.  Le premier objectif de ce travail est ainsi de développer une méthodologie pour l'inférence de réseaux de dépendances conditionnelles à partir de données de comptages. Par ailleurs pour la validité des résultats, il est nécessaire que les covariables expérimentales ainsi que les offsets mesurés (durées d'observation, profondeur de séquençage) soient inclus dans la modélisation des comptages. L'inférence de réseau en elle-même tire parti des propriétés algébriques des arbres couvrants pour réaliser une exploration efficace et exhaustive de l'espace des graphes réduit à celui de ces structures particulières.
+
+
+Il est en outre possible que toutes les espèces ou covariables n'aient pas été mesurées lors de l'expérience. Un réseau inféré à partir de données incomplètes est alors un réseau marginal, qui présente mécaniquement des formations denses entre les espèces liées à un acteur non observé menant à des interprétations biaisées et partielles. Le second objectif de ce travail est  d'inclure de possibles acteurs manquants dans l'inférence, afin d'obtenir à la fois le réseau complet et des informations permettant de caractériser et de mieux comprendre les acteurs manquants. 
+
+
+\section*{Chapitre 1}
+Le premier chapitre  expose en détails les éléments de théorie invoqués pour la modélisation et l'inférence développées dans les chapitres suivants. Le cadre des modèles graphiques est tout d'abord abordé de manière générale et inspirée de \citet{Lau96}, avant d'introduire les arbres couvrants et leurs propriétés algébriques. Dans un second temps, les particularités des modèles graphiques gaussiens sont présentées, anisi que deux méthodes pour leur inférence. Après un bref exposé de l'inférence dans le cadre de données incomplètes, la dernière partie traite de l'inférence de réseaux à partir de données de comptage et présente plusieurs stratégies issues de la littérature en écologie des communautés et microbiologie.
+
+\subsection*{Modèles graphiques}
+\subsubsection*{Définitions générales.}
+Un graphe $\G$ est constitué d'un ensemble de noeuds $V$ et d'un ensemble d'arêtes $E$. Pour un triplet $(A, B, S)$ de sous-ensembles disjoints de $V$, l'ensemble $S$ sépare $A$ et $B$ dans $\G$ si tout chemin allant de $A$ à $B$ intersecte $S$. La notion de séparation est essentielle  pour établir le lien entre graphe et relations d'indépendances conditionnelles au sein d'une variable aléatoire multi-variée. 
+
+Soit $\G$ un graphe non-dirigé et $X=(X_v)_{v\in V}$ un vecteur aléatoire à valeurs dans un espace produit $\mathcal{X}=\otimes_{v\in V} \mathcal{X}_v$. Pour tout sous-ensemble $A$ de $V$, $X_A$ dénote $(X_v)_{v\in A}$.
+
+
+\textbf{Propriété} (Markov globale). \textit{Une mesure de probabilité sur $\mathcal{X}$ satisfait la propriété de Markov globale  par rapport à $\G$ si pour tout triplet $(A, B, S)$ de sous-ensembles disjoints de $V$, on a
+$$\text{S sépare A et B } \Rightarrow X_A\independent X_B \mid X_S.$$ }
+Un modèle graphique pour $X$ est alors tout graphe tel que la distribution de $X$ soit globale Markov par rapport à ce graphe. La propriété de Markov globale est seulement une implication, ce qui signifie qu'il est autorisé qu'un modèle graphique n'inclue pas toutes les relations d'indépendances conditionnelles. Lorsque que la relation est une équivalence, la distribution de $X$ est dite fidèle Markov, et le graphe associé représente exactement toutes les relations d'indépendances conditionnelles dans $X$.
+
+
+Si $S$ sépare $A$ et $B$ et si de plus tous les noeuds dans $S$ sont liés enter eux ($S$ est complet), le triplet $(A,B,S)$ est alors une décomposition propre de $\G$. Cette notion permet de définir un graphe décomposable.
+
+
+\textbf{Définition} (Graphe décomposable). \textit{Un graphe $\G$ est dit décomposable s'il existe une décomposition propre $(A, B, C)$ sur $\G$, et si les sous-graphes définis par $A\cup B$ et $B\cup C$ sont eux-mêmes décomposables.}
+
+
+Les modèles graphiques à graphes décomposables permettent de structurer l'écriture des paramètres de variance sur des ensembles de variables complets, ce qui facilite leur estimation. 
+
+\subsubsection*{Arbres couvrants.}
+Parmi l'ensemble des graphes, les arbres couvrants sont les structures les plus parcimonieuses, et les structures sans cycles les plus denses. Naturellement décomposables, ils sont pratiques à manipuler grâce à leurs propriétés algébriques. Le théorème suivant est particulièrement remarquable.\\
+
+
+\textbf{Théorème} (Arbre-matrice). \textit{Soit une matrice de poids symétrique $\Wbf=(w_{jk})_{jk}$ dont les entrées sont dans $\mathds{R}^+$. Alors la somme sur l'ensemble des arbres couvrants du produit des poids de leurs arêtes est égal à n'importe quel mineur du Laplacien $\Qbf$ de $\Wbf$. Formellement, pour tout $1 \leq u, v \leq p$ :
+   \[  W := \sum_{T\in\mathcal{T}} \prod_{jk\in T} w_{jk} = |\Qbf^{uv}|.  \]
+   }
+   
+Ce théorème est l'extension aux réels du théorème de Kirchhoff  \citep{matrixtree,MeilaJaak}, connu sous le nom de théorème arbre-matrice ou des mineurs égaux. Ce théorème implique que sommer sur l'espace des arbre couvrants $\mathcal{T}$ (de taille $p^{p-2}$) s'effectue en $\mathcal{O}(p^3)$ opérations. Le lemme technique qui suit, établi par \citet{MeilaJaak}, permet de dériver une telle somme.\\
+
+\textbf{Lemme} (Dérivation d'une somme-produit). \textit{Soit une matrice de poids symétrique $\Wbf=(w_{jk})_{jk}$ dont les entrées sont dans $\mathds{R}^+$. $\Qbf^{11}$ dénote le mineur [1,1] de son Laplacien. Soit alors la matrice $\Mbf$, définie termes à termes comme suit :
+\[    
+ [\Mbf(\Wbf)]_{jk} =\begin{cases}
+    \left[(\Qbf^{11})^{-1}\right]_{jj} + \left[(\Qbf^{11})^{-1}\right]_{kk} -2\left[(\Qbf^{11})^{-1}\right]_{jk} & 1< j<k \leq p\\
+    \left[(\Qbf^{11})^{-1}\right]_{jj} & k=1, 1< j \leq p  \\
+    0 &  j=k .
+    \end{cases}
+\] 
+Alors la dérivée partielle de $W = \sum_{T\in\mathcal{T}} \prod_{jk\in T} w_{jk}$ vaut :
+$$\partial_{w_{jk}} W = [\Mbf]_{jk}  \times W.$$ }
+   
+Ces deux résultats rendent possible l'utilisation des arbres couvrants au sein de procédures d'inférence.
+ %pas parlé de factorization ni de hammersley
+\subsection*{Cas gaussien}
+\subsubsection*{Un cadre populaire.}
+Les modèles graphiques sont particulièrement utilisés dans le cas gaussien pour leur propriété de fidélité partiuclière.\\
+
+\textbf{Propriété} (Fidélité). \textit{Soit $X\sim \Ncal(\mu, \Sigmab)$ une variable aléatoire gaussienne multi-variée. Alors sa distribution est fidèle Markov au graphe $\G$ dont les arêtes sont les termes non nuls de sa matrice de précision $\Omegab = \Sigmab^{-1}$.\\}
+  
+  Ainsi dans le cas gaussien le graphe représentant exactement les relations d'indépendances conditionnelles est facilement défini. Dans le cadre des modèles graphiques gaussiens, \citet{Lau96} donne l'estimateurs du maximum de vraisemblance des termes de $\Sigmab$ correspondant aux arêtes du graphes. Si le graphe est de plus décomposable il existe un estimateur du maximum de vraisemblance pour $\Omegab$, et une estimation simplifiée de son déterminant en découle. Ces estimateurs ont une forme complexe, mais sont manipulables si la structure de graphe considérée est simple.\\
+  
+  \subsubsection*{Inférence pénalisée.}
+  L'inférence du graphe et l'estimation des paramètres sont deux tâches distinctes. Pour le cas gaussien, le premier revient à identifier les éléments non-nuls de $\Omegab$, quand le second s'intéresse aux valeurs de ses termes. L'inférence d'un modèle graphique gaussien est classiquement effectuée via une estimation par régularisation pénalisée de $\Omegab$, connue sous le nom de \textit{graphical lasso} \citep{FHT08}. Cette approche maximise la log-vraisemblance pénalisée par la norme $\ell_1$ de $\Omegab$ :
+ $$\argmax_{\Omegab\geq 0} \big\{\log |\Omegab| +\tr{\Yb^\intercal \Yb \Omegab} - \lambda ||\Omegab||_1\big\}, \qquad ||\Omegab||_1 = \sum_{j\neq k} |\omega_{jk}|.$$
+  Cette stratégie vise une estimation parcimonieuse en introduisant des termes nuls dans $\Omegab$. Très utilisée, elle nécessite cependant une attention particulière pour la sélection du niveau de parcimonie, c'est à dire du paramètre de régularisation $\lambda$.\\
+  
+    \subsubsection*{Inférence par arbres.}
+  Ce travail utilise une autre stratégie à base d'arbres couvrants. L'espace des graphes non-dirigés est de taille super-exponentielle ($2^{p(p-1)/2}$ graphes possibles pour $p$ noeuds). L'espace des arbres couvrants, bien que plus petit, reste combinatoirement grand ($p^{p-2}$ arbres pour $p$ noeuds). Il est cependant possible de réaliser une exploration efficace et exhaustive de cet espace grâce au théorème arbre-matrice, qui permet de sommer sur cet espace en $\mathcal{O}(p^3)$ opérations. Une exploration de l'espace des arbres couvrants suppose que le graphe sous-jacent est un arbre aléatoire $T$. Contrairement à l'inférence pénalisée, le graphe est ici une variable latente du modèle. En définissant une distribution de probabilité sur cet espace, il est possible de définir un mélange d'arbre \citep{MixtTrees} pour des variables gaussiennes.
+   
+\textbf{Définition} (Mélange d'arbres gaussien). \textit{La distribution d'une variable aléatoire $\Ybf$ est un mélange d'arbres gaussien centré sur l'espace des arbres couvrants si elle s'écrit :
+$$p(\Ybf) = \sum_{T\in \mathcal{T}} p(T) p(\Ybf \mid T), \qquad \Ybf\mid T \sim \Ncal(0, \Sigma_T).$$}
+
+Dans l'expression d'un mélange d'arbres gaussien, la distribution gaussienne $p(\Ybf\mid T)$ s'écrit naturellement comme un produit sur les paires de noeuds. De plus, en choisissant une distribution $p(T)$ qui se factorise de la même manière, une forme somme-produit apparaît et est calculable via le théorème arbre-matrice.
+
+ Une telle distribution sur l'espace des arbres est par exemple la distribution décomposable, qui attribue un poids à chaque arête et pour laquelle la probabilité d'un arbre est proportionnelle au produit de ces poids. Cette distribution permet notamment de calculer facilement des probabilités d'arêtes. La probabilité d'une arête est la somme des probabilités des arbres contenant cette arête. Il devient alors clair qu'adopter une distribution décomposable mène à une nouvelle forme somme-produit sur l'espace des arbres. Pour une matrice de poids $\Wbf=(w_{uv})_{uv}$ :
+$$\mathds{P}\{jk\in T\} = \sum_{\substack{T\in \mathcal{T} \\ T\ni jk}} p(T) \propto \sum_{\substack{T\in \mathcal{T} \\ T\ni jk}} \prod_{uv \in T} w_{uv}.$$
+Chaque probabilité peut ensuite être calculée par le théorème arbre-matrice, ou en utilisant un résultat de \citet{kirshner} permettant de les calculer toutes en une seule opération.
+
+ 
+\subsection*{Inférence de variables latentes}
+L'algorithme Espérance-Maximisation (EM, \citet{DLR77}) permet de mener une inférence en présence de variables latentes. C'est un algorithme itératif qui alterne deux étapes : une étape d'estimation (étape E) de l'espérance conditionnelle de la log-vraisemblance complète, et une étape de maximisation (étape M) de cette quantité en les paramètres du modèle.
+
+Lorsque la distribution des variables latentes conditionnellement aux observées n'est pas disponible ou calculable, l'étape E a besoin d'être modifiée. L'approche variationnelle permet d'approximer la distribution conditionnelle des variables latentes, en définissant un ensemble de distributions possibles, et une mesure de distance de la distribution approchée à la vraie distribution conditionnelle. L'algorithme est alors Variationnel EM (VEM), dont l'étape VE est un problème d'optimisation visant à trouver la distribution la plus proche de le distribution conditionnelle des variables latentes, parmi l'ensemble de recherche défini. L'algorithme VEM peut aussi être vu comme l'optimisation d'une borne inférieure de la vraisemblance, pénalisée par la distance entre la distribution conditionnelle et son approximation variationnelle.\\
+
+
+\textbf{Propriété} (Approximation en champs moyen). \textit{Soit un algorithme VEM utilisant l'ensemble des distributions factorisables et la divergence de Küllback-Leibler, appliqué aux données observées $\Ybf$ et à  $K$ variables latentes $\Zbf=\{z_1,...,z_K\}$. Alors la solution du problème d'optimisation de l'étape VE à l'itération $t+1$ pour la distribution marginale $q_k$ de $Z_k$ est telle que:
+$$ q_k^{(t+1)}(z_k)  \propto \exp \left\{ \Esp_{q_{\setminus k}^t} \left[ \log p_{\thetabf^{t+1}}(\Ybf, \Zbf) \right] \right\}.$$}
+Ce résultat, dû à \citet{beal}, est connu sous le nom d'approximation en champ moyen et permet une écriture claire des algorithmes VEM sous les conditions précisées.
+
+\subsection*{Inférence à partir de données de comptages}
+L'inférence de réseaux à partir de données de comptages nécessite la définition d'une distribution jointe permettant de modéliser les dépendances entre variables discrètes. Il existe peu d'options dans le domaine, et une manière de faire est d'utiliser les modèles linéaires mixtes  généralisés. Pour chaque échantillon $i$ et espèce $j$, un effet aléatoire $Z_{ij}$ gaussien est associé au comptage moyen $m_{ij}$ par une fonction de lien $g$. Une écriture générale de ce modèle prenant en compte l'offset $o_{ij}$ et le vecteur de covariables $\xb_i$ de coefficient $\thetab_j$ est la suivante :
+ \begin{equation*}
+ \left\{ \begin{array}{ll}
+ &g(m_{ij}) = o_{ij}+\xb_i^\intercal  \thetab_j + Z_{ij},\\
+&\Zb_i \sim \Ncal(0, \Sigmab),\\
+ &\Ybf_{ij}\mid\Zbf_i \sim F(m_{ij}).
+ \end{array} \right. 
+ \end{equation*}
+ 
+$\Ybf_{ij}$ est distribué selon $F$, de moyenne $m_{ij}$. Par la suite, c'est la matrice de variance-covariance  $\Sigmab$ des effets aléatoires gaussiens $\Zbf$ qui est étudiée, plutôt que les dépendances de $\Ybf$ directement. Il existe différentes stratégies pour se ramener au cadre gaussien en utilisant les modèles linéaires mixtes généralisés. Dans les chapitres suivants, nous utilisons la distribution Poisson log-normale (PLN), pour laquelle $F$ est une distribution de Poisson et $g$ la fonction $\log$.
+
+
+
+\section*{Chapitre 2}
+Ce deuxième chapitre présente la méthode développée pour l'inférence de réseaux d'interactions d'espèces à partir de données de comptages. Les comptages $\Ybf$ sont modélisés avec la distribution Poisson log-normale. L'inférence du réseau en elle-même a lieu dans la couche des paramètres gaussiens $\Zbf$, et utilise une moyenne d'arbre. Cela signifie que le graphe des dépendances conditionnelles sous-jacent à $\Zbf$ est supposé être un arbre latent $T$. Ce modèle hiérarchique à deux couches latentes peut se résumer ainsi : un arbre est d'abord tiré aléatoirement, puis les paramètres gaussiens sont tirés conditionnellement à $T$, et enfin les comptages $Y$ sont tirés conditionnellement aux $\Zbf$ selon une loi de Poisson.
+
+ \begin{center}
+	\begin{tikzpicture}	
+      \tikzstyle{every edge}=[-,>=stealth',auto,thin,draw]
+		\node (A1) at (0*\length, 0*\length) {$T$};
+		\node (A2) at (1*\length, 0*\length) {$\Zbf$};
+		\node (A3) at (2*\length, 0*\length) {$\Ybf$};
+		\draw (A1) edge [->] (A2);
+        \draw (A2) edge  [->] (A3);
+	\end{tikzpicture} 
+   \end{center}
+   
+   
+   La stratégie d'inférence de réseaux mise en place vise la mise à jour de la distribution de l'arbre latent $T$ au travers des poids $\betabf$, et le calcul de probabilités d'arêtes.
+
+\subsection*{Modèle}
+Les comptages $\Ybf$ sont modélisés avec la distribution PLN. En notant $\Zbf$ les paramètres latents, $\xb_i$ le vecteur de covariables correspondant à l'échantillon $i$, $\thetab_j$ son coefficient pour l'espèce $j$ et $o_{ij}$ l'offset associé, le modèle s'écrit comme suit :
+ $$ Y_{ij}\mid \Zbf_i\sim \Pcal (\exp (o_{ij}+\xb_i^\intercal \thetab_j + Z_{ij})), \;\;\; (Y_{ij} \independent) \mid \Zbf_i .$$
+ 
+Conditionnellement à l'arbre $T$, les paramètres latents $\Zbf$ sont distribués selon la loi normale. La loi de $\Zbf\mid T$ est donc fidèle Markov à $T$ et s'écrit :
+ $$\Zbf_i\mid T  \sim \Ncal (0, \Omegab_T), \;\;\;  \{\Zbf_i\}_i \text{ iid},$$
+ 
+ où les termes non-nuls de $\Omegab_T$ correspondent aux arêtes de $T$.  Enfin, l'arbre $T$ est supposé suivre une loi décomposable sur ses arêtes, avec $\betabf$ la matrice des paramètres de poids et B la constante de normalisation :
+ $$ T\sim \prod_{kl\in T} \beta_{kl} / B, \;\;\;  B= \sum_{T\in\mathcal{T}} \prod_{kl \in T} \beta_{kl}.$$
+ 
+L'inférence du graphe des dépendances de la couche des $\Zbf$ repose alors sur une moyenne d'arbres. C'est à dire que les paramètres latents suivent une distribution de mélange de gaussiennes indépendantes dont chaque composante est fidèle à un arbre de l'espace des arbres couvrants $\mathcal{T}$ :
+
+$$\Zb_i \sim \sum_{T\in \mathcal{T}} p(T) \Ncal (\Zbf_i\mid T; 0, \Omegab_T).$$
+
+
+\subsection*{Inference}
+%Ce chapitre est une première approche du modèle décrit ci-dessus qui se concentre sur les paramètres de la loi de $T$ pour l'inférence du réseau. Ainsi plutôt que la distribution de mélange pour $\Zbf$, l'inférence utilise que $\Zbf_i$ est encore une gaussienne centrée, et considère sa matrice de covariance $\Sigma$. Les paramètres du modèle sont donc simplement $(\thetabf, \Sigma, \betabf)$.
+%La vraisemblance du modèle s'écrit de la manière suivante :
+%$$p_{\thetabf, \Sigma, \betabf}(T, \Zbf, \Ybf) = p_\betabf(T)\times p_\Sigma(\Zbf\mid T) \times p_\thetabf(\Ybf\mid\Zbf).$$
+
+Les paramètres concernant directement le réseau sont les poids rassemblés dans $\betabf$. L'inférence du modèle comprend deux étapes qui séparent  l'estimation de $\betabf$ du reste des paramètres. La première étape utilise l'algorithme variationnel développé par \citet{CMR18} pour avoir accès aux estimateurs variationnels de  $\thetabf$ et des statistiques exhaustives relatives à $\Zbf$. Ces paramètres sont fixés pour la suite de l'inférence. La seconde étape est un algorithme EM qui a pour but l'estimation de $\betabf$, et le calcul des probabilités d'arêtes.
+
+L'algorithm EM requiert le calcul de l'espérance conditionnelle de la log-vraisemblance complète. En notant $\widehat{\rho}_{jk}$ la corrélation estimée entre les variables $j$ et $k$, et $P_{jk}\simeq\mathds{P}\{jk\in T\mid \Ybf\}$ la probabilité d'arête conditionnelle estimée entre $j$ and $k$, cette espérance est approximée par la quantité ci-dessous, où le terme cst ne dépend pas de $\betabf$ :
+$$\sum_{1\leq j < k \leq p} P_{jk} \log \left(\beta_{jk} (1-\widehat{\rho}_{jk}^2)^{-n/2} \right) -\log B + cst.$$
+
+
+\begin{description}
+\item[Étape E :] Les estimateurs des statistiques exhaustives de $\Zbf$ obtenus en première étape de l'inférence donnent accès aux $\widehat{\rho}_{jk}$. L'étape E consiste donc en le calcul des probabilités approchées $P_{jk}$. On considère pour cela la probabilité conditionnelle à $\Ybf$ de l'ensemble des arbres contenant l'arête $jk$, ce qui revient à appliquer le théorème arbre-matrice à une nouvelle matrice de poids, de terme général $\beta_{jk}(1-\widehat{\rho}_{jk}^2)^{-n/2}$.
+
+\item[Étape M :] Cette étape  maximise la quantité précédente en $\betabf$. La forme close de la formule de mise à jour  pour $\betabf$ est obtenue  en utilisant un lemme de \citet{MeilaJaak}, qui définit une matrice $\Mbf(\betabf)$, fonction de $\betabf$. À l'itération $t+1$ de l'algorithme EM, la mise à jour est telle que:
+$$\beta_{jk}^{t+1} = P_{jk}^{t+1} \left/ \left[\Mbf(\betabf^t)\right]_{jk} \right..$$
+\end{description}
+
+\subsection*{Simulations et applications}
+La procédure d'inférence est implémentée dans le package R  EMtree, disponible sur GitHub (\url{https://github.com/Rmomal/EMtree}). Les performances de cette méthode ont été comparées à celles d'approches venant de la micro-biologie (SpiecEasi \citep{kurtz}, gCoda \citep{gcoda}, MInt \citep{MInt}) et de l'écologie des communautés (MRFcov \citep{CWL18}, ecoCopula \citep{PWT19}). Ces méthodes diffèrent sur la manière qu'elles ont de se ramener au cadre gaussien. Toutes ces méthodes infèrent ensuite le réseau en ayant recourt à une estimation pénalisée de la matrice de précision de la loi normale. %Elles diffèrent sur l'obtention de ces nouvelles données : SpiecEasi et gCoda opèrent une transformation continue, MInt considère la couche latente gaussienne du modèle PLN, enfin ecoCopula et MRFcov utilisent des copules gaussiennes.
+
+%on peut en dire plus sur les graphes simulés
+Lors de l'étude de simulations sur des graphes de densité et structure variables (cluster, Erdös-Reyni, scale-free), EMtree s'illustre comme la méthode  donnant le moins de faux positifs (fausses arêtes) et conservant une densité de réseau comparable à l'originale, tout en figurant parmi les algorithmes les plus rapides. %À noter toutefois une diminution des performances pour des réseaux scale-free de plus grande dimension, où ecoCopula et en particulier MRFcov semblent meilleurs.
+
+Deux exemples d'application d'EMtree, un en écologie et un en méta-génomique, montrent l'importance de la prise en compte des covariables expérimentales dans le modèle. Concernant la deuxième application, EMtree retrouve des résultats obtenus précédemment dans \citet{jakuch}.
+
+
+\section*{Chapitre 3}
+Le chapitre 3 considère le modèle exposé précédemment dans le chapitre 2, dans le cas où la couche latente des paramètres gaussiens $\Zbf$ comprend des dimensions supplémentaires qui ne correspondent à aucune donnée observée. Ces dimensions supplémentaires représentent des acteurs, espèces ou covariables, qui ont une influence sur les données observées mais n'ont pas été mesurés. Ce sont des acteurs manquants, qui s'ils ne sont pas pris en compte génèrent des liens de dépendances conditionnelles entre les espèces dépendantes de chacun des acteurs. Le modèle précédent est modifié pour prendre en compte les dimensions supplémentaires indexées par $H$ de la couche latente, et considère la version normalisée de cette dernière, notée $\Ubf$. Le graphe suivant synthétise les dépendances entre variables, où $\Ubf_O$ sont les variables latentes des données observées, et $\Ubf_H$ celles des acteurs manquants :
+
+\begin{center}
+	\begin{tikzpicture}	
+      \tikzstyle{every edge}=[-,>=stealth',auto,thin,draw]
+		\node (A1) at (0.625*\length, 2*\length) {$T$};
+		\node (A2) at (0*\length, 1*\length) {$\Ubf_O$};
+		\node (A3) at (1.25*\length, 1*\length) {$\Ubf_H   $};
+		\node (A4) at (0*\length, 0*\length) {$\Ybf$};
+		\draw (A1) edge [->] (A2);
+        \draw (A1) edge [->]  (A3);
+        \draw (A2) edge  (A3);
+        \draw (A2) edge [->]  (A4);
+	\end{tikzpicture} 
+\end{center}
+
+C'est un modèle plus complexe que précédemment, comprenant trois couches latentes. Un algorithme VEM est développé pour l'inférence, qui permet d'obtenir des informations concernant les acteurs manquants, en plus d'inférer le réseau complet des dépendances conditionnelles.
+
+\subsection*{Modèle}
+Les comptages sont modélisés avec la distribution PLN comme détaillé au chapitre 2, mais en considérant la version normalisée de la couche latente gaussienne :
+$$Y_{ij} \mid U_{ij} \sim \Pcal\left(\exp(o_{ij} + \xbf_i^\intercal \thetabf_j + \sigma_j U_{ij})\right), \qquad (Y_{ij}\independent )\mid \Ubf_i.$$
+
+La couche latente gaussienne $\Ubf$ est composée de $\Ubf_O$, de dimension $p$ qui correspond aux $\Ybf$ observés, et $\Ubf_H$ qui rassemble les $r$ variables supplémentaires non-observées. 
+
+Le reste du modèle est le même que précédemment, si ce n'est pour les dimensions supplémentaires : l'arbre $T$  est paramétré par une matrice de poids $\betabf$ de dimension $(p+r)\times (p+r)$, la distribution marginale de $\Ubf$ est un mélange gaussien sur l'espace des arbres couvrants de dimension $p+r$, dont chaque composante est fidèle à un arbre. On note $\Omegab$ l'ensemble des matrices de précision des gaussiennes fidèles à un arbre : $\Omegab = \{\Omegab_T, T\in \mathcal{T}\}$. 
+ 
+\subsection*{Inférence}
+La complexité supplémentaire de la structure latente de ce modèle demande une inférence variationnelle. L'inférence présentée ici maximise la borne inférieure ci-après, où $KL$ désigne la divergence de Küllback-Leibler:
+$$\Jcal(\thetabf, \betabf, \Omegab; q)= \log p_{\thetabf, \betabf, \Omega}(\Ybf) - KL\left(q(\Ubf, T) \| p_{\thetabf, \betabf, \Omega}(\Ubf, T \mid \Ybf) \right), $$
+où $q(\Ubf, T)$ est la distribution approchée des variables latentes conditionnellement aux données observées : $q(\Ubf, T)\approx p(\Ubf, T \mid \Ybf)$. On suppose que $q$ est une distribution produit, ce qui permet de séparer les distribution marginales variationnelles de l'arbre et des variables gaussiennes :
+$$q(\Ubf, T) = h(\Ubf) \,g(T).$$
+La distribution $h$ est supposée être un produit de $n$ gaussiennes à matrices de variance-covariances diagonales, à l'instar de \citet{CMR18}. Les paramètres de $h$ sont les matrices $M=[M_O, M_H]$ et $S=[S_O, S_H]$ de dimensions $n\times (p+r)$, rassemblant respectivement les moyennes et les variances de chaque composantes du produit.
+La distribution $g$ de l'arbre $T$ se factorise sur les arêtes $T$ et est paramétré avec des poids rassemblés dans la matrice $\widetilde{\betabf}$.
+
+La procédure d'inférence tire encore une fois parti de l'estimation variationnelle du modèle PLN développée dans \citet{CMR18}. Cette estimation donne une approximation des paramètres $\thetab$, $M_O$ et $S_O$ qui sont considérés fixes pour la suite de l'inférence.
+
+L'algorithme VEM développé a pour but l'estimation des poids $\betabf$ et itère les étapes suivantes:
+\begin{description}
+\item[Étape VE :] Cette étape maximise $\bound$ par rapport à $q$, ce qui revient à maximiser $\bound$ en les paramètres variationnels de $g$ et ceux restants de $h$, soit en $\widetilde{\betabf}$ et en  $M_H$ et $S_H$. L'écriture de $q$ sous forme factorisée  permet d'aboutir à une approximation en champs moyen pour les estimations de $h$ et $g$. 
+\item[Étape M :] Cette étape maximise $\bound$ en les paramètres restants de la log-vraisemblance complète, soit en $\betabf$ et $\Omegabf$. La mise à jour de $\beta$ est la même que dans le chapitre 2 et nécessite le calcul des probabilités d'arêtes. Dans le cas présent la distribution conditionnelle des arbres aux données est approchée par $g$, ce qui justifie de calculer les probabilités d'arêtes en appliquant la formule de \citet{kirshner} aux poids variationnels $\widetilde{\betabf}$. 
+
+L'estimation des matrices $\Omegabf_T$ est plus complexe et applique au context des arbres couvrants  les formules du maximum de vraisemblance de \citet{Lau96}, établies dans le cadre des modèles graphiques gaussiens décomposables. Ces formules sont définies à partir de l'espérance de statistiques exhaustives, calculée à partir de $\Mbf$ et $\Sbf$.
+\end{description}
+Cette procédure est implémentée dans le package R nestor (Network inference from Species counTs with missing actORs, \url{https://github.com/Rmomal/nestor}). Une étude de simulations révèle son efficacité et l'importance fondamentale de son initialisation.
+
+\subsection*{Applications}
+La procédure d'inférence donne une estimation du réseau complet et des paramètres du modèle. La position des acteurs manquants dans le réseau est donc disponible, ainsi que l'estimation des moyennes variationnelles $M_H$ sur les différents sites d'échantillonnage. Ces deux informations sont clés pour en savoir plus sur les acteurs manquants supposés du réseau. 
+
+Un premier exemple d'application utilise des données de recensement de poissons dans la mer de Barents. Là, l'inférence de réseau avec $r=1$ acteur manquant donne un noeud dont le vecteur de moyennes $M_H$ est fortement corrélé à la covariable de température, tout comme ceux de ses voisins directs dans le réseau. Dans un second exemple sur des poissons du fleuve Fatala en Guinée, l'inférence est réalisée avec deux acteurs manquants. L'étude de leur moyenne variationnelle  montre que le premier est lié à la nature spatiale de ces donnée, et le second semble lié à la dimension temporelle de l'échantillonnage.
+
+Ces applications  illustrent à la fois la validité de la méthode en comparant les acteurs inférés à des covariables d'importance, et une première approche vers l'identification des acteurs manquants.
+
+ 
+\section*{Chapitre 4}
+Le dernier chapitre présente des perspectives de ce travail. Après avoir résumé les spécificités et discuté des points sensibles de la méthodologie développée, des extensions naturelles du modèle sont présentées.  Les premières  portent sur le réseau inféré. Plus précisément, une méthode d'estimation de la matrice de précision $\Omegab$ de la couche latente est proposée, qui utilise les estimateurs de Lauritzen. L'estimation précise de cette matrice permet des interprétations intéressantes dans le domaine d'application en question, à propos de la force et du sens des interactions détectées. Le sujet de la comparaison de réseaux est abordé dans un second temps. La manière de faire générale est de résumer les réseaux à des vecteurs de mesures caractéristiques, puis de comparer ces vecteurs. Ici nous proposons de comparer les distributions d'arbres inférées sur les réseaux. 
+
+Des perspectives sur les spécificités des données  disponibles sont ensuite discutées. La procédure d'inférence de réseaux développée a lieu au sein d'une couche gaussienne latente. Tant qu'elle est présente dans le modèle, l'inférence de réseau reste la même, aussi la loi d'émission des données à partir de ces paramètres latent peut être différente. Ceci permet d'inférer des réseaux à partir de données de natures variées, pourvu que l'estimation des paramètres de cette loi soit disponible. Par ailleurs, les données peuvent présenter des dépendances spatiales, comme c'est souvent le cas en écologie. Il est possible de prendre en compte ces effets en moyenne, en ajustant par exemple des coordonnées spatiales au modèle. Cette première correction peut ne pas être suffisante. Nous présentons une manière d'introduire des paramètres de variance des effets spatiaux dans le modèle d'inférence de réseau directement, afin d'ajuster les effets spatiaux en variance.
+
+
+Enfin, une perspective plus générale sur l'inférence de réseau à partir de données de comptages sans avoir recours à une couche latente gaussienne est présentée. Comme la vraisemblance d'une variable aléatoire conditionnellement à une structure d'arbre se factorise sur les arêtes de cet arbre, l'idée est d'inférer le réseau par une moyenne d'arbre en utilisant une loi bivariée sur les comptages. La difficulté de cette approche réside dans l'estimation des paramètres.

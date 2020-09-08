@@ -25,7 +25,7 @@ As shown in Appendix \ref{app:EM}, this  reduces to
  
 where $\widehat{\psi}_\jk$ is the estimate of $\psi_\jk$ defined in Eq.~\eqref{eq:pZfact}, and the '$\cst$' term depends on $\thetab$ and $\Sigmab$ but not on $\betab$. 
 $P_\jk$ is the approximate conditional probability (given the data) for the edge $(j, k)$ to be part of the network:
-$P_\jk \simeq \prob\{(j, k) \in T \; | \; Y\}$.
+$P_\jk \simeq \prob\{jk \in T \; | \; Y\}$.
 It is also shown in Appendix~\ref{app:EM} that $\widehat{\psi}_\jk = (1-\widehat{\rho}_\jk^2)^{-n/2}$, where the estimated correlation $\widehat{\rho}_\jk$ depends on the conditional mean, variance and covariances of the $Z_{ij}$'s provided by the first step.
  Eq.~\eqref{expectation} is maximized via an EM algorithm iterating the calculation of the $P_\jk$ and the maximization with respect to the $\beta_\jk$:
 \begin{description}
@@ -33,7 +33,7 @@ It is also shown in Appendix~\ref{app:EM} that $\widehat{\psi}_\jk = (1-\widehat
 \item[Expectation step: Computing the $P_\jk$ with tree averaging.] The conditional probability of an edge is simply the sum of the conditional probabilities of the trees that contain this edge. Hence, computing $P_\jk$ amounts to averaging over all spanning trees.
 Fig.~\ref{fig:treeaveraging} illustrates the principle of tree averaging for a toy network with $p=4$ nodes. Here, five arbitrary spanning trees $t_1$ to $t_5$ (among the $p^{p-2} = 16$ spanning trees) are displayed, with their respective conditional probability $p(T \mid Y)$. 
 The edge $(1, 3)$ has a high conditional probability $P_{13}$ because it is part of likely trees such as $t_3$ and $t_4$, whereas $P_{23}$ is small because the edge $(2, 3)$ is only part of unlikely trees (e.g. $t_1$, $t_2$). \\
-Averaging over all spanning trees at the cost of a determinant calculus (i.e. with complexity $O(p^3)$) is possible using the Matrix Tree theorem \citep[][recalled as Theorem~\ref{thm:MTT} in Appendix~\ref{app:MTT}]{matrixtree}. 
+Averaging over all spanning trees at the cost of a determinant calculus (i.e. with complexity $O(p^3)$) is possible using the Matrix Tree theorem \citep[][recalled as Theorem~\ref{thm:MTT2} in Appendix~\ref{app:MTT}]{matrixtree}. 
 \citet{kirshner} further shows that all the $P_\jk$'s can be computed at once with the same complexity $O(p^3)$, although the calculation may lead to numerical instabilities for large $n$ and $p$.
 
 
@@ -65,7 +65,7 @@ Averaging over all spanning trees at the cost of a determinant calculus (i.e. wi
 \end{figure}
 
 \item[Maximization step: Estimating the $\beta_\jk$.] 
-This step is not straightforward, as the normalizing constant $B = \sum_T \prod_{(j, k) \in T} \beta_\jk$ involves all $\beta_\jk$'s. We propose an exact maximization built upon the Matrix Tree theorem (see Appendix~\ref{app:EM}). 
+This step is not straightforward, as the normalizing constant $B = \sum_T \prod_{jk \in T} \beta_\jk$ involves all $\beta_\jk$'s. We propose an exact maximization built upon the Matrix Tree theorem (see Appendix~\ref{app:EM}). 
 \end{description}
 
 

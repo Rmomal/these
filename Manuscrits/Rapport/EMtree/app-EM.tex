@@ -7,10 +7,10 @@ Because of the specific form given in Eq.~\eqref{eq:pZfact}, and because the $\Z
     \label{eq:logpZ.T}
     \log{p_\Sigmab}(\Zb \mid T)
     & = \sum_{j=1}^p \sum_{i=1}^n \log P(Z_{ij} \mid T) 
-    + \sum_{(j, k) \in T} \sum_{i=1}^n \log \left(\frac{P(Z_{ij}, Z_{ik})}{P(Z_{ij})P(Z_{ik})}\right) \nonumber \\
+    + \sum_{jk \in T} \sum_{i=1}^n \log \left(\frac{P(Z_{ij}, Z_{ik})}{P(Z_{ij})P(Z_{ik})}\right) \nonumber \\
     & = - \frac{n}2 \log \sigma_j^2 -\frac12 \sum_{j=1}^p \sum_{i=1}^n \frac{Z_{ij}^2}{\sigma_j^2}
-    - \frac{n}2 \sum_{(j, k) \in T} \log (1- \rho_{jk}^2) \\
-    & \quad - \frac12 \sum_{(j, k) \in T} \frac1{1- \rho_{jk}^2} \sum_{i=1}^n \left(
+    - \frac{n}2 \sum_{jk \in T} \log (1- \rho_{jk}^2) \\
+    & \quad - \frac12 \sum_{jk \in T} \frac1{1- \rho_{jk}^2} \sum_{i=1}^n \left(
     \rho^2_{jk} \frac{Z_{ij}^2}{\sigma_j^2} + \rho^2_{jk} \frac{Z_{ik}^2}{\sigma_k^2} - 2\rho_{jk} \frac{Z_{ij} Z_{ik}}{\sigma_j \sigma_k}
     \right)
     + \text{cst} \nonumber 
@@ -18,12 +18,12 @@ Because of the specific form given in Eq.~\eqref{eq:pZfact}, and because the $\Z
  
 
 where the constant term does not depend on any unknown parameter. 
-In the EM algorithm, we have to maximize the conditional expectation of Eq.~\eqref{eq:logpZ.T} with respect to the variances $\sigma_j^2$ and the correlation coefficients $\rho_{jk}$. The resulting estimates take the usual forms, but with the conditional moments of the $Z_{ij}$, that is
+In the M step of the EM algorithm, we have to maximize the conditional expectation of Eq.~\eqref{eq:logpZ.T} with respect to the variances $\sigma_j^2$ and the correlation coefficients $\rho_{jk}$. The resulting estimates take the usual forms, but with the conditional moments of the $Z_{ij}$, that is
  
 \begin{equation} \label{eq:sigma.rho}
 \widehat{\sigma}_j^2  = \frac1n \sum_i \Esp(Z^2_{ij}  \mid  \Yb),
 \qquad
-\widehat{\rho}_{jk}   = \frac1n \sum_i \Esp(Z_{ij} Z_{ik}  \mid  \Yb) \left/ (\widehat{\sigma}_j \widehat{\sigma}_k) \right. .
+\widehat{\rho}_{jk}   = \frac1n \sum_i \Esp(Z_{ij} Z_{ik}  \mid  \Yb)\left. \right/ (\widehat{\sigma}_j \widehat{\sigma}_k)  .
 \end{equation}
  
 which do not depend on T. 
@@ -32,7 +32,7 @@ The maximized conditional expectation of Eq.~\eqref{eq:logpZ.T} becomes
 \begin{equation} \label{eq:ElogpZ.T.Y}
     \Esp\left(\log p_{\widehat{\Sigmab}}(\Zb \mid T) \mid \Yb\right)
     = - \frac{n}2 \log \widehat{\sigma}_j^2 
-    - \frac{n}2 \sum_{(j, k) \in T} \log (1- \widehat{\rho}_{jk}^2)
+    - \frac{n}2 \sum_{jk \in T} \log (1- \widehat{\rho}_{jk}^2)
     + \text{cst}.
 \end{equation}
  
@@ -41,8 +41,8 @@ We are left with the writing of the conditional expectation of the first two ter
 \begin{align*}
     \Esp\left(\log p_\betab (T) + \log p_{\widehat{\Sigmab}}(\Zb \mid T) \mid \Yb\right)
     & = \sum_{T \in \Tcal} p(T \mid \Yb) \left(\log p_\betab(T) + \log p_{\widehat{\Sigmab}}(\Zb \mid T) \right) \\
-    & = -\log B + \sum_{T \in \Tcal} p(T \mid \Yb) \sum_{(j, k) \in T} \left(\log \beta_{jk} +\log \widehat{\psi}_{jk} \right) + \text{cst} \\
-    & = -\log B + \sum_{(j, k)} \prob\{(j, k) \in T \mid \Yb\} \left(\log \beta_{jk} + \log \widehat{\psi}_{jk} \right) + \text{cst},
+    & = -\log B + \sum_{T \in \Tcal} p(T \mid \Yb) \sum_{jk \in T} \left(\log \beta_{jk} +\log \widehat{\psi}_{jk} \right) + \text{cst} \\
+    & = -\log B + \sum_{(j, k)} \prob\{jk \in T \mid \Yb\} \left(\log \beta_{jk} + \log \widehat{\psi}_{jk} \right) + \text{cst},
 \end{align*}
  
 which gives Eq.~\eqref{expectation}.\\
@@ -78,7 +78,7 @@ $$
 \pt(T  \mid  \Yb) = \left. \prod_{jk \in T} \beta_{jk} \widehat{\psi}_{jk}  \right/ C,
 $$
  
-where $C$ is the normalizing constant: $C = \sum_T \prod_{j, k \in T} \beta_{jk} \widehat{\psi}_{jk}$. The intuition behind this approximation is the following: according to Eq. \eqref{eq:pT}, the marginal probability a tree $T$ is proportional to the product of the weights $\beta_{jk}$ of its edges. The conditional distribution probability of tree is proportional to the same product, the weights $\beta_{jk}$ being updated as $\beta_{jk} \widehat{\psi}_{jk}$, where $\widehat{\psi}_{jk}$ summarizes the information brought by the data about the edge ($j, k$).
+where $C$ is the normalizing constant: $C = \sum_T \prod_{jk \in T} \beta_{jk} \widehat{\psi}_{jk}$. The intuition behind this approximation is the following: according to Eq. \eqref{eq:pT}, the marginal probability a tree $T$ is proportional to the product of the weights $\beta_{jk}$ of its edges. The conditional distribution probability of tree is proportional to the same product, the weights $\beta_{jk}$ being updated as $\beta_{jk} \widehat{\psi}_{jk}$, where $\widehat{\psi}_{jk}$ summarizes the information brought by the data about the edge ($j, k$).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -89,18 +89,18 @@ where $C$ is the normalizing constant: $C = \sum_T \prod_{j, k \in T} \beta_{jk}
 From the above computation we get the following approximation:
  
  
-$$\mathds{P}(\{j,k\}\in T  \mid \Yb) \simeq 1 - \sum_{T:jk\notin T} \pt(T \mid \Yb),$$
+$$\mathds{P}\{jk \in T  \mid \Yb\}\simeq 1 - \sum_{T:jk\notin T} \pt(T \mid \Yb),$$
  
 and so we define $p_{jk}$ as follows:  
-$$P_{jk}= 1 - \frac{\sum_{T:jk\notin T} \prod_{j, k \in T} \beta_{jk} \psi_{jk}}{\sum_T \prod_{j, k \in T} \beta_{jk} \psi_{jk}}.$$
+$$P_{jk}= 1 - \frac{\sum_{T:jk\notin T} \prod_{jk \in T} \beta_{jk} \widehat{\psi}_{jk}}{\sum_T \prod_{jk \in T} \beta_{jk} \widehat{\psi}_{jk}}.$$
  
- $P_{jk}$ can be computed with Theorem \ref{thm:MTT}, letting $[\Wb^h]_\jk = \beta^h_\jk \widehat{\psi}_\jk$ and $\Wb^h_{\setminus \jk} = \Wb^h$ except for the entries $(j, k)$ and $(k, j)$ which are set to 0. The modification of $\Wb^h_{\setminus \jk}$ with respect to $\Wb^h$ amounts to set to zero the weight product, and so the probability, for any tree $T$ containing the edge $(j, k)$. As a consequence, we get
+ $P_{jk}$ can be computed with Theorem \ref{thm:MTT2}, letting $[\Wb^h]_\jk = \beta^h_\jk \widehat{\psi}_\jk$ and $\Wb^h_{\setminus \jk} = \Wb^h$ except for the entries $(j, k)$ and $(k, j)$ which are set to 0. The modification of $\Wb^h_{\setminus \jk}$ with respect to $\Wb^h$ amounts to set to zero the weight product, and so the probability, for any tree $T$ containing the edge $(j, k)$. As a consequence, we get
  
 $$
  P^{h+1}_\jk = 1 - \left|Q_{uv}^*(\Wb^h_{\setminus \jk})\right| \left/ \left|Q_{uv}^*(\Wb^h)\right| \right..
  $$
  
- \item[M step:] Applying Lemma \ref{lem:Meila} to the weight matrix $\betab$, the derivative of $B$ with respect to $\beta_\jk$ is 
+ \item[M step:] Applying Lemma \ref{lem:Meila2} to the weight matrix $\betab$, the derivative of $B$ with respect to $\beta_\jk$ is 
  
 $$
  \partial_{\beta_\jk} B = [\Mb(\betab)]_\jk \times B

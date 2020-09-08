@@ -13,6 +13,9 @@ library(tidyr)
 library(EMtree)
 library(PLNmodels)
 library(gridExtra)
+library(Matrix)
+library(huge)
+library(mvtnorm)
 set.seed(21)
 # rmarkdown::render("/Users/raphaellemomal/these/Manuscrits/Rapport/EMtree/vignetteEMtree.Rmd",output_format = latex_document())
 ```
@@ -95,6 +98,9 @@ Edges selection frequencies can be derived from the `Pmat` output with the funct
 ```{r}
 freqs<-freq_selec(ResampEmtreeFit$Pmat,Pt=2/p)
 resampNet<-1*(freqs>0.8)
+F_Sym2Vec(freqs) %>%as_tibble() %>% ggplot(aes(value))+
+  geom_histogram(aes(y=..density..),bins = 10, alpha=0.65, color="steelblue4", fill="steelblue")+theme_light()+
+  labs( y="",x="Edges selection frequencies")+geom_segment(x=0.8, xend = 0.8,y=0, yend=5.6, linetype="dashed",color="darkblue")+coord_cartesian(ylim=c(0,5.1))
 table(net, resampNet)
 ```
 

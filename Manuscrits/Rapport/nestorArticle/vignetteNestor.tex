@@ -1,12 +1,11 @@
 
 
-nestor (Network inference from Species counTs with missingactORs) is an R package for the inference of species interaction networks from their observed abundances, while accounting for possible unobserved missing actors in the data.
+nestor (Network inference from Species counTs with missing actORs) is an R package for the inference of species interaction networks from their observed abundances, accounting for possible unobserved missing actors in the network.
 
-\subsection{Simulation and preparation}\label{simulation-and-preparation}
+\tocless\subsection{Simulation and preparation}\label{simulation-and-preparation}
 
-\texttt{nestor} can simulate data with with missing actors with the
-function \texttt{missing\_from\_scratch()}. It requires the desired type
-of dependency structure (scale-free, erdos, tree or cluster) and the
+The function \texttt{generate\_missing\_data()} of \texttt{nestor}  simulates data with missing actors. 
+It requires the desired \texttt{type} of network structure (scale-free, erdos, tree or cluster) and the
 number of missing actors \texttt{r}. Here is an example with
 \texttt{r=1} for the scale-free structure:
 
@@ -16,13 +15,13 @@ number of missing actors \texttt{r}. Here is an example with
 \NormalTok{p=}\DecValTok{10}
 \NormalTok{r=}\DecValTok{1}
 \NormalTok{n=}\DecValTok{100}
-\NormalTok{data=}\KeywordTok{missing_from_scratch}\NormalTok{(n, p, r,}\DataTypeTok{type=}\StringTok{"scale-free"}\NormalTok{, }\DataTypeTok{plot=}\OtherTok{TRUE}\NormalTok{)}
+\NormalTok{data=}\KeywordTok{generate_missing_data}\NormalTok{(n, p, r,}\DataTypeTok{type=}\StringTok{"scale-free"}\NormalTok{, }\DataTypeTok{plot=}\OtherTok{TRUE}\NormalTok{)}
 \end{Highlighting}
 \end{Shaded}
 
 \begin{center}\includegraphics[width=0.3\linewidth]{nestorArticle/man/figures/README-unnamed-chunk-2-1} \end{center}
 
-The original clique of the missing actor neighbors is available in the
+The true original set of the missing actor neighbors is available in the
 value \texttt{TC}:
 
 \begin{Shaded}
@@ -44,16 +43,16 @@ latent Gaussian layer corresponding to observed species.
 \NormalTok{PLNfit<-}\KeywordTok{norm_PLN}\NormalTok{(data}\OperatorTok{\$}\NormalTok{Y)}
 \NormalTok{MO<-PLNfit}\OperatorTok{\$}\NormalTok{MO}
 \NormalTok{SO<-PLNfit}\OperatorTok{\$}\NormalTok{SO}
-\NormalTok{sigma_obs=PLNfit}\OperatorTok{\$}\NormalTok{sigma_obs}
+\NormalTok{sigma_obs=PLNfit}\OperatorTok{\$}\NormalTok{sigma_O}
 \end{Highlighting}
 \end{Shaded}
 
-\subsection{Inference}\label{inference}
+\tocless\subsection{Inference}\label{inference}
 
 \subsubsection{Single clique
 initialization}\label{single-clique-initialization}
 
-\texttt{nestor} then needs to be initialized. This requires to find an
+The VEM algorithm then needs to be initialized. One way is to find an
 initial clique of neighbors for the missing actor, for example using the
 \texttt{FitSparsePCA()} function:
 
@@ -68,7 +67,7 @@ initial clique of neighbors for the missing actor, for example using the
 
 The \texttt{min.size} parameter defines the minimal size of the output
 clique. The function \texttt{init\_mclust()} is also available for
-finding a clique, it uses the package \texttt{mclust}.
+finding a single clique, it uses \texttt{mclust::Mclust()}.
 
 Once an initial clique has been found, the algorithm can be initialized.
 This is the aim of the function \texttt{initVEM()}, which initializes
@@ -105,7 +104,7 @@ core function \texttt{nestor()} can now be run as follows:
 \end{Shaded}
 
 The object \texttt{fit} contains inferred means and variances of the
-complete data, as well as edges weight and probability matrices.
+complete data, as well as edges weight and probability matrices.\\
 
 This package contains several visualization functions.
 \texttt{plotPerf()} gives a quick overview of the fit performance
@@ -117,7 +116,7 @@ compared to initial graph:
 \end{Highlighting}
 \end{Shaded}
 
-\begin{center}\includegraphics[width=0.8\linewidth]{nestorArticle/man/figures/README-unnamed-chunk-9-1} \end{center}
+\begin{center}\includegraphics[width=0.65\linewidth]{nestorArticle/man/figures/README-unnamed-chunk-9-1} \end{center}
 
 The convergence of \texttt{nestor()} can be checked with the plotting
 function \texttt{plotConv()}:
@@ -128,30 +127,29 @@ function \texttt{plotConv()}:
 \end{Highlighting}
 \end{Shaded}
 
-\begin{center}\includegraphics[width=0.8\linewidth]{nestorArticle/man/figures/README-unnamed-chunk-10-1} \end{center}
+\begin{center}\includegraphics[width=0.6\linewidth]{nestorArticle/man/figures/README-unnamed-chunk-10-1} \end{center}
 
 \subsubsection{Initialization with a list of
 cliques}\label{initialization-with-a-list-of-cliques}
 
 The fit of the \texttt{nestor()} function is very sensitive to the
-initialization, and so it is recommanded to try several initial cliques.
+initialization, and so it is recommended to try several initial cliques.
 Several functions are available for finding a list of possible starting
 points:
 
 \begin{itemize}
 \tightlist
 \item
-  \texttt{init\_blockmodels()} uses package \texttt{blockmodels},
+  \texttt{init\_blockmodels()} uses the R package blockmodels,
 \item
   \texttt{boot\_FitSparsePCA()} is a bootstraped version using
-  \texttt{sparsepca},
+  \texttt{sparsepca::spca()},
 \item
   \texttt{complement\_spca()} looks in the complement of the
-  \texttt{sparsepca} output.
+  \texttt{sparsepca::spca()} output.
 \end{itemize}
 
-Here we use the \texttt{complement\_spca()} function, which runs
-\texttt{sparsepca} and returns the cliques corresponding to the
+Note that several fits of the function \texttt{init\_mclust()} will also yield a list of cliques. Here we use the \texttt{complement\_spca()} function, which uses the sparsepca package and returns the cliques corresponding to the
 \texttt{k} first principal components as well as their complement.
 
 \begin{Shaded}
@@ -184,7 +182,7 @@ Here we use the \texttt{complement\_spca()} function, which runs
 \end{Highlighting}
 \end{Shaded}
 
-This package provides with a parllel procedure for the computation of
+This package provides with a parallel procedure for the computation of
 several fits of \texttt{nestor()} corresponding to a list of possible
 cliques, with the function \texttt{List.nestor()}. Below is an example
 with the list of six cliques previously obtained with the
@@ -193,14 +191,14 @@ with the list of six cliques previously obtained with the
 \begin{Shaded}
 \begin{Highlighting}[]
 \NormalTok{fitList=}\KeywordTok{List.nestor}\NormalTok{(six_cliques, data}\OperatorTok{\$}\NormalTok{Y, sigma_obs, MO,SO,}\DataTypeTok{r=}\DecValTok{1}\NormalTok{,}
-\DataTypeTok{eps=}\FloatTok{1e-3}\NormalTok{,} \DataTypeTok{maxIter =} \DecValTok{50}\NormalTok{, }\DataTypeTok{alpha=}\FloatTok{0.1}\NormalTok{)}
+\DataTypeTok{eps=}\FloatTok{1e-3}\NormalTok{,} \DataTypeTok{maxIter =} \DecValTok{50}\NormalTok{, }\DataTypeTok{alpha=}\FloatTok{0.1}\NormalTok{, }\DataTypeTok{cores=}\FloatTok{1}\NormalTok{)}
 \end{Highlighting}
 \end{Shaded}
 
 The object \texttt{fitList} is simply the list of all the
 \texttt{nestor()} fits. This procedure aborts in case of degenerated
 behaviour, which happens when the provided clique is too far from truth.
-Wrong fits can be identified by their ouput size:
+Wrong fits can be identified by their small ouput size:
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -215,8 +213,8 @@ Wrong fits can be identified by their ouput size:
 \end{Highlighting}
 \end{Shaded}
 
-Finally we can assess the performance of each converged fit with their
-AUC, precision and recall regarding the hidden node \texttt{h}, and the
+Finally, as this is an example on simulated data we can assess the performance of each converged fit with their
+AUC, Precision and Recall regarding the hidden node \texttt{h}, and the
 correlation between the inferred means and the original latent Gaussian
 vector of \texttt{h}.
 

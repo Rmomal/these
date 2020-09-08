@@ -15,7 +15,7 @@ library(parallel)
 library(ROCR)
 ##############
 # RUN
-pal<-c("#008080","black","#FA7E1E","black","#358CC3","black","#D62976")
+pal<-c("#FA7E1E","#D62976","#008080")#,"#358CC3"
 mytheme.dark <-function(legend){list= list(theme_light(), 
                                            theme(strip.background=element_rect(fill="gray50",colour ="gray50"),
                                                  plot.title = element_text(hjust = 0.5)),
@@ -137,39 +137,45 @@ pooled=do.call(rbind,lapply(c("erdos","cluster"), function(type){
       if(length(listFit$VEM)>5){
         VEMprob=listFit$VEM$Pg
         G=listFit$G
-        AUC=data.frame(AUC=c(auc(pred =PLNscores,label = G ),
-                             auc(pred =EMprob,label = G ),
-                             auc(pred =ResampEMFreq,label = G ),
-                             auc(pred =VEMprob,label = G )),method=c("PLNnetwork","EMtree","ResampEM","VEMtree"))
-        
-        values=rbind(seq_PPV_TPR(probs = PLNscores, omega=G) %>% mutate(method="PLNnetwork"),
-                     seq_PPV_TPR(probs = EMprob, omega=G) %>% mutate(method="EMtree"),
-                     seq_PPV_TPR(probs = ResampEMFreq, omega=G) %>% mutate(method="ResampEM"),
-                     seq_PPV_TPR(probs = VEMprob, omega=G) %>% mutate(method="VEMtree"))
-        seuils= values %>% group_by(method) %>%filter(PPV>=0.5, TPR>=0.5) %>% 
-          summarize(minseuil=min(seuil), maxseuil=max(seuil)) %>% as_tibble() 
-        
-        max_insquare=values %>% group_by(method) %>%filter(PPV>=0.5, TPR>=0.5) %>% 
-          mutate(sumcrit=PPV+TPR) %>%  filter(sumcrit==max(sumcrit, na.rm=TRUE)) %>% 
-          summarize(maxPPV=max(PPV, na.rm=TRUE), maxTPR=max(TPR, na.rm=TRUE)) %>% as_tibble()
-        
-        max_global=values %>% group_by(method) %>% 
-          mutate(sumcrit=PPV+TPR) %>%  filter(sumcrit==max(sumcrit, na.rm=TRUE)) %>% 
-          summarize(glob.maxPPV=max(PPV, na.rm=TRUE), glob.maxTPR=max(TPR, na.rm=TRUE)) %>% as_tibble()
-        maxi=left_join(max_global,max_insquare, by="method")
-        values=left_join( maxi,seuils, by="method")  
-        values=left_join(AUC,values, by="method") %>%  mutate( seed=seed, numdens=numdens, type=type)
-        
+        res=data.frame(F_Sym2Vec(VEMprob),F_Sym2Vec(EMprob),F_Sym2Vec(PLNscores),F_Sym2Vec(G), type, numdens, seed)
+        colnames(res)=c("nestor","EMtree","PLN-network","G","type","numdens","seed")
+   
+        # AUC=data.frame(AUC=c(auc(pred =PLNscores,label = G ),
+        #                      auc(pred =EMprob,label = G ),
+        #                      auc(pred =ResampEMFreq,label = G ),
+        #                      auc(pred =VEMprob,label = G )),method=c("PLNnetwork","EMtree","ResampEM","VEMtree"))
+        # 
+        # values=rbind(seq_PPV_TPR(probs = PLNscores, omega=G) %>% mutate(method="PLNnetwork"),
+        #              seq_PPV_TPR(probs = EMprob, omega=G) %>% mutate(method="EMtree"),
+        #              seq_PPV_TPR(probs = ResampEMFreq, omega=G) %>% mutate(method="ResampEM"),
+        #              seq_PPV_TPR(probs = VEMprob, omega=G) %>% mutate(method="VEMtree"))
+        # seuils= values %>% group_by(method) %>%filter(PPV>=0.5, TPR>=0.5) %>% 
+        #   summarize(minseuil=min(seuil), maxseuil=max(seuil)) %>% as_tibble() 
+        # 
+        # max_insquare=values %>% group_by(method) %>%filter(PPV>=0.5, TPR>=0.5) %>% 
+        #   mutate(sumcrit=PPV+TPR) %>%  filter(sumcrit==max(sumcrit, na.rm=TRUE)) %>% 
+        #   summarize(maxPPV=max(PPV, na.rm=TRUE), maxTPR=max(TPR, na.rm=TRUE)) %>% as_tibble()
+        # 
+        # max_global=values %>% group_by(method) %>% 
+        #   mutate(sumcrit=PPV+TPR) %>%  filter(sumcrit==max(sumcrit, na.rm=TRUE)) %>% 
+        #   summarize(glob.maxPPV=max(PPV, na.rm=TRUE), glob.maxTPR=max(TPR, na.rm=TRUE)) %>% as_tibble()
+        # maxi=left_join(max_global,max_insquare, by="method")
+        # values=left_join( maxi,seuils, by="method")  
+        # values=left_join(AUC,values, by="method") %>%  mutate( seed=seed, numdens=numdens, type=type)
+        #
       }
       else{
-        values= data.frame(AUC=NA,  method=c("PLNnetwork","EMtree","ResampEM","VEMtree"),glob.maxPPV=NA, glob.maxTPR=NA,
-                           maxPPV=NA, maxTPR=NA, minseuil=NA, maxseuil=NA, seed=seed, numdens=numdens, type=type)
-      }
+        # values= data.frame(AUC=NA,  method=c("PLNnetwork","EMtree","ResampEM","VEMtree"),glob.maxPPV=NA, glob.maxTPR=NA,
+        #                    maxPPV=NA, maxTPR=NA, minseuil=NA, maxseuil=NA, seed=seed, numdens=numdens, type=type)
+        res=data.frame(NA, NA, NA, NA, type, numdens, seed)
+        colnames(res)=c("nestor","EMtree","PLN-network","G","type","numdens","seed")
+         }
       
-      return(values)
+     # return(values)
+      return(res)
     }))
   }))
-}))
+})) %>% as_tibble()
 test=pooled %>% filter(is.na(AUC), method=="VEMtree") %>% dplyr::select(numdens, type)
 length(unique(pooled[which(is.na(pooled$AUC)),])) # 29 crashed for VEMtree
 pooled %>% as_tibble() %>%
@@ -286,3 +292,30 @@ model_StARS <- getBestModel(network_models, "StARS")
 my_graph <- plot(model_StARS, plot = FALSE)
 ggimage(as.matrix(as_adj(my_graph)))
 test
+
+
+
+############
+# compar proba
+pooled %>% ggplot(aes(nestor, EMtree))+geom_point(size=1, alpha=0.2)+facet_grid(type~numdens)+theme_light()
+pooled %>% mutate(numdens=ifelse(numdens==1,"3/p","5/p")) %>%  gather(key, value,-G,-type,-numdens,-seed,-`PLN-network`) %>% 
+  ggplot(aes(value, color=key, fill=key))+geom_histogram(aes(y=..density..), alpha=0.3, bins=50,position="identity")+
+  coord_cartesian(xlim=c(0,1))+
+  facet_grid(numdens~type)+mytheme.dark("")
+
+Data=pooled %>% filter(type=="cluster", numdens==2, nestor<1.000001)
+pmain=  ggplot(Data,aes( EMtree, nestor))+geom_point(size=1,alpha=0.2)+theme_light()
+
+
+xdens <- axis_canvas(pmain, axis = "x")+
+  geom_histogram(data = Data, aes(x = EMtree, y = ..density..),
+                 alpha = 0.5, size = 0.2,bins=40, color="#FA7E1E", fill="#FA7E1E")  
+ydens <- axis_canvas(pmain, axis = "y", coord_flip = TRUE)+
+  geom_histogram(data = Data, aes(x = nestor, y = ..density..),
+                 alpha = 0.5, size = 0.2,bins=40, color="#D62976", fill="#D62976")+ coord_flip()  
+p1 <- insert_xaxis_grob(pmain, xdens, grid::unit(.2, "null"), position = "top")
+p2<- insert_yaxis_grob(p1, ydens, grid::unit(.2, "null"), position = "right")
+ggdraw(p2)
+
+ggsave(plot=p2,filename = "probEM_nestor.png", path =  "/Users/raphaellemomal/these/R/images",
+       width=5, height=4 )

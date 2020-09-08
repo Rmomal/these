@@ -9,7 +9,7 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection*{Poisson log-normal model.} 
-We start with a reminder on the multivariate Poisson log-normal model, with the example of abundance data. The abundances of $p$ species observed on $n$ sites are gathered in the $n \times p$ matrix $\Ybf$ where $Y_ {ij}$ is the count of species $j$ in site $i$, and the row $i$ of $\Ybf$, denoted $\Ybf_i$, is the abundance vector collected on site $i$. A covariate vector $\xbf_i $ with dimension $d$ is also measured on each site $i$ and all covariates are gathered in the $n \times d$ matrix  $\boldsymbol X$. The PLN model states that a (latent) Gaussian vector $\Ubf_i$ of size $p$ with variance matrix $\Rbf = (\rho_{kl})_{kl}$ is associated to each site:
+We start with a reminder on the multivariate Poisson log-normal model, with the example of abundance data. The abundances of $p$ species observed on $n$ sites are gathered in the $n \times p$ matrix $\Ybf$ where $Y_ {ij}$ is the count of species $j$ in site $i$, and the row $i$ of $\Ybf$, denoted $\Ybf_i$, is the abundance vector collected on site $i$. A covariate vector $\xbf_i $ with dimension $d$ is also measured on each site $i$ and all covariates are gathered in the $n \times d$ matrix  $\boldsymbol X$. The PLN model states that a (latent) Gaussian vector $\Ubf_i$ of size $p$ with variance matrix $\Rbf = (\rho_{kl})_{kl}$ is associated with each site:
 \begin{equation} \label{eq:PLN-Z}
 \{\Ubf_i\}_{1 \leq i \leq n} \text{ iid}, \qquad 
 \Ubf_1 \sim \Ncal_p(\zerobf, \Rbf),
@@ -32,8 +32,8 @@ Network inference relies on the assumption that few species are directly depende
 where $\Tcal_p$ is the set of spanning trees with $p$ nodes.
 We further assume that the tree distribution $\{p(T)\}_{T \in \Tcal_p}$ can be written as a product over the edges:
 \begin{equation} \label{eq:prob-T}
-p(T) = B^{-1} \prod_{(j, k) \in T} \beta_{jk}, \qquad
-\text{with} \quad B = \sum_{T \in \Tcal_p} \prod_{(j, k) \in T} \beta_{jk}.
+p(T) = B^{-1} \prod_{jk \in T} \beta_{jk}, \qquad
+\text{with} \quad B = \sum_{T \in \Tcal_p} \prod_{jk \in T} \beta_{jk}.
 \end{equation}
 The weights $\beta_{jk}$ are gathered in the $p \times p$ symmetric matrix $\betabf$ with diagonal zero. Observe that these weights are defined up to a multiplicative constant, so that only $p(p-1)/2 - 1$ of them may vary independently. This PLN model with latent tree-shaped dependency structure is similar to that considered by \cite{MRA20}.
 
@@ -43,7 +43,7 @@ The weights $\beta_{jk}$ are gathered in the $p \times p$ symmetric matrix $\bet
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection*{PLN model with missing actors.} 
-We now introduce the concept of missing actors, which corresponds to variables that are involved in the graphical model but are not associated to observed variables. To involve such actors in the model, we assume that a complete latent vector $\Ubf_i$ with dimension $p+r$ is associated to site $i$, where $r$ is the number of missing actors. This complete vector can be decomposed as $\Ubf_i^\intercal = [\Ubf_{Oi}^\intercal \; \Ubf_{Hi}^\intercal]$ where $\Ubf_{Oi}$ (with dimension $p$) corresponds to observed species and $\Ubf_{Hi}$ (with dimension $r$) corresponds to the missing actors.
+We now introduce the concept of missing actors, which corresponds to variables that are involved in the graphical model but are not associated with observed variables. To involve such actors in the model, we assume that a complete latent vector $\Ubf_i$ with dimension $p+r$ is associated with site $i$, where $r$ is the number of missing actors. This complete vector can be decomposed as $\Ubf_i^\intercal = [\Ubf_{Oi}^\intercal \; \Ubf_{Hi}^\intercal]$ where $\Ubf_{Oi}$ (with dimension $p$) corresponds to observed species and $\Ubf_{Hi}$ (with dimension $r$) corresponds to the missing actors.
 The complete $n \times (p+r)$ latent matrix $\Ubf$ can be decomposed in the same way as $\Ubf = [\Ubf_O \; \Ubf_H]$, $\Ubf_O$ and $\Ubf_H$ having dimension $n \times p$ and $n \times r$, respectively. \\ 
 The model we consider states that
 \begin{enumerate}[label=\roman*]
@@ -59,10 +59,10 @@ The model we consider states that
 		\node (A2) at (0*\length, 1*\length) {$\Ubf_O$};
 		\node (A3) at (1.25*\length, 1*\length) {$\Ubf_H   $};
 		\node (A4) at (0*\length, 0*\length) {$\Ybf$};
-		\draw (A1) edge (A2);
-        \draw (A1) edge  (A3);
+		\draw (A1) edge [->] (A2);
+        \draw (A1) edge [->] (A3);
         \draw (A2) edge  (A3);
-        \draw (A2) edge  (A4);
+        \draw (A2) edge [->] (A4);
 	\end{tikzpicture} 
  \caption{Graphical model linking the count data $\Ybf$, the latent layer of Gaussian parameters $\Ubf=(\Ubf_O,\Ubf_H)$, and the latent tree $T$.}
   \label{fig:MGmodel}

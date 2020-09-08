@@ -5,45 +5,45 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Sampling non-uniform spanning trees (i.e. sampling $T$ from $p_\betabf$) is a research topic by itself, especially for large networks \citep[see][for a review]{DKP17}. For moderate size networks, a rejection algorithm \citep{Dev86} can be defined in the following way:
 \begin{enumerate}
-\item Sample $T$ from a distribution $q$, such that there exist a constant $M$, that ensures that, for all $T$, $M q(T) > p_\betabf(T)$;
+\item Sample $T$ from a distribution $q$, such that there exists a constant $M$, that ensures that, for all $T$, $M q(T) > p_\betabf(T)$;
 \item Keep $T$ with probability $M^{-1} p_\betabf(T) / q(T)$ or try step 1 again.
 \end{enumerate}
 The efficiency of such an algorithm strongly relies on the choice of the proposal distribution. Here we adopt the following proposal:
 \begin{enumerate}[label=\roman*]
-\item Sample a connected graph $G$ with independent edges, each drawn with probability $Q_{jk} \propto P_{jk} = \Pr_\betabf\{ jk \in T\}$; 
+\item Sample a connected graph $G$ with independent edges, each drawn with probability $Q_{jk} \propto P_{jk} = \mathds{P}_\betabf\{ jk \in T\}$; 
 \item Sample $T$ uniformly among the spanning trees of $G$.
 \end{enumerate}
 %
 \paragraph{Evaluation of the proposal.}
 To evaluate the proposal distribution for each sampled tree, we may observe that, the probability for a graph drawn from the proposal to contain a given tree $T$ is approximately
 $$
-{\Pr}_q\{G \ni T\} \approx \prod_{jk \in T} Q_{jk},
+\mathds{P}_q\{G \ni T\} \approx \prod_{jk \in T} Q_{jk},
 $$
 the approximation being due to the connectivity constraint. This constraint can be almost surely satisfied by taking $Q_{jk}$'s large enough. So, denoting $|\Tcal(G)|$ the number of spanning trees in $G$, we have that
 \begin{align*}
 q(T) 
 = \sum_{G \ni T} q(T \mid G) q(G)  = \sum_{G \ni T} \frac{q(G)}{|\Tcal(G)|} 
-= {\Pr}_q\{G \ni T\} \; \Esp\left(|\Tcal(G)|^{-1} \mid G \ni T \right).
+= \mathds{P}_q\{G \ni T\} \; \Esp\left(|\Tcal(G)|^{-1} \mid G \ni T \right).
 \end{align*}
-The last expectation can be evaluated via Monte-Carlo, by sampling a series of graphs $G$ according to the proposal $q$ but forcing all edges from $T$ to be part of $G$. 
+The last expectation can be evaluated via Monte Carlo, by sampling a series of graphs $G$ according to the proposal $q$ but forcing all edges from $T$ to be part of $G$. 
 %
 \paragraph{Upper bounding constant $M$.}
 To evaluate the upper bounding constant $M$, we may observe that finding the tree $T^*$ such that
 $$
 m_\betabf 
-:= \frac{{\Pr}_q\{G \ni T^*\}}{p_\betabf(T^*)}
-= \min_{T \in \Tcal} \frac{{\Pr}_q\{G \ni T\}}{p_\betabf(T)} = \min_{T \in \Tcal} \prod_{jk \in T} \frac{Q_{jk}}{\beta_{jk}}
+:= \frac{\mathds{P}_q\{G \ni T^*\}}{p_\betabf(T^*)}
+= \min_{T \in \Tcal} \frac{\mathds{P}_q\{G \ni T\}}{p_\betabf(T)} = \min_{T \in \Tcal} \prod_{jk \in T} \frac{Q_{jk}}{\beta_{jk}}.
 $$
-is a minimum spanning tree problem. Then, obviously, for any tree $T$: ${\Pr}_q\{G \ni T\} \geq m_\betabf p_\betabf(T)$.
+is a minimum spanning tree problem. Then, obviously, for any tree $T$: $\mathds{P}_q\{G \ni T\} \geq m_\betabf p_\betabf(T)$.
 Now, because the maximum number of spanning trees within a graph is $p^{p-2}$, we have
 $$
 M q(T)
 = M \sum_{G \ni T} \frac{q(G)}{|\Tcal(G)|} 
 \geq \frac{M}{p^{p-2}} \sum_{G \ni T} q(G)
-= \frac{M}{p^{p-2}} {\Pr}_q\{G \ni T\}
-\geq M \frac{m_\betabf}{p^{p-2}}  p_\betabf(T)
+= \frac{M}{p^{p-2}} \mathds{P}_q\{G \ni T\}
+\geq M \frac{m_\betabf}{p^{p-2}}  p_\betabf(T).
 $$
-So we may set $M = p^{p-2} / m_\betabf$. Still, in practice, this bounds turns out to be far too large and needs to be tuned down to preserve computational efficiency.
+So we may set $M = p^{p-2} / m_\betabf$. Still, in practice, this bound turns out to be far too large and needs to be tuned down to preserve computational efficiency.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
  

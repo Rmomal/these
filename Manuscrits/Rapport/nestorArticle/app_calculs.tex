@@ -10,7 +10,7 @@ $$\Esp_{g^t} \left[ \log p_\betabf(T) \right] = \sum_{kl} P^t_{kl} \log \beta_{k
 B=\sum_{T\in \mathcal{T}}\prod_{kl\in T} \beta_{kl}.$$
 Computing the derivative with respect to the edge weight $\beta_{kl}$ gives:
 \begin{align*}
-\partial_{\beta_{kl}}\Esp_{g^t} \left[ \log p_\betabf(T) \right] &=\frac{P_{kl}^t}{\beta_{kl}} - \frac{\partial_{\beta_{kl}} B^t }{B^t} 
+\partial_{\beta_{kl}}\Esp_{g^t} \left[ \log p_\betabf(T) \right] &=\frac{P_{kl}^t}{\beta_{kl}} - \frac{\partial_{\beta_{kl}} B^t }{B^t}.
 \end{align*}
 According to Lemma \ref{lem:Meila}: $\partial_{\beta_{kl}} B^t  = [\boldsymbol{M}]_{kl} \times B$. Finally setting the derivative to 0 yields the update formula $
 \beta^{t+1}_{kl} 
@@ -20,7 +20,7 @@ According to Lemma \ref{lem:Meila}: $\partial_{\beta_{kl}} B^t  = [\boldsymbol{M
 The update of $\Omegabf_T$ respects
 $$\Omegabf^{t+1}  = \arg\max_\Omegabf \; \Esp_{q^t} \left[ \log p_{\Omegabf}(\Ubf \mid T) \right].$$
 This is a problem of parameter optimisation in the context of Gaussian Graphical Models (GGM).
-In what follows, for any $q\times q$  matrix $A$, $A_{[kl]}$ will refer to the bloc $kl$ of $A$: $A_{[kl]}=(a_{ij})_{\{i,j\}\in\{k,l\}}$.   $[A_{[kl]}]^q$ will then denote the matrix obtained by filling up with zero entries to obtain full dimension $q\times q$, so that:
+In what follows, for any $q\times q$  matrix $A$, $A_{[kl]}$ will refer to the block $kl$ of $A$: $A_{[kl]}=(a_{ij})_{\{i,j\}\in\{k,l\}}$.   $[A_{[kl]}]^q$ will then denote the matrix obtained by filling up with zero entries to obtain full dimension $q\times q$, so that:
 $$([A_{[kl]}]^q )_{ij}=\left\{ \begin{array}{rl}
 a_{ij} & \text{if } \{i,j\}\in\{k,l\}\\
 0 &  \text{if } \{i,j\}\in\{1,..., q\}_{\setminus kl}
@@ -53,7 +53,7 @@ The determinant of a precision matrix of a GGM with a decomposable graph is expr
 $$ |\Omega| =\dfrac{\prod_{C\in \mathcal{C}} |\Sigma_C|^{-1}}{\prod_{S\in \mathcal{S}} |\Sigma_S|^{-\nu(S)}},$$
 where $\Sigma = \Omega^{-1}$. As $\Omegabf_T$ is tree-structured, its determinant factorizes on the edges of $T$. It is expressed with the correlation matrix $\Rbf_T$ as follows, denoting $d(k)$ the degree of node $k$:
 \begin{align*}
-|{\Omegabf}_T| &=\frac{\prod_{kl \in T} |{\Rbf}_{Tkl}|^{-1}}{\prod_k |{\Rbf}_{Tkk}|^{1-d(k)}} 
+|{\Omegabf}_T| &=\frac{\prod_{kl \in T} |{\Rbf}_{Tkl}|^{-1}}{\prod_k |{\Rbf}_{Tkk}|^{1-d(k)}}.
  \end{align*}
 Using that $\Rbf_T$ has diagonal 1, we obtain for step $t+1$ of the algorithm:
 $$|\Omegabf^{t+1}_{T}| = \Big(\prod_{kl \in T} |\Rbf_{T[kl]}^{t+1}|\Big)^{-1}.$$
@@ -65,23 +65,23 @@ $$|\Omegabf^{t+1}_{T}| = \Big(\prod_{kl \in T} |\Rbf_{T[kl]}^{t+1}|\Big)^{-1}.$$
 
 \paragraph{Tempering parameter $\alpha$} \label{alpha}
 \begin{description}
-\item[definition]Weights $\widetilde{\beta}$ are mechanically linked to the quantity of data available $n$. To avoid reaching maximal precision when computing the determinant, a tempering parameter $\alpha$ is applied to every quantity proportional to $n$, so that the actual update performed is $$\log \widetilde{\beta}_{kl} = \log \beta_{kl} - \alpha(\frac{n}{2}\log|\widehat{\Rbf}_{Tkl}| + \widehat{\omega}_{Tkl} [M^\intercal M]_{kl}).$$
-\item[Heuristic for an upper bound] The proposed algorithm requires the computation of the normalizing constant $\widetilde{B}$, which is the determinant of any minor of the Laplacian  of the $q\times q$ variational weights matrix $\betabft$. As these weights  mechanically increase with the quantity of available data $n$, this step is numerically very sensitive.  Hereafter we denote $|\Qbf^{uv}|$ this determinant and $\Delta$ the maximal machine precision. In order to ease the computations, we define the tempering parameter $\alpha$ as $$\log \widetilde{\beta}_{kl} = \log \beta_{kl} - \alpha(\frac{n}{2}\log|\widehat{\Rbf}_{Tkl}| + \widehat{\omega}_{Tkl} [M^\intercal M]_{kl})\;,\qquad \text{under constraint}\;\;\; |\Qbf^{uv}| \leq \Delta.$$
+\item[\textit{Definition}: ]Weights $\widetilde{\beta}$ are mechanically linked to the quantity of data available $n$. To avoid reaching maximal precision when computing the determinant, a tempering parameter $\alpha$ is applied to every quantity proportional to $n$, so that the actual update performed is $$\log \widetilde{\beta}_{kl} = \log \beta_{kl} - \alpha(\frac{n}{2}\log|\widehat{\Rbf}_{Tkl}| + \widehat{\omega}_{Tkl} [M^\intercal M]_{kl}).$$
+\item[\textit{Heuristic for an upper bound}: ] The proposed algorithm requires the computation of the normalizing constant $\widetilde{B}$, which is the determinant of any minor of the Laplacian  of the $q\times q$ variational weights matrix $\betabft$. As these weights  mechanically increase with the quantity of available data $n$, this step is numerically very sensitive.  Hereafter we denote $|\Qbf^{uv}|$ this determinant and $\Delta$ the maximal machine precision. In order to ease the computations, we define the tempering parameter $\alpha$ as $$\log \widetilde{\beta}_{kl} = \log \beta_{kl} - \alpha(\frac{n}{2}\log|\widehat{\Rbf}_{Tkl}| + \widehat{\omega}_{Tkl} [M^\intercal M]_{kl})\;,\qquad \text{under constraint}\;\;\; |\Qbf^{uv}| \leq \Delta.$$
 
 Let's first detail the expression for $\widetilde{\beta}_{kl}$. Following the definition of the $SSD$ matrix, and update formulas \eqref{omegaT} and \eqref{RT}, we obtain:
 \begin{align*}
-    \log \widetilde{\beta}_{kl} &=\log \beta_{kl} +\alpha \,n\left\{\frac{(ssd_{kl}/n)^2}{1-(ssd_{kl}/n)^2} -\frac12\log\big[1-(ssd_{kl}/n)^2\big]\right\}
+    \log \widetilde{\beta}_{kl} &=\log \beta_{kl} +\alpha \,n\left\{\frac{(ssd_{kl}/n)^2}{1-(ssd_{kl}/n)^2} -\frac12\log\big[1-(ssd_{kl}/n)^2\big]\right\}.
 \end{align*}
 For large $n$, we thus have $$\widetilde{\beta}_{kl}\approx \exp \big[\alpha n \cdot C(ssd_{kl}/n)\big], \qquad \text{with }\; C(x)=x/(1-x) -\log(\sqrt{1-x}),\; x\in [0,1[.$$ 
 We then define $C_{sup}$ such that $C_{sup} = C(ssd_{max})$, with $ ssd_{max}=\max\{ssd_{kl}, k\neq l\}$.
 By definition, $\Qbf^{uv}$ is positive-definite, so its determinant is upper bounded by the product of its diagonal terms (Hadamard's inequality). Namely:
 \begin{align*}
     |\Qbf^{uv}|&\leq \prod_{i=1}^{q-1} \Qbf^{uv}_{ii} \leq \prod_{i=1}^{q-1}\sum_{i=1}^{q-1} \exp (\alpha C_{sup} n)\\
-    &\leq \left[(q-1)\exp(\alpha C_{sup} n)\right]^{q-1}
+    &\leq \left[(q-1)\exp(\alpha C_{sup} n)\right]^{q-1}.
 \end{align*}
 Then applying the constraint yields:
 \begin{align*}
-    |\Qbf^{uv}| \leq \Delta \iff  \alpha \leq \frac{1}{C_{sup} n} \left[ \frac{1}{q-1}\log \Delta - \log(q-1)\right] 
+    |\Qbf^{uv}| \leq \Delta \iff  \alpha \leq \frac{1}{C_{sup} n} \left[ \frac{1}{q-1}\log \Delta - \log(q-1)\right].
 \end{align*}
 
 For $C_{sup}=0.8$, $n=200$ and $q=15$, we get $\alpha \leq 1.05\cdot 10^{-1}$.

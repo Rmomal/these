@@ -3,7 +3,7 @@
 \subsection{Count datasets}
 For the simulation study, 300 count datasets of $15$ species in total including one missing actor are generated, thus $p=14$ and $r=1$. 
 Data is generated as follows.
-We generate a scale-free structure $\mathcal{G}$ (which degree distribution is a power law) with $p+1$ nodes using the R package \texttt{huge} \citep{zhao2012huge} available on CRAN. 
+We generate a scale-free structure $\mathcal{G}$ (which degree distribution is a power law) with $p+1$ nodes using the R package \texttt{huge} \citep{huge} available on CRAN. 
 The missing species $h$ is chosen as the one with highest degree. We measure the {\sl influence} of the missing actor with its degree, distinguishing three influence classes: \textit{Minor} (degree $\leq 5$), \textit{Medium} ($5<$ degree $\leq 7$) and \textit{Major} (degree $\geq 8$). For each replicate, the latent layer $\Ubf$ and the observed abundances $\Ybf$ are simulated according to the model defined in Section \ref{sec:Model}.
 
 
@@ -28,17 +28,7 @@ Simulations performance measures are gathered in Table \ref{tab:perf} and Table 
 
 Table \ref{tab:perf} shows the network is well inferred, as all AUC means are above 0.85, with almost perfect inference when the influence of the missing actor is major. Its neighbors and values per site are very well retrieved in these cases with mean recall values above 0.9 and mean correlation above 0.8, with a great confidence in the algorithm outputs as mean precision is above 0.95. However, there exists a clear deterioration of all performance as the influence decreases with lower means are greater deviations, down to about 0.6 mean values for all measures when the influence is minor. Moreover, the algorithm takes more and more time to converge as the influence decreases, although it stays at about $3s$ for minor cases which is reasonable. Figure \ref{fig:densities} shows that as the influence decreases, the densities present with several modes and dilute towards 0, illustrating that even if some networks are still well-inferred, there also are more and more cases where the algorithm fails. In particular, the performance decrease of medium cases seems to be only due to a greater number of failed inferences.\\
 
-All these elements point to minor cases being harder problems to solve, unsurprisingly. Yet as oracle results show in Table \ref{tab:oracle}, it is possible to carry out almost-perfect inference in all cases, if the algorithm is initialized with the true clique; the deterioration is still present in all measures, but stays marginal. Thus the harsh decrease in the blind procedures seems to be mainly due to the proposed initialization method failing at correctly finding some of the small cliques of neighbors.\\
-
-%\textcolor{red}{Faut-il autant s'etendre sur ce point ? Pour l'instant, nous semblons dire que l'initialisation fait tout et que la solution que nous proposons ne fonctionne que dans les cas facile...}
-%\textcolor{red}{Si on le garde : ajouter un titre 'About initialization'?}
-
-% point sur les FN dans les initializations
-\paragraph{About intialization.}
-Figure \ref{fig:perfinit} compares the initialization quality and the corresponding final inferred neighbors, in terms of initial (-i) and final (-f) false negative (FNR, also 1-TPR) and positive rates (FPR). It clearly appears that final measures  mostly increase with false negatives of the initial clique. This means that not including a neighbor in the initialization is much worse for the inference than falsely including a node. The increase of FNR-f is bigger than that of FPR-f, meaning that a wrong initialization leads to a set of inferred neighbors which most part can be trusted, but which will be largely incomplete. This advocates for bigger initialization cliques when no prior information is available.
-
-
-\begin{table}
+\begin{table}[b!]
 \centering
 \begin{tabular}{lrrrrrr}
   \hline
@@ -53,9 +43,7 @@ Figure \ref{fig:perfinit} compares the initialization quality and the correspond
 
 \end{table}
  
- 
-
-\begin{figure}[H]
+\begin{figure}
     \centering
     \includegraphics[width=11cm]{figs/simu_densities.png}
     \caption{
@@ -67,8 +55,16 @@ Figure \ref{fig:perfinit} compares the initialization quality and the correspond
     \label{fig:densities}
 \end{figure}
  
+All these elements point to minor cases being harder problems to solve, unsurprisingly. Yet as oracle results show in Table \ref{tab:oracle}, it is possible to carry out almost-perfect inference in all cases, if the algorithm is initialized with the true clique; the deterioration is still present in all measures, but stays marginal. Thus the harsh decrease in the blind procedures seems to be mainly due to the proposed initialization method failing at correctly finding some of the small cliques of neighbors.\\
 
-\begin{figure}[H]
+%\textcolor{red}{Faut-il autant s'etendre sur ce point ? Pour l'instant, nous semblons dire que l'initialisation fait tout et que la solution que nous proposons ne fonctionne que dans les cas facile...}
+%\textcolor{red}{Si on le garde : ajouter un titre 'About initialization'?}
+
+% point sur les FN dans les initializations
+\paragraph{About intialization.}
+Figure \ref{fig:perfinit} compares the initialization quality and the corresponding final inferred neighbors, in terms of initial (-i) and final (-f) false negative (FNR, also 1-TPR) and positive rates (FPR). It clearly appears that final measures  mostly increase with false negatives of the initial clique. This means that not including a neighbor in the initialization is much worse for the inference than falsely including a node. The increase of FNR-f is bigger than that of FPR-f, meaning that a wrong initialization leads to a set of inferred neighbors which most part can be trusted, but which will be largely incomplete. This advocates for bigger initialization cliques when no prior information is available.
+
+\begin{figure}
     \centering    \includegraphics[width=11cm]{figs/quali_init_spca.png}
     \caption{Comparison of initial and final FPR and FNR, for cliques of neighbors of one missing actor obtained with the sparse PCA method. Position of dots are defined according to initial values, their color according to the final FPR and FNR. Sizes are proportional to the density of dots on a given position.}
     \label{fig:perfinit}

@@ -1,58 +1,58 @@
-{\reset@font\mtcSfont\mtc@string\contentsline{section}{\noexpand \leavevmode Introduction}{\reset@font\mtcSfont 30}{section*.40}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Network reconstruction.}{\reset@font\mtcPfont 30}{section*.41}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Network inference.}{\reset@font\mtcPfont 30}{section*.42}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Joint species distribution models.}{\reset@font\mtcPfont 31}{section*.44}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Graphical models: a generic framework for network inference.}{\reset@font\mtcPfont 32}{section*.46}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Network inference: the general problem.}{\reset@font\mtcPfont 32}{section*.47}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Network inference from species abundance data.}{\reset@font\mtcPfont 33}{section*.48}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Contribution.}{\reset@font\mtcPfont 33}{section*.49}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Outline.}{\reset@font\mtcPfont 33}{section*.50}}
-{\reset@font\mtcSfont\mtc@string\contentsline{section}{\noexpand \leavevmode Material and methods}{\reset@font\mtcSfont 34}{section*.51}}
-{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode Model}{\reset@font\mtcSSfont 34}{section*.52}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Mixed model.}{\reset@font\mtcPfont 34}{section*.53}}
-{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode Inference with EMtree}{\reset@font\mtcSSfont 35}{section*.54}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Likelihood.}{\reset@font\mtcPfont 35}{section*.55}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Inference in the observed layer.}{\reset@font\mtcPfont 36}{section*.56}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Inference in the hidden layer.}{\reset@font\mtcPfont 36}{section*.57}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Algorithm output: edge scoring and network inference}{\reset@font\mtcPfont 37}{section*.59}}
-{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode Simulation and illustrations}{\reset@font\mtcSSfont 37}{section*.60}}
-{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Alternative inference methods}{\reset@font\mtcSSSfont 38}{section*.61}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Edge scoring.}{\reset@font\mtcPfont 38}{section*.62}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Covariates.}{\reset@font\mtcPfont 38}{section*.63}}
-{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Comparison criteria}{\reset@font\mtcSSSfont 38}{section*.64}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode False Discovery Rate (FDR) and density ratio criteria.}{\reset@font\mtcPfont 38}{section*.65}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Area Under the Curve (AUC) criterion.}{\reset@font\mtcPfont 39}{section*.66}}
-{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Simulation design}{\reset@font\mtcSSSfont 39}{section*.67}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Simulated graphs.}{\reset@font\mtcPfont 39}{section*.68}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Simulated counts.}{\reset@font\mtcPfont 39}{section*.69}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Experiments.}{\reset@font\mtcPfont 39}{section*.70}}
-{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Illustrations}{\reset@font\mtcSSSfont 40}{section*.71}}
-{\reset@font\mtcSfont\mtc@string\contentsline{section}{\noexpand \leavevmode Results}{\reset@font\mtcSfont 41}{section*.72}}
-{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode On simulated data}{\reset@font\mtcSSfont 41}{section*.73}}
-{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Effect of dataset dimensions}{\reset@font\mtcSSSfont 41}{section*.74}}
-{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Effect of network structure}{\reset@font\mtcSSSfont 41}{section*.78}}
-{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Effect of network density}{\reset@font\mtcSSSfont 44}{section*.81}}
-{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode Illustrations}{\reset@font\mtcSSfont 45}{section*.84}}
-{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Fish populations in the Fatala River estuary}{\reset@font\mtcSSSfont 45}{section*.85}}
-{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Oak powdery mildew}{\reset@font\mtcSSSfont 46}{section*.87}}
-{\reset@font\mtcSfont\mtc@string\contentsline{section}{\noexpand \leavevmode Discussion}{\reset@font\mtcSfont 47}{section*.90}}
-{\reset@font\mtcSfont\mtc@string\contentsline{section}{\noexpand \leavevmode Appendices}{\reset@font\mtcSfont 49}{section*.91}}
-{\reset@font\mtcSfont\mtc@string\contentsline{section}{\noexpand \leavevmode Completed supplements}{\reset@font\mtcSfont 49}{section*.92}}
-{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode Variational EM in the observed layer}{\reset@font\mtcSSfont 49}{section*.93}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode A reminder on EM and VEM.}{\reset@font\mtcPfont 49}{section*.94}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Application to the Poisson log-normal model.}{\reset@font\mtcPfont 49}{section*.95}}
-{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode EM in the latent layer}{\reset@font\mtcSSfont 50}{section*.96}}
-{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode Matrix tree theorem}{\reset@font\mtcSSfont 52}{section*.99}}
-{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode Results}{\reset@font\mtcSSfont 53}{section*.100}}
-{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Simulations: dataset dimensions}{\reset@font\mtcSSSfont 53}{section*.101}}
-{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Simulations: network density}{\reset@font\mtcSSSfont 55}{section*.109}}
-{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Illustrations: edge frequency threshold}{\reset@font\mtcSSSfont 55}{section*.111}}
-{\reset@font\mtcSfont\mtc@string\contentsline{section}{\noexpand \leavevmode Vignette for EMtree}{\reset@font\mtcSfont 56}{section*.113}}
-{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode Data simulation with \texttt {EMtree}}{\reset@font\mtcSSfont 56}{section*.114}}
-{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode Inference of the Fatala fishes network}{\reset@font\mtcSSfont 56}{section*.115}}
-{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Fatala fishes dataset}{\reset@font\mtcSSSfont 57}{section*.116}}
-{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Network inference}{\reset@font\mtcSSSfont 57}{section*.117}}
-{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Infer networks under several models:}{\reset@font\mtcSSSfont 59}{section*.118}}
-{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode Visuals}{\reset@font\mtcSSfont 59}{section*.119}}
-{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Simple networks}{\reset@font\mtcSSSfont 59}{section*.120}}
-{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Facets of several networks}{\reset@font\mtcSSSfont 60}{section*.121}}
+{\reset@font\mtcSfont\mtc@string\contentsline{section}{\noexpand \leavevmode \numberline {2.1}Introduction}{\reset@font\mtcSfont 30}{section.2.1}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Network reconstruction.}{\reset@font\mtcPfont 30}{section*.19}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Network inference.}{\reset@font\mtcPfont 30}{section*.20}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Joint species distribution models.}{\reset@font\mtcPfont 31}{section*.22}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Graphical models: a generic framework for network inference.}{\reset@font\mtcPfont 32}{section*.24}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Network inference: the general problem.}{\reset@font\mtcPfont 32}{section*.25}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Network inference from species abundance data.}{\reset@font\mtcPfont 33}{section*.26}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Contribution.}{\reset@font\mtcPfont 33}{section*.27}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Outline.}{\reset@font\mtcPfont 33}{section*.28}}
+{\reset@font\mtcSfont\mtc@string\contentsline{section}{\noexpand \leavevmode \numberline {2.2}Material and methods}{\reset@font\mtcSfont 34}{section.2.2}}
+{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode \numberline {2.2.1}Model}{\reset@font\mtcSSfont 34}{subsection.2.2.1}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Mixed model.}{\reset@font\mtcPfont 34}{section*.29}}
+{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode \numberline {2.2.2}Inference with EMtree}{\reset@font\mtcSSfont 35}{subsection.2.2.2}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Likelihood.}{\reset@font\mtcPfont 35}{section*.30}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Inference in the observed layer.}{\reset@font\mtcPfont 36}{section*.31}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Inference in the hidden layer.}{\reset@font\mtcPfont 36}{section*.32}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Algorithm output: edge scoring and network inference}{\reset@font\mtcPfont 37}{section*.34}}
+{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode \numberline {2.2.3}Simulation and illustrations}{\reset@font\mtcSSfont 37}{subsection.2.2.3}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Alternative inference methods}{\reset@font\mtcSSSfont 38}{section*.35}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Edge scoring.}{\reset@font\mtcPfont 38}{section*.36}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Covariates.}{\reset@font\mtcPfont 38}{section*.37}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Comparison criteria}{\reset@font\mtcSSSfont 38}{section*.38}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode False Discovery Rate (FDR) and density ratio criteria.}{\reset@font\mtcPfont 38}{section*.39}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Area Under the Curve (AUC) criterion.}{\reset@font\mtcPfont 39}{section*.40}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Simulation design}{\reset@font\mtcSSSfont 39}{section*.41}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Simulated graphs.}{\reset@font\mtcPfont 39}{section*.42}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Simulated counts.}{\reset@font\mtcPfont 39}{section*.43}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Experiments.}{\reset@font\mtcPfont 39}{section*.44}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Illustrations}{\reset@font\mtcSSSfont 40}{section*.45}}
+{\reset@font\mtcSfont\mtc@string\contentsline{section}{\noexpand \leavevmode \numberline {2.3}Results}{\reset@font\mtcSfont 41}{section.2.3}}
+{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode \numberline {2.3.1}On simulated data}{\reset@font\mtcSSfont 41}{subsection.2.3.1}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Effect of dataset dimensions}{\reset@font\mtcSSSfont 41}{section*.46}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Effect of network structure}{\reset@font\mtcSSSfont 41}{section*.50}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Effect of network density}{\reset@font\mtcSSSfont 44}{section*.53}}
+{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode \numberline {2.3.2}Illustrations}{\reset@font\mtcSSfont 45}{subsection.2.3.2}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Fish populations in the Fatala River estuary}{\reset@font\mtcSSSfont 45}{section*.56}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Oak powdery mildew}{\reset@font\mtcSSSfont 46}{section*.58}}
+{\reset@font\mtcSfont\mtc@string\contentsline{section}{\noexpand \leavevmode \numberline {2.4}Discussion}{\reset@font\mtcSfont 47}{section.2.4}}
+{\reset@font\mtcSfont\mtc@string\contentsline{section}{\noexpand \leavevmode Appendices}{\reset@font\mtcSfont 49}{section*.61}}
+{\reset@font\mtcSfont\mtc@string\contentsline{section}{\noexpand \leavevmode \numberline {2.A}Supplementary material (augmented)}{\reset@font\mtcSfont 49}{section.a.2.A}}
+{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode \numberline {2.A.1}Variational EM in the observed layer}{\reset@font\mtcSSfont 49}{subsection.a.2.A.1}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode A reminder on EM and VEM.}{\reset@font\mtcPfont 49}{section*.62}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Application to the Poisson log-normal model.}{\reset@font\mtcPfont 49}{section*.63}}
+{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode \numberline {2.A.2}EM in the latent layer}{\reset@font\mtcSSfont 50}{subsection.a.2.A.2}}
+{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode \numberline {2.A.3}Matrix tree theorem}{\reset@font\mtcSSfont 52}{subsection.a.2.A.3}}
+{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode \numberline {2.A.4}Results}{\reset@font\mtcSSfont 53}{subsection.a.2.A.4}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Simulations: dataset dimensions}{\reset@font\mtcSSSfont 53}{section*.66}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Simulations: network density}{\reset@font\mtcSSSfont 55}{section*.74}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Illustrations: edge frequency threshold}{\reset@font\mtcSSSfont 55}{section*.76}}
+{\reset@font\mtcSfont\mtc@string\contentsline{section}{\noexpand \leavevmode \numberline {2.B}Vignette for EMtree}{\reset@font\mtcSfont 56}{section.a.2.B}}
+{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode \numberline {2.B.1}Data simulation with EMtree}{\reset@font\mtcSSfont 56}{subsection.a.2.B.1}}
+{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode \numberline {2.B.2}Inference of the Fatala fishes network}{\reset@font\mtcSSfont 57}{subsection.a.2.B.2}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Fatala fishes dataset}{\reset@font\mtcSSSfont 57}{section*.78}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Network inference}{\reset@font\mtcSSSfont 57}{section*.79}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Infer networks under several models:}{\reset@font\mtcSSSfont 59}{section*.80}}
+{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode \numberline {2.B.3}Visualizations}{\reset@font\mtcSSfont 60}{subsection.a.2.B.3}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Simple networks}{\reset@font\mtcSSSfont 60}{section*.81}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Several networks}{\reset@font\mtcSSSfont 61}{section*.82}}

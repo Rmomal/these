@@ -57,7 +57,27 @@
 \RequirePackage{multicol}
 \strictpagecheck
 
+%%%% if the dot in the numbering of figure disapears:
+
+%\newcommand{\@ifbothcntrs}[3]{%
+%  \@ifundefined{c@#1}{% counter undefined
+%    \ClassError{memoir}{#1 is not a counter}{\@eha}}%
+%  {% else counter is defined
+%    \@ifundefined{c@#2}{% within undefined
+%      \ClassError{memoir}{#2 is not a counter}{\@eha}}%
+%    {% else both counter and within  are defined
+%     #3}}}
+%\newcommand{\@csinstar}[2]{%
+%  \@ifbothcntrs{#1}{#2}{\@addtoreset{#1}{#2}}}
+%\newcommand{\@csin}[2]{%
+%  \@ifbothcntrs{#1}{#2}{\@addtoreset{#1}{#2}%
+%                        \@namedef{the#1}{\@nameuse{the#2}.\arabic{#1}}}}
 %
+%
+%
+%\makeatletter
+%\renewcommand{\counterwithin}{\@ifstar{\@csinstar}{\@csin}}
+%\makeatother
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%% Define your number of chapters here!!! %%%%%%%%%%%%%%%%
@@ -544,14 +564,17 @@ contents={
   \clearpage
   \section*{Appendices}
   \addcontentsline{toc}{section}{Appendices} 
-  \counterwithin{figure}{section}
-  \counterwithin{table}{section}
+%  \counterwithin{figure}{section}
+%  \counterwithin{table}{section}
 }
 % End of subappendices environment
 \AtEndEnvironment{subappendices}{%
-\counterwithout{figure}{section}
-\counterwithout{table}{section}
+%\counterwithout{figure}{section}
+%\counterwithin{figure}{chapter}
+%\counterwithin{table}{chapter}
+%\counterwithout{table}{section}
 }
+
 %%%%%%%%%%%%%% FAIRE DES ENCARTS %%%%%%%%%%%%%%%%%%%%%%%%%%
 % Couleurs :
 

@@ -1,4 +1,8 @@
 %chap3
+\vspace{0.5cm}
+This chapter details a Variational EM algorithm for the inference of missing actors in species interaction networks. The model is similar to the one presented in Chapter 2: counts are modeled with a Poisson log-normal distribution with a latent layer of Gaussian parameters, except here we use its normalized formulation. Therefore in Chapter 2 the Gaussian parameters are $\Zbf\sim\Ncal(0,\Sigma)$, whereas in this chapter we use $\Ubf\sim\Ncal(0,\Rbf)$ with $\Rbf$ a correlation matrix, and we have $\Zbf_{ij} = \sigma_j \, \Ubf_{ij}$.
+The material of this chapter has been submitted to a statistical journal, and is available as a preprint at \url{http://arxiv.org/abs/2007.14299}, along with the supplementary material of the appendix \textit{Article supplements}. Other appendices supplement this work: a vignette detailing the usage of the developed R package nestor, a section presenting three strategies for its initialization, and finally a comparison study of nestor, EMtree and PLN-network on simulated data.
+
 
  \input{nestorArticle/intro.tex}
  
@@ -16,45 +20,108 @@
 
 \begin{subappendices}
 %\addtocontents{toc}{\setcounter{tocdepth{-1}}
-\section{Published supplements}
+\section{Supplementary material}
  \input{nestorArticle/app_tools.tex}
 \input{nestorArticle/app_calculs.tex}
 \input{nestorArticle/app_cv.tex}
+\section{Vignette for nestor}\input{nestorArticle/vignetteNestor}
 \section{Clique initialization}
+It has been previously shown that the initial clique of the missing actor neighbors is paramount for the developed method. Many initialization strategies can be designed, in this section we present three of them that are implemented in the nestor package.
+
+\tocless\subsection{Sparse PCA}
+The sparse PCA is a specific kind of  PCA where the principal components are linear combinations of only a few other variables. This principle is coherent with the idea of missing actors with a local effect, whereas a classic PCA would look for a global missing actor affecting all other species. The sparse PCA is run directly on the observed counts. The possible clique of neighbors for the missing actor is then the set of variables associated with an axis of the PCA.
+
+As it is a sparse method, the resulting clique might be too small and it is interesting to control the minimal size. For example
+for a dataset simulated from the scale-free graph in Figure \ref{Sfspca} with the true clique $C^*=\{1,2,3,5,6,8,9\}$, running a sparse PCA with no constraint yields the clique $C=\{3,9\}$, whereas imposing a minimal size of $4$ yields $C=\{1,2,3,4,5,6,9\}$.
+\begin{figure}
+\centering
+\includegraphics[width=4cm]{figs/SF_spca.png}
+\caption{A scale-free graph with 11 nodes.}
+\label{Sfspca}
+\end{figure}
+
+
+\tocless\subsection{Correlation clustering}
+A missing actor creates correlation among the other variables, which can be identified by looking for groups in the correlation structure. One way to observe the latter is to consider the plan defined by the two first eigen vectors of the correlation matrix, and to look for clusters in this space. Most clustering methods are designed to separate the variables into $k$ groups, whereas here the aim is to find $k$ groups (for $k$ missing actors) which do not involve all the variables. To do this, we use the mclust package which allows to specify a model for the clustering while including some noise.
+
+The aforementioned vector space  is actually the correlation circle of the variables. Noise points are uniformly simulated on the circle, then the desired number of groups is found using mclust. The clustering is performed in polar coordinates to take negatively correlated variables into account. In the example of Figure \ref{SFmclust}, the clique of original neighbors is correctly identified, however this result is subject to the randomness of the noise. It is therefore best to run the method a few times and identify a list of cliques.
+
+
+\begin{figure}
+\centering
+\includegraphics[width=0.7\linewidth]{figs/facetmclust.png}
+\caption{\textit{Left}: original scale-free graph with 11 nodes among which one is unobserved, with clique of neighbors $C^*=\{1,2,3,6\}$. \textit{Right}: corresponding variable correlation circle, the group found by mclust is highlighted in orange.}
+\label{SFmclust}
+\end{figure}
+
+
+\tocless\subsection{Structure clustering}
+Inferring the network from observed data only is equivalent to marginalizing the complete network on the missing actors. The neighbors of the missing actors then form a clique which can be identified as a block in the adjacency matrix of the marginal graph. The package blockmodels is an implementation of the Stochastic Block Model. Running it on the adjacency matrix obtained with nestor or EMtree (when nestor degenerates) with a Bernoulli model provides with a separation of the nodes into a given number of blocks, which are the possible cliques.
+
+Figure \ref{clustBloc} is a simulated example on a cluster graph with 11 nodes. Count data with one missing actor is generated with this conditional dependency structure, and the inferred marginal network is given as an input to blockmodels. We ask for a separation in $2$ groups; the first group identified consists of $5$ of the $6$ original neighbors. 
+
+This strategy gives a list of disjoint cliques and it is likely that some of them will cause nestor to degenerate, for they would not contain original neighbors. On real datasets, it is recommended  to test different number of groups and consider the list of all the resulting cliques.
+
+
+
+
+\begin{figure}
+\centering
+\includegraphics[width=0.7\linewidth]{figs/cluster_block.png}
+\caption{\textit{Left}: original cluster graph with 11 nodes among which one is unobserved, with clique of neighbors $C^*=\{3,4,5,6,7,10\}$. \textit{Right}: inferred marginal network and the two groups identified by blockmodels.}
+\label{clustBloc}
+\end{figure}
+
+
+
+
+
 \section{Comparison with PLN-network and EMtree}
-This section compares the network inference methods from count data which build on the estimation of the PLN model as described in \citet{CMR18}: PLN-network \citep{CMR19}, EMtree and nestor. The R package PLN-network performs a sparse estimation of the precision matrix using the glasso. Details about EMtree and nestor are available respectively in Chapter 2 and Chapter 3 of this work.
+This section compares the network inference methods from count data which build on the estimation of the PLN model as described in \citet{CMR18}: PLN-network \citep{CMR19}, EMtree and nestor without missing actors. The R package PLN-network performs a sparse estimation of the precision matrix using the glasso. Details about EMtree and nestor are available respectively in Chapter 2 and Chapter 3 of this work.
 \tocless\subsection{EMtree and nestor}
 \subsubsection*{Different models}
 
 The aim of EMtree is the network inference, and as such it focuses on the update of the tree distribution parameters (the edges weights $\betab$). It thus performs network inference without ever considering the precision matrix, which is the main difference with nestor.  Indeed, the inference of missing actors requires the estimation of their means $M_H$, which directly depends on terms of the proxy for the precision matrix ($\xbar{\Omegabf}$). $M_H$ is actually the parameter through which passes the information from the data to the network parameters $\betabft$, therefore the computation of the edges probabilities is also different. 
 
-EMtree approximates the edges probabilities conditional on  $\Ybf$ by applying the Matrix Tree theorem on the matrix $\betabf \,\odot \,\boldsymbol{\psi}$, where $\boldsymbol{\psi}=\left((1-\rho_{kl}^2)^{-n/2}\right)_{kl}$ with $\rho_{kl}$ the correlation between variables $k$ and $l$. Transposed in the variational inference framework, edges probabilities conditional on $\Ybf$ are approximated by the edges probabilities computed from the distribution $g(T)$, which approximates $p(T\mid\Ybf)$. The distribution $g(T)$ is parametrized with the  variational edges weights $\betabft$, which update formula for the edges $kl$ at step $t+1$ is given in equation \eqref{update:beta}: $$ \betat^{t+1}_{kl} = \beta^{t+1}_{kl} \left|\Rbf_{[kl]}^{t+1}\right|^{-n/2} \exp\left(-\omega^{t+1}_{kl} \left[(\Mbf^t)^\intercal \Mbf^t\right]_{kl}\right).$$
+EMtree approximates the edges probabilities conditional on  $\Ybf$ by applying the Matrix Tree theorem on the matrix $\betabf \,\odot \,\boldsymbol{\psi}$, where $\boldsymbol{\psi}=\left((1-\rho_{kl}^2)^{-n/2}\right)_{kl}$ with $\rho_{kl}$ the estimated correlation between variables $k$ and $l$. Transposed in the variational inference framework, edges probabilities conditional on $\Ybf$ are approximated by the edges probabilities computed from the distribution $g(T)$, which approximates $p(T\mid\Ybf)$. The distribution $g(T)$ is parametrized with the  variational edges weights $\betabft$, which update formula for the edges $kl$ at step $t+1$ is given in equation \eqref{update:beta}: $$ \betat^{t+1}_{kl} = \beta^{t+1}_{kl} \left|\Rbf_{[kl]}^{t+1}\right|^{-n/2} \exp\left(-\omega^{t+1}_{kl} \left[(\Mbf^t)^\intercal \Mbf^t\right]_{kl}\right).$$
 Now noticing that $ \left|\Rbf_{[kl]}\right|^{-n/2} =\psi_{kl}$,  we can link this formula to that of the quantity used by EMtree to compute probabilities. We see that the difference between the two strategies is the term $\exp\left(-\omega^{t+1}_{kl} \left[(\Mbf^t)^\intercal \Mbf^t\right]_{kl}\right)$, which stems from the modeling difference of EMtree and nestor.
 
 \subsubsection*{Different behaviors}
-\begin{itemize}
-\item nestor is more complete in its estimation, probabilities are discriminant. But numerically sensitive
-\item EMtree is more robust
-\end{itemize}
+The modeling difference induces differences in behaviors between the two algorithms. The extra exponential term in the formula for the edges weights of nestor is directly dependent on the data dimensions, and mechanically implies a high variability and a wide range of values for the weights. This causes numerical instabilities, especially when manipulating the determinant and inverse of the weights Laplacian matrix. That's the reason why nestor is very sensitive to the initialization and value of the tempering parameter.
+
+On the other hand EMtree is a robust procedure. However its estimation involves less information and the output probabilities are less discriminant than that of nestor. Figure \ref{compar:prob} illustrates this fact in the case of dense cluster graphs.
+\begin{figure}
+\centering
+\includegraphics[width=0.6\linewidth]{figs/probEM_nestor.png}
+\caption{Relationship between edges probabilities computed by nestor and EMtree for cluster graphs of dimension $p=15$ and density $5/p$.}
+\label{compar:prob}
+\end{figure}
 
 \tocless\subsection{Performance comparison}
 \subsubsection*{Experiment}
-We compared the three methods ability to infer networks based on AUC,  precision and recall criteria. We simulated 100 datasets with $n=200$ samples  and $p=15$ species for erdos and cluster structures, and tested two density levels ($3/p$ and $5/p$). With density $3/p$, nestor degenerated for 25 clusters and 5 erdos, and for only 2 clusters with density $5/p$.  Those datasets were filtered from the following results.
+We compared the three methods ability to infer networks based on AUC,  precision and recall criteria. We simulated 100 datasets with $n=200$ samples  and $p=15$ species for erdos (Erdös-Reyni) and cluster structures, and tested two density levels ($3/p$ and $5/p$).  To give an efficient presentation of Precision-Recall curves, mean curves were computed, that is all graphs of a certain type and density level were pooled together and precision and recall measures computed on the corresponding pooled results of each method.
 
-\subsubsection*{Results}
-\begin{figure}
+The edges scores of PLN-network are extracted from its regularization path as the sum of all penalties that do not cancel an edge. The grid of penalties is parametrized with $min.ratio=1\cdot 10^{-3}$, after checking that the PLN-network fit on some typical simulated graphs visited the best model (reach of a maximum on the BIC curve). For EMtree we consider edges probabilities obtained without the resampling step, rather than edges selection frequencies. The nestor method is parametrized with the tempering parameter set to $0.1$. With density $3/p$, nestor degenerated for 25 clusters and 5 erdos graphs, and for 2 cluster graphs with density $5/p$.  Those datasets were removed from the following results.
+
+
+ 
+
+\begin{figure}[tp]
 \centering
 \includegraphics[width=12cm]{figs/AUC_PLN_EM_VEM.png}
-\caption{Comparison of PLN-network, EMtree and nestor ability to infer networks with the AUC criteria. 100 datasets were simulated for each parameter settings.}
+\caption{AUC measures obtained with PLN-network, EMtree and nestor on 100 datasets of each type and density level.}
 \label{compar:auc}
 \end{figure}
-\begin{figure}
+\begin{figure}[H]
 \centering
 \includegraphics[width=12cm]{figs/precrec_PLN_EM_VEM.png}
-\caption{Mean Precision-Recall curves for PLN-network, EMtree and nestor }
+\caption{Mean Precision-Recall curves obtained with PLN-network, EMtree and nestor on 100 datasets of each type and density level.}
 \label{compar:precrec}
 \end{figure}
+\subsubsection*{Results}
+AUC measures are gathered in Figure \ref{compar:auc}. All types and density levels show the same ranking of methods: the best AUC are obtained with EMtree, and the weakest with PLN-network which however stays above $60\%$ in median. The median values of nestor are closer to those of EMtree than to PLN-network. The higher density levels represent a greater difficulty for all methods, and cluster graphs seem slightly harder than erdos ones for nestor and PLN-network.\\
 
-with $min.ratio=1\cdot 10^{-3}$ for PLNnetwork
-\section{Vignette for nestor}\input{nestorArticle/vignetteNestor}
+From the mean Precision-Recall curves available in Figure \ref{compar:precrec}, we see than EMtree also shows the best trajectory. PLN-network seems to never visit the value pairs above $0.5$, and its trajectory is not affected by the density level. The trajectory of nestor is close to that of EMtree, and they both greatly deteriorate with the density level.  Due to its highly discriminant probabilities, nestor only visits a few value pairs, which are above $0.5$ for the $3/p$ density level with a Precision of at least $0.8$ and a Recall of $0.5$ to $0.6$. For denser graphs, the Recall decreases below $0.5$ and the Precision remains above $0.7$, making nestor a very conservative method.
+
+
 \end{subappendices}

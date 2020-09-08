@@ -2,7 +2,7 @@
 
 \input{debut.tex}
  
-
+\numberwithin{figure}{chapter}
 \backgroundsetup{contents={}}
 \newcommand{\nocontentsline}[3]{}
 \newcommand{\tocless}[2]{\bgroup\let\addcontentsline=\nocontentsline#1{#2}\egroup}
@@ -14,13 +14,14 @@
 \selectlanguage{english}
 \dominitoc
 \nomtcrule
+\clearemptydoublepage
 \tableofcontents 
  \mainmatter
 
  
 
 \chapter{Introduction}
-\input{intro.tex}
+\input{intro2.tex}
  \clearemptydoublepage
 \ActivateBG 
 \chapter{Mathematical Framework}
@@ -34,19 +35,22 @@
 \input{chap3}
 
 %\clearemptydoublepage
- \addtocontents{toc}{\protect\newpage}
+%\addtocontents{toc}{\protect\newpage}
 \chapter{Perspectives}
 \input{perspectives}
 
 
-\selectlanguage{french}
- %\clearemptydoublepage
+%\selectlanguage{french}
+\clearemptydoublepage
+ 
 \DeactivateBG 
 \chapter{Résumé}
+\input{resume}
 \bibliographystyle{plainnat}  
 \bibliography{biblio.bib}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 4eme de couverture
+\clearemptydoublepage
 \input{dos}
 \end{document}

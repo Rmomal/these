@@ -14,12 +14,14 @@
 \usepackage{multirow} %% Pour mettre un texte sur plusieurs rangées
 \usepackage{multicol} %% Pour mettre un texte sur plusieurs colonnes
 \usepackage{tikz}
+\usetikzlibrary{arrows}
 \usepackage[absolute]{textpos} 
 \usepackage{colortbl}
 \usepackage{array}
 \usepackage{lineno}
 \usepackage[ruled,vlined]{algorithm2e}
  \usepackage{float}
+ \usepackage{caption}
 %% JMVA 
 \usepackage{enumitem,hyperref,ifthen,dsfont}
 
@@ -257,7 +259,7 @@
 \setlength{\emergencystretch}{3em}  % prevent overfull lines
 \providecommand{\tightlist}{%
   \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
-\setcounter{secnumdepth}{0}
+%\setcounter{secnumdepth}{0}
 % Redefines (sub)paragraphs to behave more like sections
 %\ifx\paragraph\undefined\else
 %\let\oldparagraph\paragraph

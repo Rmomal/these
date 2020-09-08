@@ -11,7 +11,7 @@ As said in the introduction, we  resort to a variational EM algorithm to perform
 The log-likelihood of the so-called {\sl complete} data, that is $(\Ybf, \Ubf, T)$, writes
 \begin{align*}
 \log p_{\thetabf, \betabf, \Omega}(\Ybf, \Ubf, T) 
-& = \log p_\betabf(T) + \log p_{\Omegabf}(\Ubf \mid T) + \log p_\thetabf(\Ybf \mid \Ubf)
+& = \log p_\betabf(T) + \log p_{\Omegabf}(\Ubf \mid T) + \log p_\thetabf(\Ybf \mid \Ubf).
 \end{align*}
 where $\Omegabf$ stands for the set of all tree-specific precision matrices: $\Omegabf = \{\Omegabf_T, T \in \Tcal_{p+r}\}$.
 The conditional distributions of the latent variables $\Ubf$ and of the tree $T$ given the data $\Ybf$ are both intractable. Variational inference then aims at maximizing a lower bound of the log-likelihood of the observed data, which writes in our context as
@@ -31,7 +31,7 @@ q(\Ubf, T) =  h(\Ubf)g(T).
 $$
 Because the sites are independent, and without further assumption, the distribution $h$ is a product over all sites. Following \cite{CMR18} we approximate the conditional distribution of each latent vector $\Ubf_i$ with a Gaussian distribution, that is:
 $$
-h(\Ubf) = \prod_i \Ncal_{p+r}(\Ubf_i; \mbf_i, \Sbf_i)
+h(\Ubf) = \prod_i \Ncal_{p+r}(\Ubf_i; \mbf_i, \Sbf_i).
 $$
 with all $\Sbf_i$ diagonal. We gather all the mean vectors $\mbf_i$ in the $n \times (p+r)$ matrix $\Mbf$ and pile up the diagonals of all the variance matrices $\Sbf_i$ in the $n \times (p+r)$ matrix denoted $\Sbf$.
 
@@ -45,7 +45,7 @@ The variational EM algorithm then consists in maximizing the lower bound $\Jcal$
 & \Omegabf^{t+1} & = \arg\max_\Omegabf \; \Esp_{q^t} \left[ \log p_{\Omegabf}(\Ubf \mid T) \right], \nonumber \\
 \betabf^{t+1} & = \arg\max_\betabf \; \Esp_{g^t} \left[ \log p_\betabf(T) \right].
 \end{align}
-Observe that the matrix of edge weights $\betabf$ is considered here as a parameter to be estimated, as opposed to \cite{RAR19}, where is was kept fixed and supposed to be given.
+Observe that the matrix of edge weights $\betabf$ is considered here as a parameter to be estimated, as opposed to \cite{RAR19}, where it was kept fixed and supposed to be given.
 %
 \item[VE step:] Maximising $\Jcal$ with respect to (wrt) $q$ is equivalent to minimizing the K\"ullback-Leibler divergence between $q(\Ubf, T)$ and $p_{\thetabf, \betabf, \Omega}(\Ubf, T \mid \Ybf)$ that appears in \eqref{eq:lower-bound}. Because we adopted a product form for $q$, the solution of the VE step for both $g$ and $h$ is known to be a mean-field approximation \citep{WaJ08}. More specifically, maximising $\Jcal$ gives
 \begin{align} \label{eq:VEstep-g}
@@ -102,7 +102,7 @@ $P^t_{kl}$ is computed using a result from \citet{kirshner} (reminded as Lemma \
 For a given dependency structure in the Gaussian Graphical model framework, \cite{Lau96} gives maximum likelihood estimates for the precision matrix. 
 These estimators are given as functions of sufficient statistics of the multivariate Gaussian distribution. Indeed in the exponential family framework, the M step of any EM algorithm requires the computation of the expectation of a sufficient statistic, under the current fit of the variational laws (see \citet{mclachlan}). Here as $\Ubf \mid T$ is centered, a sufficient statistic is $\Ubf^\intercal \Ubf$. We now let $SSD$ denote the matrix defined as 
 $$
-SSD^t = \Esp_{h^t} (\Ubf^\intercal \Ubf) = (\Mbf^t)^\intercal \Mbf^t + \Sbf^t_+
+SSD^t = \Esp_{h^t} (\Ubf^\intercal \Ubf) = (\Mbf^t)^\intercal \Mbf^t + \Sbf^t_+,
 $$
 where $\Sbf^t_+ = \sum_i \Sbf^t_i$. Applying Lauritzen's formulas, we get:
 %As $g^t$ is a discrete law on the space of spanning trees, maximizing each component of an expectation wrt $g$ amounts to  maximizing the whole expectation, meaning that maximizing for each tree $T$ will maximize $\mathcal{J}(\Ybf ; g,h)$.
@@ -122,7 +122,7 @@ The calculations are postponed to Appendix \ref{up:omega}. Observe that estimate
 
 Other quantities are needed for later computations. Lauritzen  gives the maximum likelihood estimator of every entry of the correlation matrix $\Rbf_T$ corresponding to an edge $kl$ being part of $T$, which is
 $ \Rbf_{Tkl}^{t+1} = ssd_{kl}^{\,t}/n. $
-Hereafter for any matrix $A$, $A_{[kl]}$ refers to the bloc $kl$ of $A$: $A_{[kl]}=(a_{ij})_{\{i,j\}\in\{k,l\}}$. The determinant of $\Omegabf^{t+1}_T$ factorizes on the edges of $T$ and writes as a function of blocs of the correlation matrix  as follows:  
+Hereafter for any matrix $A$, $A_{[kl]}$ refers to the bloc $kl$ of $A$: $A_{[kl]}=(a_{ij})_{\{i,j\}\in\{k,l\}}$. The determinant of $\Omegabf^{t+1}_T$ factorizes on the edges of $T$ and writes as a function of blocks of the correlation matrix  as follows:  
 
 \begin{align}
     |\Omegabf^{t+1}_{T}| = \Big(\prod_{kl \in T} |\Rbf_{T[kl]}^{t+1}|\Big)^{-1}
@@ -153,7 +153,7 @@ Computing the expression \eqref{eq:VEstep-g} yields the following, where the con
  \log g^{t+1}(T) &= \log p_{\betabf^{t+1}}(T) + \Esp_{h^t} \left[ \log p_{\Omegabf^{t+1}}(\Ubf \mid T) \right]  + \text{cst}  \\
 &=  \sum_{kl \in T} \log \beta^{t+1}_{kl} 
 - \frac{n}2 \log |\Rbf_{[kl]}^{t+1} | 
--  \omega^{t+1}_{kl} \left[(\Mbf^t)^\intercal \Mbf^t\right]_{kl} + \text{cst}
+-  \omega^{t+1}_{kl} \left[(\Mbf^t)^\intercal \Mbf^t\right]_{kl} + \text{cst}.
 \end{align*}
   Then remembering the product form of  $g^{t+1}$ given in \eqref{eq:g}, we obtain the expression for each edge variational weight:
   \begin{equation}\label{update:beta}
@@ -191,7 +191,7 @@ As a starting point, we look for a clique of species as potential neighbors of t
 
 % \SR{The sPCA algorithm (R package \texttt{sparsepca}) is applied to $\widetilde{M}_O$ which can be seen here as a Gaussian proxy of observed data. The non-nul optimal loading of each principal components give a set of nodes that form an initial clique of neighbors of the missing actor.}
 %{
-When applying sPCA to $\widetilde{M}_O$, the set of non-zero loadings of each principal components provides us with an initial clique of neighbors of each missing actor
+When applying sPCA to $\widetilde{M}_O$, the set of non-zero loadings of each principal components provides us with an initial clique of neighbors of each missing actor.
 %\begin{description}
 %\item[Simulated datasets:] Simulated datasets involve a unique missing actor. A quick exploration of the space of likely cliques consists in keeping the two first principal components of sPCA, and their complements. This way, we obtain a set of 4 $C_h$ candidates, which size we impose to be between 2 and $(p-1)$ (the missing actor should have at least two neighbors, but not all the network).
 %\item[Empirical datasets:] A wider exploration of likely cliques is conducted thanks to a bootstrap approach with $200$ sub-samples. Each of the latter consists of 80\% of the data; sPCA is run on each of them and only the identified clique of the $r$ first principal components are stored, when the studied model involves $r$ missing actors. When $r>1$, the restriction on the clique sizes is lifted. The bootstrap thus yield 200 lists of $r$ initial cliques, from which only unique ones are kept. This approach is more time-consuming, and therefore only used on empirical datasets.
@@ -205,7 +205,7 @@ The eigenvectors resulting from the sPCA also provide us with a starting value $
  
 \subsubsection*{Numerical issues.}
 
-Because the Matrix Tree Theorem and Kirshner's formula respectively resort to the calculation of a determinant and a matrix inversion, the proposed algorithm is exposed to numerical instabilities. To circumvent these issues, we rely on both multiple-precision arithmetic and likelihood tempering \citep[via a parameter $\alpha$, similarly to][]{ScR17}. More details are given in Appendix \ref{app:numIssues}.
+Because the Matrix Tree Theorem and Kirshner's formula respectively resort to the calculation of a determinant and a matrix inversion, the proposed algorithm is exposed to numerical instabilities. To circumvent these issues, we rely on both multiple-precision arithmetic and likelihood tempering \citep[via a parameter $\alpha$, similarly to][]{SR17}. More details are given in Appendix \ref{app:numIssues}.
 %\begin{description}
 %\item[Exact computations:]Our algorithm requires the computation of determinants (from the Matrix Tree Theorem) and inverses (in Kirshner's formula) of Laplacian of weight matrices. As we deal with highly variable weights, numerical issues arise: infinite determinants or matrix numerically non-invertible due to either the maximal machine precision (about $1.7\cdot 10^{308}$), or with machine zero (about $2.2 \cdot 10^{-16}$). \RM{}{To enhance the precision of such computations, we rely on multiple-precision arithmetic which allows the digit of precision of numbers to be  limited only by the available memory instead of 64 bits.}
 
