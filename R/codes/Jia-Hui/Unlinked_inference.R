@@ -33,12 +33,70 @@ F_NegGradient_Trans <- function(gamma, log.psi, P){
   lambda = SetLambda(P, M)
   return(- F_Sym2Vec(P)+ beta*(F_Sym2Vec(M) + lambda))
 }
- 
+F_NegLikelihood_Trans <- function(gamma, log.psi, P, trim=TRUE){
+  if(trim){
+    gamma=gamma-mean(gamma)
+    gamma[which(gamma<(-30))]=-30
+  }
+  M = Meila(F_Vec2Sym(exp(gamma)))
+  lambda = SetLambda(P, M)
+  
+  res<-(-sum(F_Sym2Vec(P) * (log(exp(gamma))+ F_Sym2Vec(log.psi))) )+
+    log(SumTree(F_Vec2Sym(exp(gamma))))+
+    lambda*(sum(exp(gamma))-0.5)
+  
+  if(is.nan(res)){
+    cat(max(gamma),": higher bound ")
+    gamma[which(gamma>(30))]=30
+    M = Meila(F_Vec2Sym(exp(gamma)))
+    lambda = SetLambda(P, M)
+    res<-(-sum(F_Sym2Vec(P) * (log(exp(gamma))+ F_Sym2Vec(log.psi))) )+
+      log(SumTree(F_Vec2Sym(exp(gamma))))+
+      lambda*(sum(exp(gamma))-0.5)
+    if(is.nan(res))   cat("\nbeta optimization failed\n")
+  }
+  return( res)
+}
+SetLambda <- function(P, M, eps = 1e-6, start=1){
+  # F.x has to be increasing. The target value is 0
+  F.x <- function(x){
+    if(x!=0){
+      1 - sum(P / (x+M))
+    }else{
+      1 - (2*sum(P[upper.tri(P)] / M[upper.tri(M)]))
+    }
+  }
+  x.min = ifelse(F.x(0) >0,-start,1e-4);
+  t1<-Sys.time()
+  while(F.x(x.min)>0 ){ 
+    x.min = x.min -1 
+    if(difftime(Sys.time(),t1)>1) stop("Could not set lambda.")}
+  x.max = start
+  while(F.x(x.max)<0){x.max = x.max * 2}
+  x = (x.max+x.min)/2
+  f.min = F.x(x.min)
+  f.max = F.x(x.max)
+  f = F.x(x)
+  while(abs(x.max-x.min) > eps){
+    if(f > 0) {
+      x.max = x
+      f.max = f
+    } else{
+      x.min = x
+      f.min = f
+    }
+    x = (x.max+x.min)/2;
+    f = F.x(x)
+  }
+  return(x)
+}
+
 #-- new EMtree function :
-new_EMtree<-function(PLN.Cor,unlinked=NULL, maxIter=30, cond.tol=1e-10, eps1 = 1e-6,eps2=1e-4, plot=FALSE){
+new_EMtree<-function(PLN.Cor,unlinked=NULL,n, maxIter=30, cond.tol=1e-10, eps1 = 1e-6,eps2=1e-4, plot=FALSE){
   CorY=cov2cor(PLN.Cor$model_par$Sigma)
   alpha.psi = Psi_alpha(CorY, n, cond.tol=1e-10)
   psi = alpha.psi$psi
+  p=ncol(CorY)
   # new beta.init with the unliked parameter
   beta.init = matrix(1, p, p); diag(beta.init) = 0; 
   if(!is.null(unlinked)) beta.init[unlinked, unlinked]=0
@@ -109,9 +167,9 @@ new_ResampleEMtree <- function(counts, unlinked=NULL, covar_matrix=NULL  , O=NUL
       suppressWarnings(
       PLN.sample <- PLNmodels::PLN(counts.sample ~ -1  + offset(log(O.sample)) + ., data=X.sample, control = list("trace"=0))
     )
-      inf<-new_EMtree( PLN.sample,unlinked, maxIter=maxIter, cond.tol=cond.tol,
+      inf<-new_EMtree( PLN.sample,unlinked,n=n, maxIter=maxIter, cond.tol=cond.tol,
                     plot=FALSE)[c("edges_prob","maxIter","timeEM")]
-    },silent=TRUE )
+   },silent=TRUE )
     if(!exists("inf")) inf=NA #depending on the sample drawn, it is possible that computation fail
     # because of bad conditioning of the Laplacian matrix of the weights beta.
     # This is the price for setting some weights to zero.
@@ -129,3 +187,4 @@ new_ResampleEMtree <- function(counts, unlinked=NULL, covar_matrix=NULL  , O=NUL
   times<-do.call(c,lapply(obj,function(x){x$timeEM}))
   return(list(Pmat=Pmat,maxIter=summaryiter,times=times))
 }
+

@@ -7,6 +7,7 @@
 \newcommand{\nocontentsline}[3]{}
 \newcommand{\tocless}[2]{\bgroup\let\addcontentsline=\nocontentsline#1{#2}\egroup}
 \setcounter{chapter}{-1}
+
 \begin{document}
 \frontmatter
 \input{titleUPS}
@@ -22,7 +23,7 @@
 
 \chapter{Introduction}
 \input{intro2.tex}
- \clearemptydoublepage
+\clearemptydoublepage
 \ActivateBG 
 \chapter{Mathematical Framework}
  \input{chap1}
@@ -42,7 +43,6 @@
 
 %\selectlanguage{french}
 \clearemptydoublepage
- 
 \DeactivateBG 
 \chapter{Résumé}
 \input{resume}

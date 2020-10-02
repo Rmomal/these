@@ -29,7 +29,7 @@ library(nestor)
 p=10
 r=1
 n=100
-data=missing_from_scratch(n, p, r,type="scale-free", plot=TRUE)
+data=generate_missing_data(n, p, r,type="scale-free", plot=TRUE)
 ```
 
 The original clique of the missing actor neighbors is available in the value `TC`:

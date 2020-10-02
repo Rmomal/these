@@ -13,9 +13,6 @@ draw_network(G, layout="kk", btw_rank=4, nodes_size=c(3, 5),
 # The nodes 6, 8 and 15 show the biggests betweenness centrality scores.
 unlink=c(6,8,15)
 
-# First the PLN fit:
-PLNfit=PLN(Y~1, control = list(trace=0))
-
 # a classic fit of new_EMtree:
 linkedFit=new_ResampleEMtree(counts=Y,unlinked = NULL, S=100, cores=3,maxIter = 50)
 linked_network<-1*(freq_selec(linkedFit$Pmat,Pt=0.1)>0.4)
@@ -30,3 +27,7 @@ draw_network(unlinked_network, layout="kk", groupes =(1:p)%in%unlink, nodes_size
 
 
 
+####### test jia-hui data
+test.this.Y.data <- read.csv("~/Downloads/test this Y data.csv")
+testfit=new_ResampleEMtree(counts=test.this.Y.data,unlinked = 1:10, S=100, cores=3,maxIter = 50)
+testfit$Pmat
