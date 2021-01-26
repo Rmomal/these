@@ -257,7 +257,7 @@ run.method<-function(cliques,method,counts,sigma_obs,MO,SO,
   })))
   vBIC<-vec.vBIC(vem,counts,theta, matcovar, r=r)
   best=which.max(vBIC)
-  data=computeFPN(cliques, trueClique, p) %>% 
+  data=computeFPN(cliques, trueClique, p=p) %>% 
     mutate( vBIC=vBIC, sizes=unlist(lapply(cliques, length)),
             auc=vec.perf$auc, PPVH=vec.perf$PPVH,method=c(method))
   choice=data[best,]

@@ -18,35 +18,35 @@ F_Sym2Vec <- function(A.mat){
 }
 
 #-- modified gradient and likelihood functions to handle null weights:
-F_NegLikelihood <- function(beta.vec, log.psi, P){
-  M = Meila(F_Vec2Sym(beta.vec))
-  lambda = SetLambda(P, M)
+F_NegLikelihood <- function(beta.vec, log.psi, P, M, lambda){
+  # M = Meila(F_Vec2Sym(beta.vec))
+  # lambda = SetLambda(P, M)
   return(- sum(F_Sym2Vec(P)*(log(beta.vec+(beta.vec==0))+F_Sym2Vec(log.psi))) +
            log(SumTree(F_Vec2Sym(beta.vec)))+
            lambda*(sum(beta.vec)-0.5))
 }
  
-F_NegGradient_Trans <- function(gamma, log.psi, P){
+F_NegGradient_Trans <- function(gamma, log.psi, P, M, lambda){
   beta=exp(gamma)
   beta[gamma==0]=0
-  M = Meila(F_Vec2Sym(beta))
-  lambda = SetLambda(P, M)
+  # M = Meila(F_Vec2Sym(beta))
+  # lambda = SetLambda(P, M)
   return(- F_Sym2Vec(P)+ beta*(F_Sym2Vec(M) + lambda))
 }
-F_NegLikelihood_Trans <- function(gamma, log.psi, P, trim=TRUE){
+F_NegLikelihood_Trans <- function(gamma, log.psi, P, M,lambda,trim=TRUE){
   if(trim){
     gamma=gamma-mean(gamma)
-    gamma[which(gamma<(-30))]=-30
+   # gamma[which(gamma<(-30))]=-30
   }
-  M = Meila(F_Vec2Sym(exp(gamma)))
-  lambda = SetLambda(P, M)
+  # M = Meila(F_Vec2Sym(exp(gamma)))
+  # lambda = SetLambda(P, M)
   
   res<-(-sum(F_Sym2Vec(P) * (log(exp(gamma))+ F_Sym2Vec(log.psi))) )+
     log(SumTree(F_Vec2Sym(exp(gamma))))+
     lambda*(sum(exp(gamma))-0.5)
   
   if(is.nan(res)){
-    cat(max(gamma),": higher bound ")
+    cat(max(gamma),": higher bound\n")
     gamma[which(gamma>(30))]=30
     M = Meila(F_Vec2Sym(exp(gamma)))
     lambda = SetLambda(P, M)
@@ -92,7 +92,7 @@ SetLambda <- function(P, M, eps = 1e-6, start=1){
 }
 
 #-- new EMtree function :
-new_EMtree<-function(PLN.Cor,unlinked=NULL,n, maxIter=30, cond.tol=1e-10, eps1 = 1e-6,eps2=1e-4, plot=FALSE){
+optimM_EMtree<-function(PLN.Cor,unlinked=NULL,n, maxIter=30, cond.tol=1e-10, eps1 = 1e-6,eps2=1e-4, plot=FALSE){
   CorY=cov2cor(PLN.Cor$model_par$Sigma)
   alpha.psi = Psi_alpha(CorY, n, cond.tol=1e-10)
   psi = alpha.psi$psi
@@ -114,18 +114,22 @@ new_EMtree<-function(PLN.Cor,unlinked=NULL,n, maxIter=30, cond.tol=1e-10, eps1 =
   stop=FALSE
   while (((beta.diff > eps1) || (diff.loglik>eps2) ) && iter < maxIter && !stop){
     iter = iter+1
+    print(iter)
     P = EdgeProba(beta.old*psi)
+   # P = EdgeProba(beta.old)
+    M = Meila((beta.old))
+    lambda = SetLambda(P, M)
     init=F_Sym2Vec(beta.old)
     long=length(F_Sym2Vec(beta.old))
     #modification for 0 in gamma_init
     gamma_init=log(init+(init==0))
     gamma_init[init==0]=0
     gamma = stats::optim(gamma_init, F_NegLikelihood_Trans, gr=F_NegGradient_Trans,method='BFGS',
-                         log.psi, P)$par
+                         log.psi, P, M, lambda)$par
     beta=exp(gamma)
     beta[which(beta< beta.min)] = beta.min
     beta=F_Vec2Sym(beta)
-    logpY[iter] = -F_NegLikelihood(F_Sym2Vec(beta),log.psi,P)
+    logpY[iter] = -F_NegLikelihood(F_Sym2Vec(beta),log.psi,P, M, lambda)
     beta.diff = max(abs(beta.old-beta))
     beta.old = beta
     diff.loglik=logpY[iter]-logpY[iter-1]
@@ -163,13 +167,14 @@ new_ResampleEMtree <- function(counts, unlinked=NULL, covar_matrix=NULL  , O=NUL
     counts.sample = counts[sample,]
     X.sample = data.frame(X[sample,])
     O.sample = O[sample,]
-    try({
+   # try({
       suppressWarnings(
       PLN.sample <- PLNmodels::PLN(counts.sample ~ -1  + offset(log(O.sample)) + ., data=X.sample, control = list("trace"=0))
     )
-      inf<-new_EMtree( PLN.sample,unlinked,n=n, maxIter=maxIter, cond.tol=cond.tol,
+
+      inf<-direct_EMtree( PLN.sample,unlinked,n=n, maxIter=maxIter, cond.tol=cond.tol,
                     plot=FALSE)[c("edges_prob","maxIter","timeEM")]
-   },silent=TRUE )
+   #},silent=TRUE )
     if(!exists("inf")) inf=NA #depending on the sample drawn, it is possible that computation fail
     # because of bad conditioning of the Laplacian matrix of the weights beta.
     # This is the price for setting some weights to zero.

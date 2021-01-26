@@ -250,7 +250,7 @@ $$X_k \independent X_\ell \mid X_{V\setminus\{k,\ell\}} \iff \omega_{k\ell}=0. $
   \end{proof}
   Note that Proposition \ref{pp:ggm2} is not a consequence of proposition \ref{pp:ggm1}.
 \begin{prop}[Faithfulness property]\label{ggm:faith}
- Let $X\sim \mathcal{N}(\mu, \Omegab^{-1})$ with associated density $f$, $\G$ the graph which edges represent the non-nul entries of $\Omega$. Then  it holds that:
+ Let $X\sim \mathcal{N}(\mu, \Omegab^{-1})$ with associated density $f$, $\G$ the graph which edges represent the non-null entries of $\Omega$. Then  it holds that:
  $$k\nsim \ell \iff  X_k \independent X_\ell \mid X_{V\setminus\{k,\ell\}}. $$
  and $f$ is faithful Markov relative to $\G$.
 \end{prop} 
@@ -335,9 +335,9 @@ In the special framework of GGM, conditional dependence relations are perfectly 
  where $\lambda$ is a penalty called the regularization parameter.  The form of the $\ell_1$ penalty forces some coefficients to exactly equal zero. Taking advantage of the regression interpretation in GGM reminded in Proposition \ref{ggm:reg}, a method for inferring non-nul elements of the precision matrix is to run separate penalized regressions of each node against all others and possible covariates, as in \citet{MeB06}. \\
  
  A joint estimation of these regression models is performed by the widely used Graphical Lasso (glasso) \citep{FHT08}. The glasso introduces sparsity in the precision matrix by imposing Lasso penalties on its entries. It is an iterative procedure which aims a sparse MLE of the penalized precision matrix $\Omegab$.  The log-likelihood of a GGM writes:
- $$L_\lambda(\Omegab) = \log |\Omegab| +\tr{\Yb^\intercal \Yb \Omegab}+cst .$$
+ $$L(\Omegab) = \log |\Omegab| +\tr{\Yb^\intercal \Yb \Omegab}+cst .$$
  The precision matrix is then estimated as the matrix which maximizes the penalized log-likelihood:
- $$\argmax_{\Omegab\geq 0} \big\{L_\lambda(\Omegab) - \lambda ||\Omegab||_1\big\}, \qquad ||\Omegab||_1 = \sum_{j\neq k} |\omega_{jk}|.$$
+ $$\argmax_{\Omegab\geq 0} \big\{L(\Omegab) - \lambda ||\Omegab||_1\big\}, \qquad ||\Omegab||_1 = \sum_{j\neq k} |\omega_{jk}|.$$
 The glasso  selects the network edges by forcing some of them to zero in the precision matrix. The greater the penalty $\lambda$, the less edges are included in the network and therefore choosing $\lambda$ is critical for the glasso. The selection of $\lambda$ can be performed using classical tools such as cross-validation, Akaike information criterion (AIC),  Bayesian information criterion (BIC) or its extended version.  Another popular approach is to perform a stability selection with StARS \citep{stars}, which fosters the network robustness under random sampling of the input data.
 
  %builds on the regression interpretation of the partial correlation
@@ -373,7 +373,7 @@ Averaging on trees then means to treat the underlying tree $T$ as a latent param
 \begin{definition}[Gaussian tree mixture]\label{treemixt}
 The distribution of a variable $\Ybf$ is a Gaussian tree mixture on the space of $m$ spanning trees if it writes as follows:
 $$p(\Ybf) = \sum_{k=1}^m  p(T_k) p(\Ybf\mid T_k),\qquad  \Ybf\mid T_k\sim\Ncal (0, \Omegab_{T_k}^{-1}), \;\; \forall k\in\{1,...,m\}.$$
-Conditional on $T_k$, $\Ybf$ is faithful relative to this tree and follows a multivariate Gaussian with the corresponding precision matrix $\Omega_{T_k}$.
+Conditional on $T_k$, $\Ybf$ is faithful relative to this tree and follows a multivariate Gaussian with the corresponding precision matrix $\Omegab_{T_k}$.
 \end{definition}
  
 Instead of a subset $m$, considering an average on all possible spanning trees %allows for an exhaustive exploration of the space of spanning trees  $\mathcal{T}$. An interesting 

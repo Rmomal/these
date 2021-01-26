@@ -8,7 +8,7 @@ library(ggplot2)
 # Function:
 
 # new function :
-new_EMtree<-function(PLN.Cor,unlinked=NULL,n, maxIter=30, cond.tol=1e-10,
+direct_EMtree<-function(PLN.Cor,unlinked=NULL,n, maxIter=30, cond.tol=1e-10,
                      eps1 = 1e-3,eps2=1e-3, plot=FALSE){
   CorY=cov2cor(PLN.Cor$model_par$Sigma)
   alpha.psi = Psi_alpha(CorY, n, cond.tol=1e-10)
@@ -28,24 +28,27 @@ new_EMtree<-function(PLN.Cor,unlinked=NULL,n, maxIter=30, cond.tol=1e-10,
   beta.diff = diff.loglik = 2 * eps2
   T1<-Sys.time()
   stop=FALSE
-  #while (((beta.diff > eps1) || (diff.loglik>eps2) ) && iter < maxIter && !stop){
-  while ((beta.diff > eps1) && iter < maxIter && !stop){
+  while (((beta.diff > eps1) || (diff.loglik>eps2) ) && iter < maxIter && !stop){
+ # while ((beta.diff > eps1) && iter < maxIter && !stop){
     iter = iter+1
-    P = EdgeProba(beta.old*psi)
+     P = EdgeProba(beta.old*psi)
+    
     P[beta.old==0]=0
     M = Meila(beta.old) #Meila(beta.old)
-    for(i in 1:10){
-    lambda = SetLambda(P, M) ; print(lambda)
+    # for(i in 1:10){
+  #  lambda = SetLambda(P, M)# ; print(lambda)
     # got rid of optim dependency for the update of beta
-    gamma=log(F_Sym2Vec(P)) - log(F_Sym2Vec(M)+lambda)
+    gamma=log(F_Sym2Vec(P)) - log(F_Sym2Vec(M))#+lambda)
+    # browser()
+    # gamma=gamma-mean(gamma)
    # beta=P/(M+lambda)
     beta=F_Vec2Sym(exp(gamma))
-    M = Meila(beta) #Meila(beta.old)
-   # beta[which(beta< beta.min)] = beta.min
-    }
-    P = EdgeProba(beta*psi)
-    P[beta==0]=0
-    logpY[iter] = -F_NegLikelihood(F_Sym2Vec(beta+(beta==0)),log.psi,P,M=M,lambda=lambda)
+   #  M = Meila(beta) #Meila(beta.old)
+   # # beta[which(beta< beta.min)] = beta.min
+   #  }
+    # P = EdgeProba(beta*psi)
+    # P[beta==0]=0
+    logpY[iter] = -NegLikelihood(F_Sym2Vec(beta+(beta==0)),log.psi,P)
     beta.diff = max(abs(beta.old-beta))
     beta.old = beta
     diff.loglik=logpY[iter]-logpY[iter-1]
@@ -99,10 +102,10 @@ SetLambda <- function(P, M, eps = 1e-6, start=1){
 }
 NegLikelihood <- function(beta.vec, log.psi, P){
   M = Meila(F_Vec2Sym(beta.vec))
-  lambda = SetLambda(P, M)
+ # lambda = SetLambda(P, M)
   return(- sum(F_Sym2Vec(P)*(log(beta.vec)+F_Sym2Vec(log.psi))) +
-           log(SumTree(F_Vec2Sym(beta.vec)))+
-           lambda*(sum(beta.vec)-0.5))
+           log(SumTree(F_Vec2Sym(beta.vec))))#+
+           #lambda*(sum(beta.vec)-0.5))
 }
 F_Vec2Sym <- function(A.vec){
   # Makes a symmetric matrix from the vector made of its lower tirangular part
@@ -140,16 +143,18 @@ EdgeProba<-function (W, verbatim = FALSE){
     sapply((j + 1):p, function(k) {
       W_jk = W
       W_jk[j, k] = W_jk[k, j] = 0
-      P[k, j] <<- 1 - SumTree(W_jk)/Wcum
+     # P[k, j] <<- 1 - SumTree(W_jk)/Wcum
+      P[k, j] <<- 1 - det(Laplacian(W_jk)[-1,-1])/Wcum
      # P[k, j] <<- 1 - exp(logSumTree(W_jk)$det - logWcum)
       P[j, k] <<- P[k, j]
     })
   })
-  P[which(P < 1e-10)] = 1e-10
+  P[which(P < 1e-5)] = 1e-5
   diag(P) = 0
   return(P)
 }
-EdgeProba(newWeight,verbatim=TRUE)
+hist(EdgeProba(newWeight,verbatim=TRUE))
+
 #----------------
 # Simulated example:
 set.seed(1)
@@ -172,14 +177,25 @@ newFit=new_EMtree(PLN.Cor=PLNfit,n=n, unlinked = NULL, plot=TRUE, maxIter = 40,
                     eps1 = 1e-3)
 optimFit=optim_EMtree(PLN.Cor=PLNfit,n=n, plot=TRUE,eps1 = 1e-10,maxIter = 8)
 newprob=newFit$edges_prob
-optimProb=optimFit$edges_prob
+newprob2=EdgeProba(newFit$edges_weight)
+optimProb2=optimFit$edges_prob #quand on enlève M de l'optim
+par(mfrow=c(1,1))
+plot(F_Sym2Vec(optimProb), F_Sym2Vec(optimProb2))
+abline(0,1)
 plot(newprob,optimProb)
+abline(0,1)
 newWeight=newFit$edges_weight
 optimWeight=optimFit$edges_weight
 plot(newWeight,optimWeight)
+abline(0,1)
+dataweights=data.frame(optim = F_Sym2Vec(optimWeight), new=F_Sym2Vec(newWeight))
+dataweights %>% ggplot(aes(log(optim), log(new)))+geom_point()+theme_light()+
+  geom_abline()
 hist(log(newWeight), breaks=30)
 hist(log(optimWeight), breaks=30)
-hist((optimProb), breaks=30)
+par(mfrow=c(2,1))
+hist((optimProb), breaks=40)
+hist((optimProb2), breaks=40)
 hist((newprob), breaks=30)
 optim_network=1*(optimFit$edges_prob>0.1)
 new_network=1*(newFit$edges_prob>0.05)

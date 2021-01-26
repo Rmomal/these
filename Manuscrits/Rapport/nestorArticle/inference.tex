@@ -74,15 +74,15 @@ We gather the $\betat_{jk}$'s in the $(p+r) \times (p+r)$ matrix $\betabft$. The
 \label{algo}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-The model we consider is an extension of the PLN model, for which an efficient inference algorithm have been implemented in the \url{PLNmodels}, an R package available on CRAN \citep{CMR18,CMR19}. 
+The model we consider is an extension of the PLN model, for which an efficient inference algorithm have been implemented in \url{PLNmodels}, an R package available on CRAN \citep{CMR18,CMR19}. 
 
 \subsubsection*{Prior estimates of $\thetabf$, $\Mbf_O$ and $\Sbf_O$.}
 To alleviate the computational burden of the inference, we take advantage of this available tool to get an estimate of the regression coefficient matrix $\widehat{\thetabf}$ and an approximation of the parameters  of the observed latent variable conditional distribution $h_O(\Ubf_O) \simeq p(\Ubf_O \mid \Ybf)$. These latter parameters are $\Mbf_O$ and $\Sbf_O$ (first $p$  columns of $\Mbf$ and $\Sbf$ respectively) and we denote $\Mbft_O$ and $\Sbft_O$ their approximation. The quantities $\widehat{\thetabf}$, $\Mbft_O$ and $\Sbft_O$ are kept fixed in the rest of the algorithm, so the VEM algorithm only deals with the remaining unknown quantities: the model parameters $\betabf$, $\Omegabf$, and the variational parameters $\betabft$, $\Mbf_H$, $\Sbf_H$. 
 % \textcolor{red}{[on ne dit plus que c'est sous-optimal ? "optimal value for MO and SO" est un peu fort ?]}
-As a consequence, the final estimates we get yield a lower value of the objective function $\Jcal$ as compared to  an optimisation wrt to all model and variational parameters.
+As a consequence, the final estimates we get yield a lower value of the objective function $\Jcal$ as compared to  an optimisation wrt all model and variational parameters.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsubsection*{M step.} This steps deals with the update of the  model parameters $\betabf$ and $\Omegabf_T$. Some of the calculations are tedious and postponed to Appendix \ref{app:comput}.
+\subsubsection*{M step.} This step deals with the update of the  model parameters $\betabf$ and $\Omegabf_T$. Some of the calculations are tedious and postponed to Appendix \ref{app:comput}.
 
 \paragraph{Edges weights $\betabf$:} 
 As shown in Equation \eqref{eq:Mstep}, the maximization of $\mathcal{J}$ requires the computation of the derivative of $\Esp_{g^t} [\log p_{\betabf}(T)]$ wrt $\betabf$, which includes the derivative of the normalizing constant $B$. The latter can be computed via an extension of the Matrix Tree theorem \citep[see][Lemma \ref{lem:Meila} reminded in Appendix \ref{app:tools}]{MeilaJaak}. Setting the derivative of the expectation to 0 yields the following update (same as in \citet{MRA20} and detailed in appendix \ref{up:beta}):
@@ -165,7 +165,7 @@ Computing the expression \eqref{eq:VEstep-g} yields the following, where the con
 According to \eqref{eq:VEstep-hH}, we have that
 $$
 \log h^{t+1}(\Ubf) 
-= \Esp_{g^{t+1}} \log p(\Ybf \mid \Ubf_O) - \frac{1}{2} \tr{\left( \xbar{\Omegabf}^{t+1}_T ( \Ubf^\intercal \Ubf) \right)} + \text{cst}.
+= \Esp_{g^{t+1}} \log p(\Ybf \mid \Ubf_O) - \frac{1}{2} \tr{ \xbar{\Omegabf}^{t+1}_T ( \Ubf^\intercal \Ubf)} + \text{cst}.
 $$
 Using the properties of the conditional Gaussian distribution we have that
 $$

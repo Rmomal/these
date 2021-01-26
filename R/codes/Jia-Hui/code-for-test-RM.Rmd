@@ -1,0 +1,146 @@
+---
+title: "Test with my data"
+output:
+  html_document:
+    theme: cosmo
+---
+
+# settings
+
+```{r, message=FALSE}
+rm(list = ls())
+library(tidyverse)
+library(EMtree)
+library(stringr)#added this
+source("Jia_version.R")
+```
+
+In what follows I use my nestor::ggimage() function, which I came to really like when looking at networks. I give it to you, it is a simple heatmap function for ggplot, you can reorder lines if you whant to see a cluster pattern for example.
+
+```{r}
+ggimage<-function(data, no.names=FALSE, order=NULL){
+  num=FALSE
+  melted_data <- reshape2::melt(data)
+  if(is.null(order)){p=ncol(data) ; order = 1:p}
+ if(is.null(colnames(data))){
+   level=1:p
+   num=TRUE
+   }else{level=colnames(data)}
+  melted_data$Var1 <- factor( melted_data$Var1, levels = level[order])
+  melted_data$Var2 <- factor( melted_data$Var2, levels = level[order])
+  if(num){
+    melted_data[,1:2]=apply(melted_data[,1:2],2, function(x) as.numeric(as.character(x)))
+  }
+  g=ggplot2::ggplot(melted_data, ggplot2::aes(x=.data$Var1, y=.data$Var2, fill=.data$value)) + ggplot2::theme_light()+
+    ggplot2::labs(x="",y="")+ ggplot2::geom_tile() +ggplot2::guides(fill=FALSE)+
+    ggplot2::theme(plot.title = ggplot2::element_text(size=10, hjust=0.5))+
+    ggplot2::coord_fixed()
+  if(no.names) g=g+theme(axis.text=element_blank(),axis.ticks =element_blank())
+  g
+}
+```
+
+# Tests
+## Classic fit
+```{r}
+Y <- data.frame(read.csv("Y data.csv", header = TRUE))
+dim(Y)
+p <- ncol(Y)
+
+X <- data.frame(read.csv("X data.csv", header = TRUE))
+dim(X)
+```
+When working with categorical variables, we have to specify a "design" matrix. An easy way to build one is to use model.matrix(), I should tell in the examples about that:
+```{r}
+# deal with covariates
+built_covar_matrix=model.matrix(~X$Month+X$MBC)
+head(built_covar_matrix)
+```
+
+The classic_fit went right, I modified warnings so we don't see the "Nans produced" (they are useless).
+```{r, cache=TRUE}
+classic_fit <- new_ResampleEMtree(
+  counts = Y,
+  covar_matrix =built_covar_matrix, 
+  unlinked = NULL,
+  S = 20,
+  cores = 3,
+  maxIter = 20
+)
+
+```
+
+About the threshold on the probabilities, it is set by the user and could be anything. However the way probabilities are computed, the mean of the matrix will always be 2/p, because the sum of all probabilities must be (p-1) (which is the number of edges in a spanning tree) and they are p(p-1)/2 possible edges.  2/p is the average value. Indeed in the example I added +0.1 to be more stringent.
+```{r}
+Pt <- 2 / p
+
+threshold_network <- (freq_selec(classic_fit$Pmat, Pt = Pt) > 0.8) * 1
+
+draw_network(
+  threshold_network,
+  layout = "kk",
+  btw_rank = 10,
+  # nodes_label = 1:ncol(threshold_network),
+  pal_nodes = c("grey85", "salmon2"),
+  pal_edges = "lightblue"
+)$G 
+save_layout=ggraph::create_layout(threshold_network,"kk")
+
+#ggimage(threshold_network)
+```
+
+## Unlinked fit
+
+```{r, cache=TRUE}
+# all plant column IDs
+plant_ids <- (1:p)[str_detect(colnames(Y), pattern = "_")]
+plant_ids
+# 24:105
+
+test_unlinked <- plant_ids
+
+# unlinked fit
+unlink_fit1 <- new_ResampleEMtree(
+  counts = Y,
+  covar_matrix = built_covar_matrix,
+  unlinked = test_unlinked,
+  S = 20,
+  cores = 3,
+  maxIter = 20
+)
+```
+To make this work I revised the way unlinked nodes were specified throughout the optimization.
+
+Constraining the algorithm make some sub-samples fail. I was expecting that, I am actually astonished that most of them converge fine with so many variables and so few data samples!
+
+```{r}
+threshold_network_unlinked <- (freq_selec(unlink_fit1$Pmat, Pt = Pt) > 0.8) * 1
+draw_network(
+  threshold_network_unlinked,
+  layout = "kk",
+  btw_rank = 10,
+  # nodes_label = 1:ncol(threshold_network),
+  pal_nodes = c("grey85", "salmon2"),
+  pal_edges = "lightblue"
+)$G 
+gridExtra::grid.arrange(ggimage(threshold_network),ggimage(threshold_network_unlinked),ncol=2)
+```
+
+Unlinking the plants made new fauna-plant links appear! Hurray
+
+# keep position 
+
+I notived you want to keep the nodes position from the first graph to the next with set.seed() and coord_fixed(). This won't work, I've been there :) If you update your EMtree package, you will find a new parameter of draw_network: stored_layout. This allows you to pass a layout previously computed with create_layout for example. 
+```{r}
+save_layout=ggraph::create_layout(threshold_network,"kk")
+
+draw_network(
+  threshold_network_unlinked,
+  stored_layout = save_layout, # no need to specify layout if a stored_layout is provided
+  btw_rank = 10, 
+  pal_nodes = c("grey85", "salmon2"),
+  pal_edges = "lightblue"
+)$G
+```
+
+

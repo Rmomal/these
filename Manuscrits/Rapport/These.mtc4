@@ -1,44 +1,44 @@
 {\reset@font\mtcSfont\mtc@string\contentsline{section}{\noexpand \leavevmode \numberline {3.1}Introduction}{\reset@font\mtcSfont 64}{section.3.1}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Network inference.}{\reset@font\mtcPfont 64}{section*.83}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Abundance data.}{\reset@font\mtcPfont 64}{section*.84}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Missing actors.}{\reset@font\mtcPfont 65}{section*.85}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Variational inference.}{\reset@font\mtcPfont 66}{section*.87}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Our contribution.}{\reset@font\mtcPfont 66}{section*.88}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Network inference.}{\reset@font\mtcPfont 64}{section*.84}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Abundance data.}{\reset@font\mtcPfont 64}{section*.85}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Missing actors.}{\reset@font\mtcPfont 65}{section*.86}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Variational inference.}{\reset@font\mtcPfont 66}{section*.88}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Our contribution.}{\reset@font\mtcPfont 66}{section*.89}}
 {\reset@font\mtcSfont\mtc@string\contentsline{section}{\noexpand \leavevmode \numberline {3.2}Model}{\reset@font\mtcSfont 66}{section.3.2}}
 {\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode \numberline {3.2.1}Poisson log-normal and tree-shaped graphical models}{\reset@font\mtcSSfont 66}{subsection.3.2.1}}
 {\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode \numberline {3.2.2}Introducing the missing actor}{\reset@font\mtcSSfont 68}{subsection.3.2.2}}
 {\reset@font\mtcSfont\mtc@string\contentsline{section}{\noexpand \leavevmode \numberline {3.3}Inference}{\reset@font\mtcSfont 69}{section.3.3}}
 {\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode \numberline {3.3.1}Variational inference}{\reset@font\mtcSSfont 69}{subsection.3.3.1}}
 {\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode \numberline {3.3.2}Proposed algorithm}{\reset@font\mtcSSfont 71}{subsection.3.3.2}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Edges weights ${\boldsymbol {\beta }}$:}{\reset@font\mtcPfont 71}{section*.98}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Precision matrices ${\boldsymbol {\Omega }}_T$:}{\reset@font\mtcPfont 72}{section*.99}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Approximate conditional tree distribution $g(T)$:}{\reset@font\mtcPfont 73}{section*.101}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Approximate Gaussian distribution $h$:}{\reset@font\mtcPfont 74}{section*.102}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Edges weights ${\boldsymbol {\beta }}$:}{\reset@font\mtcPfont 71}{section*.99}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Precision matrices ${\boldsymbol {\Omega }}_T$:}{\reset@font\mtcPfont 72}{section*.100}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Approximate conditional tree distribution $g(T)$:}{\reset@font\mtcPfont 73}{section*.102}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Approximate Gaussian distribution $h$:}{\reset@font\mtcPfont 74}{section*.103}}
 {\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode \numberline {3.3.3}Algorithm peculiarities}{\reset@font\mtcSSfont 74}{subsection.3.3.3}}
 {\reset@font\mtcSfont\mtc@string\contentsline{section}{\noexpand \leavevmode \numberline {3.4}Simulations}{\reset@font\mtcSfont 75}{section.3.4}}
 {\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode \numberline {3.4.1}Count datasets}{\reset@font\mtcSSfont 75}{subsection.3.4.1}}
 {\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode \numberline {3.4.2}Experiment \& Measures}{\reset@font\mtcSSfont 75}{subsection.3.4.2}}
 {\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode \numberline {3.4.3}Results}{\reset@font\mtcSSfont 76}{subsection.3.4.3}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode About intialization.}{\reset@font\mtcPfont 77}{section*.107}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode About intialization.}{\reset@font\mtcPfont 77}{section*.108}}
 {\reset@font\mtcSfont\mtc@string\contentsline{section}{\noexpand \leavevmode \numberline {3.5}Applications}{\reset@font\mtcSfont 78}{section.3.5}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Cross validation criterion for model selection. \\}{\reset@font\mtcPfont 78}{section*.110}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Initialization. \\}{\reset@font\mtcPfont 79}{section*.112}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Cross validation criterion for model selection. \\}{\reset@font\mtcPfont 78}{section*.111}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Initialization. \\}{\reset@font\mtcPfont 79}{section*.113}}
 {\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode \numberline {3.5.1}Barents Sea}{\reset@font\mtcSSfont 79}{subsection.3.5.1}}
 {\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode \numberline {3.5.2}Fatala River}{\reset@font\mtcSSfont 80}{subsection.3.5.2}}
-{\reset@font\mtcSfont\mtc@string\contentsline{section}{\noexpand \leavevmode Appendices}{\reset@font\mtcSfont 83}{section*.116}}
+{\reset@font\mtcSfont\mtc@string\contentsline{section}{\noexpand \leavevmode Appendices}{\reset@font\mtcSfont 83}{section*.117}}
 {\reset@font\mtcSfont\mtc@string\contentsline{section}{\noexpand \leavevmode \numberline {3.A}Supplementary material}{\reset@font\mtcSfont 83}{section.b.3.A}}
-{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Update of tree parameter vector}{\reset@font\mtcSSSfont 84}{section*.117}}
-{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Update of Gaussian tree precision matrix}{\reset@font\mtcSSSfont 84}{section*.118}}
-{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode for the toc}{\reset@font\mtcSSSfont 85}{section*.119}}
-{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Numerical issues.}{\reset@font\mtcSSSfont 86}{section*.120}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Exact computations}{\reset@font\mtcPfont 86}{section*.121}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Tempering parameter $\alpha $}{\reset@font\mtcPfont 86}{section*.122}}
-{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Sampling spanning trees}{\reset@font\mtcSSSfont 87}{section*.123}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Evaluation of the proposal.}{\reset@font\mtcPfont 88}{section*.124}}
-{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Upper bounding constant $M$.}{\reset@font\mtcPfont 88}{section*.125}}
-{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Cross-validation for model selection}{\reset@font\mtcSSSfont 88}{section*.126}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Update of tree parameter vector}{\reset@font\mtcSSSfont 84}{section*.118}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Update of Gaussian tree precision matrix}{\reset@font\mtcSSSfont 84}{section*.119}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode for the toc}{\reset@font\mtcSSSfont 85}{section*.120}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Numerical issues.}{\reset@font\mtcSSSfont 86}{section*.121}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Exact computations}{\reset@font\mtcPfont 86}{section*.122}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Tempering parameter $\alpha $}{\reset@font\mtcPfont 86}{section*.123}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Sampling spanning trees}{\reset@font\mtcSSSfont 87}{section*.124}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Evaluation of the proposal.}{\reset@font\mtcPfont 88}{section*.125}}
+{\reset@font\mtcPfont\mtc@string\contentsline{paragraph}{\noexpand \leavevmode Upper bounding constant $M$.}{\reset@font\mtcPfont 88}{section*.126}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Cross-validation for model selection}{\reset@font\mtcSSSfont 88}{section*.127}}
 {\reset@font\mtcSfont\mtc@string\contentsline{section}{\noexpand \leavevmode \numberline {3.B}Vignette for nestor}{\reset@font\mtcSfont 90}{section.b.3.B}}
-{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Single clique initialization}{\reset@font\mtcSSSfont 91}{section*.128}}
-{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Initialization with a list of cliques}{\reset@font\mtcSSSfont 92}{section*.129}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Single clique initialization}{\reset@font\mtcSSSfont 91}{section*.129}}
+{\reset@font\mtcSSSfont\mtc@string\contentsline{subsubsection}{\noexpand \leavevmode Initialization with a list of cliques}{\reset@font\mtcSSSfont 92}{section*.130}}
 {\reset@font\mtcSfont\mtc@string\contentsline{section}{\noexpand \leavevmode \numberline {3.C}Clique initialization}{\reset@font\mtcSfont 94}{section.b.3.C}}
 {\reset@font\mtcSfont\mtc@string\contentsline{section}{\noexpand \leavevmode \numberline {3.D}Comparison with PLN-network and EMtree}{\reset@font\mtcSfont 97}{section.b.3.D}}

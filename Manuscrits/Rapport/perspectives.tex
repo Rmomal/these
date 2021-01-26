@@ -8,8 +8,8 @@
  T\sim \prod_{kl\in T} \beta_{kl} / B, &B= \sum_{T\in\mathcal{T}} \prod_{kl \in T} \beta_{kl},\\\\
  \Zbf_i\mid T  \sim \Ncal (0, \Omegab_T), &\{\Zbf_i\}_i \text{ iid, }\\
  \end{array} \\\\
- Y_{ij}\mid \Zbf_i\sim \Pcal (\exp (o_{ij}+\xb_i^\intercal \thetab_j + Z_{ij})), \; (Y_{ij} \independent) \mid \Zbf_i 
- \end{array} \right. .
+ Y_{ij}\mid \Zbf_i\sim \Pcal (\exp (o_{ij}+\xb_i^\intercal \thetab_j + Z_{ij})), \; (Y_{ij} \independent) \mid \Zbf_i .
+ \end{array} \right. 
  \end{equation*}
  
  The qualities of this approach have been demonstrated on simulated examples as well as empirical datasets. But why does it work ? Mostly because exact computations are possible in the Gaussian layer, thanks to its maniability and the structure and algebraic properties of spanning trees.  This flexibility calls for some natural extensions which were not developed due to time constraints, that we now present together with specific details of this model.
@@ -114,7 +114,7 @@ That way we obtain $\Cov{(Z_{sj},Z_{sk})} = \gamma_{ss} \sigma_{jk}$ and $\Cov{(
 $$Vec(\Zbf) \sim \Ncal(0,\Gamma \otimes \Sigma).$$ 
 
 As the covariance structure is different for a pair of sites or a pair of species, this model requires to use the bivariate Poisson log-normal distribution for the count data $\Ybf$.
-It is then be possible to write a pairwise composite log-likelihood which involves all the variance parameters:
+It is then possible to write a pairwise composite log-likelihood which involves all the variance parameters:
 $$c\ell_\theta(\Ybf) = \sum_{j=1}^p \sum_{s<t} \log p_\theta(Y_{sj}, Y_{tj})+\sum_{s=1}^n \sum_{j<k} \log p_\theta(Y_{sj}, Y_{sj}).$$
 
 The number of parameters for the variance is $\frac{1}{2}(n^2+ p^2)$, which is quite large. Classically to reduce this number, the $\Gamma$ matrix is parametrized with a spatial covariance function.  For example the Matérn functions (which include the exponential covariance function and others) define the covariance between two points distant of $d$ units from each other as a function of $d$ and three other parameters \citep{CW15}.

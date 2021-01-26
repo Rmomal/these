@@ -196,6 +196,18 @@ compare_jak_oak<-function(allNets, nb=5, nodes_label=NULL, Ft=0.8){
 ########################################################
 #infected with covariates
 finalinftree_covs=readRDS(paste0(data.dir,"infectedTree.rds"))
+prob=data.frame(x=finalinftree_covs$Pmat[1,])
+prob %>% ggplot(aes(x))+ geom_histogram(binwidth = 0.005,alpha=0.4, fill="steelblue", color="steelblue")+theme_light()+
+  coord_cartesian(xlim=c(-0.001,0.1))+
+  geom_vline(xintercept = 2/114, color="red", linetype="dashed")+
+  labs(x="Probabilities", y="")
+freqs=freq_selec(finalinftree_covs$Pmat,Pt=2/114)
+hist(F_Sym2Vec(freqs), breaks=30,prob=TRUE)
+hist(finalinftree_covs$Pmat[1,], breaks=30, prob=TRUE)
+ggimage(F_Vec2Sym(finalinftree_covs$Pmat[1,]))
+ggimage(F_Vec2Sym(finalinftree_covs$Pmat[1,]>2/114))
+ggimage(freqs)
+ggimage(1*(freqs>0.9))
 infectedNet=countEdges(list(finalinftree_covs),2/p,c("infected tree"))
 reseaux=compare_jak_oak(infectedNet, nodes_label = colnames(Y), Ft=0)
 

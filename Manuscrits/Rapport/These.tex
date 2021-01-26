@@ -11,15 +11,45 @@
 \begin{document}
 \frontmatter
 \input{titleUPS}
+ \clearemptydoublepage
 \setcounter{tocdepth}{1}
 \selectlanguage{english}
 \dominitoc
 \nomtcrule
-\clearemptydoublepage
+ \clearemptydoublepage
+ \newpage
+ \chapter*{Remerciements}
+ 
+  Merci Stéphane et Christophe pour ces trois dernières années (et un peu plus), durant lesquelles vous avez su accueillir mes doutes et mes erreurs avec patience et grand renforts de sourires. Ça a été un grand honneur de travailler avec vous deux, j'ai énormément appris et j'espère qu'on aura l'occasion de faire durer le plaisir encore un peu.\\
+
+
+ Je remercie Florence Forbes et Otso Ovaskainen d'avoir rapporté cette thèse. Je remercie également Camille Coron, Chi Tran et Stéphane Dray d'avoir accepté de faire partie du jury.  Merci  aussi à Matthieu Authier et Mahendra Mariadassou pour des discussions intéressantes et enrichissantes.\\
+ 
+ Je n'aurais jamais cru faire une thèse en mathématiques un jour. Enfin si, quand François Coquet m'a amené doucement à l'idée. Merci François de m'avoir poussée à ne pas me contenter de ce que j'avais sous les yeux. J'ai vraiment pris ma décision lors de mon premier contact avec la recherche. Merci à Andrea Rau d'avoir fait de cette expérience une révélation.\\
+
+ 
+ On m'avait prévenu que j'arrivais dans un labo un peu spécial, un labo pas comme les autres.  L'Agro c'est comme une grande bourrasque d'été. Ça réchauffe, ça fait rire, ça décoiffe. Un lieu chaleureux et dynamique, peuplé de gens bourrés de talents et d'humour. Je remercie du fond du coeur toute cette grande famille, en commençant par les parents : Liliane, Éric, Céline, Julien, Marie-Laure, Sophie, Isabelle, Laure, Julie, Sarah, Pierre B,  Tristan, Maud, Jade, Joon, Erica, Christelle, Christophe D, Marie-Pierre. Un énorme merci aux  générations précédentes \sout{d'enfants} de doctorants que j'ai eu la chance de croiser : Anna, Marie C, Paul, Yann, Mathieu, Thimothée et Rana. \\
+ 
+Annarosa, Martina, merci les filles !! Merci d'avoir rendu ce dernier bureau drôle et studieux juste ce qu'il faut, je n'aurais voulu partager les (quelques) craquages de dernière année avec personne d'autre. Ne changez rien vous êtes parfaites. Merci Claire pour tous tes passages (trop courts), pour les orangettes, et ces magnifiques (c'est le mot !) duos entre flûtistes. Je te souhaite le meilleur pour tes prochaines aventures. Antoine, merci de diffuser la bonne parole de R tidy, grâce à toi nous sommes de plus en plus nombreux dans la paroisse. Merci Félix pour ces moments de calme autour d'un bon thé, et ces week-ends en Bourgogne dont on se souviendra longtemps (qui a dit qu'une chaudière était nécessaire ? Une cheminée suffit !). Merci Saint-Clair de nous rappeler qu'on peut avoir vécu mille vies avant de se lancer dans une thèse ; amuse-toi bien dans la suite de cette aventure. Je remercie aussi les nouveaux que je n'ai pas eu le temps de mieux connaître : Wencan, Gaspard, Tâm et Marina. À vous la suite ! \\
+Gabriel (j'ai failli te mettre dans les doctorants, je sais que ça te fait plaisir), merci pour toutes ces histoires, pour tes imitations d'hamsters et de poires astringentes, pour ces moments d'éclats sur isc, et pour ton expertise dans tous les domaines de la vie qu'en tant que petit doctorant on ne comprends pas toujours très bien. Pierre G merci pour tes éclats de voix (notamment de Julien Clerc), pour ta \sout{patience} tolérance à puyo puyo et pour nous rappeler qu'il est urgent de rire.  
+
+
+Marie est une personne extraordinaire qui a le pouvoir d'augmenter le niveau de bonheur autour d'elle. Elle a l'effet secondaire d'induire une accoutumance assez sévère. Ayant la chance d'avoir partagé son bureau pendant 2 ans, puis d'avoir récidivé aux cours de théâtre, aux soirées et aux week-ends en Normandie, je suis complètement addict, je l'avoue sans rougir. Mais ce traitement de fond fait de moi un être humain plus heureux.  Alors merci Marie, je serais toujours là pour toi. 
+
+
+Un grand merci à Charles (et les chichis), Luc, Nico et Joachim pour vos folies respectives. Marine, après toutes ces années tu continues à me suivre. Merci pour toutes ces aventures, hâte de la prochaine ! Merci aussi aux copains sans lesquelles je ne serais pas là aujourd'hui :  Jihane, Syrielle, Florian, Rocket, Clément et Laure.
+
+
+Je remercie enfin ma famille sur laquelle je sais pouvoir compter. Merci beaucoup à mes frères et soeurs pour vos encouragements, Alain, Hélène, Ludo, les belles-soeurs de choc au top Sylvie et Amélie. Je remercie également toute ma belle-famille pour son grand coeur.  Je remercie infiniment mes parents d'être des esprits libres, indépendants et originaux, constantes sources d'inspiration pour moi. Merci maman pour ta spontanétité, ta joie et ton air marin. Merci papa pour ta sérénité, ta poésie et tes couleurs.
+
+
+Mes derniers mots vont à Sylvain. Merci d'avoir eu la brillante idée de participer à un certain séminaire, là-haut sur une certaine montagne. Merci de m'honorer chaque jour de ta présence, de ton soutien infaillible et de ton petit air moqueur sans lequel le monde n'aurait plus aucun sens.
+% \nomtcrule
+%\clearemptydoublepage
 \tableofcontents 
  \mainmatter
 
- 
+
 
 \chapter{Introduction}
 \input{intro2.tex}
@@ -46,6 +76,11 @@
 \DeactivateBG 
 \chapter{Résumé}
 \input{resume}
+\chapter*{Liste des publications}
+\begin{itemize}
+\item Momal, Raphaëlle, Stéphane Robin, and Christophe Ambroise. "Tree‐based inference of species interaction networks from abundance data." Methods in Ecology and Evolution 11.5 (2020): 621-632.\\
+\item Momal, Raphaëlle, Stéphane Robin, and Christophe Ambroise. "Accounting for missing actors in interaction network inference from abundance data." arXiv preprint arXiv:2007.14299 (2020).
+\end{itemize}
 \bibliographystyle{plainnat}  
 \bibliography{biblio.bib}
 

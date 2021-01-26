@@ -527,15 +527,15 @@ contents={
 
 \RequirePackage{etoolbox}
 
-\appto\frontmatter{\pagestyle{fancy}
-\renewcommand{\sectionmark}[1]{}
-\renewcommand{\chaptermark}[1]{\markboth{\textit{#1}}{}}
-\fancyhead[LE,RO]{\small\thepage}
-	\fancyhead[RO]{\small\leftmark}		% \rightmark = section courante
-	\fancyhead[LE]{\small\leftmark}		% \leftmark = chapitre courant
-	\fancyfoot[C]{\thepage}				% marque la page au centre
-}
-
+%\appto\frontmatter{\pagestyle{fancy}
+%\renewcommand{\sectionmark}[1]{}
+%\renewcommand{\chaptermark}[1]{\markboth{\textit{#1}}{}}
+%\fancyhead[LE,RO]{\small\thepage}
+%	\fancyhead[RO]{\small\leftmark}		% \rightmark = section courante
+%	\fancyhead[LE]{\small\leftmark}		% \leftmark = chapitre courant
+%	\fancyfoot[C]{\thepage}				% marque la page au centre
+%}
+\appto\frontmatter{\pagestyle{plain}}
 \appto\mainmatter{\pagestyle{plain}%\pagestyle{fancy}
 %\renewcommand{\sectionmark}[1]{\markright{\textit{\thesection.\ #1}}}
 %\renewcommand{\chaptermark}[1]{\markboth{\chaptername~\thechapter~--\ \textit{#1}}{}}

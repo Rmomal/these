@@ -121,7 +121,13 @@ data_fit=t(apply(VEM_spca_200$M, 2, function(Mk){
 })) %>% as_tibble %>% rowid_to_column() %>% 
   mutate(vois=rowid%in%vois)
 
-data_fit %>% ggplot(aes(vois, abs(c.Pears.), color=vois))+geom_boxplot()+mytheme.dark("")
+g=data_fit %>% mutate(newvois=ifelse(vois,"Neighbor", "Non-neighbor")) %>% 
+  ggplot(aes(newvois, abs(c.Pears.), color=newvois))+geom_boxplot(width=0.3)+
+  mytheme.dark("")+
+  labs(x="",y="|Cor(Mk,temp)|")+guides(color=FALSE)
+ggsave(filename = "Barents_neighb_cor.png", plot = g,
+       path ="/Users/raphaellemomal/these/R/images/", width = 3, height = 4)
+
 data_fit %>% group_by(vois) %>% summarise(mean.corP=median(abs(c.Pears.)),
                                           sdcP=sd(abs(c.Pears.))) %>% xtable()
 
@@ -129,11 +135,12 @@ data_fit %>% group_by(vois) %>% summarise(mean.corP=median(abs(c.Pears.)),
 g1<-ggimage(VEM_spca_200$Pg)
 init=initVEM(counts = counts,initviasigma=NULL, cov2cor(sigma_obs),MO,r = 0)
 Wginit= init$Wginit; Winit= init$Winit; upsinit=init$upsinit ; MHinit=init$MHinit
-resVEM0<- VEMtree(counts,MO,SO,MH=MHinit,upsinit,Winit,Wginit, eps=1e-3, alpha=0.05,
+resVEM0<- VEMtree(counts,MO,SO,MH=MHinit,upsinit,Winit,Wginit, eps=1e-2, alpha=0.05,
                   maxIter=100, plot=TRUE,print.hist=FALSE, verbatim = TRUE,trackJ=FALSE)
+resVEM0$features$diffUpsi
 g0<-ggimage(resVEM0$Pg)
 grid.arrange(g0, g1, ncol=2)
-
+vois=c(6,13,15,19,21,30)
 lab0=ifelse(1:30 %in% vois, 1:30, "")
 lab1=ifelse(1:31 %in% c(vois,31), c(1:30,"H"), "")
 
